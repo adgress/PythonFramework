@@ -1,7 +1,9 @@
 __author__ = 'Aubrey'
 
 import abc
-import configs.base_configs as base_configs
+#import configs.base_configs as base_configs
+
+from configs import base_configs
 class Saveable(object):
     #__metaclass__ = abc.ABCMeta
     def __init__(self,configs=base_configs.Configs()):

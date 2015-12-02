@@ -6,8 +6,14 @@ from configs.base_configs import MethodConfigs
 from sklearn.linear_model import LinearRegression
 from sklearn import linear_model
 from sklearn import dummy
+from sklearn import grid_search
 import numpy as np
+from copy import deepcopy
 from results_class.results import Output
+from results_class.results import FoldResults
+from results_class import results as results_lib
+from data_sets import create_data_split
+from data import data as data_lib
 import collections
 
 
@@ -36,6 +42,48 @@ class Method(Saveable):
         self.train(data)
         return self.predict(data)
 
+    def run_cross_validation(self,data):
+        train_data = data.get_subset(data.is_train & data.is_labeled)
+        data_splitter = create_data_split.DataSplitter()
+        num_splits = 5
+        perc_train = .8
+        is_regression = data.is_regression
+
+        splits = data_splitter.generate_splits(train_data.y,num_splits,perc_train,is_regression)
+        data_and_splits = data_lib.SplitData(train_data,splits)
+        param_grid = list(grid_search.ParameterGrid(self.cv_params))
+        param_results = []
+        for i in range(len(param_grid)):
+            param_results.append(results_lib.ExperimentResults())
+        for i in range(num_splits):
+            curr_split = data_and_splits.get_split(i)
+            for param_idx, params in enumerate(param_grid):
+                self.set_params(**params)
+                results = self.run_method(curr_split)
+                fold_results = FoldResults()
+                fold_results.prediction = results
+                param_results[param_idx].append(fold_results)
+
+        errors = np.empty(len(param_grid))
+        for i in range(len(param_grid)):
+            agg_results = param_results[i].aggregate_error(self.configs.loss_function)
+            errors[i] = agg_results.mean
+
+        min_error = errors.min()
+        best_params = param_grid[errors.argmin()]
+        return best_params
+
+
+
+    def train_and_test(self, data):
+        best_params = self.run_cross_validation(data)
+        self.set_params(**best_params)
+        output = self.run_method(data)
+        f = FoldResults()
+        f.prediction = output
+        return f
+
+
     @abc.abstractmethod
     def train(self, data):
         pass
@@ -47,7 +95,7 @@ class Method(Saveable):
 class ScikitLearnMethod(Method):
 
     _short_name_dict = {
-        'RidgeRegression': 'RidgeReg',
+        'Ridge': 'RidgeReg',
         'DummyClassifier': 'DumClass'
     }
 
@@ -78,13 +126,13 @@ class ScikitLearnMethod(Method):
 class SKLRidgeRegression(ScikitLearnMethod):
     def __init__(self,configs=None):
         super(SKLRidgeRegression, self).__init__(configs, linear_model.Ridge())
-        self.cv_params['alpha'] = 10**np.asarray(([range(-5,5)]))
+        self.cv_params['alpha'] = 10**np.asarray(range(-5,5),dtype='float64')
         self.set_params(alpha=0,fit_intercept=True,normalize=True)
 
 class SKLLogisticRegression(ScikitLearnMethod):
     def __init__(self,configs=None):
         super(SKLLogisticRegression, self).__init__(configs, linear_model.LogisticRegression())
-        self.cv_params['C'] = 10**np.asarray(list(reversed([range(-5, 5)])))
+        self.cv_params['C'] = 10**np.asarray(list(reversed(range(-5, 5))),dtype='float64')
         self.set_params(C=0,fit_intercept=True,penalty='l2')
 
 class SKLGuessClassifier(ScikitLearnMethod):

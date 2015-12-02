@@ -88,7 +88,7 @@ def make_dir_for_file_name(file_name):
         except:
             assert os.path.exists(d)
 
-def save_object(object, file_name):
+def save_object(file_name,object):
     """
     Saves object to file_name using pickle
     :param object: object to save

@@ -37,20 +37,31 @@ class DataSplitter(object):
     def __init__(self):
         pass
 
-    def generate_splits(self,y,num_splits=30,perc_train=.8,is_regression=False):
+    def generate_splits(self,y,num_splits=30,perc_train=.8,is_regression=False,keep_target=None):
         assert y.ndim == 1
         n = len(y)
+        n_for_split = len(y)
+        y_for_split = y
         assert np.all(~np.isnan(y))
         num_train = math.ceil(perc_train*n)
+        if keep_target is not None:
+            y_for_split = y[keep_target]
+            n_for_split = len(y_for_split)
+            target_inds = keep_target.nonzero()[0]
+
         if is_regression:
-            split = cross_validation.ShuffleSplit(n,num_splits,1-perc_train)
+            split = cross_validation.ShuffleSplit(n_for_split,num_splits,1-perc_train)
         else:
-            split = cross_validation.StratifiedShuffleSplit(y,num_splits,1-perc_train)
+            split = cross_validation.StratifiedShuffleSplit(y_for_split,num_splits,1-perc_train)
         splits = []
         for train,test in split:
             s = data_lib.Split(n)
-            s.is_train[train] = True
-            s.is_train[test] = False
+            if keep_target is not None:
+                s.is_train[:] = True
+                s.is_train[target_inds[test]] = False
+            else:
+                s.is_train[train] = True
+                s.is_train[test] = False
             s.permutation = np.random.permutation(n)
             splits.append(s)
 

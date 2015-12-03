@@ -49,9 +49,9 @@ def create_20ng_data(file_dir=''):
     data.label_names = short_names
     tf_idf = TfidfVectorizer(
         stop_words='english',
-        max_df=.9,
+        max_df=.95,
         min_df=.001,
-        max_features=5000
+        max_features=10000
     )
     vectors = tf_idf.fit_transform(newsgroups_train.data)
     feature_counts = (vectors > 0).sum(0)

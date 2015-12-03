@@ -25,6 +25,8 @@ class Method(Saveable):
         self._params = []
         self.cv_params = {}
         self.is_classifier = True
+        self.experiment_results_class = results_lib.ExperimentResults
+        self.cv_use_data_type = True
 
     @property
     def params(self):
@@ -34,28 +36,33 @@ class Method(Saveable):
         for k, v in kwargs.items():
             setattr(self, k, v)
 
-    @abc.abstractmethod
-    def train_and_test(self, data):
-        pass
-
     def run_method(self, data):
         self.train(data)
         return self.predict(data)
 
-    def run_cross_validation(self,data):
-        train_data = data.get_subset(data.is_train & data.is_labeled)
+    def _create_cv_splits(self,data):
         data_splitter = create_data_split.DataSplitter()
         num_splits = 5
         perc_train = .8
         is_regression = data.is_regression
+        if self.cv_use_data_type:
+            splits = data_splitter.generate_splits(data.y,num_splits,perc_train,is_regression,data.is_target)
+        else:
+            splits = data_splitter.generate_splits(data.y,num_splits,perc_train,is_regression)
+        return splits
 
-        splits = data_splitter.generate_splits(train_data.y,num_splits,perc_train,is_regression)
+    def run_cross_validation(self,data):
+        train_data = data.get_subset(data.is_train & data.is_labeled)
+
+        splits = self._create_cv_splits(train_data)
         data_and_splits = data_lib.SplitData(train_data,splits)
         param_grid = list(grid_search.ParameterGrid(self.cv_params))
+        if not self.cv_params:
+            return param_grid[0]
         param_results = []
         for i in range(len(param_grid)):
-            param_results.append(results_lib.ExperimentResults())
-        for i in range(num_splits):
+            param_results.append(self.experiment_results_class())
+        for i in range(len(splits)):
             curr_split = data_and_splits.get_split(i)
             for param_idx, params in enumerate(param_grid):
                 self.set_params(**params)
@@ -96,7 +103,8 @@ class ScikitLearnMethod(Method):
 
     _short_name_dict = {
         'Ridge': 'RidgeReg',
-        'DummyClassifier': 'DumClass'
+        'DummyClassifier': 'DumClass',
+        'LogisticRegression': 'LogReg'
     }
 
     def __init__(self,configs=MethodConfigs(),skl_method=None):
@@ -126,7 +134,7 @@ class ScikitLearnMethod(Method):
 class SKLRidgeRegression(ScikitLearnMethod):
     def __init__(self,configs=None):
         super(SKLRidgeRegression, self).__init__(configs, linear_model.Ridge())
-        self.cv_params['alpha'] = 10**np.asarray(range(-5,5),dtype='float64')
+        self.cv_params['alpha'] = 10**np.asarray(range(-8,8),dtype='float64')
         self.set_params(alpha=0,fit_intercept=True,normalize=True)
 
 class SKLLogisticRegression(ScikitLearnMethod):

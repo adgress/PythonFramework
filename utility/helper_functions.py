@@ -9,6 +9,54 @@ import shutil
 
 
 
+def delete_dir_if_exists(dir_name):
+    """
+    Deletes dir_name if it exists
+    :param dir_name: directory to delete
+    :return:
+    """
+    if os.path.isdir(dir_name):
+        shutil.rmtree(dir_name)
+
+def remove_suffix(s, suffix):
+    if s[-len(suffix):] == suffix:
+        s = s[:-len(suffix)]
+    return s
+
+def make_dir_for_file_name(file_name):
+    """
+    Creates directory for file_name
+    :param file_name: path for a file
+    :return:
+    """
+    d = os.path.dirname(file_name)
+    if d != '' and not os.path.exists(d):
+        try:
+            os.makedirs(d)
+        except:
+            assert os.path.exists(d)
+
+def save_object(file_name,object):
+    """
+    Saves object to file_name using pickle
+    :param object: object to save
+    :param file_name: file to save object to
+    :return:
+    """
+    make_dir_for_file_name(file_name)
+    with open(file_name, 'wb') as f:
+        pickle.dump(object, f, pickle.HIGHEST_PROTOCOL)
+
+def load_object(file_name):
+    """
+    Loads a saved python object using pickle
+    :param file_name: file the object is saved to
+    :return: the loaded loaded object
+    """
+    with open(file_name, 'rb') as f:
+        data = pickle.load(f)
+    return data
+
 
 
 
@@ -75,40 +123,6 @@ def num_unique(l):
     """
     return len(set(l))
 
-def make_dir_for_file_name(file_name):
-    """
-    Creates directory for file_name
-    :param file_name: path for a file
-    :return:
-    """
-    d = os.path.dirname(file_name)
-    if d != '' and not os.path.exists(d):
-        try:
-            os.makedirs(d)
-        except:
-            assert os.path.exists(d)
-
-def save_object(file_name,object):
-    """
-    Saves object to file_name using pickle
-    :param object: object to save
-    :param file_name: file to save object to
-    :return:
-    """
-    make_dir_for_file_name(file_name)
-    with open(file_name, 'wb') as f:
-        pickle.dump(object, f, pickle.HIGHEST_PROTOCOL)
-
-def load_object(file_name):
-    """
-    Loads a saved python object using pickle
-    :param file_name: file the object is saved to
-    :return: the loaded loaded object
-    """
-    with open(file_name, 'rb') as f:
-        data = pickle.load(f)
-    return data
-
 def check_input(*args):
     """
     Asserts that each ndarray in args has the same length
@@ -140,15 +154,6 @@ def get_temp_dir():
     :return: path to temporary directory
     """
     return os.getenv('ML_CASP_TEMP_DIR', 'temp') + '/'
-
-def delete_dir_if_exists(dir_name):
-    """
-    Deletes dir_name if it exists
-    :param dir_name: directory to delete
-    :return:
-    """
-    if os.path.isdir(dir_name):
-        shutil.rmtree(dir_name)
 
 def convert_to_list(val):
     """

@@ -68,6 +68,8 @@ class ProjectConfigs(Configs):
         #self.num_labels = range(40,81,40)
         self.set_boston_housing()
         self.num_splits = 30
+        self.labels_to_keep = None
+        self.labels_to_not_sample = {}
 
 
 pc_fields_to_copy = ['data_dir',
@@ -78,7 +80,9 @@ pc_fields_to_copy = ['data_dir',
                      'labels_to_use',
                      'num_labels',
                      'num_splits',
-                     'loss_function']
+                     'loss_function',
+                     'labels_to_keep',
+                     'labels_to_not_sample']
 
 class BatchConfigs(Configs):
     def __init__(self):

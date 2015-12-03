@@ -3,6 +3,7 @@ __author__ = 'Aubrey'
 import numpy as np
 import collections
 import math
+from data import data as data_lib
 from loss_functions import loss_function as loss_function_lib
 
 aggregated_results = collections.namedtuple('AggregatedResults',['mean','low','high'])
@@ -79,18 +80,20 @@ class FoldResults(object):
         self.prediction = Output()
         self.actual = Output()
 
-class Output(object):
+class Output(data_lib.LabeledVector):
     def __init__(self,data=None):
+        super(data_lib.LabeledVector, self).__init__()
         if data is not None:
             self.y = data.y
             self.is_train = data.is_train
             self.true_y = data.true_y
+            self.type = data.type
         else:
             self.y = np.empty(0)
             self.is_train = np.empty(0)
+            self.true_y = np.empty(0)
             self.type = np.empty(0)
         self.fu = np.empty(0)
-
 
 class ClassificationOutput(Output):
     def __init__(self,data=None):

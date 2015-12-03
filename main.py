@@ -7,7 +7,9 @@ import importlib
 
 
 #import configs.base_configs as configs_lib
-import base.project_configs as configs_lib
+#import base.project_configs as configs_lib
+import base.transfer_project_configs as configs_lib
+
 from experiment import experiment_manager
 from utility import helper_functions
 
@@ -35,6 +37,9 @@ def run_visualization():
     plt.title = vis_configs.title
     axis = [0, 1, 0, 1]
     for i, file in enumerate(vis_configs.results_files):
+        if not os.path.isfile(file):
+            print file + ' doesn''t exist - skipping'
+            continue
         results = helper_functions.load_object(file)
         #plt.plot([1,2,3], [1,2,3], 'go-', label='line 1', linewidth=2)
         processed_results = results.compute_error_processed(vis_configs.loss_function)

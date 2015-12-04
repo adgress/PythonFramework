@@ -5,7 +5,6 @@ import sys
 import os
 import importlib
 
-
 #import configs.base_configs as configs_lib
 #import base.project_configs as configs_lib
 import base.transfer_project_configs as configs_lib
@@ -64,7 +63,7 @@ def run_visualization():
 
 if __name__ == "__main__":
     run_main()
-    #run_visualization()
+    run_visualization()
 
 
 

@@ -54,14 +54,17 @@ class MethodExperimentManager(ExperimentManager):
         print 'found ' + experiment_temp_file + ' - loading'
         return helper_functions.load_object(experiment_temp_file)
 
-    def _delete_temp_split_files(self, num_splits):
+    def _delete_temp_split_files(self, file, num_splits):
         for i in range(num_splits):
+            helper_functions.delete_file(self._temp_split_file_name(file, i))
 
-    def _delete_temp_experiment_files(self):
-        pass
+    def _delete_temp_experiment_files(self, file, num_labels):
+        for i in num_labels:
+            helper_functions.delete_file(self._temp_experiment_file_name(file, i))
 
-    def _delete_temp_folder(self):
-        pass
+    def _delete_temp_folder(self, file):
+        folder = helper_functions.remove_suffix(file, '.pkl')
+        helper_functions.delete_dir_if_empty(folder)
 
     def run_experiments(self):
         data_file = self.configs.data_file
@@ -77,7 +80,6 @@ class MethodExperimentManager(ExperimentManager):
             print results_file + ' already exists - skipping'
             return
         for i,num_labels in enumerate(self.configs.num_labels):
-
             experiment_results = self._load_temp_experiment_file(results_file,num_labels)
             if not experiment_results:
                 print 'num_labels: ' + str(num_labels)
@@ -91,11 +93,15 @@ class MethodExperimentManager(ExperimentManager):
                         curr_results = self.configs.learner.train_and_test(curr_data)
                         helper_functions.save_object(self._temp_split_file_name(results_file,split),curr_results)
                     experiment_results.append(curr_results)
+                helper_functions.save_object(self._temp_experiment_file_name(results_file,num_labels),experiment_results)
             experiment_results.num_labels = num_labels
             method_results.append(experiment_results)
+            self._delete_temp_split_files(results_file, self.configs.num_splits)
 
             print 'Mean Error:' + str(method_results.compute_error(self.configs.loss_function)[i].mean)
         #a = method_results.compute_error(self.configs.loss_function)
         method_results.configs = self.configs
         helper_functions.save_object(results_file,method_results)
+        self._delete_temp_experiment_files(results_file, self.configs.num_labels)
+        self._delete_temp_folder(results_file)
         pass

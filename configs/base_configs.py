@@ -1,5 +1,8 @@
 from loss_functions import loss_function
 
+DATA_NG = 1
+DATA_BOSTONG_HOUSING = 2
+
 class Configs(object):
     def __init__(self):
         pass

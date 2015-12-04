@@ -8,6 +8,17 @@ import os
 import shutil
 
 
+def delete_dir_if_empty(file_name):
+    if os.path.isdir(file_name) and not os.listdir(file_name):
+        delete_dir_if_exists(file_name)
+
+def delete_file(file_name):
+    try:
+        assert os.path.isfile(file_name)
+        os.remove(file_name)
+    except:
+        assert not os.path.exists(file_name)
+
 
 def delete_dir_if_exists(dir_name):
     """

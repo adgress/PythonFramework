@@ -17,14 +17,28 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
     'source_labels'
 ]
 
+#data_set_to_use = bc.DATA_BOSTONG_HOUSING
+data_set_to_use = bc.DATA_NG
+
+
+
+
 class ProjectConfigs(bc.ProjectConfigs):
     def __init__(self):
         super(ProjectConfigs, self).__init__()
         self.target_labels = []
         self.source_labels = []
-        self.set_ng_transfer()
         self.project_dir = 'base'
-        #self.num_labels = range(40,201,40)
+        self.num_labels = range(40,201,40)
+
+
+        if data_set_to_use == bc.DATA_NG:
+            self.set_ng_transfer()
+        elif data_set_to_use == bc.DATA_BOSTONG_HOUSING:
+            self.set_boston_housing()
+        else:
+            assert False
+
         self.num_labels = range(20,61,20)
 
     def set_ng_transfer(self):
@@ -42,9 +56,18 @@ class MainConfigs(bc.MainConfigs):
         self.copy_fields(pc,pc_fields_to_copy)
         from methods import transfer_methods
         from methods import method
-        self.learner = transfer_methods.FuseTransfer(MethodConfigs())
-        #self.learner = transfer_methods.TargetTranfer(MethodConfigs())
-        #self.learner = method.SKLLogisticRegression(MethodConfigs())
+        method_configs = MethodConfigs()
+
+        fuse_log_reg = transfer_methods.FuseTransfer(method_configs)
+        target_nw = transfer_methods.TargetTranfer(method_configs)
+        target_nw.base_learner = method.NadarayaWatsonMethod(method_configs)
+        nw = method.NadarayaWatsonMethod(method_configs)
+        log_reg = method.SKLLogisticRegression(MethodConfigs())
+        target_knn = transfer_methods.TargetTranfer(method_configs)
+        target_knn.base_learner = method.SKLKNN(method_configs)
+
+        self.learner = target_knn
+
 
 class MethodConfigs(bc.MethodConfigs):
     def __init__(self):
@@ -62,7 +85,11 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files = [
             'TargetTransfer+SKL-LogReg.pkl',
             'FuseTransfer+SKL-LogReg.pkl',
-            'SKL-LogReg.pkl'
+            'SKL-LogReg.pkl',
+            'TargetTransfer+NW.pkl',
+            'NW.pkl',
+            'SKL-RidgeReg.pkl',
+            'TargetTransfer+SKL-KNN.pkl'
         ]
 
 class BatchConfigs(bc.BatchConfigs):

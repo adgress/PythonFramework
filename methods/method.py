@@ -46,6 +46,10 @@ class Method(Saveable):
 
     def run_method(self, data):
         self.train(data)
+        if data.x.shape[0] == 0:
+            self.train(data)
+
+
         return self.predict(data)
 
     def _create_cv_splits(self,data):
@@ -60,7 +64,7 @@ class Method(Saveable):
         return splits
 
     def run_cross_validation(self,data):
-        train_data = data.get_subset(data.is_train & data.is_labeled)
+        train_data = data.get_subset(data.is_train)
 
         splits = self._create_cv_splits(train_data)
         data_and_splits = data_lib.SplitData(train_data,splits)
@@ -70,8 +74,10 @@ class Method(Saveable):
         param_results = []
         for i in range(len(param_grid)):
             param_results.append(self.experiment_results_class())
+        unused_breakpoint = 1
         for i in range(len(splits)):
             curr_split = data_and_splits.get_split(i)
+            curr_split.remove_test_labels()
             for param_idx, params in enumerate(param_grid):
                 self.set_params(**params)
                 results = self.run_method(curr_split)
@@ -88,9 +94,24 @@ class Method(Saveable):
         best_params = param_grid[errors.argmin()]
         return best_params
 
+    def process_data(self, data):
+        labels_to_keep = np.empty(0)
+        t = self.configs.target_labels
+        s = self.configs.source_labels
+        if t is not None and t.size > 0:
+            labels_to_keep = np.concatenate((labels_to_keep,t))
+        if s is not None and s.size > 0:
+            labels_to_keep = np.concatenate((labels_to_keep,s))
+            inds = array_functions.find_set(data.y,s)
+            data.type[inds] = data_lib.TYPE_SOURCE
+            data.is_train[inds] = True
+        if labels_to_keep.size > 0:
+            data = data.get_transfer_subset(labels_to_keep,include_unlabeled=True)
+        return data
 
 
     def train_and_test(self, data):
+        data = self.process_data(data)
         best_params = self.run_cross_validation(data)
         self.set_params(**best_params)
         output = self.run_method(data)
@@ -107,19 +128,22 @@ class Method(Saveable):
     def predict(self, data):
         pass
 
+    def predict_loo(self, data):
+        assert False, 'Not implemented!'
+
 
 class NadarayaWatsonMethod(Method):
     def __init__(self,configs=MethodConfigs(),skl_method=None):
         super(NadarayaWatsonMethod, self).__init__(configs)
-        self.cv_params['sigma'] = 10**np.asarray(range(-8,8),dtype='float64')
+        self.cv_params['sigma'] = 10**np.asarray(range(-4,4),dtype='float64')
         self.sigma = 1
-        #self.metric = 'euclidean'
-        self.metric = 'cosine'
+        self.metric = 'euclidean'
+        #self.metric = 'cosine'
 
     def compute_kernel(self,x,y):
         #TODO: Optimize this for cosine similarity using cross product and matrix multiplication
-        x = array_functions.try_toarray(x)
-        y = array_functions.try_toarray(y)
+        #x = array_functions.try_toarray(x)
+        #y = array_functions.try_toarray(y)
         W = pairwise.pairwise_distances(x,y,self.metric)
         W = np.square(W)
         W = -self.sigma * W
@@ -144,7 +168,7 @@ class NadarayaWatsonMethod(Method):
         D_inv = 1 / D
         array_functions.replace_invalid(D_inv,x_min=1,x_max=1)
         S = np.dot(np.diag(D_inv), W)
-        if self.is_classifier:
+        if not data.is_regression:
             y_mat = array_functions.make_label_matrix(self.y)
             fu = np.dot(S,array_functions.try_toarray(y_mat))
             fu = array_functions.replace_invalid(fu,0,1)
@@ -154,9 +178,35 @@ class NadarayaWatsonMethod(Method):
         else:
             y = np.dot(S,self.y)
             y = array_functions.replace_invalid(y,self.y.min(),self.y.max())
+            o.fu = y
         o.y = y
 
         return o
+
+    def predict_loo(self, data):
+        data = data.get_subset(data.is_labeled)
+        o = Output(data)
+        n = data.n
+        W = self.compute_kernel(data.x, data.x)
+        W[np.diag(np.ones(n)) == 1] = 0
+        D = W.sum(1)
+        D_inv = 1 / D
+        array_functions.replace_invalid(D_inv,x_min=1,x_max=1)
+        S = np.dot(np.diag(D_inv),W)
+
+        if not data.is_regression:
+            y_mat = array_functions.make_label_matrix(data.y)
+            fu = np.dot(S,array_functions.try_toarray(y_mat))
+            fu = array_functions.replace_invalid(fu,0,1)
+            fu = array_functions.normalize_rows(fu)
+            o.fu = fu
+            o.y = fu.argmax(1)
+        else:
+            o.y = np.dot(S,data.y)
+            o.fu = o.y
+        return o
+
+
 
     @property
     def prefix(self):

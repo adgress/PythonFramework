@@ -17,7 +17,7 @@ ng_t = np.asarray(range(16,20))
 
 boston_housing_raw_data_file = 'boston_housing/raw_data.pkl'
 ng_raw_data_file = '20ng/raw_data.pkl'
-
+synthetic_step_transfer_file = 'synthetic_step_transfer/raw_data.pkl'
 def create_uci_yeast():
     pass
 
@@ -65,6 +65,26 @@ def create_20ng_data(file_dir=''):
         s = file_dir + '/' + s
     helper_functions.save_object(s,data)
 
+def create_synthetic_step_transfer(file_dir=''):
+    n_target = 100
+    n_source = 100
+    n = n_target + n_source
+    sigma = .075
+    data = data_class.Data()
+    data.x = np.random.uniform(0,1,(n,1))
+    data.data_set_ids = np.zeros(n)
+    data.data_set_ids[n_target:] = 1
+    data.y = np.zeros(n)
+    data.y[(data.data_set_ids == 1) & (data.x[:,0] >= .5)] = 1
+    data.y += np.random.normal(0,sigma,n)
+    data.set_defaults()
+    data.is_regression = True
+    #array_functions.plot_2d(data.x,data.y,data.data_set_ids)
+    s = synthetic_step_transfer_file
+    if file_dir != '':
+        s = file_dir + '/' + s
+    helper_functions.save_object(s,data)
+
 def create_boston_housing(file_dir=''):
     boston_data = datasets.load_boston()
     data = data_class.Data()
@@ -80,4 +100,5 @@ def create_boston_housing(file_dir=''):
 
 if __name__ == "__main__":
     #create_boston_housing()
-    create_20ng_data()
+    #create_20ng_data()
+    create_synthetic_step_transfer()

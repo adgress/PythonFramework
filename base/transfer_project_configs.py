@@ -18,7 +18,8 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
 
 #data_set_to_use = bc.DATA_BOSTONG_HOUSING
-data_set_to_use = bc.DATA_NG
+#data_set_to_use = bc.DATA_NG
+data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
 
 
 
@@ -30,16 +31,34 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.source_labels = []
         self.project_dir = 'base'
         self.num_labels = range(40,201,40)
+        self.num_splits = 10
 
 
         if data_set_to_use == bc.DATA_NG:
             self.set_ng_transfer()
+            self.num_labels = range(20,61,20)
         elif data_set_to_use == bc.DATA_BOSTONG_HOUSING:
             self.set_boston_housing()
+            self.num_labels = range(20,61,20)
+        elif data_set_to_use == bc.DATA_SYNTHETIC_STEP_TRANSFER:
+            self.set_synthetic_step_transfer()
+            self.num_labels = range(10,31,10)
+            #self.num_labels = [50]
         else:
             assert False
 
-        self.num_labels = range(20,61,20)
+
+
+    def set_synthetic_step_transfer(self):
+        self.loss_function = loss_function.MeanSquaredError()
+        self.data_dir = 'data_sets/synthetic_step_transfer'
+        self.data_name = 'synthetic_step_transfer'
+        self.data_set_file_name = 'split_data.pkl'
+        self.results_dir = 'synthetic_step_transfer'
+        self.target_labels = np.asarray([0])
+        self.source_labels = np.asarray([1])
+        self.labels_to_keep = np.concatenate((self.target_labels,self.source_labels))
+        self.labels_to_not_sample = self.source_labels
 
     def set_ng_transfer(self):
         self.loss_function = loss_function.ZeroOneError()
@@ -59,14 +78,19 @@ class MainConfigs(bc.MainConfigs):
         method_configs = MethodConfigs()
 
         fuse_log_reg = transfer_methods.FuseTransfer(method_configs)
+        fuse_nw = transfer_methods.FuseTransfer(method_configs)
+        fuse_nw.base_learner = method.NadarayaWatsonMethod(method_configs)
         target_nw = transfer_methods.TargetTranfer(method_configs)
         target_nw.base_learner = method.NadarayaWatsonMethod(method_configs)
         nw = method.NadarayaWatsonMethod(method_configs)
         log_reg = method.SKLLogisticRegression(MethodConfigs())
         target_knn = transfer_methods.TargetTranfer(method_configs)
         target_knn.base_learner = method.SKLKNN(method_configs)
+        local_transfer = transfer_methods.LocalTransfer(method_configs)
 
-        self.learner = target_knn
+        self.learner = local_transfer
+        #self.learner = fuse_nw
+        #self.learner = target_nw
 
 
 class MethodConfigs(bc.MethodConfigs):
@@ -89,7 +113,9 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             'TargetTransfer+NW.pkl',
             'NW.pkl',
             'SKL-RidgeReg.pkl',
-            'TargetTransfer+SKL-KNN.pkl'
+            'TargetTransfer+SKL-KNN.pkl',
+            'LocalTransfer.pkl',
+            'FuseTransfer+NW.pkl'
         ]
 
 class BatchConfigs(bc.BatchConfigs):

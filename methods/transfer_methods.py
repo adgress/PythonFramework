@@ -4,7 +4,8 @@ import copy
 from data import data as data_lib
 from results_class import results as results_lib
 from utility import array_functions
-
+import cvxpy as cvx
+import numpy as np
 
 class TargetTranfer(method.Method):
     def __init__(self, configs=None):
@@ -22,7 +23,8 @@ class TargetTranfer(method.Method):
 
     def _prepare_data(self, data):
         target_labels = self.configs.target_labels
-        data_copy = data.get_with_labels(target_labels)
+        data_copy = data.get_transfer_subset(target_labels,include_unlabeled=False)
+        #data_copy = data.get_with_labels(target_labels)
         return data_copy
 
     def predict(self, data):
@@ -40,17 +42,142 @@ class FuseTransfer(TargetTranfer):
         source_labels = self.configs.source_labels
         target_labels = self.configs.target_labels
         data_copy = copy.deepcopy(data)
-        source_inds = array_functions.find_set(data_copy.true_y,source_labels)
-        data_copy.change_labels(source_labels,target_labels)
+        #source_inds = array_functions.find_set(data_copy.true_y,source_labels)
+        source_inds = data.get_transfer_inds(source_labels)
+        if not data_copy.is_regression:
+            data_copy.change_labels(source_labels,target_labels)
         data_copy.type[source_inds] = data_lib.TYPE_SOURCE
-        data_copy = data_copy.get_with_labels(target_labels)
+        data_copy = data_copy.get_transfer_subset(np.concatenate((source_labels,target_labels)),include_unlabeled=True)
         data_copy.is_train[data_copy.is_source] = True
+        data_copy.reveal_labels(data_copy.is_source)
         return data_copy
 
     @property
     def prefix(self):
         return 'FuseTransfer+' + self.base_learner.prefix
 
+class LocalTransfer(FuseTransfer):
+    def __init__(self, configs=None):
+        super(LocalTransfer, self).__init__(configs)
+        #self.cv_params['sigma'] = 10**np.asarray(range(-4,4),dtype='float64')
+        self.sigma = 100
+        self.cv_params['radius'] = np.asarray([.01, .05, .1, .15, .2],dtype='float64')
+        self.cv_params['C'] = 10**np.asarray(range(-8,8),dtype='float64')
+        #self.cv_params['C'] = np.asarray([.00000001,.0000001,.000000001,.0000000001,.000001],dtype='float64')
+        self.target_learner = method.NadarayaWatsonMethod(configs)
+        self.source_learner = method.NadarayaWatsonMethod(configs)
+        self.base_learner = None
 
+    def train(self, data):
+        #self.C = .00000001
+        #self.C = 0
+        #x = cvx.Variable()
+        #y = cvx.Variable()
+        #constraints = [x + y == 1, x - y >= 1]
+
+        #target_data = data.get_with_labels(self.configs.target_labels)
+        target_data = data.get_transfer_subset(self.configs.target_labels, include_unlabeled=True)
+        self.target_learner.train_and_test(target_data)
+        o = self.target_learner.predict_loo(target_data)
+        o_source = self.source_learner.predict(target_data)
+        is_labeled = target_data.is_labeled
+
+        target_labels = self.configs.target_labels
+        if data.is_regression:
+            y_t = array_functions.vec_to_2d(o.fu)
+            y_s = array_functions.vec_to_2d(o_source.fu)
+            y_true = array_functions.vec_to_2d(o.true_y)
+        else:
+            y_t = o.fu[:,target_labels]
+            y_s = o_source.fu[:,target_labels]
+            y_s = y_s[is_labeled,:]
+            y_true = array_functions.make_label_matrix(o.true_y)[:,target_labels]
+            y_true = array_functions.try_toarray(y_true)
+
+        g = cvx.Variable(target_data.n)
+
+        x = target_data.x
+        y = target_data.y
+        labeled_inds = is_labeled.nonzero()[0]
+        unlabeled_inds = (~is_labeled).nonzero()[0]
+        sorted_inds = np.concatenate((labeled_inds,unlabeled_inds))
+        #x_sorted = np.concatenate((x[is_labeled,:],x[~is_labeled,:]),0)
+        n_labeled = len(labeled_inds)
+        metric='euclidean'
+        #metric='cosine'
+        #L = array_functions.make_laplacian(target_data.x,self.sigma,metric) + .0001*np.identity(target_data.n)
+        L = array_functions.make_laplacian_uniform(target_data.x,self.radius,metric) + .0001*np.identity(target_data.n)
+        L = L[:,sorted_inds]
+        L = L[sorted_inds,:]
+        y_s = y_s[sorted_inds,:]
+
+        #y_t,y_true should only be for labeled instances
+        #y_t = y_t[sorted_inds,:]
+        #y_true = y_true[sorted_inds,:]
+        reg = cvx.quad_form(g,L)
+
+        loss = cvx.sum_entries(
+            cvx.power(
+                y_s[:n_labeled,0] * g[:n_labeled] + y_t[:,0] * (1-g[:n_labeled]) - y_true[:,0],
+                2
+            )
+        )
+        constraints = [g >= 0, g <= 1]
+        obj = cvx.Minimize(loss + self.C*reg)
+        prob = cvx.Problem(obj,constraints)
+
+        assert prob.is_dcp()
+        try:
+            prob.solve()
+            inv_perm = array_functions.inv_permutation(sorted_inds)
+            self.g = g.value[inv_perm]
+            assert (self.g[sorted_inds] == g.value).all()
+        except:
+            #assert prob.status is None
+            k = 0
+            print 'CVX problem: setting g = ' + str(k)
+            print '\tsigma=' + str(self.sigma)
+            print '\tC=' + str(self.C)
+            print '\tradius=' + str(self.radius)
+            self.g = k*np.ones(target_data.n)
+        if target_data.x.shape[1] == 1:
+            self.g_x = target_data.x
+            self.g_x_low = self.g[self.g_x[:,0] < .5]
+            self.g_x_high = self.g[self.g_x[:,0] >= .5]
+        #assert prob.status == cvx.OPTIMAL
+
+        #self.y_s = y_s
+        pass
+
+    def train_and_test(self, data):
+        #source_data = data.get_with_labels(self.configs.source_labels)
+        source_data = data.get_transfer_subset(self.configs.source_labels,include_unlabeled=True)
+        source_data.set_target()
+        source_data.set_train()
+        source_data.reveal_labels(~source_data.is_labeled)
+        if not data.is_regression:
+            source_data.change_labels(self.configs.source_labels,self.configs.target_labels)
+            source_data = source_data.rand_sample(.1)
+        self.source_learner.train_and_test(source_data)
+        return super(LocalTransfer, self).train_and_test(data)
+
+    def predict(self, data):
+        o = self.target_learner.predict(data)
+        is_target = data.is_target
+        o_source = self.source_learner.predict(data.get_subset(is_target))
+        o.fu[is_target] = o.fu[is_target]*(1-self.g) + self.g*o_source.fu
+        if data.is_regression:
+            o.y = o.fu
+        else:
+            fu = array_functions.replace_invalid(o.fu,0,1)
+            fu = array_functions.normalize_rows(fu)
+            o.fu = fu
+            o.y = fu.argmax(1)
+        return o
+
+
+    @property
+    def prefix(self):
+        return 'LocalTransfer'
 
 

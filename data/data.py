@@ -45,6 +45,34 @@ class LabeledVector(object):
         return (self.is_source & self.is_test).sum()
 
     @property
+    def n_per_y_source(self):
+        return self._n_per_y(self.is_source)
+
+    @property
+    def n_per_y_target(self):
+        return self._n_per_y(self.is_target)
+
+    @property
+    def n_per_y(self):
+        return self.n_per_y
+
+    def _n_per_y(self, inds=None):
+        if inds is None:
+            inds = np.asarray(range(self.n))
+        y = self.y[inds]
+        d = {
+            np.nan: sum(np.isnan(y))
+        }
+        if self.is_regression:
+            d['other'] = self.is_labeled[inds].sum()
+        else:
+            keys = np.unique(y)
+            keys = keys[~np.isnan(keys)]
+            for k in keys:
+                d[int(k)] = (y == k).sum()
+        return d
+
+    @property
     def is_test(self):
         return ~self.is_train
 
@@ -59,6 +87,9 @@ class LabeledVector(object):
         if self.type is None:
             return np.zeros(self.y.shape)
         return self.type == TYPE_SOURCE
+
+    def reveal_labels(self, inds):
+        self.y[inds] = self.true_y[inds]
 
 class LabeledData(LabeledVector):
     def __init__(self):
@@ -99,8 +130,33 @@ class LabeledData(LabeledVector):
                 setattr(new_data,key,value)
         return new_data
 
+    def get_transfer_inds(self,labels_or_ids):
+        if self.is_regression:
+            return array_functions.find_set(self.data_set_ids,labels_or_ids)
+        else:
+            return array_functions.find_set(self.y,labels_or_ids)
+
+    def get_transfer_subset(self,labels_or_ids,include_unlabeled=False):
+        if self.is_regression:
+            inds = array_functions.find_set(self.data_set_ids,labels_or_ids)
+            if not include_unlabeled:
+                inds = inds & self.is_labeled
+        else:
+            inds = array_functions.find_set(self.y,labels_or_ids)
+            if include_unlabeled:
+                inds = inds & ~self.is_labeled
+        return self.get_subset(inds)
+
     def get_with_labels(self,labels):
         inds = array_functions.find_set(self.true_y,labels)
+        return self.get_subset(inds)
+
+    def get_data_set_ids(self, data_set_ids):
+        inds = array_functions.find_set(self.data_set_ids,data_set_ids)
+        return self.get_subset(inds)
+
+    def get_with_labels_and_unlabeled(self,labels):
+        inds = array_functions.find_set(self.true_y,labels) | ~self.is_labeled
         return self.get_subset(inds)
 
     def permute(self,permutation):
@@ -126,10 +182,10 @@ class LabeledData(LabeledVector):
         self.set_true_y()
 
     def set_train(self):
-        self.is_train = np.ones((self.n))
+        self.is_train[:] = True
 
     def set_target(self):
-        self.is_train = TYPE_TARGET*np.ones(self.n)
+        self.type = TYPE_TARGET*np.ones(self.n)
 
     def set_true_y(self):
         self.true_y = self.y
@@ -143,6 +199,16 @@ class LabeledData(LabeledVector):
             new_true_y[self.true_y == curr] = new
         self.y = new_y
         self.true_y = new_true_y
+
+    def remove_test_labels(self):
+        self.y[self.is_test] = np.nan
+
+    def rand_sample(self,perc=.1):
+        p = np.random.permutation(self.n)
+        m = np.ceil(perc*self.n)
+        to_use = p[:m]
+        return self.get_subset(to_use)
+
 
 class Data(LabeledData):
     def __init__(self):
@@ -176,16 +242,22 @@ class SplitData(object):
         self.splits = splits
         self.labels_to_keep = None
         self.labels_to_not_sample = {}
+        self.use_data_set_ids = True
 
     def get_split(self, i, num_labeled=None):
+        if 'use_data_set_ids' not in self.__dict__:
+            self.use_data_set_ids = True
         d = copy.deepcopy(self.data)
         split = self.splits[i]
         d.apply_split(split)
         if self.labels_to_keep is not None:
-            d = d.get_with_labels(self.labels_to_keep)
+            #d = d.get_with_labels(self.labels_to_keep)
+            d = d.get_transfer_subset(self.labels_to_keep)
         if num_labeled is not None:
             if d.is_regression:
                 labeled_inds = np.nonzero(d.is_train)[0]
+                if self.use_data_set_ids and d.data_set_ids is not None:
+                    labeled_inds = np.nonzero(d.is_train & (d.data_set_ids == 0))[0]
                 to_clear = labeled_inds[num_labeled:]
                 d.y[to_clear] = np.nan
             else:

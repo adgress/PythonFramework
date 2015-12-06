@@ -4,10 +4,90 @@ import numpy as np
 import inspect
 import scipy
 import sklearn
+from sklearn.metrics import pairwise
 import matplotlib as plt
 import matplotlib.pylab as pl
 import copy
 from sklearn import preprocessing
+from timer.timer import Timer
+from timer.timer import tic
+from timer.timer import toc
+
+
+def vec_to_2d(x):
+    return np.reshape(x,(len(x),1))
+
+#code from http://stackoverflow.com/questions/9185768/inverting-permutations-in-python
+def inv_permutation(perm):
+    inverse = [0] * len(perm)
+    for i, p in enumerate(perm):
+        inverse[p] = i
+    return np.asarray(inverse)
+
+def to_boolean(x, length=None):
+    assert x.ndim == 1
+    if not length:
+        length = max(x.size, x.max())
+    b = false(length)
+    b[x] = True
+    return b
+
+def make_laplacian_kNN(x,k,metric):
+    assert False, 'Make KNN'
+    W = pairwise.pairwise_distances(x,x,metric)
+    D = W.sum(1)
+    L = np.diag(D) - W
+    return L
+
+def make_laplacian_uniform(x,radius,metric):
+    W = pairwise.pairwise_distances(x,x,metric)
+    inds = W > radius
+    W[inds] = 0
+    W[~inds] = 1
+    W[np.diag(true(x.shape[0]))] = 0
+    W = W / (x.shape[0]*radius)
+    D = W.sum(1)
+    L = np.diag(D) - W
+    return L
+
+def make_laplacian(x, sigma, metric='euclidean'):
+    assert False, 'Normalize by 1/sigma?'
+    W = make_rbf(x,sigma,metric)
+    D = W.sum(1)
+    L = np.diag(D) - W
+    return L
+
+def make_rbf(x,sigma,metric='euclidean'):
+    if metric == 'cosine':
+        #This code may be faster for some matrices
+        # Code from http://stackoverflow.com/questions/17627219/whats-the-fastest-way-in-python-to-calculate-cosine-similarity-given-sparse-mat
+        '''
+        tic()
+        #x = x.toarray()
+        #similarity = np.dot(x, x.T)
+        similarity = (x.dot(x.T)).toarray()
+        square_mag = np.diag(similarity)
+        inv_square_mag = 1 / square_mag
+        inv_square_mag[np.isinf(inv_square_mag)] = 0
+        inv_mag = np.sqrt(inv_square_mag)
+        W = similarity * inv_mag
+        W = W.T * inv_mag
+        W = 1 - W
+        toc()
+        tic()
+        W2 = pairwise.pairwise_distances(x,x,metric)
+        toc()
+        '''
+        W = pairwise.pairwise_distances(x,x,metric)
+    else:
+        #tic()
+        W = pairwise.pairwise_distances(x,x,metric)
+        #toc()
+    W = np.square(W)
+    W = -sigma * W
+    W = np.exp(W)
+    return W
+
 def normalize_rows(x):
     return sklearn.preprocessing.normalize(x,axis=1,norm='l1')
 
@@ -35,6 +115,12 @@ def try_toarray(x):
     except:
         pass
     return x
+
+def plot_2d(x,y,data_set_ids=None):
+    if data_set_ids is None:
+        data_set_ids = np.zeros(y.size)
+    pl.scatter(x,y,alpha=.8,c=data_set_ids,s=60)
+    pl.show()
 
 def spy(m, prec=.001, size=5):
     pl.spy(m,precision=prec, markersize=size)

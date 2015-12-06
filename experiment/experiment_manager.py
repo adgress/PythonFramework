@@ -79,6 +79,7 @@ class MethodExperimentManager(ExperimentManager):
         if os.path.isfile(results_file):
             print results_file + ' already exists - skipping'
             return
+        learner = self.configs.learner
         for i,num_labels in enumerate(self.configs.num_labels):
             experiment_results = self._load_temp_experiment_file(results_file,num_labels)
             if not experiment_results:
@@ -90,7 +91,7 @@ class MethodExperimentManager(ExperimentManager):
                     if not curr_results:
                         print 'split: ' + str(split)
                         curr_data = data_and_splits.get_split(split, num_labels)
-                        curr_results = self.configs.learner.train_and_test(curr_data)
+                        curr_results = learner.train_and_test(curr_data)
                         helper_functions.save_object(self._temp_split_file_name(results_file,split),curr_results)
                     experiment_results.append(curr_results)
                 helper_functions.save_object(self._temp_experiment_file_name(results_file,num_labels),experiment_results)

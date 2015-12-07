@@ -47,9 +47,8 @@ class Method(Saveable):
     def run_method(self, data):
         self.train(data)
         if data.x.shape[0] == 0:
+            assert False
             self.train(data)
-
-
         return self.predict(data)
 
     def _create_cv_splits(self,data):
@@ -92,6 +91,7 @@ class Method(Saveable):
 
         min_error = errors.min()
         best_params = param_grid[errors.argmin()]
+        print best_params
         return best_params
 
     def process_data(self, data):
@@ -111,9 +111,11 @@ class Method(Saveable):
 
 
     def train_and_test(self, data):
+        self.should_plot_g = False
         data = self.process_data(data)
         best_params = self.run_cross_validation(data)
         self.set_params(**best_params)
+        self.should_plot_g = True
         output = self.run_method(data)
         f = FoldResults()
         f.prediction = output
@@ -206,7 +208,21 @@ class NadarayaWatsonMethod(Method):
             o.fu = o.y
         return o
 
+    def tune_loo(self, data):
+        train_data = data.get_subset(data.is_train)
 
+        param_grid = list(grid_search.ParameterGrid(self.cv_params))
+        if not self.cv_params:
+            return
+        errors = np.empty(len(param_grid))
+        for param_idx, params in enumerate(param_grid):
+            self.set_params(**params)
+            results = self.predict_loo(train_data)
+            errors[param_idx] = results.compute_error_train(self.configs.loss_function)
+        min_error = errors.min()
+        best_params = param_grid[errors.argmin()]
+        #print best_params
+        self.set_params(**best_params)
 
     @property
     def prefix(self):

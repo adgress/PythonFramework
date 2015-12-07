@@ -80,6 +80,13 @@ class FoldResults(object):
         self.prediction = Output()
         self.actual = Output()
 
+    def compute_error(self,loss_function):
+        return loss_function.compute_score(
+            self.prediction.y,
+            self.prediction.true_y,
+            ~self.prediction.is_train
+        )
+
 class Output(data_lib.LabeledVector):
     def __init__(self,data=None):
         super(data_lib.LabeledVector, self).__init__()
@@ -94,6 +101,20 @@ class Output(data_lib.LabeledVector):
             self.true_y = np.empty(0)
             self.type = np.empty(0)
         self.fu = np.empty(0)
+
+    def compute_error_train(self,loss_function):
+        return loss_function.compute_score(
+            self.y,
+            self.true_y,
+            self.is_train
+        )
+
+    def compute_error(self,loss_function):
+        return loss_function.compute_score(
+            self.y,
+            self.true_y,
+            ~self.is_train
+        )
 
 class ClassificationOutput(Output):
     def __init__(self,data=None):

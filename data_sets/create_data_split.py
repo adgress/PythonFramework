@@ -92,4 +92,5 @@ class DataSplitter(object):
 if __name__ == '__main__':
     #split_data(create_data_set.boston_housing_raw_data_file, boston_housing_configs())
     #split_data(create_data_set.ng_raw_data_file, ng_configs())
-    split_data(create_data_set.synthetic_step_transfer_file, synthetic_step_transfer_configs())
+    #split_data(create_data_set.synthetic_step_transfer_file, synthetic_step_transfer_configs())
+    split_data(create_data_set.synthetic_step_linear_transfer_file, synthetic_step_transfer_configs())

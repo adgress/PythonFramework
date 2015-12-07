@@ -33,10 +33,17 @@ def to_boolean(x, length=None):
     return b
 
 def make_laplacian_kNN(x,k,metric):
-    assert False, 'Make KNN'
-    W = pairwise.pairwise_distances(x,x,metric)
+    dists = pairwise.pairwise_distances(x,x,metric)
+    dists[np.diag(true(x.shape[0]))] = np.inf
+    inds = dists.argsort()
+    to_keep = inds[:,:k]
+    W = np.zeros(dists.shape)
+    W_inds = np.asarray(range(x.shape[0]))
+    for i in range(k):
+        W[W_inds,to_keep[:,i]] = dists[W_inds,to_keep[:,i]]
     D = W.sum(1)
     L = np.diag(D) - W
+    L = scipy.sparse.csc_matrix(L)
     return L
 
 def make_laplacian_uniform(x,radius,metric):
@@ -116,11 +123,25 @@ def try_toarray(x):
         pass
     return x
 
+def move_fig(fig):
+    manager = fig.canvas.manager
+    w = manager.canvas.width()
+    h = manager.canvas.height()
+    manager.window.setGeometry(2000,200,w,h)
+
+
 def plot_2d(x,y,data_set_ids=None):
+    pl.close()
+    fig = pl.figure(1)
     if data_set_ids is None:
         data_set_ids = np.zeros(y.size)
     pl.scatter(x,y,alpha=.8,c=data_set_ids,s=60)
+    manager = pl.get_current_fig_manager()
+    #manager.window.SetPosition((1500, 500))
+    #fig.canvas.manager.move(1000)
+    move_fig(fig)
     pl.show()
+    pass
 
 def spy(m, prec=.001, size=5):
     pl.spy(m,precision=prec, markersize=size)

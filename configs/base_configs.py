@@ -3,6 +3,7 @@ from loss_functions import loss_function
 DATA_NG = 1
 DATA_BOSTONG_HOUSING = 2
 DATA_SYNTHETIC_STEP_TRANSFER = 3
+DATA_SYNTHETIC_STEP_LINEAR_TRANSFER = 4
 
 class Configs(object):
     def __init__(self):

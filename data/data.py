@@ -144,7 +144,7 @@ class LabeledData(LabeledVector):
         else:
             inds = array_functions.find_set(self.y,labels_or_ids)
             if include_unlabeled:
-                inds = inds & ~self.is_labeled
+                inds = inds | ~self.is_labeled
         return self.get_subset(inds)
 
     def get_with_labels(self,labels):

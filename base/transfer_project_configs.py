@@ -18,9 +18,9 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
 
 #data_set_to_use = bc.DATA_BOSTONG_HOUSING
-#data_set_to_use = bc.DATA_NG
-data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
-
+data_set_to_use = bc.DATA_NG
+#data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
+#data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
 
 
 
@@ -36,7 +36,7 @@ class ProjectConfigs(bc.ProjectConfigs):
 
         if data_set_to_use == bc.DATA_NG:
             self.set_ng_transfer()
-            self.num_labels = range(20,61,20)
+            self.num_labels = range(10,61,20)
         elif data_set_to_use == bc.DATA_BOSTONG_HOUSING:
             self.set_boston_housing()
             self.num_labels = range(20,61,20)
@@ -44,10 +44,24 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.set_synthetic_step_transfer()
             self.num_labels = range(10,31,10)
             #self.num_labels = [50]
+        elif data_set_to_use == bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER:
+            self.set_synthetic_step_linear_transfer()
+            #self.num_labels = [20]
+            self.num_labels = range(10,31,10)
         else:
             assert False
 
 
+    def set_synthetic_step_linear_transfer(self):
+        self.loss_function = loss_function.MeanSquaredError()
+        self.data_dir = 'data_sets/synthetic_step_linear_transfer'
+        self.data_name = 'synthetic_step_linear_transfer'
+        self.data_set_file_name = 'split_data.pkl'
+        self.results_dir = 'synthetic_step_linear_transfer'
+        self.target_labels = np.asarray([0])
+        self.source_labels = np.asarray([1])
+        self.labels_to_keep = np.concatenate((self.target_labels,self.source_labels))
+        self.labels_to_not_sample = self.source_labels
 
     def set_synthetic_step_transfer(self):
         self.loss_function = loss_function.MeanSquaredError()

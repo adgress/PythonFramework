@@ -1,3 +1,5 @@
+import methods.local_transfer_methods
+
 __author__ = 'Aubrey'
 
 from configs import base_configs as bc
@@ -46,8 +48,8 @@ class ProjectConfigs(bc.ProjectConfigs):
             #self.num_labels = [50]
         elif data_set_to_use == bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER:
             self.set_synthetic_step_linear_transfer()
-            #self.num_labels = [20]
-            self.num_labels = range(10,31,10)
+            self.num_labels = [20]
+            #self.num_labels = range(10,31,10)
         else:
             assert False
 
@@ -101,7 +103,7 @@ class MainConfigs(bc.MainConfigs):
         log_reg = method.SKLLogisticRegression(MethodConfigs())
         target_knn = transfer_methods.TargetTranfer(method_configs)
         target_knn.base_learner = method.SKLKNN(method_configs)
-        local_transfer = transfer_methods.LocalTransfer(method_configs)
+        local_transfer = methods.local_transfer_methods.LocalTransfer(method_configs)
 
         scipy_ridge_reg = scipy_opt_methods.ScipyOptRidgeRegression(method_configs)
 

@@ -8,6 +8,7 @@ import cvxpy as cvx
 import numpy as np
 from loss_functions import loss_function
 import matplotlib.pyplot as plt
+from methods import scipy_opt_methods
 
 enable_plotting = True
 
@@ -66,7 +67,8 @@ class LocalTransfer(FuseTransfer):
         #self.cv_params['sigma'] = 10**np.asarray(range(-4,4),dtype='float64')
         self.sigma = 100
         #self.cv_params['radius'] = np.asarray([.01, .05, .1, .15, .2],dtype='float64')
-        self.cv_params['C'] = 10**np.asarray(range(-4,4),dtype='float64')
+        #self.cv_params['C'] = 10**np.asarray(range(-4,4),dtype='float64')
+        self.C = 1e-10
         self.k = 3
         #self.C = 10
         #self.radius = .05
@@ -77,15 +79,10 @@ class LocalTransfer(FuseTransfer):
         self.learn_g_just_labeled = True
         self.should_plot_g = False
         self.use_fused_lasso = True
+        self.g_learner = scipy_opt_methods.ScipyOptCombinePrediction(configs)
 
     def train(self, data):
-        #self.C = .00000001
-        #self.C = 0
-        #x = cvx.Variable()
-        #y = cvx.Variable()
-        #constraints = [x + y == 1, x - y >= 1]
-
-        assert not data.is_regression, 'Confirm this works!'
+        #assert not data.is_regression, 'Confirm this works!'
 
         if data.is_regression:
             target_data = data.get_transfer_subset(self.configs.target_labels, include_unlabeled=True)
@@ -99,7 +96,7 @@ class LocalTransfer(FuseTransfer):
         target_labels = self.configs.target_labels
         if data.is_regression:
             y_t = array_functions.vec_to_2d(o.fu)
-            y_s = array_functions.vec_to_2d(o_source.fu)
+            y_s = array_functions.vec_to_2d(o_source.fu[is_labeled])
             y_true = array_functions.vec_to_2d(o.true_y)
         else:
             y_t = o.fu[:,target_labels]
@@ -116,8 +113,26 @@ class LocalTransfer(FuseTransfer):
         n_labeled = len(labeled_inds)
         metric='euclidean'
         #metric='cosine'
-        if self.learn_g_just_labeled:
+        if self.g_learner is not None:
+            if data.is_regression:
+                a = y_s - y_t
+                b = y_t - y_true
+            else:
+                a = y_s[:,0] - y_t[:,0]
+                b = y_t[:,0] - y_true[:,0]
 
+            s = np.hstack((a,b))
+            s[parametric_data.x.argsort(0)]
+
+            parametric_data = target_data.get_subset(is_labeled)
+            parametric_data.a = a
+            parametric_data.b = b
+            parametric_data.set_defaults()
+            self.g_learner.C = self.C
+            self.g_learner.cv_params = {}
+            self.g_learner.train_and_test(parametric_data)
+
+        elif self.learn_g_just_labeled:
             g = cvx.Variable(n_labeled)
             '''
             L = array_functions.make_laplacian_uniform(target_data.x[labeled_inds,:],self.radius,metric) \
@@ -146,6 +161,7 @@ class LocalTransfer(FuseTransfer):
             else:
                 reg = cvx.quad_form(g,L)
             if not data.is_regression:
+                assert False, 'Should I use is_labeled?'
                 loss = cvx.sum_entries(
                     cvx.power(
                         cvx.mul_elemwise(y_s[:,0], g) + cvx.mul_elemwise(y_t[:,0], (1-g)) - y_true[:,0],
@@ -233,7 +249,12 @@ class LocalTransfer(FuseTransfer):
                 self.g_x_low = self.g[self.g_x[:,0] < .5]
                 self.g_x_high = self.g[self.g_x[:,0] >= .5]
 
+        if self.should_plot_g and enable_plotting and target_data.x.shape[1] == 1:
+            x = np.linspace(0,1)
+            g = self.g_learner.predict_g(x)
+            array_functions.plot_2d(x,g)
         pass
+
 
     def train_and_test(self, data):
         #source_data = data.get_with_labels(self.configs.source_labels)
@@ -257,11 +278,20 @@ class LocalTransfer(FuseTransfer):
         o2 = self.target_learner.predict(data)
         is_target = data.is_target
         o_source = self.source_learner.predict(data.get_subset(is_target))
-        assert o.fu.ndim == 2
+        if not data.is_regression:
+            assert o.fu.ndim == 2
+        else:
+            assert o.fu.ndim == 1
+            assert o_source.fu.ndim == 1
+            o.fu = o.fu.reshape((o.fu.size,1))
+            o_source.fu = o_source.fu.reshape((o_source.fu.size,1))
         for i in range(o.fu.shape[1]):
             fu_t = o.fu[is_target,i]
             fu_s = o_source.fu[:,i]
-            pred = np.multiply(fu_t,1-self.g) + np.multiply(fu_s,self.g)
+            if self.g_learner is not None:
+                pred = self.g_learner.combine_predictions(data.x[is_target,:],fu_s,fu_t)
+            else:
+                pred = np.multiply(fu_t,1-self.g) + np.multiply(fu_s,self.g)
             o.fu[is_target,i] = pred
             #o.fu[is_target] = np.multiply(o.fu[is_target],(1-self.g)) + np.multiply(self.g,o_source.fu)
         if data.is_regression:
@@ -278,6 +308,9 @@ class LocalTransfer(FuseTransfer):
 
     @property
     def prefix(self):
-        return 'LocalTransfer'
+        s = 'LocalTransfer'
+        if 'g_learner' in self.__dict__ and self.g_learner is not None:
+            s += '-Parametric'
+        return s
 
 

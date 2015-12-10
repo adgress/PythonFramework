@@ -5,7 +5,9 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from data import data as data_class
 from utility import helper_functions
 from utility import array_functions
+import scipy
 import numpy as np
+import pandas as pd
 
 ng_a = np.asarray(0)
 ng_c = np.asarray(range(1,6))
@@ -121,8 +123,68 @@ def create_boston_housing(file_dir=''):
         s = file_dir + '/' + s
     helper_functions.save_object(s,data)
 
+def create_diabetes():
+    diabetes_data = datasets.load_diabetes()
+    x = diabetes_data.data
+    y = diabetes_data.target
+    for i in range(x.shape[1]):
+        xi = array_functions.normalize(x[:,i])
+        yi = array_functions.normalize(y)
+        array_functions.plot_2d(xi,yi)
+        pass
+    assert False
+
+def create_linnerud():
+    linnerud_data = datasets.load_linnerud()
+    assert False
+
+def create_digits():
+    digits_data = datasets.load_digits()
+    x = digits_data.data
+    y = digits_data.target
+    for i in range(x.shape[1]):
+        xi = array_functions.normalize(x[:,i])
+        yi = y
+        array_functions.plot_2d(xi,yi,alpha=.01)
+        pass
+    pass
+
+def create_covtype():
+    covtype_data = datasets.fetch_covtype()
+    print covtype_data.__dict__
+    data = data_class.Data()
+    data.x = covtype_data.data
+    data.y = covtype_data.target
+    helper_functions.save_object('data_sets/covtype/raw_data.pkl')
+    pass
+
+def create_landmine():
+    landmine_data = scipy.io.loadmat('LandMine/LandmineData.mat')
+    pass
+
+def create_bike_sharing():
+    file = 'bike_sharing/day.csv'
+    columns = [0] + range(2,16)
+    all_field_names = pd.read_csv(file,nrows=1,dtype='string')
+    all_field_names = np.asarray(all_field_names.keys())
+    used_field_names = all_field_names[columns]
+    bike_data = np.loadtxt(file,skiprows=1,delimiter=',',usecols=columns)
+    domain_ind = used_field_names == 'yr'
+    domain_ids = bike_data[:,domain_ind]
+    inds_to_keep = (used_field_names == 'temp') | (used_field_names == 'atemp')
+    bike_data = bike_data[:,inds_to_keep]
+    used_field_names = used_field_names[inds_to_keep]
+    for i in range(bike_data.shape[1]):
+        xi = bike_data[:,i]
+        yi = array_functions.normalize(bike_data[:,-1])
+        #array_functions.plot_2d(xi,yi,alpha=.1,title=used_field_names[i],data_set_ids=domain_ids)
+        array_functions.plot_2d_sub(xi,yi,alpha=.1,title=used_field_names[i],data_set_ids=domain_ids)
+        pass
+    pass
+
 if __name__ == "__main__":
     #create_boston_housing()
     #create_20ng_data()
     #create_synthetic_step_transfer()
-    create_synthetic_step_linear_transfer()
+    #create_synthetic_step_linear_transfer()
+    create_bike_sharing()

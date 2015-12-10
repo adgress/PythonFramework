@@ -13,6 +13,18 @@ from timer.timer import Timer
 from timer.timer import tic
 from timer.timer import toc
 
+def add_bias(x):
+    n = x.shape[0]
+    return np.hstack((np.ones((n, 1)), x))
+
+def normalize(x):
+    x_min = x.min()
+    x_max = x.max()
+    delta = x_max-x_min
+    if delta == 0:
+        delta = 1
+    x = (x - x_min).astype('float') / delta
+    return x
 
 def vec_to_2d(x):
     return np.reshape(x,(len(x),1))
@@ -127,18 +139,37 @@ def move_fig(fig):
     manager = fig.canvas.manager
     w = manager.canvas.width()
     h = manager.canvas.height()
-    manager.window.setGeometry(2000,200,w,h)
+    manager.window.setGeometry(3000,200,w,h)
 
+def plot_2d_sub(x,y,data_set_ids=None,alpha=1,title=None):
+    pl.close()
+    fig = pl.figure(4)
+    if data_set_ids is None:
+        data_set_ids = np.zeros(y.size)
+    u = np.unique(data_set_ids)
+    fig.suptitle(title)
+    for index, val in enumerate(u):
+        if index == 0:
+            ax1 = pl.subplot(len(u),1,index+1)
 
-def plot_2d(x,y,data_set_ids=None):
+        else:
+            pl.subplot(len(u),1,index+1,sharex=ax1,sharey=ax1)
+        #pl.title(title)
+        inds = data_set_ids == val
+        inds = inds.squeeze()
+        pl.ylabel(str(val))
+        pl.scatter(x[inds],y[inds],alpha=alpha,c='r',s=60)
+    move_fig(fig)
+    pl.show()
+    pass
+
+def plot_2d(x,y,data_set_ids=None,alpha=1,title=None):
     pl.close()
     fig = pl.figure(1)
     if data_set_ids is None:
         data_set_ids = np.zeros(y.size)
-    pl.scatter(x,y,alpha=.8,c=data_set_ids,s=60)
-    manager = pl.get_current_fig_manager()
-    #manager.window.SetPosition((1500, 500))
-    #fig.canvas.manager.move(1000)
+    pl.title(title)
+    pl.scatter(x,y,alpha=alpha,c=data_set_ids,s=60)
     move_fig(fig)
     pl.show()
     pass

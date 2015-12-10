@@ -182,7 +182,7 @@ class LabeledData(LabeledVector):
         self.set_true_y()
 
     def set_train(self):
-        self.is_train[:] = True
+        self.is_train = array_functions.true(self.n)
 
     def set_target(self):
         self.type = TYPE_TARGET*np.ones(self.n)

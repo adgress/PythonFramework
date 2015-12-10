@@ -18,17 +18,17 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
 
 #data_set_to_use = bc.DATA_BOSTONG_HOUSING
-data_set_to_use = bc.DATA_NG
+#data_set_to_use = bc.DATA_NG
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
-#data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
+data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
 
 
 
 class ProjectConfigs(bc.ProjectConfigs):
     def __init__(self):
         super(ProjectConfigs, self).__init__()
-        self.target_labels = []
-        self.source_labels = []
+        self.target_labels = np.empty(0)
+        self.source_labels = np.empty(0)
         self.project_dir = 'base'
         self.num_labels = range(40,201,40)
         self.num_splits = 10
@@ -36,7 +36,7 @@ class ProjectConfigs(bc.ProjectConfigs):
 
         if data_set_to_use == bc.DATA_NG:
             self.set_ng_transfer()
-            self.num_labels = range(10,61,20)
+            self.num_labels = range(20,61,20)
         elif data_set_to_use == bc.DATA_BOSTONG_HOUSING:
             self.set_boston_housing()
             self.num_labels = range(20,61,20)
@@ -89,6 +89,7 @@ class MainConfigs(bc.MainConfigs):
         self.copy_fields(pc,pc_fields_to_copy)
         from methods import transfer_methods
         from methods import method
+        from methods import scipy_opt_methods
         method_configs = MethodConfigs()
 
         fuse_log_reg = transfer_methods.FuseTransfer(method_configs)
@@ -102,6 +103,9 @@ class MainConfigs(bc.MainConfigs):
         target_knn.base_learner = method.SKLKNN(method_configs)
         local_transfer = transfer_methods.LocalTransfer(method_configs)
 
+        scipy_ridge_reg = scipy_opt_methods.ScipyOptRidgeRegression(method_configs)
+
+        #self.learner = scipy_ridge_reg
         self.learner = local_transfer
         #self.learner = fuse_nw
         #self.learner = target_nw
@@ -129,7 +133,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             'SKL-RidgeReg.pkl',
             'TargetTransfer+SKL-KNN.pkl',
             'LocalTransfer.pkl',
-            'FuseTransfer+NW.pkl'
+            'FuseTransfer+NW.pkl',
+            'LocalTransfer-Parametric.pkl'
         ]
 
 class BatchConfigs(bc.BatchConfigs):

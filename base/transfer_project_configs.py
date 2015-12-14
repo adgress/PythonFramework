@@ -11,6 +11,12 @@ for i in range(0,4):
     a = [create_data_set.ng_c[i],create_data_set.ng_r[i]]
     CR.append(np.asarray(a))
 
+ST = []
+for i in range(0,4):
+    a = [create_data_set.ng_s[i],create_data_set.ng_t[i]]
+    ST.append(np.asarray(a))
+
+
 def create_project_configs():
     return ProjectConfigs()
 
@@ -38,6 +44,7 @@ class ProjectConfigs(bc.ProjectConfigs):
 
         if data_set_to_use == bc.DATA_NG:
             self.set_ng_transfer()
+            #self.num_labels = range(20,61,20) + [120, 180]
             self.num_labels = range(20,61,20)
         elif data_set_to_use == bc.DATA_BOSTONG_HOUSING:
             self.set_boston_housing()
@@ -48,10 +55,13 @@ class ProjectConfigs(bc.ProjectConfigs):
             #self.num_labels = [50]
         elif data_set_to_use == bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER:
             self.set_synthetic_step_linear_transfer()
-            self.num_labels = [20]
-            #self.num_labels = range(10,31,10)
+            #self.num_labels = [20]
+            self.num_labels = range(10,31,10)
         else:
             assert False
+
+        self.labels_to_not_sample = self.source_labels.ravel()
+        self.labels_to_keep = np.concatenate((self.target_labels,self.source_labels.ravel()))
 
 
     def set_synthetic_step_linear_transfer(self):
@@ -62,8 +72,6 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.results_dir = 'synthetic_step_linear_transfer'
         self.target_labels = np.asarray([0])
         self.source_labels = np.asarray([1])
-        self.labels_to_keep = np.concatenate((self.target_labels,self.source_labels))
-        self.labels_to_not_sample = self.source_labels
 
     def set_synthetic_step_transfer(self):
         self.loss_function = loss_function.MeanSquaredError()
@@ -73,16 +81,13 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.results_dir = 'synthetic_step_transfer'
         self.target_labels = np.asarray([0])
         self.source_labels = np.asarray([1])
-        self.labels_to_keep = np.concatenate((self.target_labels,self.source_labels))
-        self.labels_to_not_sample = self.source_labels
 
     def set_ng_transfer(self):
         self.loss_function = loss_function.ZeroOneError()
         self.set_ng()
         self.target_labels = CR[0]
-        self.source_labels = CR[1]
-        self.labels_to_keep = np.concatenate((self.target_labels,self.source_labels))
-        self.labels_to_not_sample = self.source_labels
+        #self.source_labels = CR[1]
+        self.source_labels = np.vstack((CR[1], ST[1])).T
 
 class MainConfigs(bc.MainConfigs):
     def __init__(self):
@@ -94,6 +99,9 @@ class MainConfigs(bc.MainConfigs):
         from methods import scipy_opt_methods
         method_configs = MethodConfigs()
 
+        if data_set_to_use == bc.DATA_NG:
+            method_configs.metric = 'cosine'
+
         fuse_log_reg = transfer_methods.FuseTransfer(method_configs)
         fuse_nw = transfer_methods.FuseTransfer(method_configs)
         fuse_nw.base_learner = method.NadarayaWatsonMethod(method_configs)
@@ -104,9 +112,12 @@ class MainConfigs(bc.MainConfigs):
         target_knn = transfer_methods.TargetTranfer(method_configs)
         target_knn.base_learner = method.SKLKNN(method_configs)
         local_transfer = methods.local_transfer_methods.LocalTransfer(method_configs)
-
         scipy_ridge_reg = scipy_opt_methods.ScipyOptRidgeRegression(method_configs)
+        model_transfer = methods.transfer_methods.ModelSelectionTransfer(method_configs)
+        hyp_transfer = methods.local_transfer_methods.HypothesisTransfer(method_configs)
 
+        #self.learner = hyp_transfer
+        #self.learner = model_transfer
         #self.learner = scipy_ridge_reg
         self.learner = local_transfer
         #self.learner = fuse_nw
@@ -129,6 +140,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files = [
             'TargetTransfer+SKL-LogReg.pkl',
             'FuseTransfer+SKL-LogReg.pkl',
+            'ModelSelTransfer.pkl',
+            'HypothesisTransfer.pkl',
             'SKL-LogReg.pkl',
             'TargetTransfer+NW.pkl',
             'NW.pkl',

@@ -13,6 +13,9 @@ from timer.timer import Timer
 from timer.timer import tic
 from timer.timer import toc
 
+def relative_error(x,y):
+    return np.linalg.norm(x-y)/np.linalg.norm(x)
+
 def add_bias(x):
     n = x.shape[0]
     return np.hstack((np.ones((n, 1)), x))

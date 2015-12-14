@@ -191,12 +191,17 @@ class LabeledData(LabeledVector):
         self.true_y = self.y
 
     def change_labels(self, curr_labels, new_labels):
-        assert len(curr_labels) == len(new_labels)
-        new_y = self.y
-        new_true_y = self.true_y
-        for curr, new in zip(curr_labels,new_labels):
-            new_y[self.y == curr] = new
-            new_true_y[self.true_y == curr] = new
+        #assert len(curr_labels) == len(new_labels)
+        assert curr_labels.shape[0] == new_labels.shape[0]
+        if curr_labels.ndim == 1:
+            curr_labels = np.expand_dims(curr_labels,1)
+        new_y = self.y.copy()
+        new_true_y = self.true_y.copy()
+        for i in range(curr_labels.shape[1]):
+            l = curr_labels[:,i]
+            for curr, new in zip(l, new_labels):
+                new_y[self.y == curr] = new
+                new_true_y[self.true_y == curr] = new
         self.y = new_y
         self.true_y = new_true_y
 

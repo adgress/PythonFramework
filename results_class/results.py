@@ -79,6 +79,7 @@ class FoldResults(object):
     def __init__(self):
         self.prediction = Output()
         self.actual = Output()
+        self.estimated_error = None
 
     def compute_error(self,loss_function):
         return loss_function.compute_score(

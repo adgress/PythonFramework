@@ -30,6 +30,10 @@ class TargetTranfer(method.Method):
     def predict(self, data):
         return self.base_learner.predict(data)
 
+    @method.Method.estimated_error.getter
+    def estimated_error(self):
+        return self.base_learner.estimated_error
+
     @property
     def prefix(self):
         return 'TargetTransfer+' + self.base_learner.prefix
@@ -43,11 +47,11 @@ class FuseTransfer(TargetTranfer):
         target_labels = self.configs.target_labels
         data_copy = copy.deepcopy(data)
         #source_inds = array_functions.find_set(data_copy.true_y,source_labels)
-        source_inds = data.get_transfer_inds(source_labels)
+        source_inds = data.get_transfer_inds(source_labels.ravel())
         if not data_copy.is_regression:
             data_copy.change_labels(source_labels,target_labels)
         data_copy.type[source_inds] = data_lib.TYPE_SOURCE
-        data_copy = data_copy.get_transfer_subset(np.concatenate((source_labels,target_labels)),include_unlabeled=True)
+        data_copy = data_copy.get_transfer_subset(np.concatenate((source_labels.ravel(),target_labels)),include_unlabeled=True)
         data_copy.is_train[data_copy.is_source] = True
         data_copy.reveal_labels(data_copy.is_source)
         return data_copy
@@ -57,3 +61,14 @@ class FuseTransfer(TargetTranfer):
         return 'FuseTransfer+' + self.base_learner.prefix
 
 
+class ModelSelectionTransfer(method.ModelSelectionMethod):
+    def __init__(self, configs=None):
+        super(ModelSelectionTransfer, self).__init__(configs)
+        self.methods.append(TargetTranfer(configs))
+        self.methods.append(FuseTransfer(configs))
+        for m in self.methods:
+            m.base_learner = method.NadarayaWatsonMethod(configs)
+
+    @property
+    def prefix(self):
+        return 'ModelSelTransfer'

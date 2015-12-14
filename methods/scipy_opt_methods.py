@@ -8,6 +8,7 @@ from numpy.linalg import norm
 import math
 from results_class import results
 from data import data as data_lib
+from timer.timer import tic,toc
 
 class ScipyOptRidgeRegression(method.Method):
     def __init__(self,configs=base_configs.MethodConfigs()):
@@ -56,6 +57,7 @@ class ScipyOptCombinePrediction(method.Method):
     def __init__(self,configs=base_configs.MethodConfigs()):
         super(ScipyOptCombinePrediction, self).__init__(configs)
         self.cv_params['C'] = 10**np.asarray(range(-4,4),dtype='float64')
+        self.max_value = 1
 
     def train(self, data):
         f = self.create_eval(data, self.C)
@@ -70,7 +72,7 @@ class ScipyOptCombinePrediction(method.Method):
         x = data.x
         a = np.squeeze(data.a)
         b = np.squeeze(data.b)
-        args = (x,a,b,self.C)
+        args = (x,a,b,self.C,self.max_value)
         results = optimize.minimize(f,w0,method=method,jac=g,options=options,args=args)
         compare_results = False
         if compare_results:
@@ -79,6 +81,7 @@ class ScipyOptCombinePrediction(method.Method):
             print 'Rel Error - w: ' + str(norm(err[1:])/norm(results2.x[1:]))
             print 'Rel Error - bias: ' + str(norm(err[0])/norm(results2.x[0]))
             print 'Rel Error - f(w*): ' + str(norm(results.fun-results2.fun)/norm(results2.fun))
+            results = results2
 
         self.w = results.x[1:]
         self.b = results.x[0]
@@ -86,7 +89,7 @@ class ScipyOptCombinePrediction(method.Method):
 
     def predict(self, data):
         #sig = scipy.special.expit(data.x.dot(self.w) + self.b)
-        sig = ScipyOptCombinePrediction.sigmoid(data.x,self.w,self.b)
+        sig = ScipyOptCombinePrediction.sigmoid(data.x,self.w,self.b,self.max_value)
         a = np.squeeze(data.a)
         p = np.multiply(sig,a)
 
@@ -94,62 +97,60 @@ class ScipyOptCombinePrediction(method.Method):
         o.fu = p
 
         if not data.is_regression:
-            y = p.argmax(1)
+            #y = p.argmax(1)
+            y = p
         else:
             y = p
         o.y = y
         return o
 
-    @staticmethod
-    def sigmoid(x, w, b):
-        k = 1
-        c = k*(x.dot(w) + b)
-        return scipy.special.expit(c)
+    def combine_predictions(self,x,y_source,y_target):
+        #s = scipy.special.expit(x.dot(self.w) + self.b)
+        s = ScipyOptCombinePrediction.sigmoid(x,self.w,self.b,self.max_value)
+        return np.multiply(s,y_source) + np.multiply(1-s,y_target)
 
     def predict_g(self, x):
         if x.ndim == 1:
             x = np.expand_dims(x,1)
         #g = scipy.special.expit(x.dot(self.w) + self.b)
-        g = ScipyOptCombinePrediction.sigmoid(x,self.w,self.b)
+        g = ScipyOptCombinePrediction.sigmoid(x,self.w,self.b,self.max_value)
         return g
 
     @staticmethod
-    def eval(w,x,a,b,C):
+    def sigmoid(x, w, b, max_value):
+        k = 1
+        c = k*(x.dot(w) + b)
+        return max_value*scipy.special.expit(c)
+
+    @staticmethod
+    def eval(w,x,a,b,C,max_value):
         #w[0] = 0
         #sig = scipy.special.expit(x.dot(w[1:]) + w[0])
-        sig = ScipyOptCombinePrediction.sigmoid(x,w[1:],w[0])
+        sig = ScipyOptCombinePrediction.sigmoid(x,w[1:],w[0],max_value)
         #sig2 = 1 / (1 + math.exp(-x[0,:].dot(w[1:]) - w[0]))
         #diff = sig[0]-sig2
         #assert math.fabs(diff) < 1e-12
-        return norm(np.multiply(sig,a) - b)**2 + C*norm(w[1:])**2
+        return norm(np.multiply(sig,a) + b)**2 + C*norm(w[1:])**2
 
     @staticmethod
-    def gradient(w,x,a,b,C):
+    def gradient(w,x,a,b,C,max_value):
         #w[0] = 0
         n = x.shape[0]
         p = x.shape[1]
 
 
         #sig = scipy.special.expit(x.dot(w[1:]) + w[0])
-        sig = ScipyOptCombinePrediction.sigmoid(x,w[1:],w[0])
-        t = np.multiply(sig,a) - b
+        sig = ScipyOptCombinePrediction.sigmoid(x,w[1:],w[0],max_value)
+        t = np.multiply(sig,a) + b
         t = np.multiply(t,a)
         ss = np.multiply(sig,1-sig)
         t = np.multiply(t,ss)
         t *= 2
+        t *= max_value
         #Regularization component of gradient
-        g =  np.asarray(C*2*w)
-        g[0] = 0
 
-        for i in range(n):
-            xi = array_functions.try_toarray(x[i,:])
-            gi = (t[i]*xi).T
-            gi = np.squeeze(gi)
-            #g[1:] = g[1:] + gi
-            g[1:] = g[1:] + gi
-            g[0] = g[0] + t[i]
-        #return g.toarray()
-        #print 'g norm: ' + str(norm(g))
+        g = x.T.dot(t)
+        g = np.insert(g,0,t.sum())
         return g
 
 
@@ -159,7 +160,3 @@ class ScipyOptCombinePrediction(method.Method):
     def create_gradient(self,data,C):
         return ScipyOptCombinePrediction.gradient
 
-    def combine_predictions(self,x,y_source,y_target):
-        #s = scipy.special.expit(x.dot(self.w) + self.b)
-        s = ScipyOptCombinePrediction.sigmoid(x,self.w,self.b)
-        return np.multiply(s,y_source) + np.multiply(1-s,y_target)

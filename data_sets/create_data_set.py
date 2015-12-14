@@ -68,7 +68,7 @@ def create_20ng_data(file_dir=''):
         s = file_dir + '/' + s
     helper_functions.save_object(s,data)
 
-
+'''
 def create_synthetic_step_linear_transfer(file_dir=''):
     n_target = 100
     n_source = 100
@@ -83,12 +83,12 @@ def create_synthetic_step_linear_transfer(file_dir=''):
     data.y += np.random.normal(0,sigma,n)
     data.set_defaults()
     data.is_regression = True
-    #array_functions.plot_2d(data.x,data.y,data.data_set_ids)
+    array_functions.plot_2d(data.x,data.y,data.data_set_ids)
     s = synthetic_step_transfer_file
     if file_dir != '':
         s = file_dir + '/' + s
     helper_functions.save_object(s,data)
-
+'''
 
 def create_synthetic_step_linear_transfer(file_dir=''):
     n_target = 100
@@ -104,7 +104,7 @@ def create_synthetic_step_linear_transfer(file_dir=''):
     data.y += np.random.normal(0,sigma,n)
     data.set_defaults()
     data.is_regression = True
-    array_functions.plot_2d(data.x,data.y,data.data_set_ids)
+    array_functions.plot_2d(data.x,data.y,data.data_set_ids,title='Linear Step Data Set')
     s = synthetic_step_linear_transfer_file
     if file_dir != '':
         s = file_dir + '/' + s
@@ -186,5 +186,5 @@ if __name__ == "__main__":
     #create_boston_housing()
     #create_20ng_data()
     #create_synthetic_step_transfer()
-    #create_synthetic_step_linear_transfer()
-    create_bike_sharing()
+    create_synthetic_step_linear_transfer()
+    #create_bike_sharing()

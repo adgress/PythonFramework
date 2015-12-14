@@ -20,6 +20,7 @@ from utility import array_functions
 from metrics import metrics
 import collections
 import scipy
+from timer.timer import tic,toc
 
 
 #from pyqt_fit import nonparam_regression
@@ -35,10 +36,19 @@ class Method(Saveable):
         self.is_classifier = True
         self.experiment_results_class = results_lib.ExperimentResults
         self.cv_use_data_type = True
+        self._estimated_error = None
 
     @property
     def params(self):
         return self._params
+
+    @property
+    def estimated_error(self):
+        return self._estimated_error
+
+    @estimated_error.setter
+    def estimated_error(self, value):
+        self._estimated_error = value
 
     def set_params(self, **kwargs):
         for k, v in kwargs.items():
@@ -69,7 +79,7 @@ class Method(Saveable):
         data_and_splits = data_lib.SplitData(train_data,splits)
         param_grid = list(grid_search.ParameterGrid(self.cv_params))
         if not self.cv_params:
-            return param_grid[0]
+            return param_grid[0], None
         param_results = []
         for i in range(len(param_grid)):
             param_results.append(self.experiment_results_class())
@@ -92,12 +102,12 @@ class Method(Saveable):
         min_error = errors.min()
         best_params = param_grid[errors.argmin()]
         print best_params
-        return best_params
+        return [best_params, min_error]
 
     def process_data(self, data):
         labels_to_keep = np.empty(0)
         t = self.configs.target_labels
-        s = self.configs.source_labels
+        s = self.configs.source_labels.ravel()
         if t is not None and t.size > 0:
             labels_to_keep = np.concatenate((labels_to_keep,t))
         if s is not None and s.size > 0:
@@ -113,12 +123,14 @@ class Method(Saveable):
     def train_and_test(self, data):
         self.should_plot_g = False
         data = self.process_data(data)
-        best_params = self.run_cross_validation(data)
+        best_params, min_error = self.run_cross_validation(data)
         self.set_params(**best_params)
         self.should_plot_g = True
         output = self.run_method(data)
         f = FoldResults()
         f.prediction = output
+        f.estimated_error = min_error
+        self.estimated_error = min_error
         return f
 
 
@@ -133,19 +145,46 @@ class Method(Saveable):
     def predict_loo(self, data):
         assert False, 'Not implemented!'
 
+class ModelSelectionMethod(Method):
+    def __init__(self, configs=None):
+        super(ModelSelectionMethod, self).__init__(configs)
+        self.methods = []
+        self.chosen_method_idx = None
+
+    @property
+    def selected_method(self):
+        assert self.chosen_method_idx is not None
+        return self.methods[self.chosen_method_idx]
+
+    def train(self, data):
+        assert len(self.methods) > 0
+        estimated_errors = np.zeros(len(self.methods))
+        for i, method in enumerate(self.methods):
+            results = method.train_and_test(data)
+            estimated_errors[i] = method.estimated_error
+        self.chosen_method_idx = estimated_errors.argmin()
+        print 'Chose: ' + str(self.selected_method.__class__)
+
+
+    def predict(self, data):
+        return self.selected_method.predict(data)
+
+    @property
+    def prefix(self):
+        return 'ModelSelection'
 
 class NadarayaWatsonMethod(Method):
-    def __init__(self,configs=MethodConfigs(),skl_method=None):
+    def __init__(self,configs=MethodConfigs()):
         super(NadarayaWatsonMethod, self).__init__(configs)
         self.cv_params['sigma'] = 10**np.asarray(range(-4,4),dtype='float64')
-        self.sigma = 1
+        #self.sigma = 1
         self.metric = 'euclidean'
+        if 'metric' in configs.__dict__:
+            self.metric = configs.metric
         #self.metric = 'cosine'
 
     def compute_kernel(self,x,y):
         #TODO: Optimize this for cosine similarity using cross product and matrix multiplication
-        #x = array_functions.try_toarray(x)
-        #y = array_functions.try_toarray(y)
         W = pairwise.pairwise_distances(x,y,self.metric)
         W = np.square(W)
         W = -self.sigma * W
@@ -164,15 +203,19 @@ class NadarayaWatsonMethod(Method):
         o = Output(data)
         #W = pairwise.rbf_kernel(data.x,self.x,self.sigma)
         W = self.compute_kernel(data.x, self.x)
-        array_functions.replace_invalid(W,0,0)
+        W = array_functions.replace_invalid(W,0,0)
         D = W.sum(1)
         D[D==0] = 1
         D_inv = 1 / D
         array_functions.replace_invalid(D_inv,x_min=1,x_max=1)
-        S = np.dot(np.diag(D_inv), W)
+        S = (W.swapaxes(0, 1) * D_inv).swapaxes(0, 1)
         if not data.is_regression:
-            y_mat = array_functions.make_label_matrix(self.y)
-            fu = np.dot(S,array_functions.try_toarray(y_mat))
+            fu = np.zeros((data.n,self.y.max()+1))
+            for i in np.unique(self.y):
+                I = self.y == i
+                Si = S[:,I]
+                fu_i = Si.sum(1)
+                fu[:,i] = fu_i
             fu = array_functions.replace_invalid(fu,0,1)
             fu = array_functions.normalize_rows(fu)
             o.fu = fu
@@ -182,7 +225,6 @@ class NadarayaWatsonMethod(Method):
             y = array_functions.replace_invalid(y,self.y.min(),self.y.max())
             o.fu = y
         o.y = y
-
         return o
 
     def predict_loo(self, data):

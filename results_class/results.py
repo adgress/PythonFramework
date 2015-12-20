@@ -5,6 +5,7 @@ import collections
 import math
 from data import data as data_lib
 from loss_functions import loss_function as loss_function_lib
+from utility import array_functions
 
 aggregated_results = collections.namedtuple('AggregatedResults',['mean','low','high'])
 processed_results = collections.namedtuple('ProcessedResults',['means','lows','highs'])
@@ -54,15 +55,20 @@ class ExperimentResults(ResultsContainer):
     def aggregate_error(self, loss_function):
         errors = self.compute_error(loss_function)
         mean = errors.mean()
+        #mean = np.percentile(errors,50)
         n = len(errors)
         zn = 1.96
-        if self.is_regression:
+        #if self.is_regression or mean > 1:
+        if mean > 1:
             std = errors.std()
             se = std / math.sqrt(n)
             low = se*zn
             high = se*zn
         else:
             low = zn*math.sqrt(mean*(1-mean)/n)
+            high = low
+            #low = mean - np.percentile(errors,10)
+            #high = np.percentile(errors,90) - mean
 
         agg_res = aggregated_results(mean,low,high)
         return agg_res
@@ -71,7 +77,14 @@ class ExperimentResults(ResultsContainer):
         errors = np.empty(len(self.results_list))
         for i, f in enumerate(self.results_list):
             output = f.prediction
-            errors[i] = loss_function.compute_score(output.y,output.true_y,~output.is_train)
+            #TODO: Check if we should use y or fu
+            if output.fu.ndim > 1 and isinstance(loss_function, loss_function_lib.LogLoss):
+                fu = output.fu
+                true_fu = array_functions.make_label_matrix(output.true_y).toarray()
+                errors[i] = loss_function.compute_score(fu,true_fu,~output.is_train)
+            else:
+                errors[i] = loss_function.compute_score(output.y,output.true_y,~output.is_train)
+
         assert all(~np.isnan(errors))
         return errors
 

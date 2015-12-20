@@ -4,6 +4,7 @@ import numpy as np
 from sklearn import metrics
 import math
 import abc
+from utility import array_functions
 
 class LossFunction:
     """
@@ -33,6 +34,22 @@ class ZeroOneError(LossFunction):
 
     def _compute_score(self, y1, y2):
         return metrics.zero_one_loss(y1, y2)
+
+class LogLoss(LossFunction):
+    def __init__(self):
+        self.name = 'log_loss'
+        self.short_name = 'LL'
+
+    def _compute_score(self, y1, y2):
+        all_zero = array_functions.is_all_zero_column(y1) & array_functions.is_all_zero_column(y2)
+        column_inds = (~all_zero).nonzero()[0]
+        assert column_inds.size == 2
+        y1 = y1[:,column_inds]
+        y2 = y2[:,column_inds]
+        l = metrics.log_loss(y2, y1, eps=.1)
+        return l
+
+
 class MeanSquaredError(LossFunction):
     def __init__(self):
         self.name = 'mean_squared_error'

@@ -54,7 +54,7 @@ class DataSplitter(object):
     def generate_splits(self,y,num_splits=30,perc_train=.8,is_regression=False,keep_for_splitting=None):
         assert y.ndim == 1
         keep_in_train_set = array_functions.false(len(y))
-        if keep_for_splitting is not None:
+        if keep_for_splitting is not None and len(keep_for_splitting) > 0:
             keep_in_train_set[~array_functions.to_boolean(keep_for_splitting)] = True
         is_labeled = ~np.isnan(y)
         keep_in_train_set[~is_labeled] = True
@@ -68,9 +68,9 @@ class DataSplitter(object):
         inds_for_splitting = (~keep_in_train_set).nonzero()[0]
 
         if is_regression:
-            split = cross_validation.ShuffleSplit(n_for_split,num_splits,1-perc_train)
+            split = cross_validation.ShuffleSplit(n_for_split,num_splits,1-perc_train,random_state=0)
         else:
-            split = cross_validation.StratifiedShuffleSplit(y_for_split,num_splits,1-perc_train)
+            split = cross_validation.StratifiedShuffleSplit(y_for_split,num_splits,1-perc_train,random_state=0)
         splits = []
         for train,test in split:
             s = data_lib.Split(n)

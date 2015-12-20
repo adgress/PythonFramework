@@ -40,12 +40,14 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.project_dir = 'base'
         self.num_labels = range(40,201,40)
         self.num_splits = 10
+        #self.num_splits = 30
 
 
         if data_set_to_use == bc.DATA_NG:
             self.set_ng_transfer()
             #self.num_labels = range(20,61,20) + [120, 180]
             self.num_labels = range(20,61,20)
+            #self.num_labels = [5,10,15,20]
         elif data_set_to_use == bc.DATA_BOSTONG_HOUSING:
             self.set_boston_housing()
             self.num_labels = range(20,61,20)
@@ -88,6 +90,8 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.target_labels = CR[0]
         #self.source_labels = CR[1]
         self.source_labels = np.vstack((CR[1], ST[1])).T
+        #self.cv_loss_function = loss_function.ZeroOneError()
+        self.cv_loss_function = loss_function.LogLoss()
 
 class MainConfigs(bc.MainConfigs):
     def __init__(self):
@@ -149,7 +153,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             'TargetTransfer+SKL-KNN.pkl',
             'LocalTransfer.pkl',
             'FuseTransfer+NW.pkl',
-            'LocalTransfer-Parametric.pkl'
+            'LocalTransfer-Parametric.pkl',
+            'LocalTransfer-Parametric-max_value=0.5.pkl'
         ]
 
 class BatchConfigs(bc.BatchConfigs):

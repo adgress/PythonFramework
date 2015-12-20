@@ -94,6 +94,7 @@ class MethodExperimentManager(ExperimentManager):
                         curr_results = learner.train_and_test(curr_data)
                         helper_functions.save_object(self._temp_split_file_name(results_file,split),curr_results)
                     experiment_results.append(curr_results)
+                    print 'Error: ' + str(curr_results.compute_error(self.configs.loss_function))
                 helper_functions.save_object(self._temp_experiment_file_name(results_file,num_labels),experiment_results)
             experiment_results.num_labels = num_labels
             method_results.append(experiment_results)

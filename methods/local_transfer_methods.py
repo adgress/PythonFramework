@@ -6,6 +6,7 @@ import numpy as np
 from loss_functions import loss_function
 from methods import method, scipy_opt_methods
 from methods.transfer_methods import FuseTransfer
+from methods.transfer_methods import TargetTranfer
 from utility import array_functions
 from utility import cvx_functions
 from numpy import multiply
@@ -50,9 +51,8 @@ class HypothesisTransfer(FuseTransfer):
         return (y_t, y_s, y_true)
 
     def train_and_test(self, data):
-        #source_data = data.get_with_labels(self.configs.source_labels)
         if data.is_regression:
-            source_data = data.get_transfer_subset(self.configs.source_labels.ravel(),include_unlabeled=True)
+            source_data = data.get_transfer_subset(self.configs.source_labels.ravel(),include_unlabeled=False)
         else:
             source_data = data.get_transfer_subset(self.configs.source_labels.ravel(),include_unlabeled=False)
         source_data.set_target()
@@ -62,8 +62,20 @@ class HypothesisTransfer(FuseTransfer):
             source_data.change_labels(self.configs.source_labels,self.configs.target_labels)
             source_data = source_data.rand_sample(.1)
         self.source_learner.train_and_test(source_data)
+
         target_data = data.get_transfer_subset(self.configs.target_labels, include_unlabeled=True)
-        self.target_learner.train_and_test(target_data)
+        a = self.target_learner.train_and_test(target_data)
+        #return a
+        #return self.target_learner.train_and_test(target_data)
+        '''
+        y1 = self.target_learner.predict(target_data)
+        a = TargetTranfer(self.configs)
+        a.base_learner = method.NadarayaWatsonMethod(self.configs)
+        #a.base_learner.cv_params = {}
+        a.base_learner.sigma = self.target_learner.sigma
+        a.train_and_test(target_data)
+        y2 = a.predict(target_data)
+        '''
         return super(HypothesisTransfer, self).train_and_test(data)
 
     def train(self, data):
@@ -80,6 +92,7 @@ class HypothesisTransfer(FuseTransfer):
             assert o_source.fu.ndim == 1
             o.fu = o.fu.reshape((o.fu.size,1))
             o_source.fu = o_source.fu.reshape((o_source.fu.size,1))
+        fu_orig = o.fu
         for i in range(o.fu.shape[1]):
             fu_t = o.fu[is_target,i]
             fu_s = o_source.fu[:,i]
@@ -123,7 +136,8 @@ class LocalTransfer(HypothesisTransfer):
         use_g_learner = False
         if use_g_learner:
             self.g_learner = scipy_opt_methods.ScipyOptCombinePrediction(configs)
-            self.g_learner.max_value = 1
+            self.max_value = .5
+            self.g_learner.max_value = self.max_value
         #self.g_learner = None
         self.use_estimated_f = False
         self.metric = 'euclidean'
@@ -308,4 +322,6 @@ class LocalTransfer(HypothesisTransfer):
             s += '-Parametric'
         if 'use_estimated_f' in self.__dict__ and self.use_estimated_f:
             s += '-est_f'
+        if 'max_value' in self.__dict__ and self.max_value != 1:
+            s += '-max_value=' + str(self.max_value)
         return s

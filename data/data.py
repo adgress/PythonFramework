@@ -272,7 +272,9 @@ class SplitData(object):
                 for c in classes:
                     if c in self.labels_to_not_sample:
                         continue
-                    class_inds = np.nonzero(d.y==c)[0]
-                    assert len(class_inds) >= num_labeled
-                    d.y[class_inds[num_labeled:]] = np.nan
+                    class_inds_train = np.nonzero((d.y==c) & d.is_train)[0]
+                    assert len(class_inds_train) >= num_labeled
+                    d.y[class_inds_train[num_labeled:]] = np.nan
+                    class_inds_test = np.nonzero((d.y==c) & ~d.is_train)[0]
+                    d.y[class_inds_test] = np.nan
         return d

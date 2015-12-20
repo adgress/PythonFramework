@@ -13,6 +13,12 @@ from timer.timer import Timer
 from timer.timer import tic
 from timer.timer import toc
 
+def is_all_zero_row(x):
+    return ~x.any(axis=1)
+
+def is_all_zero_column(x):
+    return ~x.any(axis=0)
+
 def relative_error(x,y):
     return np.linalg.norm(x-y)/np.linalg.norm(x)
 

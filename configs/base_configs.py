@@ -63,6 +63,7 @@ class ProjectConfigs(Configs):
     def __init__(self):
         self.project_dir = 'base'
         self.loss_function = loss_function.MeanSquaredError()
+        self.cv_loss_function = loss_function.MeanSquaredError()
         self.data_dir = ''
         self.data_name = ''
         self.data_set_file_name = ''
@@ -86,6 +87,7 @@ pc_fields_to_copy = ['data_dir',
                      'num_labels',
                      'num_splits',
                      'loss_function',
+                     'cv_loss_function',
                      'labels_to_keep',
                      'labels_to_not_sample']
 

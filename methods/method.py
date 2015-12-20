@@ -63,7 +63,7 @@ class Method(Saveable):
 
     def _create_cv_splits(self,data):
         data_splitter = create_data_split.DataSplitter()
-        num_splits = 5
+        num_splits = 10
         perc_train = .8
         is_regression = data.is_regression
         if self.cv_use_data_type:
@@ -96,7 +96,7 @@ class Method(Saveable):
 
         errors = np.empty(len(param_grid))
         for i in range(len(param_grid)):
-            agg_results = param_results[i].aggregate_error(self.configs.loss_function)
+            agg_results = param_results[i].aggregate_error(self.configs.cv_loss_function)
             errors[i] = agg_results.mean
 
         min_error = errors.min()
@@ -176,7 +176,7 @@ class ModelSelectionMethod(Method):
 class NadarayaWatsonMethod(Method):
     def __init__(self,configs=MethodConfigs()):
         super(NadarayaWatsonMethod, self).__init__(configs)
-        self.cv_params['sigma'] = 10**np.asarray(range(-4,4),dtype='float64')
+        self.cv_params['sigma'] = 10**np.asarray(range(-4,3),dtype='float64')
         #self.sigma = 1
         self.metric = 'euclidean'
         if 'metric' in configs.__dict__:
@@ -216,10 +216,14 @@ class NadarayaWatsonMethod(Method):
                 Si = S[:,I]
                 fu_i = Si.sum(1)
                 fu[:,i] = fu_i
+            fu2 = fu
             fu = array_functions.replace_invalid(fu,0,1)
             fu = array_functions.normalize_rows(fu)
             o.fu = fu
             y = fu.argmax(1)
+            I = y == 0
+            if I.any():
+                assert False
         else:
             y = np.dot(S,self.y)
             y = array_functions.replace_invalid(y,self.y.min(),self.y.max())

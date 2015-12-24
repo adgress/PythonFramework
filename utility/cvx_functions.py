@@ -6,7 +6,7 @@ def create_fused_lasso(W, g):
     inds = W.nonzero()
     rows = np.asarray(inds[0]).T.squeeze()
     cols = np.asarray(inds[1]).T.squeeze()
-    for i in range(len(inds[0])):
+    for i in range(len(rows)):
         row = rows[i]
         col = cols[i]
         if row == col:

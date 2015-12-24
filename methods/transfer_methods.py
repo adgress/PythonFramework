@@ -22,7 +22,7 @@ class TargetTranfer(method.Method):
         #results2 = super(TargetTranfer, self).train_and_test(data_copy2)
         data_copy = self._prepare_data(data,include_unlabeled=True)
         #data_copy = data_copy.get_with_labels(self.configs.target_labels)
-        data_copy = data_copy.get_transfer_subset(self.configs.target_labels, include_unlabeled=True)
+        #data_copy = data_copy.get_transfer_subset(self.configs.target_labels, include_unlabeled=True)
         results = super(TargetTranfer, self).train_and_test(data_copy)
         #a = results.prediction.fu - results2.prediction.fu[data_copy2.is_labeled,:]
         #print str(a.any())
@@ -31,6 +31,7 @@ class TargetTranfer(method.Method):
     def _prepare_data(self, data, include_unlabeled=True):
         target_labels = self.configs.target_labels
         data_copy = data.get_transfer_subset(target_labels,include_unlabeled=include_unlabeled)
+        data_copy = data_copy.get_subset(data_copy.is_target)
         #data_copy = data.get_with_labels(target_labels)
         return data_copy
 
@@ -48,13 +49,20 @@ class TargetTranfer(method.Method):
 class FuseTransfer(TargetTranfer):
     def __init__(self, configs=None):
         super(FuseTransfer, self).__init__(configs)
+        self.use_oracle = False
 
     def _prepare_data(self, data,include_unlabeled=True):
         source_labels = self.configs.source_labels
         target_labels = self.configs.target_labels
         data_copy = copy.deepcopy(data)
         #source_inds = array_functions.find_set(data_copy.true_y,source_labels)
-        source_inds = data.get_transfer_inds(source_labels.ravel())
+        if self.use_oracle:
+            oracle_labels = self.configs.oracle_labels
+            data_copy = data_copy.get_transfer_subset(
+                np.concatenate((oracle_labels.ravel(),target_labels.ravel())),
+                include_unlabeled=True
+            )
+        source_inds = data_copy.get_transfer_inds(source_labels.ravel())
         if not data_copy.is_regression:
             data_copy.change_labels(source_labels,target_labels)
         data_copy.type[source_inds] = data_lib.TYPE_SOURCE
@@ -65,7 +73,10 @@ class FuseTransfer(TargetTranfer):
 
     @property
     def prefix(self):
-        return 'FuseTransfer+' + self.base_learner.prefix
+        s = 'FuseTransfer+' + self.base_learner.prefix
+        if 'use_oracle' in self.__dict__ and self.use_oracle:
+            s += '-Oracle'
+        return s
 
 
 class ModelSelectionTransfer(method.ModelSelectionMethod):

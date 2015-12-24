@@ -66,11 +66,11 @@ class DataSplitter(object):
         y_for_split = y[~keep_in_train_set]
         n_for_split = len(y_for_split)
         inds_for_splitting = (~keep_in_train_set).nonzero()[0]
-
+        random_state = None
         if is_regression:
-            split = cross_validation.ShuffleSplit(n_for_split,num_splits,1-perc_train,random_state=0)
+            split = cross_validation.ShuffleSplit(n_for_split,num_splits,1-perc_train,random_state=random_state)
         else:
-            split = cross_validation.StratifiedShuffleSplit(y_for_split,num_splits,1-perc_train,random_state=0)
+            split = cross_validation.StratifiedShuffleSplit(y_for_split,num_splits,1-perc_train,random_state=random_state)
         splits = []
         for train,test in split:
             s = data_lib.Split(n)
@@ -92,5 +92,9 @@ class DataSplitter(object):
 if __name__ == '__main__':
     #split_data(create_data_set.boston_housing_raw_data_file, boston_housing_configs())
     #split_data(create_data_set.ng_raw_data_file, ng_configs())
-    #split_data(create_data_set.synthetic_step_transfer_file, synthetic_step_transfer_configs())
-    split_data(create_data_set.synthetic_step_linear_transfer_file, synthetic_step_transfer_configs())
+
+    s = create_data_set.synthetic_step_transfer_file
+    if create_data_set.synthetic_dim > 1:
+        s = create_data_set.synthetic_step_kd_transfer_file % create_data_set.synthetic_dim
+    split_data(s, synthetic_step_transfer_configs())
+    #split_data(create_data_set.synthetic_step_linear_transfer_file, synthetic_step_transfer_configs())

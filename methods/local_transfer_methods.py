@@ -14,7 +14,7 @@ from numpy.linalg import norm
 
 enable_plotting = False
 
-class HypothesisTransfer(FuseTransfer):
+class HypothesisTransfer(method.Method):
     def __init__(self, configs=None):
         super(HypothesisTransfer, self).__init__(configs)
         self.cv_params = {}
@@ -22,6 +22,13 @@ class HypothesisTransfer(FuseTransfer):
         self.target_learner = method.NadarayaWatsonMethod(configs)
         self.source_learner = method.NadarayaWatsonMethod(configs)
         self.base_learner = None
+        self.use_oracle = False
+
+    def _prepare_data(self, data, include_unlabeled=True):
+        target_labels = self.configs.target_labels
+        data_copy = data.get_transfer_subset(target_labels,include_unlabeled=include_unlabeled)
+        #data_copy = data.get_with_labels(target_labels)
+        return data_copy
 
     def get_target_subset(self, data):
         if data.is_regression:
@@ -58,28 +65,23 @@ class HypothesisTransfer(FuseTransfer):
         source_data.set_target()
         source_data.set_train()
         source_data.reveal_labels(~source_data.is_labeled)
+        if self.use_oracle:
+            oracle_labels = self.configs.oracle_labels
+            source_data = source_data.get_transfer_subset(oracle_labels.ravel(),include_unlabeled=False)
         if not data.is_regression:
             source_data.change_labels(self.configs.source_labels,self.configs.target_labels)
             source_data = source_data.rand_sample(.1)
         self.source_learner.train_and_test(source_data)
 
-        target_data = data.get_transfer_subset(self.configs.target_labels, include_unlabeled=True)
-        a = self.target_learner.train_and_test(target_data)
-        #return a
-        #return self.target_learner.train_and_test(target_data)
-        '''
-        y1 = self.target_learner.predict(target_data)
-        a = TargetTranfer(self.configs)
-        a.base_learner = method.NadarayaWatsonMethod(self.configs)
-        #a.base_learner.cv_params = {}
-        a.base_learner.sigma = self.target_learner.sigma
-        a.train_and_test(target_data)
-        y2 = a.predict(target_data)
-        '''
-        return super(HypothesisTransfer, self).train_and_test(data)
+        data_copy = self._prepare_data(data,include_unlabeled=True)
+        data_copy = data_copy.get_transfer_subset(self.configs.target_labels, include_unlabeled=True)
+        data_copy = data_copy.get_subset(data_copy.is_target)
+        return super(HypothesisTransfer, self).train_and_test(data_copy)
 
     def train(self, data):
-        pass
+        #pass
+        target_data = data.get_transfer_subset(self.configs.target_labels, include_unlabeled=True)
+        self.target_learner.train_and_test(target_data)
 
     def predict(self, data):
         o = self.target_learner.predict(data)
@@ -111,7 +113,10 @@ class HypothesisTransfer(FuseTransfer):
 
     @property
     def prefix(self):
-        return 'HypothesisTransfer'
+        s = 'HypothesisTransfer'
+        if 'use_oracle' in self.__dict__ and self.use_oracle:
+            s += '-Oracle'
+        return s
 
 class LocalTransfer(HypothesisTransfer):
     def __init__(self, configs=None):
@@ -122,25 +127,33 @@ class LocalTransfer(HypothesisTransfer):
         #self.cv_params['radius'] = np.asarray([.01, .05, .1, .15, .2],dtype='float64')
         self.radius = .05
         #self.cv_params['C'] = 10**np.asarray(range(-4,4),dtype='float64')
-        self.cv_params['C'] = 10**np.asarray(range(-8,4),dtype='float64')
+        self.cv_params['C'] = 10**np.asarray(range(-6,6),dtype='float64')
         self.cv_params['C'] = np.insert(self.cv_params['C'],0,0)
         #self.C = 1
         self.k = 3
+        #self.cv_params['k'] = np.asarray([1,3,5,7])
         self.target_learner = method.NadarayaWatsonMethod(configs)
         self.source_learner = method.NadarayaWatsonMethod(configs)
         self.base_learner = None
         self.learn_g_just_labeled = True
         self.should_plot_g = False
-        self.use_fused_lasso = True
+        self.use_fused_lasso = configs.use_fused_lasso
+        self.use_oracle = False
         self.g_learner = None
-        use_g_learner = False
+        use_g_learner = configs.use_g_learner
+
         if use_g_learner:
             self.g_learner = scipy_opt_methods.ScipyOptCombinePrediction(configs)
             self.max_value = .5
             self.g_learner.max_value = self.max_value
+        self.no_reg = self.configs.no_reg
+        if self.no_reg:
+            self.cv_params['C'] = np.zeros(1)
         #self.g_learner = None
         self.use_estimated_f = False
-        self.metric = 'euclidean'
+        #self.metric = 'euclidean'
+        self.metric = configs.metric
+
 
     def train_g_learner(self, target_data):
         y_t, y_s, y_true = self.get_predictions(target_data)
@@ -163,53 +176,16 @@ class LocalTransfer(HypothesisTransfer):
         self.g_learner.C = self.C
         self.g_learner.cv_params = {}
         self.g_learner.train_and_test(parametric_data)
-
-    def train_g_nonparametric_all(self, target_data):
-        assert False, 'Do we still want to use this?  If so, then fix it'
-        g = cvx.Variable(target_data.n)
-        is_labeled = target_data.is_labeled
-        labeled_inds = is_labeled.nonzero()[0]
-        unlabeled_inds = (~is_labeled).nonzero()[0]
-        sorted_inds = np.concatenate((labeled_inds,unlabeled_inds))
-        n_labeled = len(labeled_inds)
-        L = array_functions.make_laplacian_uniform(target_data.x,self.radius,metric) + .0001*np.identity(target_data.n)
-        L = L[:,sorted_inds]
-        L = L[sorted_inds,:]
-        y_s = y_s[sorted_inds,:]
-        reg = cvx.quad_form(g,L)
-
-        loss = cvx.sum_entries(
-            cvx.power(
-                #y_s[:n_labeled,0] * g[:n_labeled] + y_t[:,0] * (1-g[:n_labeled]) - y_true[:,0],
-                cvx.mul_elemwise(
-                    y_s[:n_labeled,0],g[:n_labeled])
-                        + cvx.mul_elemwise(y_t[:,0], (1-g[:n_labeled]))
-                        - y_true[:,0],
-                2
-            )
-        )
-        constraints = [g >= 0, g <= .5]
-        obj = cvx.Minimize(loss + self.C*reg)
-        prob = cvx.Problem(obj,constraints)
-
-        assert prob.is_dcp()
-        try:
-            prob.solve()
-            inv_perm = array_functions.inv_permutation(sorted_inds)
-            self.g = g.value[inv_perm]
-            assert (self.g[sorted_inds] == g.value).all()
-        except:
-            #assert prob.status is None
-            k = 0
-            print 'CVX problem: setting g = ' + str(k)
-            print '\tsigma=' + str(self.sigma)
-            print '\tC=' + str(self.C)
-            print '\tradius=' + str(self.radius)
-            self.g = k*np.ones(target_data.n)
-        if target_data.x.shape[1] == 1:
-            self.g_x = target_data.x
-            self.g_x_low = self.g[self.g_x[:,0] < .5]
-            self.g_x_high = self.g[self.g_x[:,0] >= .5]
+        '''
+        I = parametric_data.x.argsort(0)
+        g_value = self.g_learner.predict_g(parametric_data.x)
+        x = parametric_data.x
+        x = np.squeeze(x)
+        a = np.hstack((g_value[I], x[I]))
+        print str(a)
+        print 'C:' + str(self.C)
+        '''
+        pass
 
     def train_g_nonparametric(self, target_data):
         y_t, y_s, y_true = self.get_predictions(target_data)
@@ -234,7 +210,6 @@ class LocalTransfer(HypothesisTransfer):
                 2
             )
         )
-        self.C = 0
         constraints = [g >= 0, g <= .5]
         obj = cvx.Minimize(loss + self.C*reg)
         prob = cvx.Problem(obj,constraints)
@@ -261,15 +236,30 @@ class LocalTransfer(HypothesisTransfer):
         labeled_train_data.y = g_value
         labeled_train_data.true_y = g_value
         g_nw.configs.loss_function = loss_function.MeanSquaredError()
+
         g_nw.tune_loo(labeled_train_data)
         g_nw.train(labeled_train_data)
+        '''
+        a =np.hstack((g_value[labeled_train_data.x.argsort(0)], np.sort(labeled_train_data.x,0)))
+        print str(a)
+        print 'g_nw sigma: ' + str(g_nw.sigma)
+        print 'C:' + str(self.C)
+        '''
         target_data.is_regression = True
         self.g = g_nw.predict(target_data).fu
         self.g[labeled_inds] = g_value
         assert not np.any(np.isnan(self.g))
 
+    def train_and_test(self, data):
+        target_labels = self.configs.target_labels
+        target_data = data.get_transfer_subset(target_labels,include_unlabeled=True)
+        self.target_learner.train_and_test(target_data)
+        return super(LocalTransfer, self).train_and_test(data)
+
     def train(self, data):
         target_data = self.get_target_subset(data)
+        #self.target_learner.train_and_test(target_data)
+        self.target_learner.train(target_data)
         if self.g_learner is not None:
             self.train_g_learner(target_data)
         elif self.learn_g_just_labeled:
@@ -318,8 +308,16 @@ class LocalTransfer(HypothesisTransfer):
     @property
     def prefix(self):
         s = 'LocalTransfer'
-        if 'g_learner' in self.__dict__ and self.g_learner is not None:
+        if 'use_oracle' in self.__dict__ and self.use_oracle:
+            s += '-Oracle'
+        if 'no_reg' in self.__dict__ and self.no_reg:
+            s += '-no_reg'
+        elif 'g_learner' in self.__dict__ and self.g_learner is not None:
             s += '-Parametric'
+        elif 'use_fused_lasso' in self.__dict__ and self.use_fused_lasso:
+            s += '-l1'
+        else:
+            s += '-l2'
         if 'use_estimated_f' in self.__dict__ and self.use_estimated_f:
             s += '-est_f'
         if 'max_value' in self.__dict__ and self.max_value != 1:

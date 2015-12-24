@@ -22,15 +22,16 @@ def create_project_configs():
 
 pc_fields_to_copy = bc.pc_fields_to_copy + [
     'target_labels',
-    'source_labels'
+    'source_labels',
+    'oracle_labels'
 ]
 
 #data_set_to_use = bc.DATA_BOSTONG_HOUSING
 #data_set_to_use = bc.DATA_NG
-#data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
-data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
+data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
+#data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
 
-
+synthetic_dim = 5
 
 class ProjectConfigs(bc.ProjectConfigs):
     def __init__(self):
@@ -40,14 +41,15 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.project_dir = 'base'
         self.num_labels = range(40,201,40)
         self.num_splits = 10
+        self.oracle_labels = []
         #self.num_splits = 30
 
 
         if data_set_to_use == bc.DATA_NG:
             self.set_ng_transfer()
             #self.num_labels = range(20,61,20) + [120, 180]
-            self.num_labels = range(20,61,20)
-            #self.num_labels = [5,10,15,20]
+            #self.num_labels = range(20,61,20)
+            self.num_labels = [5,10,20]
         elif data_set_to_use == bc.DATA_BOSTONG_HOUSING:
             self.set_boston_housing()
             self.num_labels = range(20,61,20)
@@ -57,7 +59,7 @@ class ProjectConfigs(bc.ProjectConfigs):
             #self.num_labels = [50]
         elif data_set_to_use == bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER:
             self.set_synthetic_step_linear_transfer()
-            #self.num_labels = [20]
+            #self.num_labels = [30]
             self.num_labels = range(10,31,10)
         else:
             assert False
@@ -79,8 +81,13 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.loss_function = loss_function.MeanSquaredError()
         self.data_dir = 'data_sets/synthetic_step_transfer'
         self.data_name = 'synthetic_step_transfer'
-        self.data_set_file_name = 'split_data.pkl'
         self.results_dir = 'synthetic_step_transfer'
+        if synthetic_dim > 1:
+            s = '_' + str(synthetic_dim)
+            self.data_dir += s
+            self.data_name += s
+            self.results_dir += s
+        self.data_set_file_name = 'split_data.pkl'
         self.target_labels = np.asarray([0])
         self.source_labels = np.asarray([1])
 
@@ -90,6 +97,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.target_labels = CR[0]
         #self.source_labels = CR[1]
         self.source_labels = np.vstack((CR[1], ST[1])).T
+        self.oracle_labels = CR[1]
         #self.cv_loss_function = loss_function.ZeroOneError()
         self.cv_loss_function = loss_function.LogLoss()
 
@@ -102,9 +110,13 @@ class MainConfigs(bc.MainConfigs):
         from methods import method
         from methods import scipy_opt_methods
         method_configs = MethodConfigs()
-
+        method_configs.metric = 'euclidean'
+        method_configs.use_fused_lasso = True
+        method_configs.no_reg = True
+        method_configs.use_g_learner = False
         if data_set_to_use == bc.DATA_NG:
             method_configs.metric = 'cosine'
+            method_configs.use_fused_lasso = False
 
         fuse_log_reg = transfer_methods.FuseTransfer(method_configs)
         fuse_nw = transfer_methods.FuseTransfer(method_configs)
@@ -154,7 +166,14 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             'LocalTransfer.pkl',
             'FuseTransfer+NW.pkl',
             'LocalTransfer-Parametric.pkl',
-            'LocalTransfer-Parametric-max_value=0.5.pkl'
+            'LocalTransfer-Parametric-max_value=0.5.pkl',
+            'LocalTransfer-Oracle.pkl',
+            'HypothesisTransfer-Oracle.pkl',
+            'FuseTransfer+NW-Oracle.pkl',
+            'LocalTransfer-Oracle-Parametric-max_value=0.5.pkl',
+            'LocalTransfer-l1.pkl',
+            'LocalTransfer-l2.pkl',
+            'LocalTransfer-no_reg.pkl'
         ]
 
 class BatchConfigs(bc.BatchConfigs):

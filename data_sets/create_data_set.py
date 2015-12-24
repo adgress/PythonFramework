@@ -17,9 +17,11 @@ ng_s = np.asarray(range(11,15))
 ng_o = np.asarray(15)
 ng_t = np.asarray(range(16,20))
 
+synthetic_dim = 5
 boston_housing_raw_data_file = 'boston_housing/raw_data.pkl'
 ng_raw_data_file = '20ng/raw_data.pkl'
 synthetic_step_transfer_file = 'synthetic_step_transfer/raw_data.pkl'
+synthetic_step_kd_transfer_file = 'synthetic_step_transfer_%d/raw_data.pkl'
 synthetic_step_linear_transfer_file = 'synthetic_step_linear_transfer/raw_data.pkl'
 def create_uci_yeast():
     pass
@@ -68,27 +70,30 @@ def create_20ng_data(file_dir=''):
         s = file_dir + '/' + s
     helper_functions.save_object(s,data)
 
-'''
-def create_synthetic_step_linear_transfer(file_dir=''):
+
+def create_synthetic_step_transfer(file_dir='', dim=1):
     n_target = 100
     n_source = 100
     n = n_target + n_source
-    sigma = .075
+    sigma = .5
     data = data_class.Data()
-    data.x = np.random.uniform(0,1,(n,1))
+    data.x = np.random.uniform(0,1,(n,dim))
     data.data_set_ids = np.zeros(n)
     data.data_set_ids[n_target:] = 1
     data.y = np.zeros(n)
-    data.y[(data.data_set_ids == 1) & (data.x[:,0] >= .5)] = 1
+    data.y[(data.data_set_ids == 0) & (data.x[:,0] >= .5)] = 2
     data.y += np.random.normal(0,sigma,n)
     data.set_defaults()
     data.is_regression = True
-    array_functions.plot_2d(data.x,data.y,data.data_set_ids)
+    if dim == 1:
+        array_functions.plot_2d(data.x,data.y,data.data_set_ids)
     s = synthetic_step_transfer_file
+    if dim > 1:
+        s = synthetic_step_kd_transfer_file % dim
     if file_dir != '':
         s = file_dir + '/' + s
     helper_functions.save_object(s,data)
-'''
+
 
 def create_synthetic_step_linear_transfer(file_dir=''):
     n_target = 100
@@ -185,6 +190,6 @@ def create_bike_sharing():
 if __name__ == "__main__":
     #create_boston_housing()
     #create_20ng_data()
-    #create_synthetic_step_transfer()
-    create_synthetic_step_linear_transfer()
+    create_synthetic_step_transfer(dim=synthetic_dim)
+    #create_synthetic_step_linear_transfer()
     #create_bike_sharing()

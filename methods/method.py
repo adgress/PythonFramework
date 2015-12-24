@@ -80,9 +80,7 @@ class Method(Saveable):
         param_grid = list(grid_search.ParameterGrid(self.cv_params))
         if not self.cv_params:
             return param_grid[0], None
-        param_results = []
-        for i in range(len(param_grid)):
-            param_results.append(self.experiment_results_class())
+        param_results =[self.experiment_results_class() for i in range(len(param_grid))]
         unused_breakpoint = 1
         for i in range(len(splits)):
             curr_split = data_and_splits.get_split(i)
@@ -93,6 +91,8 @@ class Method(Saveable):
                 fold_results = FoldResults()
                 fold_results.prediction = results
                 param_results[param_idx].append(fold_results)
+                #Make sure error can be computed
+                param_results[param_idx].aggregate_error(self.configs.cv_loss_function)
 
         errors = np.empty(len(param_grid))
         for i in range(len(param_grid)):
@@ -131,6 +131,8 @@ class Method(Saveable):
         f.prediction = output
         f.estimated_error = min_error
         self.estimated_error = min_error
+        for key,value in best_params.iteritems():
+            setattr(f,key,value)
         return f
 
 
@@ -176,7 +178,7 @@ class ModelSelectionMethod(Method):
 class NadarayaWatsonMethod(Method):
     def __init__(self,configs=MethodConfigs()):
         super(NadarayaWatsonMethod, self).__init__(configs)
-        self.cv_params['sigma'] = 10**np.asarray(range(-4,3),dtype='float64')
+        self.cv_params['sigma'] = 10**np.asarray(range(-8,8),dtype='float64')
         #self.sigma = 1
         self.metric = 'euclidean'
         if 'metric' in configs.__dict__:

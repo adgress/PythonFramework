@@ -62,6 +62,9 @@ def make_laplacian_kNN(x,k,metric):
     W_inds = np.asarray(range(x.shape[0]))
     for i in range(k):
         W[W_inds,to_keep[:,i]] = dists[W_inds,to_keep[:,i]]
+
+    #Make symmetric for quad_form
+    W = .5*(W + W.T)
     D = W.sum(1)
     L = np.diag(D) - W
     L = scipy.sparse.csc_matrix(L)

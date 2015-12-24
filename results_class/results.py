@@ -79,9 +79,9 @@ class ExperimentResults(ResultsContainer):
             output = f.prediction
             #TODO: Check if we should use y or fu
             if output.fu.ndim > 1 and isinstance(loss_function, loss_function_lib.LogLoss):
-                fu = output.fu
-                true_fu = array_functions.make_label_matrix(output.true_y).toarray()
-                errors[i] = loss_function.compute_score(fu,true_fu,~output.is_train)
+                fu = output.fu[~output.is_train,:]
+                true_fu = array_functions.make_label_matrix(output.true_y[~output.is_train]).toarray()
+                errors[i] = loss_function.compute_score(fu,true_fu)
             else:
                 errors[i] = loss_function.compute_score(output.y,output.true_y,~output.is_train)
 

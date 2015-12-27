@@ -8,8 +8,11 @@ from numpy.linalg import norm
 import math
 from results_class import results
 from data import data as data_lib
+from loss_functions import loss_function
 from timer.timer import tic,toc
 
+
+#TODO: subclass ScipyOptMethod
 class ScipyOptRidgeRegression(method.Method):
     def __init__(self,configs=base_configs.MethodConfigs()):
         super(ScipyOptRidgeRegression, self).__init__(configs)
@@ -53,7 +56,166 @@ class ScipyOptRidgeRegression(method.Method):
         )
         return f
 
-class ScipyOptCombinePrediction(method.Method):
+
+class ScipyOptMethod(method.Method):
+    @staticmethod
+    def eval(w,x,a,b,C,max_value):
+        return None
+
+    @staticmethod
+    def gradient(w,x,a,b,C,max_value):
+        return None
+
+    def create_eval(self, data,C):
+        return self.__class__.eval
+
+    def create_gradient(self,data,C):
+        return self.__class__.gradient
+
+
+class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
+    def __init__(self,configs=base_configs.MethodConfigs()):
+        super(ScipyOptNonparametricHypothesisTransfer, self).__init__(configs)
+        self.cv_params['C'] = 10**np.asarray(range(-4,4),dtype='float64')
+        self.g_nw = method.NadarayaWatsonMethod(configs)
+        self.g_nw.configs.target_labels = None
+        self.g_nw.configs.source_labels = None
+        self.g_nw.configs.cv_loss_function = loss_function.MeanSquaredError()
+        self.k = 3
+        self.metric = configs.metric
+
+    def train(self, data):
+        f = self.create_eval(data, self.C)
+        g = self.create_gradient(data, self.C)
+        method = 'L-BFGS-B'
+        options = {
+            'disp': False,
+            'maxiter': np.inf,
+            'maxfun': np.inf
+        }
+        bounds = list((0, None) for i in range(data.n))
+        g0 = np.zeros(data.n)
+        x = data.x
+        y_s = np.squeeze(data.y_s[:,0])
+        y_t = np.squeeze(data.y_t[:,0])
+        y = data.y
+        if not data.is_regression:
+            y = array_functions.make_label_matrix(data.y)[:,data.classes].toarray()
+            y = y[:,0]
+        reg = self.create_reg(data.x)
+        args = (x,y,y_s,y_t,self.C,reg)
+        results = optimize.minimize(
+            f,
+            g0,
+            method=method,
+            bounds=bounds,
+            jac=g,
+            options=options,
+            args=args
+        )
+        compare_results = False
+        if compare_results:
+            results2 = optimize.minimize(
+                f,
+                g0,
+                method=method,
+                bounds=bounds,
+                options=options,
+                args=args
+            )
+            err = results.x - results2.x
+            print 'Rel Error - g: ' + str(norm(err)/norm(results2.x))
+            print 'Rel Error - f(g*): ' + str(norm(results.fun-results2.fun)/norm(results2.fun))
+            results = results2
+
+        self.g = results.x
+        g_data = data_lib.Data()
+        g_data.x = data.x
+        g_data.y = results.x
+        g_data.is_regression = True
+        g_data.set_defaults()
+        self.g_nw.train_and_test(g_data)
+
+    def predict(self, data):
+        fu = self.combine_predictions(data.x,data.y_s,data.y_t)
+        o =  results.Output(data)
+        o.fu = fu
+        o.y = fu
+        return o
+
+    def combine_predictions(self,x,y_source,y_target):
+        data = data_lib.Data()
+        data.x = x
+        data.is_regression = True
+        g = self.g_nw.predict(data).fu
+        a_t = 1 / (1 + g)
+        b_s = g / (1 + g)
+        if y_source.ndim > 1:
+            a_t = array_functions.vec_to_2d(a_t)
+            b_s = array_functions.vec_to_2d(b_s)
+            fu = a_t*y_target + b_s*y_source
+        else:
+            fu = np.multiply(a_t, y_target) + np.multiply(b_s, y_source)
+        return fu
+
+    def predict_g(self, x):
+        data = data_lib.Data()
+        data.x = x
+        data.is_regression = True
+        g = self.g_nw.predict(data).fu
+        return g
+
+    def create_reg(self,x):
+        L = array_functions.make_laplacian_kNN(x,self.k,self.metric)
+        r = lambda g: ScipyOptNonparametricHypothesisTransfer.reg(g,L)
+        return r
+
+    @staticmethod
+    def reg(g,L):
+        Lg = L.dot(g)
+        val = Lg.dot(g)
+        return val, Lg
+
+    @staticmethod
+    def eval(g,x,y,y_s,y_t,C,reg):
+        err = ScipyOptNonparametricHypothesisTransfer.error(g,y,y_s,y_t)
+        val_reg, unused = reg(g)
+        val = norm(err)**2
+        val += C*val_reg
+        return val
+
+    @staticmethod
+    def error(g,y,y_s,y_t):
+        denom = 1 / (1+g)
+        a_t = denom
+        a_s = np.multiply(g,denom)
+        err = np.multiply(y_t,a_t)
+        err += np.multiply(y_s,a_s)
+        err -=  y
+        return err
+
+    @staticmethod
+    def gradient(g,x,y,y_s,y_t,C,reg):
+        err = ScipyOptNonparametricHypothesisTransfer.error(g,y,y_s,y_t)
+        denom = 1 / np.square(1+g)
+        a_t = -denom
+        a_s = denom
+        grad_loss = np.multiply(a_t,y_t)
+        grad_loss += np.multiply(a_s,y_s)
+        grad_loss = np.multiply(grad_loss,err)
+        unused, grad_reg = reg(g)
+        grad = grad_loss
+        grad += C*grad_reg
+        grad *= 2
+        return grad
+
+    @property
+    def prefix(self):
+        return 'NonParaHypTrans'
+
+
+
+class ScipyOptCombinePrediction(ScipyOptMethod):
     def __init__(self,configs=base_configs.MethodConfigs()):
         super(ScipyOptCombinePrediction, self).__init__(configs)
         self.cv_params['C'] = 10**np.asarray(range(-4,4),dtype='float64')
@@ -153,10 +315,7 @@ class ScipyOptCombinePrediction(method.Method):
         g = np.insert(g,0,t.sum())
         return g
 
-
-    def create_eval(self, data,C):
-        return ScipyOptCombinePrediction.eval
-
-    def create_gradient(self,data,C):
-        return ScipyOptCombinePrediction.gradient
+    @property
+    def prefix(self):
+        return 'SigComb'
 

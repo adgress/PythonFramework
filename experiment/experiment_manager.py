@@ -7,6 +7,45 @@ import os
 import numpy as np
 import math
 from utility import array_functions
+import multiprocessing
+import itertools
+import copy
+
+def _temp_split_file_name(final_file_name, num_labels, split):
+    directory = helper_functions.remove_suffix(final_file_name, '.pkl')
+    return directory + '/num_labels=' + str(num_labels) + '_split=' + str(split) + '.pkl'
+
+def _temp_experiment_file_name(final_file_name, num_labels):
+    directory = helper_functions.remove_suffix(final_file_name, '.pkl')
+    return directory + '/num_labels=' + str(num_labels) + '.pkl'
+
+def _load_temp_split_file(final_file_name, num_labels, split):
+    split_temp_file = _temp_split_file_name(final_file_name, num_labels, split)
+    if not os.path.isfile(split_temp_file):
+        return None
+    print 'found ' + split_temp_file + ' - loading'
+    return helper_functions.load_object(split_temp_file)
+
+def _load_temp_experiment_file(final_file_name, num_labels):
+    experiment_temp_file = _temp_experiment_file_name(final_file_name, num_labels)
+    if not os.path.isfile(experiment_temp_file):
+        return None
+    print 'found ' + experiment_temp_file + ' - loading'
+    return helper_functions.load_object(experiment_temp_file)
+
+def _delete_temp_split_files(file, num_labels, num_splits):
+    #for i in range(num_splits):
+        #helper_functions.delete_file(self._temp_split_file_name(file, i))
+    helper_functions.delete_file(_temp_split_file_name(file, num_labels, num_splits))
+
+def _delete_temp_experiment_files(file, num_labels):
+    for i in num_labels:
+        helper_functions.delete_file(_temp_experiment_file_name(file, i))
+
+def _delete_temp_folder(file):
+    folder = helper_functions.remove_suffix(file, '.pkl')
+    helper_functions.delete_dir_if_empty(folder)
+
 class ExperimentManager(object):
     __metaclass__ = abc.ABCMeta
     def __init__(self, configs=None):
@@ -32,39 +71,7 @@ class MethodExperimentManager(ExperimentManager):
         super(MethodExperimentManager,self).__init__(configs)
         pass
 
-    def _temp_split_file_name(self, final_file_name, split):
-        directory = helper_functions.remove_suffix(final_file_name, '.pkl')
-        return directory + '/split=' + str(split) + '.pkl'
 
-    def _temp_experiment_file_name(self, final_file_name, num_labels):
-        directory = helper_functions.remove_suffix(final_file_name, '.pkl')
-        return directory + '/num_labels=' + str(num_labels) + '.pkl'
-
-    def _load_temp_split_file(self, final_file_name, split):
-        split_temp_file = self._temp_split_file_name(final_file_name, split)
-        if not os.path.isfile(split_temp_file):
-            return None
-        print 'found ' + split_temp_file + ' - loading'
-        return helper_functions.load_object(split_temp_file)
-
-    def _load_temp_experiment_file(self, final_file_name, num_labels):
-        experiment_temp_file = self._temp_experiment_file_name(final_file_name, num_labels)
-        if not os.path.isfile(experiment_temp_file):
-            return None
-        print 'found ' + experiment_temp_file + ' - loading'
-        return helper_functions.load_object(experiment_temp_file)
-
-    def _delete_temp_split_files(self, file, num_splits):
-        for i in range(num_splits):
-            helper_functions.delete_file(self._temp_split_file_name(file, i))
-
-    def _delete_temp_experiment_files(self, file, num_labels):
-        for i in num_labels:
-            helper_functions.delete_file(self._temp_experiment_file_name(file, i))
-
-    def _delete_temp_folder(self, file):
-        folder = helper_functions.remove_suffix(file, '.pkl')
-        helper_functions.delete_dir_if_empty(folder)
 
     def run_experiments(self):
         data_file = self.configs.data_file
@@ -74,36 +81,82 @@ class MethodExperimentManager(ExperimentManager):
         data_and_splits.labels_to_keep = self.configs.labels_to_keep
         data_and_splits.labels_to_not_sample = self.configs.labels_to_not_sample
         data_and_splits.data.repair_data()
-        method_results = results.MethodResults()
         results_file = self.configs.results_file
         if os.path.isfile(results_file):
             print results_file + ' already exists - skipping'
             return
         learner = self.configs.learner
-        for i,num_labels in enumerate(self.configs.num_labels):
-            experiment_results = self._load_temp_experiment_file(results_file,num_labels)
-            if not experiment_results:
-                print 'num_labels: ' + str(num_labels)
-                experiment_results = results.ExperimentResults()
 
-                for split in range(self.configs.num_splits):
-                    curr_results = self._load_temp_split_file(results_file, split)
-                    if not curr_results:
-                        print 'split: ' + str(split)
-                        curr_data = data_and_splits.get_split(split, num_labels)
-                        curr_results = learner.train_and_test(curr_data)
-                        helper_functions.save_object(self._temp_split_file_name(results_file,split),curr_results)
-                    experiment_results.append(curr_results)
-                    print 'Error: ' + str(curr_results.compute_error(self.configs.loss_function))
-                helper_functions.save_object(self._temp_experiment_file_name(results_file,num_labels),experiment_results)
-            experiment_results.num_labels = num_labels
-            method_results.append(experiment_results)
-            self._delete_temp_split_files(results_file, self.configs.num_splits)
+        num_labels = len(self.configs.num_labels)
+        num_splits = self.configs.num_splits
+        method_results = results.MethodResults(n_exp=num_labels, n_splits=num_splits)
+        for i, nl in enumerate(self.configs.num_labels):
+            method_results.results_list[i].num_labels = nl
+        num_labels_list = list(itertools.product(range(num_labels), range(num_splits)))
 
-            print 'Mean Error:' + str(method_results.compute_error(self.configs.loss_function)[i].mean)
-        #a = method_results.compute_error(self.configs.loss_function)
+        # load existing data
+        for i_labels, split in num_labels_list:
+            num_labels = self.configs.num_labels[i_labels]
+            curr_results = _load_temp_split_file(results_file, num_labels, split)
+            if not curr_results:
+                continue
+            method_results.set(curr_results, i_labels, split)
+        if self.configs.use_pool:
+            pool = multiprocessing.Pool(processes=2)
+            shared_args = (self, results_file, data_and_splits, method_results)
+            args = [shared_args + (i_labels, split) for i_labels,split in num_labels_list]
+            all_results = pool.map(_run_experiment, args)
+            for curr_results,s in zip(all_results,num_labels_list):
+                if curr_results is None:
+                    continue
+                i_labels, split = s
+                method_results.set(curr_results, i_labels, split)
+        else:
+            for i_labels, split in num_labels_list:
+                num_labels = self.configs.num_labels[i_labels]
+                s = str(num_labels) + '-' + str(split)
+
+                curr_results = _load_temp_split_file(results_file, num_labels, split)
+                if curr_results:
+                    continue
+                print 'num_labels-split: ' + s
+                curr_data = data_and_splits.get_split(split, num_labels)
+                curr_learner = copy.deepcopy(learner)
+                curr_results = curr_learner.train_and_test(curr_data)
+                helper_functions.save_object(_temp_split_file_name(results_file,num_labels,split),curr_results)
+                method_results.set(curr_results, i_labels, split)
+                print s + ' Error: ' + str(curr_results.compute_error(self.configs.loss_function))
+                if method_results.results_list[i_labels].is_full:
+                    print str(num_labels) + ' Mean Error: ' + str(method_results.results_list[i_labels].aggregate_error(self.configs.loss_function).mean)
+
         method_results.configs = self.configs
         helper_functions.save_object(results_file,method_results)
-        self._delete_temp_experiment_files(results_file, self.configs.num_labels)
-        self._delete_temp_folder(results_file)
+        for i_labels, split in num_labels_list:
+            num_labels = self.configs.num_labels[i_labels]
+            _delete_temp_split_files(results_file, num_labels, split)
+        #self._delete_temp_experiment_files(results_file, self.configs.num_labels)
+        _delete_temp_folder(results_file)
         pass
+
+def _run_experiment(args):
+    return _run_experiment_args(*args)
+
+def _run_experiment_args(self, results_file, data_and_splits, method_results, i_labels, split):
+    num_labels = self.configs.num_labels[i_labels]
+    s = str(num_labels) + '-' + str(split)
+    curr_results = _load_temp_split_file(results_file, num_labels, split)
+    if curr_results:
+        return None
+    #print 'num_labels-split: ' + s
+    curr_data = data_and_splits.get_split(split, num_labels)
+    learner = self.configs.learner
+    curr_learner = copy.deepcopy(learner)
+    curr_results = curr_learner.train_and_test(curr_data)
+    helper_functions.save_object(_temp_split_file_name(results_file,num_labels,split),curr_results)
+    print s + ' Error: ' + str(curr_results.compute_error(self.configs.loss_function))
+    '''
+    method_results.set(curr_results, i_labels, split)
+    if method_results.results_list[i_labels].is_full:
+        print str(num_labels) + ' Mean Error: ' + str(method_results.compute_error(self.configs.loss_function)[i].mean)
+    '''
+    return curr_results

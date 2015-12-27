@@ -12,7 +12,7 @@ from sklearn import preprocessing
 from timer.timer import Timer
 from timer.timer import tic
 from timer.timer import toc
-
+from sklearn import manifold
 def is_all_zero_row(x):
     return ~x.any(axis=1)
 
@@ -153,6 +153,56 @@ def move_fig(fig):
     h = manager.canvas.height()
     manager.window.setGeometry(3000,200,w,h)
 
+
+
+def plot_MDS(x, y=None, data_set_ids=None):
+    if data_set_ids is None:
+        data_set_ids = np.ones(x.shape[0])
+    pl.close()
+
+    fig = pl.figure()
+    #axes = fig.add_subplot(111)
+    axes = pl.subplot(111)
+    mds = sklearn.manifold.MDS(dissimilarity='precomputed')
+    to_use = false(x.shape[0])
+    max_to_use = 200
+    for i in np.unique(data_set_ids):
+        I = (data_set_ids == i).nonzero()[0]
+        if len(I) <= max_to_use:
+            to_use[I] = True
+        else:
+            choice = np.random.choice(I, max_to_use, replace=False)
+            to_use[choice] = True
+    x = x[to_use,:]
+    W = pairwise.pairwise_distances(x,x,'cosine')
+    data_set_ids = data_set_ids[to_use]
+    if y is not None:
+        y = y[to_use]
+    x = x.toarray()
+    x_mds = mds.fit_transform(W)
+    colors = ['r','g','b']
+    labels = ['s','o']
+    for ind,i in enumerate(np.unique(data_set_ids)):
+        if ind == 1:
+            continue
+        I = data_set_ids == i
+        alpha = 1 / float(I.sum())
+        alpha = alpha*50
+        alpha = .5
+        if i == 0:
+            alpha = 1
+        y_curr = y[I]
+        x_curr = x_mds[I,:]
+        for ind2, j in enumerate(np.unique(y_curr)):
+            I2 = y_curr == j
+            axes.scatter(x_curr[I2,0],x_mds[I2,1], alpha=alpha,c=colors[ind],s=30,marker = labels[ind2])
+        #axes.scatter(x_mds[I,0],x_mds[I,1], alpha=alpha,c=colors[ind],s=60)
+    move_fig(fig)
+    pl.autoscale()
+    pl.show(block=False)
+    pass
+
+
 def plot_2d_sub(x,y,data_set_ids=None,alpha=1,title=None):
     pl.close()
     fig = pl.figure(4)
@@ -172,7 +222,7 @@ def plot_2d_sub(x,y,data_set_ids=None,alpha=1,title=None):
         pl.ylabel(str(val))
         pl.scatter(x[inds],y[inds],alpha=alpha,c='r',s=60)
     move_fig(fig)
-    pl.show()
+    pl.show(block=False)
     pass
 
 def plot_2d(x,y,data_set_ids=None,alpha=1,title=None):

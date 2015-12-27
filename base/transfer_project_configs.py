@@ -23,15 +23,18 @@ def create_project_configs():
 pc_fields_to_copy = bc.pc_fields_to_copy + [
     'target_labels',
     'source_labels',
-    'oracle_labels'
+    'oracle_labels',
+    'use_pool'
 ]
 
 #data_set_to_use = bc.DATA_BOSTONG_HOUSING
-#data_set_to_use = bc.DATA_NG
-data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
+data_set_to_use = bc.DATA_NG
+#data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
 
-synthetic_dim = 5
+synthetic_dim = 1
+use_pool = False
+max_features = 100
 
 class ProjectConfigs(bc.ProjectConfigs):
     def __init__(self):
@@ -42,6 +45,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.num_labels = range(40,201,40)
         self.num_splits = 10
         self.oracle_labels = []
+        self.use_pool = use_pool
         #self.num_splits = 30
 
 
@@ -91,13 +95,21 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.target_labels = np.asarray([0])
         self.source_labels = np.asarray([1])
 
+    def set_ng(self):
+        self.data_dir = 'data_sets/20ng-%d' % max_features
+        self.data_name = 'ng_data-%d' % max_features
+        self.data_set_file_name = 'split_data.pkl'
+        self.results_dir = '20ng-%d' % max_features
+
     def set_ng_transfer(self):
         self.loss_function = loss_function.ZeroOneError()
         self.set_ng()
         self.target_labels = CR[0]
         #self.source_labels = CR[1]
-        self.source_labels = np.vstack((CR[1], ST[1])).T
+        self.source_labels = np.vstack((CR[1], ST[1]))
         self.oracle_labels = CR[1]
+        #self.source_labels = ST[1]
+        #self.oracle_labels = np.empty(0)
         #self.cv_loss_function = loss_function.ZeroOneError()
         self.cv_loss_function = loss_function.LogLoss()
 
@@ -112,8 +124,8 @@ class MainConfigs(bc.MainConfigs):
         method_configs = MethodConfigs()
         method_configs.metric = 'euclidean'
         method_configs.use_fused_lasso = True
-        method_configs.no_reg = True
-        method_configs.use_g_learner = False
+        method_configs.no_reg = False
+        method_configs.use_g_learner = True
         if data_set_to_use == bc.DATA_NG:
             method_configs.metric = 'cosine'
             method_configs.use_fused_lasso = False
@@ -159,7 +171,6 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             'ModelSelTransfer.pkl',
             'HypothesisTransfer.pkl',
             'SKL-LogReg.pkl',
-            'TargetTransfer+NW.pkl',
             'NW.pkl',
             'SKL-RidgeReg.pkl',
             'TargetTransfer+SKL-KNN.pkl',
@@ -173,7 +184,11 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             'LocalTransfer-Oracle-Parametric-max_value=0.5.pkl',
             'LocalTransfer-l1.pkl',
             'LocalTransfer-l2.pkl',
-            'LocalTransfer-no_reg.pkl'
+            'LocalTransfer-no_reg.pkl',
+            'LocalTransfer-NonParaHypTrans.pkl',
+            'TargetTransfer+NW.pkl',
+            'FuseTransfer+NW-tws=0.5.pkl',
+            'FuseTransfer+NW-tws=0.9.pkl',
         ]
 
 class BatchConfigs(bc.BatchConfigs):

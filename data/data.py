@@ -19,6 +19,7 @@ class LabeledVector(object):
         self.is_train = np.empty(0)
         self.type = None
         self.data_set_ids = None
+        self.instance_weights = None
 
     @property
     def n(self):
@@ -186,6 +187,7 @@ class LabeledData(LabeledVector):
 
     def set_target(self):
         self.type = TYPE_TARGET*np.ones(self.n)
+        self.data_set_ids = np.zeros(self.n)
 
     def set_true_y(self):
         self.true_y = self.y
@@ -198,7 +200,7 @@ class LabeledData(LabeledVector):
         new_y = self.y.copy()
         new_true_y = self.true_y.copy()
         for i in range(curr_labels.shape[1]):
-            l = curr_labels[:,i]
+            l = curr_labels[i,:]
             for curr, new in zip(l, new_labels):
                 new_y[self.y == curr] = new
                 new_true_y[self.true_y == curr] = new

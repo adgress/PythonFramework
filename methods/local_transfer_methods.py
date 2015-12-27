@@ -12,7 +12,7 @@ from utility import cvx_functions
 from numpy import multiply
 from numpy.linalg import norm
 
-enable_plotting = False
+enable_plotting = True
 
 class HypothesisTransfer(method.Method):
     def __init__(self, configs=None):
@@ -71,6 +71,16 @@ class HypothesisTransfer(method.Method):
         if not data.is_regression:
             source_data.change_labels(self.configs.source_labels,self.configs.target_labels)
             source_data = source_data.rand_sample(.1)
+
+
+        source_labels = self.configs.source_labels
+        target_labels = self.configs.target_labels
+        data.data_set_ids[:] = 0
+        data.data_set_ids[array_functions.find_set(data.y,source_labels[0,:])] = 1
+        data.data_set_ids[array_functions.find_set(data.y,source_labels[1,:])] = 2
+        data.change_labels(source_labels,target_labels)
+        array_functions.plot_MDS(data.x,data.true_y,data.data_set_ids)
+
         self.source_learner.train_and_test(source_data)
 
         data_copy = self._prepare_data(data,include_unlabeled=True)
@@ -143,8 +153,9 @@ class LocalTransfer(HypothesisTransfer):
         use_g_learner = configs.use_g_learner
 
         if use_g_learner:
-            self.g_learner = scipy_opt_methods.ScipyOptCombinePrediction(configs)
-            self.max_value = .5
+            #self.g_learner = scipy_opt_methods.ScipyOptCombinePrediction(configs)
+            self.g_learner = scipy_opt_methods.ScipyOptNonparametricHypothesisTransfer(configs)
+            self.max_value = 1
             self.g_learner.max_value = self.max_value
         self.no_reg = self.configs.no_reg
         if self.no_reg:
@@ -170,6 +181,8 @@ class LocalTransfer(HypothesisTransfer):
         parametric_data = target_data.get_subset(is_labeled)
         parametric_data.a = a
         parametric_data.b = b
+        parametric_data.y_s = y_s
+        parametric_data.y_t = y_t
         parametric_data.set_defaults()
         #s = np.hstack((a,b))
         #s[parametric_data.x.argsort(0)]
@@ -211,6 +224,7 @@ class LocalTransfer(HypothesisTransfer):
             )
         )
         constraints = [g >= 0, g <= .5]
+        #constraints += [g[0] == .5, g[-1] == 0]
         obj = cvx.Minimize(loss + self.C*reg)
         prob = cvx.Problem(obj,constraints)
 
@@ -269,6 +283,7 @@ class LocalTransfer(HypothesisTransfer):
 
         if self.should_plot_g and enable_plotting and target_data.x.shape[1] == 1:
             x = np.linspace(0,1)
+            x = array_functions.vec_to_2d(x)
             g = self.g_learner.predict_g(x)
             array_functions.plot_2d(x,g)
             pass
@@ -312,8 +327,8 @@ class LocalTransfer(HypothesisTransfer):
             s += '-Oracle'
         if 'no_reg' in self.__dict__ and self.no_reg:
             s += '-no_reg'
-        elif 'g_learner' in self.__dict__ and self.g_learner is not None:
-            s += '-Parametric'
+        if 'g_learner' in self.__dict__ and self.g_learner is not None:
+            s += '-' + self.g_learner.prefix
         elif 'use_fused_lasso' in self.__dict__ and self.use_fused_lasso:
             s += '-l1'
         else:

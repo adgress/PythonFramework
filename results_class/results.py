@@ -11,15 +11,27 @@ aggregated_results = collections.namedtuple('AggregatedResults',['mean','low','h
 processed_results = collections.namedtuple('ProcessedResults',['means','lows','highs'])
 
 class ResultsContainer(object):
-    def __init__(self):
-        self.results_list = []
+    def __init__(self, n=0):
+        self.results_list = [None]*n
 
     def append(self,new_results):
         self.results_list.append(new_results)
 
+    def set(self, new_results, ind, ind_sub=None):
+        if ind_sub is None:
+            self.results_list[ind] = new_results
+        else:
+            self.results_list[ind].results_list[ind_sub] = new_results
+
+    @property
+    def is_full(self):
+        return all([x is not None for x in self.results_list])
+
 class MethodResults(ResultsContainer):
-    def __init__(self):
+    def __init__(self, n_exp, n_splits):
         super(MethodResults, self).__init__()
+        self.results_list = list([ExperimentResults(n_splits) for i in range(n_exp)])
+        pass
 
     def compute_error_processed(self, loss_function):
         errors = self.compute_error(loss_function)
@@ -46,8 +58,8 @@ class MethodResults(ResultsContainer):
 
 
 class ExperimentResults(ResultsContainer):
-    def __init__(self):
-        super(ExperimentResults, self).__init__()
+    def __init__(self, n):
+        super(ExperimentResults, self).__init__(n)
         self.configs = []
         self.num_labels = None
         self.is_regression = True

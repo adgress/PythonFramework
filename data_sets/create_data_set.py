@@ -18,8 +18,12 @@ ng_o = np.asarray(15)
 ng_t = np.asarray(range(16,20))
 
 synthetic_dim = 5
+
+#max_features=10000
+max_features=100
+
 boston_housing_raw_data_file = 'boston_housing/raw_data.pkl'
-ng_raw_data_file = '20ng/raw_data.pkl'
+ng_raw_data_file = '20ng-%d/raw_data.pkl' % max_features
 synthetic_step_transfer_file = 'synthetic_step_transfer/raw_data.pkl'
 synthetic_step_kd_transfer_file = 'synthetic_step_transfer_%d/raw_data.pkl'
 synthetic_step_linear_transfer_file = 'synthetic_step_linear_transfer/raw_data.pkl'
@@ -52,18 +56,35 @@ def create_20ng_data(file_dir=''):
         'T1','T2','T3','T4'
     ]
     data.label_names = short_names
+    y = newsgroups_train.target
+    l = [1,2,7,8,12,17]
+    I = array_functions.false(len(newsgroups_train.target))
+    for i in l:
+        I = I | (y == i)
+    #I = y == 1 | y == 2 | y == 7 | y == 7 | y == 11 | y == 16
+    I = I.nonzero()[0]
+    #max_df = .95
+    #min_df = .001
+    max_df = .1
+    min_df = .01
+    newsgroups_train.data = [newsgroups_train.data[i] for i in I]
+    newsgroups_train.target = newsgroups_train.target[I]
     tf_idf = TfidfVectorizer(
         stop_words='english',
-        max_df=.95,
-        min_df=.001,
-        max_features=10000
+        max_df=max_df,
+        min_df=min_df,
+        max_features=max_features
     )
     vectors = tf_idf.fit_transform(newsgroups_train.data)
     feature_counts = (vectors > 0).sum(0)
+    vocab = helper_functions.invert_dict(tf_idf.vocabulary_)
+    num_feats = len(vocab)
+    vocab = [vocab[i] for i in range(num_feats)]
     data.x = vectors
     data.y = newsgroups_train.target
     data.set_defaults()
     data.is_regression = False
+    data.feature_names = vocab
     class_counts = array_functions.histogram_unique(data.y)
     s = ng_raw_data_file
     if file_dir != '':
@@ -189,7 +210,7 @@ def create_bike_sharing():
 
 if __name__ == "__main__":
     #create_boston_housing()
-    #create_20ng_data()
-    create_synthetic_step_transfer(dim=synthetic_dim)
+    create_20ng_data()
+    #create_synthetic_step_transfer(dim=synthetic_dim)
     #create_synthetic_step_linear_transfer()
     #create_bike_sharing()

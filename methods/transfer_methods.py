@@ -49,7 +49,22 @@ class TargetTranfer(method.Method):
 class FuseTransfer(TargetTranfer):
     def __init__(self, configs=None):
         super(FuseTransfer, self).__init__(configs)
-        self.use_oracle = False
+        self.use_oracle = True
+        self.target_weight_scale = None
+        #self.target_weight_scale = .9
+
+    def train(self, data):
+        is_labeled_train = data.is_labeled & data.is_train
+        n_labeled_target = (data.is_train & is_labeled_train).sum()
+        n_labeled_source = (data.is_train & is_labeled_train).sum()
+        data.instance_weights = np.ones(data.n)
+        if self.target_weight_scale is not None:
+            assert self.target_weight_scale > 0 and self.target_weight_scale <= 1
+            data.instance_weights[data.is_source] /= (n_labeled_source)
+            data.instance_weights[data.is_target] /= (n_labeled_target)
+            data.instance_weights[data.is_target] *= self.target_weight_scale
+            data.instance_weights[data.is_source] *= (1-self.target_weight_scale)
+        super(FuseTransfer, self).train(data)
 
     def _prepare_data(self, data,include_unlabeled=True):
         source_labels = self.configs.source_labels
@@ -74,6 +89,8 @@ class FuseTransfer(TargetTranfer):
     @property
     def prefix(self):
         s = 'FuseTransfer+' + self.base_learner.prefix
+        if 'target_weight_scale' in self.__dict__ and self.target_weight_scale is not None:
+            s += '-tws=' + str(self.target_weight_scale)
         if 'use_oracle' in self.__dict__ and self.use_oracle:
             s += '-Oracle'
         return s

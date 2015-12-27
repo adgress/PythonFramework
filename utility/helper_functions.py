@@ -7,6 +7,10 @@ import numpy as np
 import os
 import shutil
 
+#from http://stackoverflow.com/questions/483666/python-reverse-inverse-a-mapping
+def invert_dict(d):
+    inv_dict = {v : k for k,v in d.items()}
+    return inv_dict
 
 def delete_dir_if_empty(file_name):
     if os.path.isdir(file_name) and not os.listdir(file_name):

@@ -2,13 +2,13 @@ __author__ = 'Aubrey'
 
 import abc
 #import configs.base_configs as base_configs
-
+import copy
 from configs import base_configs
 class Saveable(object):
     #__metaclass__ = abc.ABCMeta
     def __init__(self,configs=base_configs.Configs()):
         self._name_params = {}
-        self.configs = configs
+        self.configs = copy.deepcopy(configs)
         pass
 
     @property

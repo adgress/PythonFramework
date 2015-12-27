@@ -30,7 +30,6 @@ class Method(Saveable):
 
     def __init__(self,configs=MethodConfigs()):
         super(Method, self).__init__(configs)
-        self.configs = configs
         self._params = []
         self.cv_params = {}
         self.is_classifier = True
@@ -80,7 +79,7 @@ class Method(Saveable):
         param_grid = list(grid_search.ParameterGrid(self.cv_params))
         if not self.cv_params:
             return param_grid[0], None
-        param_results =[self.experiment_results_class() for i in range(len(param_grid))]
+        param_results =[self.experiment_results_class(len(splits)) for i in range(len(param_grid))]
         unused_breakpoint = 1
         for i in range(len(splits)):
             curr_split = data_and_splits.get_split(i)
@@ -90,9 +89,9 @@ class Method(Saveable):
                 results = self.run_method(curr_split)
                 fold_results = FoldResults()
                 fold_results.prediction = results
-                param_results[param_idx].append(fold_results)
+                param_results[param_idx].set(fold_results, i)
                 #Make sure error can be computed
-                param_results[param_idx].aggregate_error(self.configs.cv_loss_function)
+                #param_results[param_idx].aggregate_error(self.configs.cv_loss_function)
 
         errors = np.empty(len(param_grid))
         for i in range(len(param_grid)):
@@ -107,10 +106,11 @@ class Method(Saveable):
     def process_data(self, data):
         labels_to_keep = np.empty(0)
         t = self.configs.target_labels
-        s = self.configs.source_labels.ravel()
+        s = self.configs.source_labels
         if t is not None and t.size > 0:
             labels_to_keep = np.concatenate((labels_to_keep,t))
         if s is not None and s.size > 0:
+            s = s.ravel()
             labels_to_keep = np.concatenate((labels_to_keep,s))
             inds = array_functions.find_set(data.y,s)
             data.type[inds] = data_lib.TYPE_SOURCE
@@ -183,6 +183,7 @@ class NadarayaWatsonMethod(Method):
         self.metric = 'euclidean'
         if 'metric' in configs.__dict__:
             self.metric = configs.metric
+        self.instance_weights = None
         #self.metric = 'cosine'
 
     def compute_kernel(self,x,y):
@@ -195,16 +196,22 @@ class NadarayaWatsonMethod(Method):
         #return pairwise.rbf_kernel(x,y,self.sigma)
 
     def train(self, data):
+        is_labeled_train = data.is_train & data.is_labeled
         labeled_train = data.labeled_training_data()
         x_labeled = labeled_train.x
         self.x = x_labeled
         self.y = labeled_train.y
         self.is_classifier = not data.is_regression
 
+        if 'instance_weights' in data.__dict__ and data.instance_weights is not None:
+            self.instance_weights = data.instance_weights[is_labeled_train]
+
     def predict(self, data):
         o = Output(data)
         #W = pairwise.rbf_kernel(data.x,self.x,self.sigma)
         W = self.compute_kernel(data.x, self.x)
+        if self.instance_weights is not None:
+            W = W*self.instance_weights
         W = array_functions.replace_invalid(W,0,0)
         D = W.sum(1)
         D[D==0] = 1
@@ -225,7 +232,9 @@ class NadarayaWatsonMethod(Method):
             y = fu.argmax(1)
             I = y == 0
             if I.any():
-                assert False
+                fu[I,self.y[0]] = 1
+                y = fu.argmax(1)
+                #assert False
         else:
             y = np.dot(S,self.y)
             y = array_functions.replace_invalid(y,self.y.min(),self.y.max())

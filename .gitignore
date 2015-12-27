@@ -13,3 +13,6 @@
 eegtools/*
 eegtools/*/*
 eegtools/*/*/*
+
+.idea/*
+.idea/*/*

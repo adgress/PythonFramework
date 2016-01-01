@@ -8,6 +8,9 @@ import os
 import shutil
 import getpass
 
+def is_laptop():
+    return get_user_name() == 'Aubrey'
+
 def get_user_name():
     name = getpass.getuser()
     return name

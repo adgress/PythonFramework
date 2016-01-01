@@ -41,8 +41,7 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 data_set_to_use = bc.DATA_BOSTONG_HOUSING
 
 synthetic_dim = 1
-user_name = helper_functions.get_user_name()
-if user_name == 'Aubrey':
+if helper_functions.is_laptop()
     use_pool = True
     pool_size = 2
 else:

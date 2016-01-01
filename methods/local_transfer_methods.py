@@ -15,9 +15,9 @@ from data import data as data_lib
 from utility import helper_functions
 
 if helper_functions.is_laptop():
-    enable_plotting = False
-else:
     enable_plotting = True
+else:
+    enable_plotting = False
 
 class HypothesisTransfer(method.Method):
     def __init__(self, configs=None):

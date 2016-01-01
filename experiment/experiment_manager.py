@@ -102,7 +102,7 @@ class MethodExperimentManager(ExperimentManager):
                 continue
             method_results.set(curr_results, i_labels, split)
         if self.configs.use_pool:
-            pool = multiprocessing.Pool(processes=2)
+            pool = multiprocessing.Pool(processes=self.configs.pool_size)
             shared_args = (self, results_file, data_and_splits, method_results)
             args = [shared_args + (i_labels, split) for i_labels,split in num_labels_list]
             all_results = pool.map(_run_experiment, args)

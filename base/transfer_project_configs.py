@@ -8,6 +8,7 @@ from data_sets import create_data_set
 from loss_functions import loss_function
 from data_sets import create_data_set
 from utility import array_functions
+from utility import helper_functions
 
 CR = []
 for i in range(0,4):
@@ -27,7 +28,8 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
     'target_labels',
     'source_labels',
     'oracle_labels',
-    'use_pool'
+    'use_pool',
+    'pool_size'
 ]
 
 #data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION
@@ -39,7 +41,13 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 data_set_to_use = bc.DATA_BOSTONG_HOUSING
 
 synthetic_dim = 1
-use_pool = False
+user_name = helper_functions.get_user_name()
+if user_name == 'Aubrey':
+    use_pool = True
+    pool_size = 2
+else:
+    use_pool = True
+    pool_size = 12
 max_features = create_data_set.max_features
 
 class ProjectConfigs(bc.ProjectConfigs):
@@ -51,6 +59,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.num_labels = range(40,201,40)
         self.oracle_labels = np.empty(0)
         self.use_pool = use_pool
+        self.pool_size = pool_size
         self.num_splits = 10
         self.num_splits = 30
 

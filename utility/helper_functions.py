@@ -6,6 +6,11 @@ import pickle
 import numpy as np
 import os
 import shutil
+import getpass
+
+def get_user_name():
+    name = getpass.getuser()
+    return name
 
 #from http://stackoverflow.com/questions/483666/python-reverse-inverse-a-mapping
 def invert_dict(d):

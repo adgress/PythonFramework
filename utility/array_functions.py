@@ -13,6 +13,18 @@ from timer.timer import Timer
 from timer.timer import tic
 from timer.timer import toc
 from sklearn import manifold
+
+def bin_data(x, num_bins=10):
+    x = np.squeeze(x)
+    assert x.ndim == 1
+    counts,bins = np.histogram(x,bins=num_bins)
+    return np.digitize(x,bins)
+
+def in_range(x, low, high):
+    if x.ndim == 2:
+        assert x.shape[1] == 1
+    return np.squeeze((x>= low) & (x<=high))
+
 def is_all_zero_row(x):
     return ~x.any(axis=1)
 
@@ -61,7 +73,8 @@ def make_laplacian_kNN(x,k,metric):
     W = np.zeros(dists.shape)
     W_inds = np.asarray(range(x.shape[0]))
     for i in range(k):
-        W[W_inds,to_keep[:,i]] = dists[W_inds,to_keep[:,i]]
+        #W[W_inds,to_keep[:,i]] = dists[W_inds,to_keep[:,i]]
+        W[W_inds,to_keep[:,i]] = 1
 
     #Make symmetric for quad_form
     W = .5*(W + W.T)
@@ -151,7 +164,7 @@ def move_fig(fig):
     manager = fig.canvas.manager
     w = manager.canvas.width()
     h = manager.canvas.height()
-    manager.window.setGeometry(3000,200,w,h)
+    manager.window.setGeometry(3000,0,w,h)
 
 
 
@@ -163,7 +176,6 @@ def plot_MDS(x, y=None, data_set_ids=None):
     fig = pl.figure()
     #axes = fig.add_subplot(111)
     axes = pl.subplot(111)
-    mds = sklearn.manifold.MDS(dissimilarity='precomputed')
     to_use = false(x.shape[0])
     max_to_use = 200
     for i in np.unique(data_set_ids):
@@ -174,28 +186,50 @@ def plot_MDS(x, y=None, data_set_ids=None):
             choice = np.random.choice(I, max_to_use, replace=False)
             to_use[choice] = True
     x = x[to_use,:]
-    W = pairwise.pairwise_distances(x,x,'cosine')
     data_set_ids = data_set_ids[to_use]
     if y is not None:
         y = y[to_use]
-    x = x.toarray()
+    x = try_toarray(x)
+    I_nonzero = x.sum(1).nonzero()[0]
+    x = x[I_nonzero,:]
+    data_set_ids = data_set_ids[I_nonzero]
+    y = y[I_nonzero]
+
+
+    '''
+    x = np.zeros(x.shape)
+    x[data_set_ids==0,0] = 1
+    x[data_set_ids==1,1] = 1
+    x[data_set_ids==2,2] = 1
+    '''
+    W = pairwise.pairwise_distances(x,x,'cosine')
+    #W = pairwise.pairwise_distances(x,x,'euclidean')
+    W = make_rbf(x,sigma=10,metric='cosine')
+    W = 1 - W
+
+    #mds = sklearn.manifold.MDS(dissimilarity='precomputed',max_iter=1000,verbose=1,metric=False)
+    mds = sklearn.manifold.MDS(dissimilarity='precomputed',max_iter=1000,verbose=1,n_init=4)
     x_mds = mds.fit_transform(W)
+    #mds = sklearn.manifold.MDS()
+    #x_mds = mds.fit_transform(x)
     colors = ['r','g','b']
     labels = ['s','o']
     for ind,i in enumerate(np.unique(data_set_ids)):
-        if ind == 1:
+        if ind == 0 and False:
+            continue
+        if ind == 2 and False:
             continue
         I = data_set_ids == i
         alpha = 1 / float(I.sum())
         alpha = alpha*50
-        alpha = .5
+        alpha = .3
         if i == 0:
             alpha = 1
         y_curr = y[I]
         x_curr = x_mds[I,:]
         for ind2, j in enumerate(np.unique(y_curr)):
             I2 = y_curr == j
-            axes.scatter(x_curr[I2,0],x_mds[I2,1], alpha=alpha,c=colors[ind],s=30,marker = labels[ind2])
+            axes.scatter(x_curr[I2,0],x_mds[I2,1], alpha=alpha,c=colors[ind],s=100,marker = labels[ind2])
         #axes.scatter(x_mds[I,0],x_mds[I,1], alpha=alpha,c=colors[ind],s=60)
     move_fig(fig)
     pl.autoscale()
@@ -233,7 +267,7 @@ def plot_2d(x,y,data_set_ids=None,alpha=1,title=None):
     pl.title(title)
     pl.scatter(x,y,alpha=alpha,c=data_set_ids,s=60)
     move_fig(fig)
-    pl.show()
+    pl.show(block=False)
     pass
 
 def spy(m, prec=.001, size=5):
@@ -255,7 +289,8 @@ def is_matrix(a):
     return a.__class__ in scipy_classes or isinstance(a, np.ndarray)
 
 def find_set(a,to_find):
-    assert len(a.shape) <= 1
+    assert len(a.shape) <= 1 or a.shape[1] == 1
+    a = np.squeeze(a)
     inds = false(len(a))
     for i in to_find:
         inds = inds | (i == a)

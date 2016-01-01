@@ -81,29 +81,58 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
         self.g_nw.configs.target_labels = None
         self.g_nw.configs.source_labels = None
         self.g_nw.configs.cv_loss_function = loss_function.MeanSquaredError()
+        self.g_nw.quiet = True
         self.k = 3
         self.metric = configs.metric
+
+    @staticmethod
+    def fused_lasso(x, W):
+        n = x.shape[0]
+        val = 0
+        for i in range(n):
+            for j in range(i+1,n):
+               val += abs(x[i]-x[j])*W[i,j]
+
+        return val
 
     def train(self, data):
         f = self.create_eval(data, self.C)
         g = self.create_gradient(data, self.C)
-        method = 'L-BFGS-B'
-        options = {
-            'disp': False,
-            'maxiter': np.inf,
-            'maxfun': np.inf
-        }
         bounds = list((0, None) for i in range(data.n))
         g0 = np.zeros(data.n)
         x = data.x
         y_s = np.squeeze(data.y_s[:,0])
         y_t = np.squeeze(data.y_t[:,0])
         y = data.y
+        W = -array_functions.make_laplacian_kNN(data.x,self.k,self.configs.metric)
+        W = array_functions.try_toarray(W)
         if not data.is_regression:
             y = array_functions.make_label_matrix(data.y)[:,data.classes].toarray()
             y = y[:,0]
         reg = self.create_reg(data.x)
-        args = (x,y,y_s,y_t,self.C,reg)
+        if self.configs.use_fused_lasso:
+            method = 'SLSQP'
+            max_iter = 1000
+            maxfun = 1000
+            fused_lasso = ScipyOptNonparametricHypothesisTransfer.fused_lasso
+            lasso = lambda x : self.C - fused_lasso(x,W)
+            constraints = {
+                'type': 'ineq',
+                'fun': lasso
+            }
+            args = (x,y,y_s,y_t,0,reg)
+        else:
+            method = 'L-BFGS-B'
+            max_iter = np.inf
+            max_fun = np.inf
+            constraints = None
+            args = (x,y,y_s,y_t,self.C,reg)
+
+        options = {
+            'disp': False,
+            'maxiter':max_iter,
+            'maxfun': maxfun
+        }
         results = optimize.minimize(
             f,
             g0,
@@ -111,6 +140,7 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
             bounds=bounds,
             jac=g,
             options=options,
+            constraints=constraints,
             args=args
         )
         compare_results = False
@@ -121,13 +151,21 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
                 method=method,
                 bounds=bounds,
                 options=options,
+                constraints=constraints,
                 args=args
             )
             err = results.x - results2.x
             print 'Rel Error - g: ' + str(norm(err)/norm(results2.x))
             print 'Rel Error - f(g*): ' + str(norm(results.fun-results2.fun)/norm(results2.fun))
             results = results2
-
+        '''
+        I = data.arg_sort()
+        x = (data.x[I,:])
+        g = array_functions.vec_to_2d(results.x[I])
+        v = np.hstack((x,g))
+        print v
+        print ''
+        '''
         self.g = results.x
         g_data = data_lib.Data()
         g_data.x = data.x
@@ -211,7 +249,10 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
 
     @property
     def prefix(self):
-        return 'NonParaHypTrans'
+        s = 'NonParaHypTrans'
+        if self.configs.use_fused_lasso:
+            s += '-l1'
+        return s
 
 
 

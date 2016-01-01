@@ -11,7 +11,20 @@ import math
 import os
 from sklearn import cross_validation
 
+def regression_configs():
+    c = configs_lib.DataProcessingConfigs()
+    c.is_regression = True
+    return c
 
+def classification_configs():
+    c = configs_lib.DataProcessingConfigs()
+    c.is_regression = False
+    return c
+
+def synthetic_classification_configs():
+    c = configs_lib.DataProcessingConfigs()
+    c.is_regression = False
+    return c
 
 def ng_configs():
     c = configs_lib.DataProcessingConfigs()
@@ -89,9 +102,10 @@ class DataSplitter(object):
 
         return splits
 
-if __name__ == '__main__':
+def run_main():
     #split_data(create_data_set.boston_housing_raw_data_file, boston_housing_configs())
-    split_data(create_data_set.ng_raw_data_file, ng_configs())
+    #split_data(create_data_set.ng_raw_data_file, ng_configs())
+    #split_data(create_data_set.synthetic_classification_file, synthetic_classification_configs())
     '''
     s = create_data_set.synthetic_step_transfer_file
     if create_data_set.synthetic_dim > 1:
@@ -99,3 +113,6 @@ if __name__ == '__main__':
     split_data(s, synthetic_step_transfer_configs())
     '''
     #split_data(create_data_set.synthetic_step_linear_transfer_file, synthetic_step_transfer_configs())
+    split_data(create_data_set.concrete_file, regression_configs())
+if __name__ == '__main__':
+    run_main()

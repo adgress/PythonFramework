@@ -36,6 +36,7 @@ class Method(Saveable):
         self.experiment_results_class = results_lib.ExperimentResults
         self.cv_use_data_type = True
         self._estimated_error = None
+        self.quiet = False
 
     @property
     def params(self):
@@ -100,7 +101,8 @@ class Method(Saveable):
 
         min_error = errors.min()
         best_params = param_grid[errors.argmin()]
-        print best_params
+        if not self.quiet:
+            print best_params
         return [best_params, min_error]
 
     def process_data(self, data):

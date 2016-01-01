@@ -49,7 +49,7 @@ class TargetTranfer(method.Method):
 class FuseTransfer(TargetTranfer):
     def __init__(self, configs=None):
         super(FuseTransfer, self).__init__(configs)
-        self.use_oracle = True
+        self.use_oracle = False
         self.target_weight_scale = None
         #self.target_weight_scale = .9
 

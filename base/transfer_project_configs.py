@@ -6,6 +6,9 @@ from configs import base_configs as bc
 import numpy as np
 from data_sets import create_data_set
 from loss_functions import loss_function
+from data_sets import create_data_set
+from utility import array_functions
+
 CR = []
 for i in range(0,4):
     a = [create_data_set.ng_c[i],create_data_set.ng_r[i]]
@@ -27,14 +30,16 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
     'use_pool'
 ]
 
-#data_set_to_use = bc.DATA_BOSTONG_HOUSING
-data_set_to_use = bc.DATA_NG
+#data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
+#data_set_to_use = bc.DATA_BOSTONG_HOUSING
+#data_set_to_use = bc.DATA_NG
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
+data_set_to_use = bc.DATA_CONCRETE
 
 synthetic_dim = 1
 use_pool = False
-max_features = 100
+max_features = create_data_set.max_features
 
 class ProjectConfigs(bc.ProjectConfigs):
     def __init__(self):
@@ -43,9 +48,9 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.source_labels = np.empty(0)
         self.project_dir = 'base'
         self.num_labels = range(40,201,40)
-        self.num_splits = 10
-        self.oracle_labels = []
+        self.oracle_labels = np.empty(0)
         self.use_pool = use_pool
+        self.num_splits = 10
         #self.num_splits = 30
 
 
@@ -54,6 +59,7 @@ class ProjectConfigs(bc.ProjectConfigs):
             #self.num_labels = range(20,61,20) + [120, 180]
             #self.num_labels = range(20,61,20)
             self.num_labels = [5,10,20]
+            #self.num_labels = [20]
         elif data_set_to_use == bc.DATA_BOSTONG_HOUSING:
             self.set_boston_housing()
             self.num_labels = range(20,61,20)
@@ -65,12 +71,44 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.set_synthetic_step_linear_transfer()
             #self.num_labels = [30]
             self.num_labels = range(10,31,10)
+        elif data_set_to_use == bc.DATA_SYNTHETIC_CLASSIFICATION:
+            self.set_synthetic_classification()
+            self.num_labels = [5,10,20]
+            #self.num_labels = [10]
+            #self.num_labels = range(10,31,10)
+            #self.num_labels = range(10,71,10)
+        elif data_set_to_use == bc.DATA_CONCRETE:
+            self.set_concreate_transfer()
+            self.num_labels = [5,10,20,40,80]
         else:
             assert False
 
         self.labels_to_not_sample = self.source_labels.ravel()
-        self.labels_to_keep = np.concatenate((self.target_labels,self.source_labels.ravel()))
+        a = self.source_labels.ravel()
+        self.labels_to_keep = np.concatenate((self.target_labels,a))
 
+    def set_concreate_transfer(self):
+        self.loss_function = loss_function.MeanSquaredError()
+        self.cv_loss_function = loss_function.MeanSquaredError()
+        self.data_dir = 'data_sets/concrete'
+        self.data_name = 'concrete'
+        self.data_set_file_name = 'split_data.pkl'
+        self.results_dir = 'concrete'
+        self.target_labels = np.asarray([3])
+        self.source_labels = np.asarray([1])
+
+    def set_synthetic_classification(self):
+        self.loss_function = loss_function.ZeroOneError()
+        self.data_dir = 'data_sets/synthetic_classification'
+        self.data_name = 'synthetic_classification'
+        self.data_set_file_name = 'split_data.pkl'
+        self.results_dir = 'synthetic_classification'
+        self.target_labels = np.asarray([1,2])
+        #self.target_labels = array_functions.vec_to_2d(self.target_labels).T
+        self.source_labels = np.asarray([3,4])
+        self.source_labels = array_functions.vec_to_2d(self.source_labels).T
+        #self.cv_loss_function = loss_function.LogLoss()
+        self.cv_loss_function = loss_function.ZeroOneError()
 
     def set_synthetic_step_linear_transfer(self):
         self.loss_function = loss_function.MeanSquaredError()
@@ -100,15 +138,24 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.data_name = 'ng_data-%d' % max_features
         self.data_set_file_name = 'split_data.pkl'
         self.results_dir = '20ng-%d' % max_features
+        self.cv_loss_function = loss_function.LogLoss()
 
     def set_ng_transfer(self):
         self.loss_function = loss_function.ZeroOneError()
         self.set_ng()
+        '''
+        self.target_labels = np.asarray([1,2])
+        S1 = np.asarray([7,8])
+        S2 = np.asarray([12,13])
+        self.source_labels = np.vstack((S1,S2))
+        '''
+
         self.target_labels = CR[0]
         #self.source_labels = CR[1]
         self.source_labels = np.vstack((CR[1], ST[1]))
         self.oracle_labels = CR[1]
         #self.source_labels = ST[1]
+
         #self.oracle_labels = np.empty(0)
         #self.cv_loss_function = loss_function.ZeroOneError()
         self.cv_loss_function = loss_function.LogLoss()
@@ -135,6 +182,8 @@ class MainConfigs(bc.MainConfigs):
         fuse_nw.base_learner = method.NadarayaWatsonMethod(method_configs)
         target_nw = transfer_methods.TargetTranfer(method_configs)
         target_nw.base_learner = method.NadarayaWatsonMethod(method_configs)
+        target_ridge = transfer_methods.TargetTranfer(method_configs)
+        target_ridge.base_learner = method.SKLRidgeRegression(method_configs)
         nw = method.NadarayaWatsonMethod(method_configs)
         log_reg = method.SKLLogisticRegression(MethodConfigs())
         target_knn = transfer_methods.TargetTranfer(method_configs)
@@ -147,9 +196,10 @@ class MainConfigs(bc.MainConfigs):
         #self.learner = hyp_transfer
         #self.learner = model_transfer
         #self.learner = scipy_ridge_reg
-        self.learner = local_transfer
+        #self.learner = local_transfer
         #self.learner = fuse_nw
-        #self.learner = target_nw
+        self.learner = target_nw
+        #self.learner = target_ridge
 
 
 class MethodConfigs(bc.MethodConfigs):
@@ -176,19 +226,17 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             'TargetTransfer+SKL-KNN.pkl',
             'LocalTransfer.pkl',
             'FuseTransfer+NW.pkl',
-            'LocalTransfer-Parametric.pkl',
-            'LocalTransfer-Parametric-max_value=0.5.pkl',
-            'LocalTransfer-Oracle.pkl',
             'HypothesisTransfer-Oracle.pkl',
             'FuseTransfer+NW-Oracle.pkl',
-            'LocalTransfer-Oracle-Parametric-max_value=0.5.pkl',
-            'LocalTransfer-l1.pkl',
-            'LocalTransfer-l2.pkl',
-            'LocalTransfer-no_reg.pkl',
             'LocalTransfer-NonParaHypTrans.pkl',
+            'LocalTransfer-SigComb-max_value=0.5.pkl',
+            'LocalTransfer-NonParaHypTrans-max_value=0.5.pkl',
+            'LocalTransfer-NonParaHypTrans-l1-max_value=0.5.pkl',
+            'LocalTransfer-no_reg-l1.pkl',
             'TargetTransfer+NW.pkl',
             'FuseTransfer+NW-tws=0.5.pkl',
             'FuseTransfer+NW-tws=0.9.pkl',
+            'TargetTransfer+SKL-RidgeReg.pkl',
         ]
 
 class BatchConfigs(bc.BatchConfigs):

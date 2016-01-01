@@ -20,6 +20,7 @@ class LabeledVector(object):
         self.type = None
         self.data_set_ids = None
         self.instance_weights = None
+        self.is_regression = None
 
     @property
     def n(self):
@@ -89,8 +90,42 @@ class LabeledVector(object):
             return np.zeros(self.y.shape)
         return self.type == TYPE_SOURCE
 
+    @property
+    def y_labeled(self):
+        return self.y[self.is_labeled]
+
+    @property
+    def classes(self):
+        return np.unique(self.y_labeled)
+    @property
+    def is_labeled(self):
+        return ~np.isnan(self.y)
+
     def reveal_labels(self, inds):
         self.y[inds] = self.true_y[inds]
+
+    #Note: This changes both y AND true_y
+    def add_noise(self, noise_rate, I=None, classes=None):
+        assert not self.is_regression
+        assert self.is_regression is not None
+        if I is None:
+            I = array_functions.true(self.n)
+        if classes is None:
+            I = self.classes
+        to_switch = np.random.rand(self.n) <= noise_rate
+        to_switch = to_switch.nonzero()[0]
+        for i in to_switch:
+            if not I[i]:
+                continue
+            old_y = self.y[i]
+            y_ind = classes == old_y
+            assert any(classes)
+            p = np.ones(len(classes)) * 1.0 / (len(classes)-1)
+            p[classes == old_y] = 0
+            new_y = np.random.choice(classes,p=p)
+            self.y[i] = new_y
+            self.true_y[i] = new_y
+
 
 class LabeledData(LabeledVector):
     def __init__(self):
@@ -104,20 +139,10 @@ class LabeledData(LabeledVector):
         pass
 
     @property
-    def is_labeled(self):
-        return ~np.isnan(self.y)
-
-    @property
     def n_train_labeled(self):
         return np.sum(self.is_labeled & self.is_train)
 
-    @property
-    def y_labeled(self):
-        return self.y[self.is_labeled]
 
-    @property
-    def classes(self):
-        return np.unique(self.y_labeled)
 
     def get_subset(self,to_select):
         d = self.__dict__
@@ -190,16 +215,16 @@ class LabeledData(LabeledVector):
         self.data_set_ids = np.zeros(self.n)
 
     def set_true_y(self):
-        self.true_y = self.y
+        self.true_y = self.y.copy()
 
     def change_labels(self, curr_labels, new_labels):
         #assert len(curr_labels) == len(new_labels)
-        assert curr_labels.shape[0] == new_labels.shape[0]
+        assert curr_labels.shape[1] == new_labels.shape[0]
         if curr_labels.ndim == 1:
             curr_labels = np.expand_dims(curr_labels,1)
         new_y = self.y.copy()
         new_true_y = self.true_y.copy()
-        for i in range(curr_labels.shape[1]):
+        for i in range(curr_labels.shape[0]):
             l = curr_labels[i,:]
             for curr, new in zip(l, new_labels):
                 new_y[self.y == curr] = new
@@ -236,6 +261,11 @@ class Data(LabeledData):
     def labeled_test_data(self):
         I = ~self.is_train & self.is_labeled
         return data_subset(x=self.x[I,:],y=self.y[I])
+
+    def arg_sort(self):
+        assert self.x.shape[1] == 1
+        x = np.squeeze(self.x)
+        return np.squeeze(self.x.argsort(0))
 
 class Split(object):
     def __init__(self,n=0):

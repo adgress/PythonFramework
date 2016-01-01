@@ -11,6 +11,7 @@ from utility import array_functions
 from utility import cvx_functions
 from numpy import multiply
 from numpy.linalg import norm
+from data import data as data_lib
 
 enable_plotting = True
 
@@ -72,14 +73,15 @@ class HypothesisTransfer(method.Method):
             source_data.change_labels(self.configs.source_labels,self.configs.target_labels)
             source_data = source_data.rand_sample(.1)
 
-
-        source_labels = self.configs.source_labels
-        target_labels = self.configs.target_labels
-        data.data_set_ids[:] = 0
-        data.data_set_ids[array_functions.find_set(data.y,source_labels[0,:])] = 1
-        data.data_set_ids[array_functions.find_set(data.y,source_labels[1,:])] = 2
-        data.change_labels(source_labels,target_labels)
-        array_functions.plot_MDS(data.x,data.true_y,data.data_set_ids)
+        viz_mds = False
+        if viz_mds:
+            source_labels = self.configs.source_labels
+            target_labels = self.configs.target_labels
+            data.data_set_ids[:] = 0
+            data.data_set_ids[array_functions.find_set(data.y,source_labels[0,:])] = 1
+            data.data_set_ids[array_functions.find_set(data.y,source_labels[1,:])] = 2
+            data.change_labels(source_labels,target_labels)
+            array_functions.plot_MDS(data.x,data.true_y,data.data_set_ids)
 
         self.source_learner.train_and_test(source_data)
 
@@ -138,7 +140,10 @@ class LocalTransfer(HypothesisTransfer):
         self.radius = .05
         #self.cv_params['C'] = 10**np.asarray(range(-4,4),dtype='float64')
         self.cv_params['C'] = 10**np.asarray(range(-6,6),dtype='float64')
+        if self.configs.use_fused_lasso:
+            self.cv_params['C'] = np.asarray([1,5,10,50,100,500,1000000])
         self.cv_params['C'] = np.insert(self.cv_params['C'],0,0)
+
         #self.C = 1
         self.k = 3
         #self.cv_params['k'] = np.asarray([1,3,5,7])
@@ -155,7 +160,7 @@ class LocalTransfer(HypothesisTransfer):
         if use_g_learner:
             #self.g_learner = scipy_opt_methods.ScipyOptCombinePrediction(configs)
             self.g_learner = scipy_opt_methods.ScipyOptNonparametricHypothesisTransfer(configs)
-            self.max_value = 1
+            self.max_value = .5
             self.g_learner.max_value = self.max_value
         self.no_reg = self.configs.no_reg
         if self.no_reg:
@@ -164,6 +169,10 @@ class LocalTransfer(HypothesisTransfer):
         self.use_estimated_f = False
         #self.metric = 'euclidean'
         self.metric = configs.metric
+        self.target_learner.quiet = True
+        self.source_learner.quiet = True
+        if self.g_learner is not None:
+            self.g_learner.quiet = True
 
 
     def train_g_learner(self, target_data):
@@ -268,7 +277,37 @@ class LocalTransfer(HypothesisTransfer):
         target_labels = self.configs.target_labels
         target_data = data.get_transfer_subset(target_labels,include_unlabeled=True)
         self.target_learner.train_and_test(target_data)
-        return super(LocalTransfer, self).train_and_test(data)
+        results =  super(LocalTransfer, self).train_and_test(data)
+        #print self.g_learner.g
+        return results
+
+    def plot_g(self):
+        x = np.linspace(0,1)
+        x = array_functions.vec_to_2d(x)
+        g_orig = self.g_learner.predict_g(x)
+        g = 1 / (1+g_orig)
+        array_functions.plot_2d(x,g)
+        pass
+
+    def plot_source(self):
+        x = np.linspace(0,1)
+        x = array_functions.vec_to_2d(x)
+        d = data_lib.Data()
+        d.x = x
+        d.y = np.nan*np.ones(x.shape[0])
+        d.is_regression = True
+        o = self.source_learner.predict(d)
+        array_functions.plot_2d(x, o.y)
+
+    def plot_target(self):
+        x = np.linspace(0,1)
+        x = array_functions.vec_to_2d(x)
+        d = data_lib.Data()
+        d.x = x
+        d.y = np.nan*np.ones(x.shape[0])
+        d.is_regression = True
+        o = self.target_learner.predict(d)
+        array_functions.plot_2d(x, o.y)
 
     def train(self, data):
         target_data = self.get_target_subset(data)
@@ -280,12 +319,14 @@ class LocalTransfer(HypothesisTransfer):
             self.train_g_nonparametric(target_data)
         else:
             self.train_g_nonparametric_all(target_data)
-
+        I = target_data.is_labeled
+        plot_functions = False
+        if plot_functions:
+            self.plot_target()
+            self.plot_source()
+            self.plot_g()
         if self.should_plot_g and enable_plotting and target_data.x.shape[1] == 1:
-            x = np.linspace(0,1)
-            x = array_functions.vec_to_2d(x)
-            g = self.g_learner.predict_g(x)
-            array_functions.plot_2d(x,g)
+            self.plot_g()
             pass
 
 

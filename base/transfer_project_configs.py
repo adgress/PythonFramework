@@ -35,7 +35,8 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 #data_set_to_use = bc.DATA_BOSTONG_HOUSING
 #data_set_to_use = bc.DATA_NG
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
-data_set_to_use = bc.DATA_CONCRETE
+#data_set_to_use = bc.DATA_CONCRETE
+data_set_to_use = bc.DATA_BOSTONG_HOUSING
 
 synthetic_dim = 1
 use_pool = False
@@ -51,7 +52,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.oracle_labels = np.empty(0)
         self.use_pool = use_pool
         self.num_splits = 10
-        #self.num_splits = 30
+        self.num_splits = 30
 
 
         if data_set_to_use == bc.DATA_NG:
@@ -61,8 +62,10 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.num_labels = [5,10,20]
             #self.num_labels = [20]
         elif data_set_to_use == bc.DATA_BOSTONG_HOUSING:
-            self.set_boston_housing()
-            self.num_labels = range(20,61,20)
+            self.set_boston_housing_transfer()
+            self.num_labels = [5,10,20,40]
+            #self.set_boston_housing()
+            #self.num_labels = range(20,61,20)
         elif data_set_to_use == bc.DATA_SYNTHETIC_STEP_TRANSFER:
             self.set_synthetic_step_transfer()
             self.num_labels = range(10,31,10)
@@ -82,10 +85,21 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.num_labels = [5,10,20,40,80]
         else:
             assert False
-
+        assert self.source_labels.size > 0
+        assert self.target_labels.size > 0
         self.labels_to_not_sample = self.source_labels.ravel()
         a = self.source_labels.ravel()
         self.labels_to_keep = np.concatenate((self.target_labels,a))
+
+    def set_boston_housing_transfer(self):
+        self.loss_function = loss_function.MeanSquaredError()
+        self.cv_loss_function = loss_function.MeanSquaredError()
+        self.data_dir = 'data_sets/boston_housing'
+        self.data_name = 'boston_housing'
+        self.data_set_file_name = 'split_data.pkl'
+        self.results_dir = 'boston_housing'
+        self.target_labels = np.asarray([0])
+        self.source_labels = np.asarray([1])
 
     def set_concreate_transfer(self):
         self.loss_function = loss_function.MeanSquaredError()
@@ -196,9 +210,9 @@ class MainConfigs(bc.MainConfigs):
         #self.learner = hyp_transfer
         #self.learner = model_transfer
         #self.learner = scipy_ridge_reg
-        #self.learner = local_transfer
+        self.learner = local_transfer
         #self.learner = fuse_nw
-        self.learner = target_nw
+        #self.learner = target_nw
         #self.learner = target_ridge
 
 

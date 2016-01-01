@@ -17,8 +17,13 @@ from sklearn import manifold
 def bin_data(x, num_bins=10):
     x = np.squeeze(x)
     assert x.ndim == 1
-    counts,bins = np.histogram(x,bins=num_bins)
-    return np.digitize(x,bins)
+    bins = np.empty(num_bins-1)
+    step = 100.0 / num_bins
+    for i in range(num_bins-1):
+        p = (i+1)*step
+        bins[i] = np.percentile(x,p)
+    #counts,bins = np.histogram(x,bins=num_bins)
+    return np.digitize(x, bins)
 
 def in_range(x, low, high):
     if x.ndim == 2:
@@ -48,6 +53,8 @@ def normalize(x):
     return x
 
 def vec_to_2d(x):
+    if x.ndim == 2:
+        return x
     return np.reshape(x,(len(x),1))
 
 #code from http://stackoverflow.com/questions/9185768/inverting-permutations-in-python

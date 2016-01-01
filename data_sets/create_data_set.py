@@ -43,7 +43,7 @@ def viz_features(x,y,domain_ids,feature_names=None):
         xi = x[:,i]
         title = str(i)
         if feature_names is not None:
-            title = feature_names[i]
+            title = str(i) + ': ' + feature_names[i]
         array_functions.plot_2d_sub(xi,y,alpha=.1,title=title,data_set_ids=domain_ids)
         pass
 
@@ -389,8 +389,11 @@ def create_boston_housing(file_dir=''):
     x = data.x
     y = data.y
     domain_ids = np.ones(x.shape[0])
-    domain_ids = array_functions.bin_data(x[:,12],num_bins=3)
-    viz_features(x,y,domain_ids,boston_data.feature_names)
+    domain_ids = array_functions.bin_data(x[:,12],num_bins=4)
+    #viz_features(x,y,domain_ids,boston_data.feature_names)
+    data.x = data.x[:,5]
+    data.data_set_ids = domain_ids
+    data.x = array_functions.vec_to_2d(data.x)
     if file_dir != '':
         s = file_dir + '/' + s
     helper_functions.save_object(s,data)

@@ -163,6 +163,7 @@ class LabeledData(LabeledVector):
             return array_functions.find_set(self.y,labels_or_ids)
 
     def get_transfer_subset(self,labels_or_ids,include_unlabeled=False):
+        assert len(labels_or_ids) > 0
         if self.is_regression:
             inds = array_functions.find_set(self.data_set_ids,labels_or_ids)
             if not include_unlabeled:

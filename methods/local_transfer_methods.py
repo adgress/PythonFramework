@@ -22,6 +22,8 @@ class HypothesisTransfer(method.Method):
         self.cv_params['a'] = np.asarray([0, .2, .4, .6, .8, 1],dtype='float64')
         self.target_learner = method.NadarayaWatsonMethod(configs)
         self.source_learner = method.NadarayaWatsonMethod(configs)
+        self.target_learner.quiet = True
+        self.source_learner.quiet = True
         self.base_learner = None
         self.use_oracle = False
 

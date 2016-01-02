@@ -63,7 +63,8 @@ def run_visualization():
 
 if __name__ == "__main__":
     run_main()
-    run_visualization()
+    if helper_functions.is_laptop():
+        run_visualization()
 
 
 

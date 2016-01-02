@@ -42,11 +42,11 @@ data_set_to_use = bc.DATA_BOSTONG_HOUSING
 
 synthetic_dim = 1
 if helper_functions.is_laptop():
-    use_pool = True
+    use_pool = False
     pool_size = 2
 else:
     use_pool = True
-    pool_size = 12
+    pool_size = 24
 max_features = create_data_set.max_features
 
 class ProjectConfigs(bc.ProjectConfigs):
@@ -193,6 +193,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs = MethodConfigs()
         method_configs.metric = 'euclidean'
         method_configs.use_fused_lasso = True
+        method_configs.use_reg2 = True
         method_configs.no_reg = False
         method_configs.use_g_learner = True
         if data_set_to_use == bc.DATA_NG:

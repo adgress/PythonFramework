@@ -110,6 +110,7 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
             y = array_functions.make_label_matrix(data.y)[:,data.classes].toarray()
             y = y[:,0]
         reg = self.create_reg(data.x)
+        reg2 = self.create_reg2(data.x)
         if self.configs.use_fused_lasso:
             method = 'SLSQP'
             max_iter = 1000
@@ -120,13 +121,13 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
                 'type': 'ineq',
                 'fun': lasso
             }
-            args = (x,y,y_s,y_t,0,reg)
+            args = (x,y,y_s,y_t,0,reg,self.C2,reg2)
         else:
             method = 'L-BFGS-B'
             max_iter = np.inf
             max_fun = np.inf
             constraints = None
-            args = (x,y,y_s,y_t,self.C,reg)
+            args = (x,y,y_s,y_t,self.C,reg,self.C2,reg2)
 
         options = {
             'disp': False,
@@ -155,9 +156,17 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
                 args=args
             )
             err = results.x - results2.x
-            print 'Rel Error - g: ' + str(norm(err)/norm(results2.x))
-            print 'Rel Error - f(g*): ' + str(norm(results.fun-results2.fun)/norm(results2.fun))
+            if norm(results2.x) == 0:
+                print 'All zeros - using absolute error'
+                print 'Abs Error - g: ' + str(norm(err))
+            else:
+                print 'Rel Error - g: ' + str(norm(err)/norm(results2.x))
+            rel_error = norm(results.fun-results2.fun)/norm(results2.fun)
+            print 'Rel Error - f(g*): ' + str(rel_error)
+            if  rel_error > .001 and norm(results2.x) > 0:
+                print 'Big error: C=' + str(self.C) + ' C2=' + str(self.C2)
             results = results2
+
         '''
         I = data.arg_sort()
         x = (data.x[I,:])
@@ -208,18 +217,27 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
         r = lambda g: ScipyOptNonparametricHypothesisTransfer.reg(g,L)
         return r
 
+    def create_reg2(self,x):
+        r = lambda g: ScipyOptNonparametricHypothesisTransfer.reg2(g)
+        return r
+
+    @staticmethod
+    def reg2(g):
+        return norm(g)**2, 2*g
+
     @staticmethod
     def reg(g,L):
         Lg = L.dot(g)
         val = Lg.dot(g)
-        return val, Lg
+        return val, 2*Lg
 
     @staticmethod
-    def eval(g,x,y,y_s,y_t,C,reg):
+    def eval(g,x,y,y_s,y_t,C,reg,C2,reg2):
         err = ScipyOptNonparametricHypothesisTransfer.error(g,y,y_s,y_t)
         val_reg, unused = reg(g)
+        val_reg2, unused = reg2(g)
         val = norm(err)**2
-        val += C*val_reg
+        val += (C*val_reg + C2*val_reg2)
         return val
 
     @staticmethod
@@ -233,7 +251,7 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
         return err
 
     @staticmethod
-    def gradient(g,x,y,y_s,y_t,C,reg):
+    def gradient(g,x,y,y_s,y_t,C,reg,C2,reg2):
         err = ScipyOptNonparametricHypothesisTransfer.error(g,y,y_s,y_t)
         denom = 1 / np.square(1+g)
         a_t = -denom
@@ -242,9 +260,10 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
         grad_loss += np.multiply(a_s,y_s)
         grad_loss = np.multiply(grad_loss,err)
         unused, grad_reg = reg(g)
-        grad = grad_loss
-        grad += C*grad_reg
-        grad *= 2
+        unused, grad_reg2 = reg2(g)
+        grad = 2*grad_loss
+        grad += (C*grad_reg + C2*grad_reg2)
+        #grad *= 2
         return grad
 
     @property
@@ -252,6 +271,8 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
         s = 'NonParaHypTrans'
         if self.configs.use_fused_lasso:
             s += '-l1'
+        if self.configs.use_reg2:
+            s += '-reg2'
         return s
 
 

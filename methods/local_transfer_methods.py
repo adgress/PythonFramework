@@ -150,6 +150,11 @@ class LocalTransfer(HypothesisTransfer):
             self.cv_params['C'] = np.asarray([1,5,10,50,100,500,1000000])
         self.cv_params['C'] = np.insert(self.cv_params['C'],0,0)
 
+        self.cv_params['C2'] = np.asarray([0,.001,.01,.1,1,10,100,1000])
+
+        if not self.configs.use_reg2:
+            self.cv_params['C2'] = np.asarray([0])
+
         #self.C = 1
         self.k = 3
         #self.cv_params['k'] = np.asarray([1,3,5,7])
@@ -202,6 +207,7 @@ class LocalTransfer(HypothesisTransfer):
         #s = np.hstack((a,b))
         #s[parametric_data.x.argsort(0)]
         self.g_learner.C = self.C
+        self.g_learner.C2 = self.C2
         self.g_learner.cv_params = {}
         self.g_learner.train_and_test(parametric_data)
         '''

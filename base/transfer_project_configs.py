@@ -216,10 +216,10 @@ class MainConfigs(bc.MainConfigs):
         model_transfer = methods.transfer_methods.ModelSelectionTransfer(method_configs)
         hyp_transfer = methods.local_transfer_methods.HypothesisTransfer(method_configs)
 
-        #self.learner = hyp_transfer
+        self.learner = hyp_transfer
         #self.learner = model_transfer
         #self.learner = scipy_ridge_reg
-        self.learner = local_transfer
+        #self.learner = local_transfer
         #self.learner = fuse_nw
         #self.learner = target_nw
         #self.learner = target_ridge

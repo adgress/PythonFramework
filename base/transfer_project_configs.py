@@ -194,7 +194,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.metric = 'euclidean'
         method_configs.use_fused_lasso = True
         method_configs.use_reg2 = True
-        method_configs.no_reg = False
+        method_configs.no_reg = True
         method_configs.use_g_learner = True
         if data_set_to_use == bc.DATA_NG:
             method_configs.metric = 'cosine'
@@ -260,6 +260,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             'FuseTransfer+NW-tws=0.5.pkl',
             'FuseTransfer+NW-tws=0.9.pkl',
             'TargetTransfer+SKL-RidgeReg.pkl',
+            'LocalTransfer-NonParaHypTrans-l1-reg2-max_value=0.5.pkl',
         ]
 
 class BatchConfigs(bc.BatchConfigs):

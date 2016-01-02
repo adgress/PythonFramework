@@ -121,12 +121,14 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
                 'type': 'ineq',
                 'fun': lasso
             }
+            if self.configs.no_reg:
+                constraints = ()
             args = (x,y,y_s,y_t,0,reg,self.C2,reg2)
         else:
             method = 'L-BFGS-B'
             max_iter = np.inf
             max_fun = np.inf
-            constraints = None
+            constraints = ()
             args = (x,y,y_s,y_t,self.C,reg,self.C2,reg2)
 
         options = {
@@ -269,9 +271,10 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
     @property
     def prefix(self):
         s = 'NonParaHypTrans'
-        if self.configs.use_fused_lasso:
+        use_reg1 = not getattr(self.configs, 'no_reg',False)
+        if self.configs.use_fused_lasso and use_reg1:
             s += '-l1'
-        if self.configs.use_reg2:
+        if hasattr(self.configs,'use_reg2') and self.configs.use_reg2:
             s += '-reg2'
         return s
 

@@ -84,7 +84,7 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.num_labels = range(10,31,10)
         elif data_set_to_use == bc.DATA_SYNTHETIC_CLASSIFICATION:
             self.set_synthetic_classification()
-            self.num_labels = [5,10,20]
+            self.num_labels = [2,4,8,16]
             #self.num_labels = [10]
             #self.num_labels = range(10,31,10)
             #self.num_labels = range(10,71,10)

@@ -32,13 +32,13 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
     'pool_size'
 ]
 
-#data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION
+data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
 #data_set_to_use = bc.DATA_BOSTONG_HOUSING
 #data_set_to_use = bc.DATA_NG
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
 #data_set_to_use = bc.DATA_CONCRETE
-data_set_to_use = bc.DATA_BOSTONG_HOUSING
+#data_set_to_use = bc.DATA_BOSTONG_HOUSING
 
 synthetic_dim = 1
 if helper_functions.is_laptop():
@@ -194,7 +194,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.metric = 'euclidean'
         method_configs.use_fused_lasso = True
         method_configs.use_reg2 = True
-        method_configs.no_reg = True
+        method_configs.no_reg = False
         method_configs.use_g_learner = True
         if data_set_to_use == bc.DATA_NG:
             method_configs.metric = 'cosine'
@@ -261,6 +261,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             'FuseTransfer+NW-tws=0.9.pkl',
             'TargetTransfer+SKL-RidgeReg.pkl',
             'LocalTransfer-NonParaHypTrans-l1-reg2-max_value=0.5.pkl',
+            'LocalTransfer-no_reg-NonParaHypTrans-reg2-max_value=0.5.pkl',
         ]
 
 class BatchConfigs(bc.BatchConfigs):

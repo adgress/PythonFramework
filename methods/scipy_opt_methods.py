@@ -146,7 +146,7 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
             constraints=constraints,
             args=args
         )
-        compare_results = True
+        compare_results = False
         if compare_results:
             results2 = optimize.minimize(
                 f,

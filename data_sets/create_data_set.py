@@ -35,6 +35,7 @@ synthetic_step_transfer_file = 'synthetic_step_transfer/raw_data.pkl'
 synthetic_step_kd_transfer_file = 'synthetic_step_transfer_%d/raw_data.pkl'
 synthetic_step_linear_transfer_file = 'synthetic_step_linear_transfer/raw_data.pkl'
 synthetic_classification_file = 'synthetic_classification/raw_data.pkl'
+synthetic_classification_local_file = 'synthetic_classification_local/raw_data.pkl'
 concrete_file = 'concrete/raw_data.pkl'
 
 def viz_features(x,y,domain_ids,feature_names=None):
@@ -293,7 +294,7 @@ def create_20ng_data(file_dir=''):
         s = file_dir + '/' + s
     helper_functions.save_object(s,data)
 
-def create_synthetic_classification(file_dir=''):
+def create_synthetic_classification(file_dir='',local=True):
     dim = 1
     n_target = 200
     n_source = 200
@@ -319,6 +320,9 @@ def create_synthetic_classification(file_dir=''):
     data.y[I2 & id1] = 4
     data.y[I3 & id1] = 3
     data.y[I4 & id1] = 4
+    if local:
+        data.y[I3 & id1] = 4
+        data.y[I4 & id1] = 3
     data.set_true_y()
     data.set_train()
     data.is_regression = False
@@ -327,6 +331,8 @@ def create_synthetic_classification(file_dir=''):
     data.add_noise(noise_rate, id0, np.asarray([1,2]))
     data.add_noise(noise_rate, id1, np.asarray([3,4]))
     s = synthetic_classification_file
+    if local:
+        s = synthetic_classification_local_file
     i = id0
     array_functions.plot_2d(data.x[i,:],data.y[i])
     if file_dir != '':
@@ -459,6 +465,7 @@ def create_bike_sharing():
 
 if __name__ == "__main__":
     #create_boston_housing()
-    create_synthetic_classification()
+    #create_concrete()
+    create_synthetic_classification(local=True)
     from data_sets import create_data_split
     create_data_split.run_main()

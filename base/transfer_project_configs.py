@@ -32,7 +32,8 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
     'pool_size'
 ]
 
-data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION
+#data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION
+data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION_LOCAL
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
 #data_set_to_use = bc.DATA_BOSTONG_HOUSING
 #data_set_to_use = bc.DATA_NG
@@ -88,6 +89,9 @@ class ProjectConfigs(bc.ProjectConfigs):
             #self.num_labels = [10]
             #self.num_labels = range(10,31,10)
             #self.num_labels = range(10,71,10)
+        elif data_set_to_use == bc.DATA_SYNTHETIC_CLASSIFICATION_LOCAL:
+            self.set_synthetic_classification_local()
+            self.num_labels = [4,8,16]
         elif data_set_to_use == bc.DATA_CONCRETE:
             self.set_concreate_transfer()
             self.num_labels = [5,10,20,40,80]
@@ -118,6 +122,19 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.results_dir = 'concrete'
         self.target_labels = np.asarray([3])
         self.source_labels = np.asarray([1])
+
+    def set_synthetic_classification_local(self):
+        self.loss_function = loss_function.ZeroOneError()
+        self.data_dir = 'data_sets/synthetic_classification_local'
+        self.data_name = 'synthetic_classification_local'
+        self.data_set_file_name = 'split_data.pkl'
+        self.results_dir = 'synthetic_classification_local'
+        self.target_labels = np.asarray([1,2])
+        #self.target_labels = array_functions.vec_to_2d(self.target_labels).T
+        self.source_labels = np.asarray([3,4])
+        self.source_labels = array_functions.vec_to_2d(self.source_labels).T
+        self.cv_loss_function = loss_function.LogLoss()
+        #self.cv_loss_function = loss_function.ZeroOneError()
 
     def set_synthetic_classification(self):
         self.loss_function = loss_function.ZeroOneError()

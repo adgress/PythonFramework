@@ -105,7 +105,7 @@ class DataSplitter(object):
 def run_main():
     #split_data(create_data_set.boston_housing_raw_data_file, boston_housing_configs())
     #split_data(create_data_set.ng_raw_data_file, ng_configs())
-    #split_data(create_data_set.synthetic_classification_file, synthetic_classification_configs())
+    split_data(create_data_set.synthetic_classification_file, synthetic_classification_configs())
     '''
     s = create_data_set.synthetic_step_transfer_file
     if create_data_set.synthetic_dim > 1:
@@ -114,6 +114,6 @@ def run_main():
     '''
     #split_data(create_data_set.synthetic_step_linear_transfer_file, synthetic_step_transfer_configs())
     #split_data(create_data_set.concrete_file, regression_configs())
-    split_data(create_data_set.boston_housing_raw_data_file, regression_configs())
+    #split_data(create_data_set.boston_housing_raw_data_file, regression_configs())
 if __name__ == '__main__':
     run_main()

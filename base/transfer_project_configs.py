@@ -129,8 +129,8 @@ class ProjectConfigs(bc.ProjectConfigs):
         #self.target_labels = array_functions.vec_to_2d(self.target_labels).T
         self.source_labels = np.asarray([3,4])
         self.source_labels = array_functions.vec_to_2d(self.source_labels).T
-        #self.cv_loss_function = loss_function.LogLoss()
-        self.cv_loss_function = loss_function.ZeroOneError()
+        self.cv_loss_function = loss_function.LogLoss()
+        #self.cv_loss_function = loss_function.ZeroOneError()
 
     def set_synthetic_step_linear_transfer(self):
         self.loss_function = loss_function.MeanSquaredError()

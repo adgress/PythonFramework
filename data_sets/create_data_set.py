@@ -311,18 +311,18 @@ def create_synthetic_classification(file_dir=''):
     id0 = ids == 0
     id1 = ids == 1
     data.y[I & id0] = 1
-    data.y[I2 & id0] = 1
-    data.y[I3 & id0] = 2
+    data.y[I2 & id0] = 2
+    data.y[I3 & id0] = 1
     data.y[I4 & id0] = 2
 
     data.y[I & id1] = 3
-    data.y[I2 & id1] = 3
-    data.y[I3 & id1] = 4
+    data.y[I2 & id1] = 4
+    data.y[I3 & id1] = 3
     data.y[I4 & id1] = 4
     data.set_true_y()
     data.set_train()
     data.is_regression = False
-    noise_rate = .1
+    noise_rate = 0
     #data.add_noise(noise_rate)
     data.add_noise(noise_rate, id0, np.asarray([1,2]))
     data.add_noise(noise_rate, id1, np.asarray([3,4]))
@@ -458,6 +458,7 @@ def create_bike_sharing():
     pass
 
 if __name__ == "__main__":
-    create_boston_housing()
+    #create_boston_housing()
+    create_synthetic_classification()
     from data_sets import create_data_split
     create_data_split.run_main()

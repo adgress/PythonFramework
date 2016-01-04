@@ -33,9 +33,9 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
 
 #data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION
-data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION_LOCAL
+#data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION_LOCAL
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
-#data_set_to_use = bc.DATA_BOSTONG_HOUSING
+data_set_to_use = bc.DATA_BOSTONG_HOUSING
 #data_set_to_use = bc.DATA_NG
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
 #data_set_to_use = bc.DATA_CONCRETE
@@ -106,10 +106,10 @@ class ProjectConfigs(bc.ProjectConfigs):
     def set_boston_housing_transfer(self):
         self.loss_function = loss_function.MeanSquaredError()
         self.cv_loss_function = loss_function.MeanSquaredError()
-        self.data_dir = 'data_sets/boston_housing'
-        self.data_name = 'boston_housing'
+        self.data_dir = 'data_sets/boston_housing-13'
+        self.data_name = 'boston_housing-13'
         self.data_set_file_name = 'split_data.pkl'
-        self.results_dir = 'boston_housing'
+        self.results_dir = 'boston_housing-13'
         self.target_labels = np.asarray([0])
         self.source_labels = np.asarray([1])
 

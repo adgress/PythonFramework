@@ -28,8 +28,9 @@ synthetic_dim = 5
 max_features=2000
 pca_feats=20
 #max_features=100
+boston_num_feats = np.inf
 
-boston_housing_raw_data_file = 'boston_housing/raw_data.pkl'
+boston_housing_raw_data_file = 'boston_housing%s/raw_data.pkl'
 ng_raw_data_file = '20ng-%d/raw_data.pkl' % max_features
 synthetic_step_transfer_file = 'synthetic_step_transfer/raw_data.pkl'
 synthetic_step_kd_transfer_file = 'synthetic_step_transfer_%d/raw_data.pkl'
@@ -384,6 +385,8 @@ def create_synthetic_step_linear_transfer(file_dir=''):
     helper_functions.save_object(s,data)
 
 def create_boston_housing(file_dir=''):
+    x_ind = 5
+    domain_ind = 12
     boston_data = datasets.load_boston()
     data = data_class.Data()
     data.x = boston_data.data
@@ -393,13 +396,23 @@ def create_boston_housing(file_dir=''):
     data.is_regression = True
     s = boston_housing_raw_data_file
     x = data.x
-    y = data.y
+    #y = data.y
     domain_ids = np.ones(x.shape[0])
-    domain_ids = array_functions.bin_data(x[:,12],num_bins=4)
+    domain_ids = array_functions.bin_data(x[:,domain_ind],num_bins=4)
+    x = np.delete(x,domain_ind,1)
     #viz_features(x,y,domain_ids,boston_data.feature_names)
-    data.x = data.x[:,5]
     data.data_set_ids = domain_ids
-    data.x = array_functions.vec_to_2d(data.x)
+
+    if boston_num_feats == 1:
+        data.x = data.x[:,x_ind]
+        data.x = array_functions.vec_to_2d(data.x)
+        s = s % ''
+    elif boston_num_feats >= data.x.shape[1]:
+        data.x = array_functions.standardize(data.x)
+        p = min(boston_num_feats,data.x.shape[1])
+        s = s % ('-' + str(p))
+    else:
+        assert False
     if file_dir != '':
         s = file_dir + '/' + s
     helper_functions.save_object(s,data)
@@ -466,6 +479,7 @@ def create_bike_sharing():
 if __name__ == "__main__":
     #create_boston_housing()
     #create_concrete()
-    create_synthetic_classification(local=True)
+    #create_synthetic_classification(local=True)
+    create_boston_housing()
     from data_sets import create_data_split
     create_data_split.run_main()

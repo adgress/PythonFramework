@@ -43,6 +43,10 @@ def add_bias(x):
     n = x.shape[0]
     return np.hstack((np.ones((n, 1)), x))
 
+def standardize(x):
+    x = preprocessing.scale(x)
+    return x
+
 def normalize(x):
     x_min = x.min()
     x_max = x.max()

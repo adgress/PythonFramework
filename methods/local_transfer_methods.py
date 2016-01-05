@@ -396,3 +396,127 @@ class LocalTransfer(HypothesisTransfer):
         if 'max_value' in self.__dict__ and self.max_value != 1:
             s += '-max_value=' + str(self.max_value)
         return s
+
+
+class IWTLTransfer(method.Method):
+    def __init__(self, configs=None):
+        super(IWTLTransfer, self).__init__(configs)
+        self.cv_params = {}
+        self.cv_params['sigma'] = 10**np.asarray(range(-4,4),dtype='float64')
+        self.cv_params['C'] = 10**np.asarray(range(-4,4),dtype='float64')
+        self.target_learner = method.NadarayaWatsonMethod(configs)
+        self.source_learner = method.NadarayaWatsonMethod(configs)
+        self.target_learner.quiet = True
+        self.source_learner.quiet = True
+        self.base_learner = None
+        self.metric = self.configs.metric
+
+    def _prepare_data(self, data, include_unlabeled=True):
+        target_labels = self.configs.target_labels
+        data_copy = data.get_transfer_subset(target_labels,include_unlabeled=include_unlabeled)
+        #data_copy = data.get_with_labels(target_labels)
+        return data_copy
+
+    def get_predictions(self, target_data):
+        '''
+        o = self.target_learner.predict_loo(target_data)
+        o_source = self.source_learner.predict(target_data)
+        is_labeled = target_data.is_labeled
+
+        target_labels = self.configs.target_labels
+        if self.use_estimated_f:
+            o = self.target_learner.predict_loo(target_data.get_subset(is_labeled))
+        if target_data.is_regression:
+            y_t = array_functions.vec_to_2d(o.fu)
+            y_s = array_functions.vec_to_2d(o_source.fu[is_labeled])
+            y_true = array_functions.vec_to_2d(o.true_y)
+        else:
+            y_t = o.fu[:,target_labels]
+            y_s = o_source.fu[:,target_labels]
+            y_s = y_s[is_labeled,:]
+            y_true = array_functions.make_label_matrix(o.true_y)[:,target_labels]
+            y_true = array_functions.try_toarray(y_true)
+        return (y_t, y_s, y_true)
+        '''
+        assert target_data.is_regression
+        o = self.source_learner.predict(target_data)
+        is_labeled = target_data.is_labeled
+        y_s = array_functions.vec_to_2d(o.fu[is_labeled])
+        y_true = array_functions.vec_to_2d(o.true_y[is_labeled])
+        return (y_s, y_true)
+
+    def train_and_test(self, data):
+        assert data.is_regression
+        if data.is_regression:
+            source_data = data.get_transfer_subset(self.configs.source_labels.ravel(),include_unlabeled=False)
+        else:
+            source_data = data.get_transfer_subset(self.configs.source_labels.ravel(),include_unlabeled=False)
+        source_data.set_target()
+        source_data.set_train()
+        source_data.reveal_labels(~source_data.is_labeled)
+        if source_data.is_regression:
+            source_data.data_set_ids[:] = self.configs.target_labels[0]
+        if not data.is_regression:
+            source_data.change_labels(self.configs.source_labels,self.configs.target_labels)
+            source_data = source_data.rand_sample(.1)
+
+        self.source_learner.train_and_test(source_data)
+
+        data_copy = data.get_transfer_subset(self.configs.labels_to_keep)
+        is_source = array_functions.find_set(data_copy.data_set_ids,self.configs.source_labels)
+        data_copy.type[is_source] = data_lib.TYPE_SOURCE
+        assert data_copy.is_source.any()
+        return super(IWTLTransfer, self).train_and_test(data_copy)
+
+    def train(self, data):
+        assert data.is_regression
+        y_s, y_true = self.get_predictions(data)
+        I = data.is_target & data.is_labeled
+        #y_s = y_s[I]
+        y_s = data.y[data.is_source]
+        y_true = data.true_y[I]
+
+        x_s = data.x[data.is_source]
+        x_s = array_functions.append_column(x_s, data.y[data.is_source])
+        x_s = array_functions.standardize(x_s)
+        x_t = data.x[I]
+        x_t = array_functions.append_column(x_t, data.y[I])
+        x_t = array_functions.standardize(x_t)
+        Wrbf = array_functions.make_rbf(x_t, self.sigma, self.metric, x2=x_s)
+        S = array_functions.make_smoothing_matrix(Wrbf)
+        w = cvx.Variable(x_s.shape[0])
+        constraints = [w >= 0]
+        reg = cvx.norm(w)**2
+        loss = cvx.sum_entries(
+            cvx.power(
+                S*cvx.diag(w)*y_s - y_true,2
+            )
+        )
+        obj = cvx.Minimize(loss + self.C*reg)
+        prob = cvx.Problem(obj,constraints)
+        assert prob.is_dcp()
+        try:
+            prob.solve()
+            #g_value = np.reshape(np.asarray(g.value),n_labeled)
+            w_value = w.value
+        except:
+            k = 0
+            #assert prob.status is None
+            print 'CVX problem: setting g = ' + str(k)
+            print '\tsigma=' + str(self.sigma)
+            print '\tC=' + str(self.C)
+            w_value = k*np.ones(w.value.shap[0])
+
+        all_data = data.get_transfer_subset(self.configs.labels_to_keep,include_unlabeled=True)
+        all_data.instance_weights = np.ones(all_data.n)
+        all_data.instance_weights[all_data.is_source] = w.value
+        self.target_learner.train_and_test(all_data)
+
+    def predict(self, data):
+        o = self.target_learner.predict(data)
+        return o
+
+    @property
+    def prefix(self):
+        s = 'IWTL'
+        return s

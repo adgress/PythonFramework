@@ -14,6 +14,18 @@ from timer.timer import tic
 from timer.timer import toc
 from sklearn import manifold
 
+def append_column(x,y):
+    return np.hstack((x, vec_to_2d(y)))
+
+def make_smoothing_matrix(W):
+    W = replace_invalid(W,0,0)
+    D = W.sum(1)
+    D[D==0] = 1
+    D_inv = 1 / D
+    D_inv = replace_invalid(D_inv,x_min=1,x_max=1)
+    S = (W.swapaxes(0, 1) * D_inv).swapaxes(0, 1)
+    return S
+
 def bin_data(x, num_bins=10):
     x = np.squeeze(x)
     assert x.ndim == 1
@@ -112,7 +124,9 @@ def make_laplacian(x, sigma, metric='euclidean'):
     L = np.diag(D) - W
     return L
 
-def make_rbf(x,sigma,metric='euclidean'):
+def make_rbf(x,sigma,metric='euclidean', x2=None):
+    if x2 is None:
+        x2 = x
     if metric == 'cosine':
         #This code may be faster for some matrices
         # Code from http://stackoverflow.com/questions/17627219/whats-the-fastest-way-in-python-to-calculate-cosine-similarity-given-sparse-mat
@@ -133,10 +147,10 @@ def make_rbf(x,sigma,metric='euclidean'):
         W2 = pairwise.pairwise_distances(x,x,metric)
         toc()
         '''
-        W = pairwise.pairwise_distances(x,x,metric)
+        W = pairwise.pairwise_distances(x,x2,metric)
     else:
         #tic()
-        W = pairwise.pairwise_distances(x,x,metric)
+        W = pairwise.pairwise_distances(x,x2,metric)
         #toc()
     W = np.square(W)
     W = -sigma * W

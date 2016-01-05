@@ -214,12 +214,15 @@ class NadarayaWatsonMethod(Method):
         W = self.compute_kernel(data.x, self.x)
         if self.instance_weights is not None:
             W = W*self.instance_weights
+        '''
         W = array_functions.replace_invalid(W,0,0)
         D = W.sum(1)
         D[D==0] = 1
         D_inv = 1 / D
         array_functions.replace_invalid(D_inv,x_min=1,x_max=1)
         S = (W.swapaxes(0, 1) * D_inv).swapaxes(0, 1)
+        '''
+        S = array_functions.make_smoothing_matrix(W)
         if not data.is_regression:
             fu = np.zeros((data.n,self.y.max()+1))
             for i in np.unique(self.y):

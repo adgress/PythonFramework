@@ -80,6 +80,7 @@ class MethodExperimentManager(ExperimentManager):
         assert self.configs.num_splits <= len(data_and_splits.splits)
         data_and_splits.labels_to_keep = self.configs.labels_to_keep
         data_and_splits.labels_to_not_sample = self.configs.labels_to_not_sample
+        data_and_splits.target_labels = self.configs.target_labels
         data_and_splits.data.repair_data()
         results_file = self.configs.results_file
         if os.path.isfile(results_file):

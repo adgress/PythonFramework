@@ -280,6 +280,7 @@ class SplitData(object):
         self.splits = splits
         self.labels_to_keep = None
         self.labels_to_not_sample = {}
+        self.target_labels = None
         self.use_data_set_ids = True
 
     def get_split(self, i, num_labeled=None):
@@ -294,8 +295,10 @@ class SplitData(object):
         if num_labeled is not None:
             if d.is_regression:
                 labeled_inds = np.nonzero(d.is_train)[0]
-                if self.use_data_set_ids and d.data_set_ids is not None:
-                    labeled_inds = np.nonzero(d.is_train & (d.data_set_ids == 0))[0]
+                if self.use_data_set_ids and \
+                                d.data_set_ids is not None and \
+                                self.target_labels is not None:
+                    labeled_inds = np.nonzero(d.is_train & (d.data_set_ids == self.target_labels))[0]
                 to_clear = labeled_inds[num_labeled:]
                 d.y[to_clear] = np.nan
             else:

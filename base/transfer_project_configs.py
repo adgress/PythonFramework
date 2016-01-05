@@ -35,10 +35,10 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 #data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION
 #data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION_LOCAL
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
-data_set_to_use = bc.DATA_BOSTONG_HOUSING
+#data_set_to_use = bc.DATA_BOSTONG_HOUSING
 #data_set_to_use = bc.DATA_NG
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
-#data_set_to_use = bc.DATA_CONCRETE
+data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_BOSTONG_HOUSING
 
 synthetic_dim = 1
@@ -116,12 +116,12 @@ class ProjectConfigs(bc.ProjectConfigs):
     def set_concreate_transfer(self):
         self.loss_function = loss_function.MeanSquaredError()
         self.cv_loss_function = loss_function.MeanSquaredError()
-        self.data_dir = 'data_sets/concrete'
-        self.data_name = 'concrete'
+        self.data_dir = 'data_sets/concrete-feat=0'
+        self.data_name = 'concrete-feat=0'
         self.data_set_file_name = 'split_data.pkl'
-        self.results_dir = 'concrete'
-        self.target_labels = np.asarray([3])
-        self.source_labels = np.asarray([1])
+        self.results_dir = 'concrete-feat=0'
+        self.target_labels = np.asarray([1])
+        self.source_labels = np.asarray([3])
 
     def set_synthetic_classification_local(self):
         self.loss_function = loss_function.ZeroOneError()

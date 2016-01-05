@@ -37,7 +37,7 @@ synthetic_step_kd_transfer_file = 'synthetic_step_transfer_%d/raw_data.pkl'
 synthetic_step_linear_transfer_file = 'synthetic_step_linear_transfer/raw_data.pkl'
 synthetic_classification_file = 'synthetic_classification/raw_data.pkl'
 synthetic_classification_local_file = 'synthetic_classification_local/raw_data.pkl'
-concrete_file = 'concrete/raw_data.pkl'
+concrete_file = 'concrete%s/raw_data.pkl'
 
 def viz_features(x,y,domain_ids,feature_names=None):
     y = array_functions.normalize(y)
@@ -150,6 +150,8 @@ def create_concrete():
     file = 'concrete/Concrete_Data.csv'
     used_field_names, concrete_data = load_csv(file)
 
+    feat_ind = 0
+
     domain_ind = (used_field_names == 'age').nonzero()[0][0]
     ages = concrete_data[:,domain_ind]
     domain_ids = np.zeros(ages.shape)
@@ -159,17 +161,17 @@ def create_concrete():
 
 
     data = data_class.Data()
-    data.x = concrete_data[:,1:(concrete_data.shape[1]-1)]
+    data.x = concrete_data[:,0:(concrete_data.shape[1]-2)]
     #0,3,5
     #data.x = preprocessing.scale(data.x)
-    data.x = array_functions.vec_to_2d(data.x[:,0])
+    data.x = array_functions.vec_to_2d(data.x[:,feat_ind])
 
     data.y = concrete_data[:,-1]
     data.set_defaults()
     data.is_regression = True
     data.data_set_ids = domain_ids
 
-    viz = True
+    viz = False
     if viz:
         to_use = domain_ids > 0
         domain_ids = domain_ids[to_use]
@@ -178,8 +180,10 @@ def create_concrete():
         viz_features(concrete_data,concrete_data[:,-1],domain_ids,used_field_names)
 
         return
-
-    s = concrete_file
+    data.x = array_functions.standardize(data.x)
+    viz_features(data.x,data.y,data.data_set_ids)
+    t = '-feat=' + str(feat_ind)
+    s = concrete_file % t
     helper_functions.save_object(s,data)
 
 def create_school():
@@ -478,8 +482,8 @@ def create_bike_sharing():
 
 if __name__ == "__main__":
     #create_boston_housing()
-    #create_concrete()
+    create_concrete()
     #create_synthetic_classification(local=True)
-    create_boston_housing()
+    #create_boston_housing()
     from data_sets import create_data_split
     create_data_split.run_main()

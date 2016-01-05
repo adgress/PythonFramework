@@ -72,6 +72,8 @@ class HypothesisTransfer(method.Method):
         source_data.set_target()
         source_data.set_train()
         source_data.reveal_labels(~source_data.is_labeled)
+        if source_data.is_regression:
+            source_data.data_set_ids[:] = self.configs.target_labels[0]
         if self.use_oracle:
             oracle_labels = self.configs.oracle_labels
             source_data = source_data.get_transfer_subset(oracle_labels.ravel(),include_unlabeled=False)

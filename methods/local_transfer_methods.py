@@ -505,7 +505,7 @@ class IWTLTransfer(method.Method):
             print 'CVX problem: setting g = ' + str(k)
             print '\tsigma=' + str(self.sigma)
             print '\tC=' + str(self.C)
-            w_value = k*np.ones(w.value.shape[0])
+            w_value = k*np.ones(x_s.shape[0])
 
         all_data = data.get_transfer_subset(self.configs.labels_to_keep,include_unlabeled=True)
         all_data.instance_weights = np.ones(all_data.n)

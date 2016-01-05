@@ -206,6 +206,9 @@ class LocalTransfer(HypothesisTransfer):
         parametric_data.y_s = y_s
         parametric_data.y_t = y_t
         parametric_data.set_defaults()
+        assert target_data.is_regression
+        if target_data.is_regression:
+            parametric_data.data_set_ids[:] = self.configs.target_labels[0]
         #s = np.hstack((a,b))
         #s[parametric_data.x.argsort(0)]
         self.g_learner.C = self.C

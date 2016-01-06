@@ -15,7 +15,7 @@ from data import data as data_lib
 from utility import helper_functions
 
 if helper_functions.is_laptop():
-    enable_plotting = True
+    enable_plotting = False
 else:
     enable_plotting = False
 
@@ -206,7 +206,7 @@ class LocalTransfer(HypothesisTransfer):
         parametric_data.y_s = y_s
         parametric_data.y_t = y_t
         parametric_data.set_defaults()
-        assert target_data.is_regression
+        #assert target_data.is_regression
         if target_data.is_regression:
             parametric_data.data_set_ids[:] = self.configs.target_labels[0]
         #s = np.hstack((a,b))

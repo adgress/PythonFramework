@@ -12,6 +12,7 @@ from utility import array_functions
 import scipy
 import numpy as np
 import pandas as pd
+import math
 from PyMTL_master.src import PyMTL
 from PyMTL_master.src.PyMTL import data as PyMTL_data
 
@@ -29,6 +30,7 @@ max_features=2000
 pca_feats=20
 #max_features=100
 boston_num_feats = np.inf
+concrete_num_feats = np.inf
 
 boston_housing_raw_data_file = 'boston_housing%s/raw_data.pkl'
 ng_raw_data_file = '20ng-%d/raw_data.pkl' % max_features
@@ -40,7 +42,7 @@ synthetic_classification_local_file = 'synthetic_classification_local/raw_data.p
 concrete_file = 'concrete%s/raw_data.pkl'
 
 def viz_features(x,y,domain_ids,feature_names=None):
-    y = array_functions.normalize(y)
+    #y = array_functions.normalize(y)
     for i in range(x.shape[1]):
         xi = x[:,i]
         title = str(i)
@@ -115,11 +117,18 @@ def create_forest_fires():
     y = forest_data[:,-1]
     i = field_names == 'month'
     domain_ids = forest_data[:,i]
-    months_to_use = np.asarray([6,7,8])
+    #months_to_use = np.asarray([6,7,8])
+    months_to_use = np.asarray([1,2,3,4,5,6,7,8,9,10,11,12])
     to_use = array_functions.find_set(domain_ids,months_to_use)
     x = x[to_use,:]
     y = y[to_use]
     domain_ids = domain_ids[to_use]
+    x = x[:,4:]
+    field_names = field_names[4:]
+    I = (y > 0) & (y < 700)
+    x = x[I,:]
+    y = y[I]
+    domain_ids = domain_ids[I]
     viz_features(x,y,domain_ids,field_names)
     pass
 
@@ -164,7 +173,13 @@ def create_concrete():
     data.x = concrete_data[:,0:(concrete_data.shape[1]-2)]
     #0,3,5
     #data.x = preprocessing.scale(data.x)
-    data.x = array_functions.vec_to_2d(data.x[:,feat_ind])
+    if concrete_num_feats == 1:
+        data.x = array_functions.vec_to_2d(data.x[:,feat_ind])
+        t = '-feat=' + str(feat_ind)
+    elif concrete_num_feats >= data.x.shape[1]:
+        t = '-' + str(min(data.x.shape[1], concrete_num_feats))
+    else:
+        assert False
 
     data.y = concrete_data[:,-1]
     data.set_defaults()
@@ -181,8 +196,8 @@ def create_concrete():
 
         return
     data.x = array_functions.standardize(data.x)
-    viz_features(data.x,data.y,data.data_set_ids)
-    t = '-feat=' + str(feat_ind)
+    #viz_features(data.x,data.y,data.data_set_ids)
+
     s = concrete_file % t
     helper_functions.save_object(s,data)
 
@@ -338,7 +353,7 @@ def create_synthetic_classification(file_dir='',local=True):
     s = synthetic_classification_file
     if local:
         s = synthetic_classification_local_file
-    i = id0
+    i = id1
     array_functions.plot_2d(data.x[i,:],data.y[i])
     if file_dir != '':
         s = file_dir + '/' + s
@@ -469,9 +484,9 @@ def create_bike_sharing():
     bike_data = np.loadtxt(file,skiprows=1,delimiter=',',usecols=columns)
     domain_ind = used_field_names == 'yr'
     domain_ids = bike_data[:,domain_ind]
-    inds_to_keep = (used_field_names == 'temp') | (used_field_names == 'atemp')
-    bike_data = bike_data[:,inds_to_keep]
-    used_field_names = used_field_names[inds_to_keep]
+    #inds_to_keep = (used_field_names == 'temp') | (used_field_names == 'atemp')
+    #bike_data = bike_data[:,inds_to_keep]
+    #used_field_names = used_field_names[inds_to_keep]
     for i in range(bike_data.shape[1]):
         xi = bike_data[:,i]
         yi = array_functions.normalize(bike_data[:,-1])
@@ -485,5 +500,6 @@ if __name__ == "__main__":
     create_concrete()
     #create_synthetic_classification(local=True)
     #create_boston_housing()
+    #create_bike_sharing()
     from data_sets import create_data_split
     create_data_split.run_main()

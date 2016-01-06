@@ -117,7 +117,8 @@ def run_main():
     split_data(s, synthetic_step_transfer_configs())
     '''
     #split_data(create_data_set.synthetic_step_linear_transfer_file, synthetic_step_transfer_configs())
-    split_data(create_data_set.concrete_file % '-feat=0', regression_configs())
+    #split_data(create_data_set.concrete_file % '-feat=0', regression_configs())
+    split_data(create_data_set.concrete_file % '-7', regression_configs())
     #split_data(create_data_set.boston_housing_raw_data_file, regression_configs())
 if __name__ == '__main__':
     run_main()

@@ -126,9 +126,10 @@ class MethodExperimentManager(ExperimentManager):
                 curr_results = curr_learner.train_and_test(curr_data)
                 helper_functions.save_object(_temp_split_file_name(results_file,num_labels,split),curr_results)
                 method_results.set(curr_results, i_labels, split)
-                print s + ' Error: ' + str(curr_results.compute_error(self.configs.loss_function))
+                print s + '-' + curr_learner.best_params + ' Error: ' + str(curr_results.compute_error(self.configs.loss_function))
                 if method_results.results_list[i_labels].is_full:
-                    print str(num_labels) + ' Mean Error: ' + str(method_results.results_list[i_labels].aggregate_error(self.configs.loss_function).mean)
+                    s = str(num_labels) + ' Mean Error: ' + str(method_results.results_list[i_labels].aggregate_error(self.configs.loss_function).mean)
+                    print  s
 
         method_results.configs = self.configs
         helper_functions.save_object(results_file,method_results)
@@ -154,7 +155,7 @@ def _run_experiment_args(self, results_file, data_and_splits, method_results, i_
     curr_learner = copy.deepcopy(learner)
     curr_results = curr_learner.train_and_test(curr_data)
     helper_functions.save_object(_temp_split_file_name(results_file,num_labels,split),curr_results)
-    print s + ' Error: ' + str(curr_results.compute_error(self.configs.loss_function))
+    print s + '-' + str(curr_learner.best_params) + ' Error: ' + str(curr_results.compute_error(self.configs.loss_function))
     '''
     method_results.set(curr_results, i_labels, split)
     if method_results.results_list[i_labels].is_full:

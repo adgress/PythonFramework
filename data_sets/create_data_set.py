@@ -40,6 +40,7 @@ synthetic_step_linear_transfer_file = 'synthetic_step_linear_transfer/raw_data.p
 synthetic_classification_file = 'synthetic_classification/raw_data.pkl'
 synthetic_classification_local_file = 'synthetic_classification_local/raw_data.pkl'
 concrete_file = 'concrete%s/raw_data.pkl'
+bike_file = 'bike_sharing%s/raw_data.pkl'
 
 def viz_features(x,y,domain_ids,feature_names=None):
     #y = array_functions.normalize(y)
@@ -483,23 +484,39 @@ def create_bike_sharing():
     used_field_names = all_field_names[columns]
     bike_data = np.loadtxt(file,skiprows=1,delimiter=',',usecols=columns)
     domain_ind = used_field_names == 'yr'
-    domain_ids = bike_data[:,domain_ind]
+    domain_ids = np.squeeze(bike_data[:,domain_ind])
     #inds_to_keep = (used_field_names == 'temp') | (used_field_names == 'atemp')
     #bike_data = bike_data[:,inds_to_keep]
     #used_field_names = used_field_names[inds_to_keep]
-    for i in range(bike_data.shape[1]):
-        xi = bike_data[:,i]
-        yi = array_functions.normalize(bike_data[:,-1])
-        #array_functions.plot_2d(xi,yi,alpha=.1,title=used_field_names[i],data_set_ids=domain_ids)
-        array_functions.plot_2d_sub(xi,yi,alpha=.1,title=used_field_names[i],data_set_ids=domain_ids)
-        pass
+
+    viz = True
+    to_use = np.asarray([8,9,10,11])
+    x = bike_data[:,to_use]
+    used_field_names = used_field_names[to_use]
+    y = bike_data[:,-1]
+    if viz:
+        viz_features(x,y,domain_ids,used_field_names)
+    field_to_use = 1
+    x = x[:,field_to_use]
+
+    data = data_class.Data()
+    data.is_regression = True
+    data.x = array_functions.vec_to_2d(x)
+    data.x = array_functions.standardize(data.x)
+    data.y = y
+    data.set_defaults()
+    data.data_set_ids = domain_ids
+
+    s = bike_file % ('-feat=' + str(field_to_use))
+    helper_functions.save_object(s,data)
+
     pass
 
 if __name__ == "__main__":
     #create_boston_housing()
-    create_concrete()
+    #create_concrete()
     #create_synthetic_classification(local=True)
     #create_boston_housing()
-    #create_bike_sharing()
+    create_bike_sharing()
     from data_sets import create_data_split
     create_data_split.run_main()

@@ -40,10 +40,11 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
 data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_BOSTONG_HOUSING
+#data_set_to_use = bc.DATA_BIKE_SHARING
 
 synthetic_dim = 1
 if helper_functions.is_laptop():
-    use_pool = False
+    use_pool = True
     pool_size = 4
 else:
     use_pool = True
@@ -95,6 +96,9 @@ class ProjectConfigs(bc.ProjectConfigs):
         elif data_set_to_use == bc.DATA_CONCRETE:
             self.set_concrete_transfer()
             self.num_labels = [5,10,20,40]
+        elif data_set_to_use == bc.DATA_BIKE_SHARING:
+            self.set_bike_sharing()
+            self.num_labels = [5,10,20,40]
         else:
             assert False
         assert self.source_labels.size > 0
@@ -112,6 +116,17 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.results_dir = 'boston_housing-13'
         self.target_labels = np.asarray([0])
         self.source_labels = np.asarray([1])
+
+    def set_bike_sharing(self):
+        self.loss_function = loss_function.MeanSquaredError()
+        self.cv_loss_function = loss_function.MeanSquaredError()
+        self.data_dir = 'data_sets/bike_sharing-feat=1'
+        self.data_name = 'bike_sharing-feat=1'
+        self.results_dir = 'bike_sharing-feat=1'
+        self.data_set_file_name = 'split_data.pkl'
+        self.target_labels = np.asarray([1])
+        self.source_labels = np.asarray([0])
+
 
     def set_concrete_transfer(self):
         self.loss_function = loss_function.MeanSquaredError()
@@ -237,10 +252,10 @@ class MainConfigs(bc.MainConfigs):
         hyp_transfer = methods.local_transfer_methods.HypothesisTransfer(method_configs)
         iwl_transfer = methods.local_transfer_methods.IWTLTransfer(method_configs)
 
-        self.learner = hyp_transfer
+        #self.learner = hyp_transfer
         #self.learner = model_transfer
         #self.learner = scipy_ridge_reg
-        #self.learner = local_transfer
+        self.learner = local_transfer
         #self.learner = fuse_nw
         #self.learner = target_nw
         #self.learner = target_ridge

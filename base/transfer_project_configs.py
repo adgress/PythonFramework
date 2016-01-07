@@ -95,7 +95,7 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.num_labels = [4,8,16]
         elif data_set_to_use == bc.DATA_CONCRETE:
             self.set_concrete_transfer()
-            self.num_labels = [5,10,20,40]
+            #self.num_labels = [5,10,20,40]
         elif data_set_to_use == bc.DATA_BIKE_SHARING:
             self.set_bike_sharing()
             self.num_labels = [5,10,20,40]

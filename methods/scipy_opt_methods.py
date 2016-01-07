@@ -184,9 +184,9 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
         has_nonneg = (self.g < -1e-6).any()
         if has_nonneg:
             s += 'Negative g - min value: ' + str(self.g.min())
-            self.g[:] = 0
         if not results.success or has_nonneg:
             print s
+            self.g[:] = 0
         else:
             pass
             #print 'succeeded'

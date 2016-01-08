@@ -35,12 +35,11 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 #data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION
 #data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION_LOCAL
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
-#data_set_to_use = bc.DATA_BOSTONG_HOUSING
+data_set_to_use = bc.DATA_BOSTONG_HOUSING
 #data_set_to_use = bc.DATA_NG
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
 #data_set_to_use = bc.DATA_CONCRETE
-#data_set_to_use = bc.DATA_BOSTONG_HOUSING
-data_set_to_use = bc.DATA_BIKE_SHARING
+#data_set_to_use = bc.DATA_BIKE_SHARING
 
 synthetic_dim = 1
 if helper_functions.is_laptop():
@@ -95,7 +94,7 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.num_labels = [4,8,16]
         elif data_set_to_use == bc.DATA_CONCRETE:
             self.set_concrete_transfer()
-            #self.num_labels = [5,10,20,40]
+            self.num_labels = [5,10,20,40]
         elif data_set_to_use == bc.DATA_BIKE_SHARING:
             self.set_bike_sharing()
             self.num_labels = [5,10,20,40]
@@ -110,10 +109,16 @@ class ProjectConfigs(bc.ProjectConfigs):
     def set_boston_housing_transfer(self):
         self.loss_function = loss_function.MeanSquaredError()
         self.cv_loss_function = loss_function.MeanSquaredError()
+        '''
         self.data_dir = 'data_sets/boston_housing-13'
         self.data_name = 'boston_housing-13'
         self.data_set_file_name = 'split_data.pkl'
         self.results_dir = 'boston_housing-13'
+        '''
+        self.data_dir = 'data_sets/boston_housing'
+        self.data_name = 'boston_housing'
+        self.data_set_file_name = 'split_data.pkl'
+        self.results_dir = 'boston_housing'
         self.target_labels = np.asarray([0])
         self.source_labels = np.asarray([1])
 
@@ -131,12 +136,14 @@ class ProjectConfigs(bc.ProjectConfigs):
     def set_concrete_transfer(self):
         self.loss_function = loss_function.MeanSquaredError()
         self.cv_loss_function = loss_function.MeanSquaredError()
-        #self.data_dir = 'data_sets/concrete-feat=0'
-        #self.data_name = 'concrete-feat=0'
-        #self.results_dir = 'concrete-feat=0'
+        self.data_dir = 'data_sets/concrete-feat=0'
+        self.data_name = 'concrete-feat=0'
+        self.results_dir = 'concrete-feat=0'
+        '''
         self.data_dir = 'data_sets/concrete-7'
         self.data_name = 'concrete-7'
         self.results_dir = 'concrete-7'
+        '''
         self.data_set_file_name = 'split_data.pkl'
         self.target_labels = np.asarray([1])
         self.source_labels = np.asarray([3])
@@ -255,11 +262,11 @@ class MainConfigs(bc.MainConfigs):
         #self.learner = hyp_transfer
         #self.learner = model_transfer
         #self.learner = scipy_ridge_reg
-        self.learner = local_transfer
+        #self.learner = local_transfer
         #self.learner = fuse_nw
         #self.learner = target_nw
         #self.learner = target_ridge
-        #self.learner = iwl_transfer
+        self.learner = iwl_transfer
 
 
 class MethodConfigs(bc.MethodConfigs):
@@ -299,7 +306,6 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             'TargetTransfer+SKL-RidgeReg.pkl',
             'LocalTransfer-NonParaHypTrans-l1-reg2-max_value=0.5.pkl',
             'LocalTransfer-no_reg-NonParaHypTrans-reg2-max_value=0.5.pkl',
-            'IWTL.pkl',
         ]
 
 class BatchConfigs(bc.BatchConfigs):

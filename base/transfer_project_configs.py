@@ -38,9 +38,9 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 #data_set_to_use = bc.DATA_BOSTONG_HOUSING
 #data_set_to_use = bc.DATA_NG
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
-data_set_to_use = bc.DATA_CONCRETE
+#data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_BOSTONG_HOUSING
-#data_set_to_use = bc.DATA_BIKE_SHARING
+data_set_to_use = bc.DATA_BIKE_SHARING
 
 synthetic_dim = 1
 if helper_functions.is_laptop():

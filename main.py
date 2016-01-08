@@ -34,7 +34,7 @@ def run_visualization():
     #plt.plot([1,2,3], [1,4,9], 'rs-',  label='line 2')
     plt.figure()
     plt.title = vis_configs.title
-    axis = [0, 1, 0, 1]
+    axis = [0, 1, 0, .2]
     for i, file in enumerate(vis_configs.results_files):
         if not os.path.isfile(file):
             print file + ' doesn''t exist - skipping'

@@ -504,6 +504,7 @@ def create_bike_sharing():
     data.x = array_functions.vec_to_2d(x)
     data.x = array_functions.standardize(data.x)
     data.y = y
+    data.y = array_functions.normalize(data.y)
     data.set_defaults()
     data.data_set_ids = domain_ids
 

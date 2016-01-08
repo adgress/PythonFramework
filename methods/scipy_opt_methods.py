@@ -188,8 +188,8 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
             print s
             self.g[:] = 0
         else:
-            pass
             #print 'succeeded'
+            pass
         g_data = data_lib.Data()
         g_data.x = data.x
         g_data.y = results.x

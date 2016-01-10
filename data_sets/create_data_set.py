@@ -41,15 +41,16 @@ synthetic_classification_file = 'synthetic_classification/raw_data.pkl'
 synthetic_classification_local_file = 'synthetic_classification_local/raw_data.pkl'
 concrete_file = 'concrete%s/raw_data.pkl'
 bike_file = 'bike_sharing%s/raw_data.pkl'
+wine_file = 'wine%s/raw_data.pkl'
 
-def viz_features(x,y,domain_ids,feature_names=None):
+def viz_features(x,y,domain_ids,feature_names=None,alpha=.1):
     #y = array_functions.normalize(y)
     for i in range(x.shape[1]):
         xi = x[:,i]
         title = str(i)
         if feature_names is not None:
             title = str(i) + ': ' + feature_names[i]
-        array_functions.plot_2d_sub(xi,y,alpha=.1,title=title,data_set_ids=domain_ids)
+        array_functions.plot_2d_sub(xi,y,alpha=alpha,title=title,data_set_ids=domain_ids)
         pass
 
 def load_csv(file, has_field_names=True, dtype='float', delim=',',converters=None):
@@ -58,7 +59,7 @@ def load_csv(file, has_field_names=True, dtype='float', delim=',',converters=Non
         nrows = 0
         all_field_names = None
     else:
-        all_field_names = pd.read_csv(file,nrows=nrows,dtype='string')
+        all_field_names = pd.read_csv(file,nrows=nrows,dtype='string',sep=delim)
         all_field_names = np.asarray(all_field_names.keys())
     data = np.loadtxt(
         file,
@@ -404,6 +405,27 @@ def create_synthetic_step_linear_transfer(file_dir=''):
         s = file_dir + '/' + s
     helper_functions.save_object(s,data)
 
+def create_wine():
+    red_file = 'wine/winequality-red.csv'
+    white_file = 'wine/winequality-white.csv'
+    field_names, red_data = load_csv(red_file, delim=';')
+    white_data = load_csv(white_file, delim=';')[1]
+    red_ids = np.zeros((red_data.shape[0],1))
+    white_ids = np.ones((white_data.shape[0],1))
+    red_data = np.hstack((red_data, red_ids))
+    white_data = np.hstack((white_data, white_ids))
+    wine_data = np.vstack((red_data,white_data))
+    y = wine_data[:,-2]
+    ids = wine_data[:,-1]
+    x = wine_data[:,:-2]
+    used_field_names = field_names[:-1]
+    viz = True
+    if viz:
+        viz_features(x,y,ids,used_field_names,alpha=.01)
+    pass
+
+
+
 def create_boston_housing(file_dir=''):
     x_ind = 5
     domain_ind = 12
@@ -518,6 +540,7 @@ if __name__ == "__main__":
     #create_concrete()
     #create_synthetic_classification(local=True)
     #create_boston_housing()
-    create_bike_sharing()
+    #create_bike_sharing()
+    create_wine()
     from data_sets import create_data_split
     create_data_split.run_main()

@@ -31,23 +31,24 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
     'use_pool',
     'pool_size'
 ]
-
+data_data_to_use = None
 #data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION
 #data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION_LOCAL
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
-data_set_to_use = bc.DATA_BOSTONG_HOUSING
+#data_set_to_use = bc.DATA_BOSTONG_HOUSING
 #data_set_to_use = bc.DATA_NG
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
-#data_set_to_use = bc.DATA_CONCRETE
+data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_BIKE_SHARING
+#data_set_to_use = bc.DATA_WINE
 
 synthetic_dim = 1
 if helper_functions.is_laptop():
     use_pool = False
-    pool_size = 4
+    pool_size = 2
 else:
     use_pool = True
-    pool_size = 24
+    pool_size = 12
 max_features = create_data_set.max_features
 
 class ProjectConfigs(bc.ProjectConfigs):
@@ -72,7 +73,8 @@ class ProjectConfigs(bc.ProjectConfigs):
             #self.num_labels = [20]
         elif data_set_to_use == bc.DATA_BOSTONG_HOUSING:
             self.set_boston_housing_transfer()
-            self.num_labels = [5,10,20,40]
+            #self.num_labels = [5,10,20,40]
+            self.num_labels = [5,10,20]
             #self.set_boston_housing()
             #self.num_labels = range(20,61,20)
         elif data_set_to_use == bc.DATA_SYNTHETIC_STEP_TRANSFER:
@@ -98,6 +100,9 @@ class ProjectConfigs(bc.ProjectConfigs):
         elif data_set_to_use == bc.DATA_BIKE_SHARING:
             self.set_bike_sharing()
             self.num_labels = [5,10,20,40]
+        elif data_set_to_use == bc.DATA_WINE:
+            self.set_wine()
+            self.num_labels = [5,10,20]
         else:
             assert False
         assert self.source_labels.size > 0
@@ -105,6 +110,9 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.labels_to_not_sample = self.source_labels.ravel()
         a = self.source_labels.ravel()
         self.labels_to_keep = np.concatenate((self.target_labels,a))
+
+    def set_wine(self):
+        assert False
 
     def set_boston_housing_transfer(self):
         self.loss_function = loss_function.MeanSquaredError()
@@ -305,6 +313,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             'TargetTransfer+SKL-RidgeReg.pkl',
             'LocalTransfer-NonParaHypTrans-l1-reg2-max_value=0.5.pkl',
             'LocalTransfer-no_reg-NonParaHypTrans-reg2-max_value=0.5.pkl',
+            'SMS.pkl',
         ]
 
 class BatchConfigs(bc.BatchConfigs):

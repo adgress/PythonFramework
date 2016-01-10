@@ -103,7 +103,6 @@ class ExperimentResults(ResultsContainer):
 class FoldResults(object):
     def __init__(self):
         self.prediction = Output()
-        self.actual = Output()
         self.estimated_error = None
 
     def compute_error(self,loss_function):
@@ -141,6 +140,11 @@ class Output(data_lib.LabeledVector):
             self.true_y,
             ~self.is_train
         )
+
+    def assert_input(self):
+        assert not array_functions.has_invalid(self.fu)
+        assert not array_functions.has_invalid(self.y)
+        assert not array_functions.has_invalid(self.true_y)
 
 class ClassificationOutput(Output):
     def __init__(self,data=None):

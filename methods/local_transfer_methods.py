@@ -13,6 +13,7 @@ from numpy import multiply
 from numpy.linalg import norm
 from data import data as data_lib
 from utility import helper_functions
+from scipy import optimize
 
 if helper_functions.is_laptop():
     enable_plotting = False
@@ -510,6 +511,7 @@ class IWTLTransfer(method.Method):
         all_data = data.get_transfer_subset(self.configs.labels_to_keep,include_unlabeled=True)
         all_data.instance_weights = np.ones(all_data.n)
         all_data.instance_weights[all_data.is_source] = w.value
+        self.instance_weights = all_data.instance_weights
         self.target_learner.train_and_test(all_data)
 
     def predict(self, data):
@@ -520,3 +522,226 @@ class IWTLTransfer(method.Method):
     def prefix(self):
         s = 'IWTL'
         return s
+
+
+class SMSTransfer(method.Method):
+    def __init__(self, configs=None):
+        super(SMSTransfer, self).__init__(configs)
+        self.cv_params = {}
+        self.cv_params['sigma'] = 10**np.asarray(range(-4,5),dtype='float64')
+        self.cv_params['C'] = 10**np.asarray(range(-4,4),dtype='float64')
+        self.cv_params['C2'] = 10**np.asarray(range(-4,4),dtype='float64')
+        #self.cv_params['C'] = np.asarray([1])
+        #self.cv_params['C2'] = np.asarray([.001])
+        self.source_learner = method.NadarayaWatsonMethod(configs)
+        self.source_learner.quiet = True
+        self.base_learner = None
+        self.metric = self.configs.metric
+        self.opt_succeeded = True
+
+    def _prepare_data(self, data, include_unlabeled=True):
+        target_labels = self.configs.target_labels
+        data_copy = data.get_transfer_subset(target_labels,include_unlabeled=include_unlabeled)
+        #data_copy = data.get_with_labels(target_labels)
+        return data_copy
+
+    def get_predictions(self, target_data):
+        assert target_data.is_regression
+        o = self.source_learner.predict(target_data)
+        is_labeled = target_data.is_labeled
+        y_s = array_functions.vec_to_2d(o.fu[is_labeled])
+        y_true = array_functions.vec_to_2d(o.true_y[is_labeled])
+        return (y_s, y_true)
+
+    def train_and_test(self, data):
+        assert data.is_regression
+        if data.is_regression:
+            source_data = data.get_transfer_subset(self.configs.source_labels.ravel(),include_unlabeled=False)
+        else:
+            source_data = data.get_transfer_subset(self.configs.source_labels.ravel(),include_unlabeled=False)
+        source_data.set_target()
+        source_data.set_train()
+        source_data.reveal_labels(~source_data.is_labeled)
+        if source_data.is_regression:
+            source_data.data_set_ids[:] = self.configs.target_labels[0]
+        if not data.is_regression:
+            source_data.change_labels(self.configs.source_labels,self.configs.target_labels)
+            source_data = source_data.rand_sample(.1)
+
+        self.source_learner.train_and_test(source_data)
+
+        data_copy = data.get_transfer_subset(self.configs.labels_to_keep, include_unlabeled=True)
+        is_source = array_functions.find_set(data_copy.data_set_ids,self.configs.source_labels)
+        data_copy.type[is_source] = data_lib.TYPE_SOURCE
+        assert data_copy.is_source.any()
+        return super(SMSTransfer, self).train_and_test(data_copy)
+
+    def train(self, data):
+        assert data.is_regression
+        y_s, y_true = self.get_predictions(data)
+        I_target = data.is_target
+        I_target_labeled = data.is_target & data.is_labeled & data.is_train
+        y_s = data.y[I_target_labeled]
+        y_true = data.true_y[I_target_labeled]
+
+        x = array_functions.standardize(data.x)
+        x_t = x[I_target]
+        x_tl = x[I_target_labeled]
+
+        C = self.C
+        C2 = self.C2
+
+        W_ll = array_functions.make_rbf(x_tl, self.sigma, self.metric)
+        W_ll_reg_inv = np.linalg.inv(W_ll+C2*np.eye(W_ll.shape[0]))
+        W_ul = array_functions.make_rbf(x_t, self.sigma, self.metric, x2=x_tl)
+        R_ll = W_ll.dot(W_ll_reg_inv)
+        R_ul = W_ul.dot(W_ll_reg_inv)
+        assert not array_functions.has_invalid(R_ll)
+        assert not array_functions.has_invalid(R_ul)
+        reg = lambda gh: SMSTransfer.reg(gh, R_ul)
+        #f = lambda gh: SMSTransfer.eval(gh, R_ll, R_ul, y_s, y_true, C, reg)
+        f = SMSTransfer.eval
+        jac = SMSTransfer.gradient
+
+        g0 = np.zeros((R_ll.shape[0] * 2, 1))
+        gh_ids = np.zeros(g0.shape)
+        gh_ids[R_ll.shape[0]:] = 1
+
+        maxfun = np.inf
+        maxitr = np.inf
+        constraints = []
+        options = {
+            'disp': False,
+            'maxiter': maxitr,
+            'maxfun': maxfun
+        }
+        method = 'L-BFGS-B'
+        #R_ll = np.eye(R_ll.shape[0])
+        #R_ul = np.eye(R_ll.shape[0])
+        #y_s = 1*np.ones(y_s.shape)
+        #y_true = 1*np.ones(y_s.shape)
+        args = (R_ll, R_ul, y_s, y_true, C, reg)
+        results = optimize.minimize(
+            f,
+            g0,
+            method=method,
+            jac=jac,
+            options=options,
+            constraints=constraints,
+            args=args
+        )
+        check_results = False
+        if check_results:
+            results2 = optimize.minimize(
+                f,
+                g0,
+                method=method,
+                jac=None,
+                options=options,
+                constraints=constraints,
+                args=args
+            )
+            print self.params
+            scipy_opt_methods.compare_results(results, results2, gh_ids)
+            diff = results.x-results2.x
+            print results.x
+            print results2.x
+        g, h = SMSTransfer.unpack_gh(results.x, R_ll.shape[0])
+        self.opt_succeeded = results.success
+        if not results.success:
+            print 'SMS Opt failed'
+
+        data.R_ul = R_ul
+        self.g = g
+        self.h = h
+        #assert results.success
+        pass
+
+    def predict(self, data):
+        o = self.source_learner.predict(data)
+        if self.opt_succeeded:
+            assert not array_functions.has_invalid(self.g)
+            assert not array_functions.has_invalid(self.h)
+            I_target = data.is_target
+            b = data.R_ul.dot(self.h)
+            w = data.R_ul.dot(self.g)
+            y_old = o.fu[I_target]
+            y_new = (y_old - b) / w
+            I_invalid = array_functions.is_invalid(y_new)
+            y_new[I_invalid] = y_old[I_invalid]
+            o.fu[I_target] = y_new
+            o.y[I_target] = y_new
+        o.assert_input()
+        return o
+
+    @staticmethod
+    def unpack_gh(gh, n):
+        g = gh[0:n]
+        h = gh[n:]
+        return g,h
+
+    @staticmethod
+    def pack_gh(g,h):
+        assert g.shape == h.shape
+        n = g.shape[0] + h.shape[0]
+        gh = np.zeros(n)
+        gh[:g.shape[0]] = g
+        gh[g.shape[0]:] = h
+        return gh
+
+    @staticmethod
+    def reg(gh, R_ul):
+        g,h = SMSTransfer.unpack_gh(gh, R_ul.shape[1])
+        Rg = R_ul.dot(g)
+        RRg = R_ul.T.dot(Rg)
+        R1 = R_ul.T.dot(np.ones(R_ul.shape[0]))
+        grad_g = RRg - R1
+        grad_h = np.zeros(h.shape)
+        grad = SMSTransfer.pack_gh(grad_g, grad_h)
+        grad = grad*2
+        return norm(Rg-1)**2, grad
+
+    @staticmethod
+    def error(gh, R_ll, y_s, y_true):
+        g,h = SMSTransfer.unpack_gh(gh, R_ll.shape[0])
+        #g[:] = 0
+        #h[:] = 0
+        y_d = R_ll.dot(multiply(g, y_true) + h)
+        diff = y_d - y_s
+        err = norm(diff)**2
+
+        RR = R_ll.T.dot(R_ll)
+        D_yt = np.diag(y_true)
+        RRD = RR.dot(D_yt)
+        DRRD = D_yt.T.dot(RRD)
+        DR = D_yt.T.dot(R_ll.T)
+        Ry = R_ll.T.dot(y_s)
+        grad_g = DRRD.dot(g) + RRD.T.dot(h) - DR.dot(y_s)
+        grad_h = RR.dot(h) + RRD.dot(g) - Ry
+        grad = SMSTransfer.pack_gh(grad_g, grad_h)
+        grad = 2*grad
+        return err, grad
+
+    @staticmethod
+    def eval(gh, R_ll, R_ul, y_s, y_true, C, reg):
+        err_value = SMSTransfer.error(gh, R_ll, y_s, y_true)[0]
+        reg_value = reg(gh)[0]
+        val = err_value + C*reg_value
+        #val = C*reg_value
+        #val = err_value
+        return val
+
+    @staticmethod
+    def gradient(gh, R_ll, R_ul, y_s, y_true, C, reg):
+        err_grad = SMSTransfer.error(gh, R_ll, y_s, y_true)[1]
+        reg_grad = reg(gh)[1]
+        grad = err_grad + C*reg_grad
+        #grad = C*reg_grad
+        #grad = err_grad
+        return grad
+
+    @property
+    def prefix(self):
+        s = 'SMS'
+        return s
+

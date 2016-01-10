@@ -11,6 +11,19 @@ from data import data as data_lib
 from loss_functions import loss_function
 from timer.timer import tic,toc
 
+def compare_results(r1, r2, I=None):
+    if I is None:
+        I = np.zeros(r1.x.shape)
+    I = np.squeeze(I)
+    assert r1.x.shape == r2.x.shape
+    err = r1.x - r2.x
+    for i in np.unique(I):
+        inds = I == i
+        print  str(int(i)) + ' Rel Error - x: ' + str(norm(err[inds])/norm(r2.x[inds]))
+    print 'Rel Error - f(x*): ' + str(norm(r1.fun-r2.fun)/norm(r2.fun))
+    print 'f1(x*): ' + str(r1.fun)
+    print 'f2(x*): ' + str(r2.fun)
+
 
 #TODO: subclass ScipyOptMethod
 class ScipyOptRidgeRegression(method.Method):

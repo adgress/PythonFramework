@@ -54,6 +54,7 @@ class Method(Saveable):
     def set_params(self, **kwargs):
         for k, v in kwargs.items():
             setattr(self, k, v)
+        self._params = kwargs
 
     def run_method(self, data):
         self.train(data)

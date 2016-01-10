@@ -43,7 +43,7 @@ data_set_to_use = bc.DATA_BOSTONG_HOUSING
 
 synthetic_dim = 1
 if helper_functions.is_laptop():
-    use_pool = True
+    use_pool = False
     pool_size = 4
 else:
     use_pool = True
@@ -258,15 +258,14 @@ class MainConfigs(bc.MainConfigs):
         model_transfer = methods.transfer_methods.ModelSelectionTransfer(method_configs)
         hyp_transfer = methods.local_transfer_methods.HypothesisTransfer(method_configs)
         iwl_transfer = methods.local_transfer_methods.IWTLTransfer(method_configs)
+        sms_transfer = methods.local_transfer_methods.SMSTransfer(method_configs)
 
-        #self.learner = hyp_transfer
-        #self.learner = model_transfer
-        #self.learner = scipy_ridge_reg
-        #self.learner = local_transfer
-        #self.learner = fuse_nw
+
         #self.learner = target_nw
-        #self.learner = target_ridge
-        self.learner = iwl_transfer
+        #self.learner = hyp_transfer
+        #self.learner = local_transfer
+        #self.learner = iwl_transfer
+        self.learner = sms_transfer
 
 
 class MethodConfigs(bc.MethodConfigs):

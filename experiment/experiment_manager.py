@@ -96,23 +96,24 @@ class MethodExperimentManager(ExperimentManager):
         num_labels_list = list(itertools.product(range(num_labels), range(num_splits)))
 
         # load existing data
+        '''
         for i_labels, split in num_labels_list:
             num_labels = self.configs.num_labels[i_labels]
             curr_results = _load_temp_split_file(results_file, num_labels, split)
             if not curr_results:
                 continue
             method_results.set(curr_results, i_labels, split)
+        '''
+        shared_args = (self, results_file, data_and_splits, method_results)
+        args = [shared_args + (i_labels, split) for i_labels,split in num_labels_list]
         if self.configs.use_pool:
             pool = multiprocessing.Pool(processes=self.configs.pool_size)
-            shared_args = (self, results_file, data_and_splits, method_results)
-            args = [shared_args + (i_labels, split) for i_labels,split in num_labels_list]
             all_results = pool.map(_run_experiment, args)
-            for curr_results,s in zip(all_results,num_labels_list):
-                if curr_results is None:
-                    continue
-                i_labels, split = s
-                method_results.set(curr_results, i_labels, split)
         else:
+
+            all_results = [_run_experiment(a) for a in args]
+
+            '''
             for i_labels, split in num_labels_list:
                 num_labels = self.configs.num_labels[i_labels]
                 s = str(num_labels) + '-' + str(split)
@@ -130,6 +131,12 @@ class MethodExperimentManager(ExperimentManager):
                 if method_results.results_list[i_labels].is_full:
                     s = str(num_labels) + ' Mean Error: ' + str(method_results.results_list[i_labels].aggregate_error(self.configs.loss_function).mean)
                     print  s
+            '''
+        for curr_results,s in zip(all_results,num_labels_list):
+            if curr_results is None:
+                continue
+            i_labels, split = s
+            method_results.set(curr_results, i_labels, split)
 
         method_results.configs = self.configs
         helper_functions.save_object(results_file,method_results)
@@ -148,7 +155,7 @@ def _run_experiment_args(self, results_file, data_and_splits, method_results, i_
     s = str(num_labels) + '-' + str(split)
     curr_results = _load_temp_split_file(results_file, num_labels, split)
     if curr_results:
-        return None
+        return curr_results
     #print 'num_labels-split: ' + s
     curr_data = data_and_splits.get_split(split, num_labels)
     learner = self.configs.learner

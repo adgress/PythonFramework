@@ -14,6 +14,7 @@ from numpy.linalg import norm
 from data import data as data_lib
 from utility import helper_functions
 from scipy import optimize
+import scipy
 
 if helper_functions.is_laptop():
     enable_plotting = False
@@ -364,6 +365,12 @@ class LocalTransfer(HypothesisTransfer):
             fu_s = o_source.fu[:,i]
             if self.g_learner is not None:
                 pred = self.g_learner.combine_predictions(data.x[is_target,:],fu_s,fu_t)
+                if data.x.shape[1] == 1:
+                    x = scipy.linspace(data.x.min(),data.x.max(),100)
+                    x = array_functions.vec_to_2d(x)
+                    g = self.g_learner.predict_g(x)
+                    o.x = x
+                    o.g = g
             else:
                 pred = np.multiply(fu_t,1-self.g) + np.multiply(fu_s,self.g)
             o.fu[is_target,i] = pred
@@ -514,8 +521,13 @@ class IWTLTransfer(method.Method):
         self.instance_weights = all_data.instance_weights
         self.target_learner.train_and_test(all_data)
 
+        self.x = all_data.x[all_data.is_source]
+        self.w = all_data.instance_weights[all_data.is_source]
+
     def predict(self, data):
         o = self.target_learner.predict(data)
+        o.x = self.x
+        o.w = self.w
         return o
 
     @property
@@ -528,11 +540,14 @@ class SMSTransfer(method.Method):
     def __init__(self, configs=None):
         super(SMSTransfer, self).__init__(configs)
         self.cv_params = {}
+
         self.cv_params['sigma'] = 10**np.asarray(range(-4,5),dtype='float64')
         self.cv_params['C'] = 10**np.asarray(range(-4,4),dtype='float64')
         self.cv_params['C2'] = 10**np.asarray(range(-4,4),dtype='float64')
+
         #self.cv_params['C'] = np.asarray([1])
-        #self.cv_params['C2'] = np.asarray([.001])
+        #sself.cv_params['C2'] = np.asarray([.001])
+
         self.source_learner = method.NadarayaWatsonMethod(configs)
         self.source_learner.quiet = True
         self.base_learner = None
@@ -659,10 +674,10 @@ class SMSTransfer(method.Method):
 
     def predict(self, data):
         o = self.source_learner.predict(data)
+        I_target = data.is_target
         if self.opt_succeeded:
             assert not array_functions.has_invalid(self.g)
             assert not array_functions.has_invalid(self.h)
-            I_target = data.is_target
             b = data.R_ul.dot(self.h)
             w = data.R_ul.dot(self.g)
             y_old = o.fu[I_target]
@@ -671,6 +686,12 @@ class SMSTransfer(method.Method):
             y_new[I_invalid] = y_old[I_invalid]
             o.fu[I_target] = y_new
             o.y[I_target] = y_new
+            o.b = b
+            o.w = w
+        else:
+            o.b = np.zeros(I_target.sum())
+            o.w = np.ones(I_target.sum())
+        o.x = data.x[I_target,:]
         o.assert_input()
         return o
 

@@ -110,8 +110,8 @@ class Method(Saveable):
 
     def process_data(self, data):
         labels_to_keep = np.empty(0)
-        t = self.configs.target_labels
-        s = self.configs.source_labels
+        t = getattr(self.configs,'target_labels',None)
+        s = getattr(self.configs,'source_labels',None)
         if t is not None and t.size > 0:
             labels_to_keep = np.concatenate((labels_to_keep,t))
         if s is not None and s.size > 0:

@@ -11,7 +11,7 @@ import base.transfer_project_configs as configs_lib
 
 from experiment import experiment_manager
 from utility import helper_functions
-
+from timer import timer
 import matplotlib.pyplot as plt
 
 import numpy as np
@@ -62,7 +62,10 @@ def run_visualization():
 
 
 if __name__ == "__main__":
+    print 'Staring experiments...'
+    timer.tic()
     run_main()
+    timer.toc()
     if helper_functions.is_laptop():
         run_visualization()
 

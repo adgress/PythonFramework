@@ -189,7 +189,7 @@ def move_fig(fig):
     manager = fig.canvas.manager
     w = manager.canvas.width()
     h = manager.canvas.height()
-    manager.window.setGeometry(3000,0,w,h)
+    manager.window.setGeometry(2000,100,w,h)
 
 
 
@@ -262,7 +262,9 @@ def plot_MDS(x, y=None, data_set_ids=None):
     pass
 
 
-def plot_2d_sub(x,y,data_set_ids=None,alpha=1,title=None):
+def plot_2d_sub(x,y,data_set_ids=None,alpha=1,title=None,sizes=None):
+    if sizes is None:
+        sizes = 60
     pl.close()
     fig = pl.figure(4)
     if data_set_ids is None:
@@ -279,7 +281,7 @@ def plot_2d_sub(x,y,data_set_ids=None,alpha=1,title=None):
         inds = data_set_ids == val
         inds = inds.squeeze()
         pl.ylabel(str(val))
-        pl.scatter(x[inds],y[inds],alpha=alpha,c='r',s=60)
+        pl.scatter(x[inds],y[inds],alpha=alpha,c='r',s=sizes,)
     move_fig(fig)
     pl.show(block=False)
     pass

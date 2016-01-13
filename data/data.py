@@ -145,6 +145,7 @@ class LabeledData(LabeledVector):
 
 
     def get_subset(self,to_select):
+        assert to_select.size > 0
         d = self.__dict__
         new_data = Data()
         for key,value in d.items():

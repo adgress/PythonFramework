@@ -34,18 +34,18 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 data_data_to_use = None
 #data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION
 #data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION_LOCAL
-data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
+#data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
+#data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
 #data_set_to_use = bc.DATA_BOSTONG_HOUSING
 #data_set_to_use = bc.DATA_NG
-#data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_BIKE_SHARING
-#data_set_to_use = bc.DATA_WINE
+data_set_to_use = bc.DATA_WINE
 
 synthetic_dim = 1
 if helper_functions.is_laptop():
     use_pool = False
-    pool_size = 1
+    pool_size = 2
 else:
     use_pool = True
     pool_size = 12
@@ -114,7 +114,14 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.labels_to_keep = np.concatenate((self.target_labels,a))
 
     def set_wine(self):
-        assert False
+        self.loss_function = loss_function.MeanSquaredError()
+        self.cv_loss_function = loss_function.MeanSquaredError()
+        self.data_dir = 'data_sets/wine-feat=1'
+        self.data_name = 'wine-feat=1'
+        self.data_set_file_name = 'split_data.pkl'
+        self.results_dir = 'wine-feat=1'
+        self.target_labels = np.asarray([0])
+        self.source_labels = np.asarray([1])
 
     def set_boston_housing_transfer(self):
         self.loss_function = loss_function.MeanSquaredError()
@@ -266,15 +273,15 @@ class MainConfigs(bc.MainConfigs):
         local_transfer = methods.local_transfer_methods.LocalTransfer(method_configs)
         scipy_ridge_reg = scipy_opt_methods.ScipyOptRidgeRegression(method_configs)
         model_transfer = methods.transfer_methods.ModelSelectionTransfer(method_configs)
-        hyp_transfer = methods.local_transfer_methods.HypothesisTransfer(method_configs)
+        #hyp_transfer = methods.local_transfer_methods.HypothesisTransfer(method_configs)
         iwl_transfer = methods.local_transfer_methods.IWTLTransfer(method_configs)
         sms_transfer = methods.local_transfer_methods.SMSTransfer(method_configs)
 
 
         #self.learner = target_nw
         #self.learner = hyp_transfer
-        #self.learner = local_transfer
-        self.learner = iwl_transfer
+        self.learner = local_transfer
+        #self.learner = iwl_transfer
         #self.learner = sms_transfer
 
 

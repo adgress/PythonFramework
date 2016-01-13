@@ -113,7 +113,7 @@ class FoldResults(object):
         )
 
 class Output(data_lib.LabeledVector):
-    def __init__(self,data=None):
+    def __init__(self,data=None,y=None):
         super(data_lib.LabeledVector, self).__init__()
         if data is not None:
             self.y = data.y
@@ -126,6 +126,9 @@ class Output(data_lib.LabeledVector):
             self.true_y = np.empty(0)
             self.type = np.empty(0)
         self.fu = np.empty(0)
+        if y is not None:
+            self.y = y
+            self.fu = y
 
     def compute_error_train(self,loss_function):
         return loss_function.compute_score(

@@ -62,7 +62,7 @@ def run_visualization():
 
 
 if __name__ == "__main__":
-    print 'Staring experiments...'
+    print 'Starting experiments...'
     timer.tic()
     run_main()
     timer.toc()

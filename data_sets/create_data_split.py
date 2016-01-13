@@ -121,6 +121,6 @@ def run_main():
     #split_data(create_data_set.concrete_file % '-7', regression_configs())
     #split_data(create_data_set.boston_housing_raw_data_file, regression_configs())
     #split_data(create_data_set.bike_file % '-feat=1', regression_configs())
-    split_data(create_data_set.wine_file % 'asdf', regression_configs())
+    split_data(create_data_set.wine_file % '-feat=1', regression_configs())
 if __name__ == '__main__':
     run_main()

@@ -155,7 +155,8 @@ class LocalTransfer(HypothesisTransfer):
         self.cv_params['C'] = np.insert(self.cv_params['C'],0,0)
 
         self.cv_params['C2'] = np.asarray([0,.001,.01,.1,1,10,100,1000])
-
+        #self.cv_params['C'] = np.zeros(1)
+        #self.cv_params['C2'] = np.zeros(1)
         if not self.configs.use_reg2:
             self.cv_params['C2'] = np.asarray([0])
 
@@ -170,11 +171,14 @@ class LocalTransfer(HypothesisTransfer):
         self.use_fused_lasso = configs.use_fused_lasso
         self.use_oracle = False
         self.g_learner = None
+        #self.g_supervised = True
+        self.g_supervised = False
         use_g_learner = configs.use_g_learner
 
         if use_g_learner:
             #self.g_learner = scipy_opt_methods.ScipyOptCombinePrediction(configs)
             self.g_learner = scipy_opt_methods.ScipyOptNonparametricHypothesisTransfer(configs)
+            self.g_learner.g_supervised = self.g_supervised
             self.max_value = .5
             self.g_learner.max_value = self.max_value
         self.no_reg = self.configs.no_reg
@@ -189,8 +193,11 @@ class LocalTransfer(HypothesisTransfer):
         if self.g_learner is not None:
             self.g_learner.quiet = True
 
+        self.quiet = False
+
 
     def train_g_learner(self, target_data):
+        target_data = target_data.get_subset(target_data.is_train)
         y_t, y_s, y_true = self.get_predictions(target_data)
 
         is_labeled = target_data.is_labeled
@@ -403,6 +410,8 @@ class LocalTransfer(HypothesisTransfer):
             s += '-est_f'
         if 'max_value' in self.__dict__ and self.max_value != 1:
             s += '-max_value=' + str(self.max_value)
+        if 'g_supervised' in self.__dict__ and self.g_supervised:
+            s += '-g_sup'
         return s
 
 

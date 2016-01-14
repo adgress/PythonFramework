@@ -130,10 +130,10 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
             maxfun = 1000
             fused_lasso = ScipyOptNonparametricHypothesisTransfer.fused_lasso
             lasso = lambda x : self.C - fused_lasso(x,W)
-            constraints = {
+            constraints = [{
                 'type': 'ineq',
                 'fun': lasso
-            }
+            }]
             if self.configs.no_reg:
                 constraints = ()
             args = (x,y,y_s,y_t,0,reg,self.C2,reg2)
@@ -143,6 +143,14 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
             max_fun = np.inf
             constraints = ()
             args = (x,y,y_s,y_t,self.C,reg,self.C2,reg2)
+
+        if self.g_supervised:
+            x = np.squeeze(data.x)
+            assert x.ndim == 1
+            min_i = x.argmin()
+            max_i = x.argmax()
+            bounds[min_i] = (1,None)
+            bounds[max_i] = (0,0)
 
         options = {
             'disp': False,
@@ -209,6 +217,9 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
         g_data.is_regression = True
         g_data.set_defaults()
         self.g_nw.train_and_test(g_data)
+        if results.success:
+            pass
+            #print 'succeeded'
 
     def predict(self, data):
         fu = self.combine_predictions(data.x,data.y_s,data.y_t)

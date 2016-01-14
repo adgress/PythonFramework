@@ -121,9 +121,14 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.data_name = 'wine-feat=1'
         self.results_dir = 'wine-feat=1'
         '''
+        '''
         self.data_dir = 'data_sets/wine-small-feat=1'
         self.data_name = 'wine-small-feat=1'
         self.results_dir = 'wine-small-feat=1'
+        '''
+        self.data_dir = 'data_sets/wine-small-11'
+        self.data_name = 'wine-small-11'
+        self.results_dir = 'wine-small-11'
         self.data_set_file_name = 'split_data.pkl'
         self.target_labels = np.asarray([0])
         self.source_labels = np.asarray([1])
@@ -278,14 +283,14 @@ class MainConfigs(bc.MainConfigs):
         local_transfer = methods.local_transfer_methods.LocalTransfer(method_configs)
         scipy_ridge_reg = scipy_opt_methods.ScipyOptRidgeRegression(method_configs)
         model_transfer = methods.transfer_methods.ModelSelectionTransfer(method_configs)
-        #hyp_transfer = methods.local_transfer_methods.HypothesisTransfer(method_configs)
+        hyp_transfer = methods.local_transfer_methods.HypothesisTransfer(method_configs)
         iwl_transfer = methods.local_transfer_methods.IWTLTransfer(method_configs)
         sms_transfer = methods.local_transfer_methods.SMSTransfer(method_configs)
 
 
         #self.learner = target_nw
-        #self.learner = hyp_transfer
-        self.learner = local_transfer
+        self.learner = hyp_transfer
+        #self.learner = local_transfer
         #self.learner = iwl_transfer
         #self.learner = sms_transfer
 

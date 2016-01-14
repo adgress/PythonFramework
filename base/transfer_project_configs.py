@@ -116,10 +116,15 @@ class ProjectConfigs(bc.ProjectConfigs):
     def set_wine(self):
         self.loss_function = loss_function.MeanSquaredError()
         self.cv_loss_function = loss_function.MeanSquaredError()
+        '''
         self.data_dir = 'data_sets/wine-feat=1'
         self.data_name = 'wine-feat=1'
-        self.data_set_file_name = 'split_data.pkl'
         self.results_dir = 'wine-feat=1'
+        '''
+        self.data_dir = 'data_sets/wine-small-feat=1'
+        self.data_name = 'wine-small-feat=1'
+        self.results_dir = 'wine-small-feat=1'
+        self.data_set_file_name = 'split_data.pkl'
         self.target_labels = np.asarray([0])
         self.source_labels = np.asarray([1])
 

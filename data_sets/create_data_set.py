@@ -483,8 +483,10 @@ def create_wine():
     data.y = y
     data.set_defaults()
     data.data_set_ids = ids
+    data = data.rand_sample(.25, data.data_set_ids == 0)
+    data = data.rand_sample(.1, data.data_set_ids == 1)
     data.is_regression = True
-    s = wine_file % ('-feat=' + str(feat_idx))
+    s = wine_file % ('-small-feat=' + str(feat_idx))
     helper_functions.save_object(s,data)
 
 

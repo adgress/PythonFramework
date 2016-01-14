@@ -237,10 +237,20 @@ class LabeledData(LabeledVector):
     def remove_test_labels(self):
         self.y[self.is_test] = np.nan
 
-    def rand_sample(self,perc=.1):
-        p = np.random.permutation(self.n)
-        m = np.ceil(perc*self.n)
-        to_use = p[:m]
+    def rand_sample(self,perc=.1,to_sample=None):
+        if to_sample is None:
+            to_sample = array_functions.true(self.n)
+        if to_sample.dtype != 'bool':
+            I = array_functions.false(self.n)
+            I[to_sample] = True
+            to_sample = I
+
+        to_keep = (~to_sample).nonzero()[0]
+        to_sample = to_sample.nonzero()[0]
+        p = np.random.permutation(to_sample.shape[0])
+        m = np.ceil(perc*p.shape[0])
+        to_use = to_sample[p[:m]]
+        to_use = np.hstack((to_use,to_keep))
         return self.get_subset(to_use)
 
 

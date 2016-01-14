@@ -16,3 +16,4 @@ eegtools/*/*/*
 
 .idea/*
 .idea/*/*
+*.boto

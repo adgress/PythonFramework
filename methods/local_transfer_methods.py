@@ -222,6 +222,7 @@ class LocalTransfer(HypothesisTransfer):
         #s[parametric_data.x.argsort(0)]
         self.g_learner.C = self.C
         self.g_learner.C2 = self.C2
+        self.g_learner.k = self.k
         self.g_learner.cv_params = {}
         self.g_learner.train_and_test(parametric_data)
         '''

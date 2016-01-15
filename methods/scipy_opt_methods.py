@@ -209,7 +209,6 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
             print s + ': ' + results.message
             self.g[:] = 0
         else:
-            print 'succeeded'
             pass
         g_data = data_lib.Data()
         g_data.x = data.x

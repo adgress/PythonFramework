@@ -161,8 +161,8 @@ class LocalTransfer(HypothesisTransfer):
             self.cv_params['C2'] = np.asarray([0])
 
         #self.C = 1
-        self.k = 3
-        #self.cv_params['k'] = np.asarray([1,3,5,7])
+        self.k = 1
+        self.cv_params['k'] = np.asarray([1,3,5])
         self.target_learner = method.NadarayaWatsonMethod(configs)
         self.source_learner = method.NadarayaWatsonMethod(configs)
         self.base_learner = None

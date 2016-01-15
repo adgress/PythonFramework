@@ -100,7 +100,7 @@ def make_laplacian_kNN(x,k,metric):
         W[W_inds,to_keep[:,i]] = 1
 
     #Make symmetric for quad_form
-    W = .5*(W + W.T)
+    #W = .5*(W + W.T)
     D = W.sum(1)
     L = np.diag(D) - W
     L = scipy.sparse.csc_matrix(L)

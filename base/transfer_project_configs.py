@@ -289,8 +289,8 @@ class MainConfigs(bc.MainConfigs):
 
 
         #self.learner = target_nw
-        self.learner = hyp_transfer
-        #self.learner = local_transfer
+        #self.learner = hyp_transfer
+        self.learner = local_transfer
         #self.learner = iwl_transfer
         #self.learner = sms_transfer
 

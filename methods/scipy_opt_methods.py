@@ -199,17 +199,17 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
         print ''
         '''
         self.g = results.x
-        s = 'C=' + str(self.C) + ',C2=' + str(self.C2) + '-'
+        s = 'C=' + str(self.C) + ',C2=' + str(self.C2) + ',k=' + str(self.k) + '-'
         if not results.success:
             s += 'Opt failed - '
         has_nonneg = (self.g < -1e-6).any()
         if has_nonneg:
             s += 'Negative g - min value: ' + str(self.g.min())
         if not results.success or has_nonneg:
-            print s
+            print s + ': ' + results.message
             self.g[:] = 0
         else:
-            #print 'succeeded'
+            print 'succeeded'
             pass
         g_data = data_lib.Data()
         g_data.x = data.x

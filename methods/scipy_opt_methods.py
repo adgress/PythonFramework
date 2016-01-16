@@ -136,7 +136,8 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
         y_s = np.squeeze(data.y_s[:,0])
         y_t = np.squeeze(data.y_t[:,0])
         y = data.y
-        W = -array_functions.make_laplacian_kNN(data.x,self.k,self.configs.metric)
+        #W = -array_functions.make_laplacian_kNN(data.x,self.k,self.configs.metric)
+        W = array_functions.make_graph_readius(data.x, self.radius, self.configs.metric)
         W = array_functions.try_toarray(W)
         if not data.is_regression:
             y = array_functions.make_label_matrix(data.y)[:,data.classes].toarray()
@@ -187,14 +188,8 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
             constraints=constraints,
             args=args,
         )
-        self.g = results.x[1:]
-        self.bias = results.x[0]
-        if not results.success:
-            print 'Failed: ' + results.message
-            self.g[:] = 0
-            self.bias = 0
         compare_results = False
-        if compare_results:
+        if compare_results or not results.success:
             options['approx_grad'] = True
             results2 = optimize.minimize(
                 f,
@@ -205,6 +200,7 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
                 constraints=constraints,
                 args=args
             )
+        if compare_results:
             err = results.x - results2.x
             if norm(results2.x[1:]) == 0:
                 print 'All zeros - using absolute error'
@@ -217,10 +213,16 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
                 print 'Rel Error - b: ' + str(norm(err[0])/norm(results2.x[0]))
             rel_error = norm(results.fun-results2.fun)/norm(results2.fun)
             print 'Rel Error - f(g*): ' + str(rel_error)
-            if  rel_error > .001 and norm(results2.x) > 0:
+            if rel_error > .001 and norm(results2.x) > 0:
                 print 'Big error: C=' + str(self.C) + ' C2=' + str(self.C2)
+        if not results.success:
             results = results2
-
+        self.g = results.x[1:]
+        self.bias = results.x[0]
+        if not results.success:
+            self.g[:] = 0
+            self.bias = 0
+            #print 'Failed: ' + results.message
         '''
         I = data.arg_sort()
         x = (data.x[I,:])

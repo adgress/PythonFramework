@@ -161,7 +161,8 @@ class LocalTransfer(HypothesisTransfer):
             self.cv_params['C2'] = np.asarray([0])
 
         self.k = 1
-        self.cv_params['k'] = np.asarray([1,2,4])
+        #self.cv_params['k'] = np.asarray([1,2,4])
+        self.cv_params['radius'] = np.asarray([.05, .1, .2])
 
         self.target_learner = method.NadarayaWatsonMethod(configs)
         self.source_learner = method.NadarayaWatsonMethod(configs)
@@ -225,6 +226,7 @@ class LocalTransfer(HypothesisTransfer):
         self.g_learner.C = self.C
         self.g_learner.C2 = self.C2
         self.g_learner.k = self.k
+        self.g_learner.radius = self.radius
         self.g_learner.cv_params = {}
         self.g_learner.train_and_test(parametric_data)
         '''
@@ -392,6 +394,8 @@ class LocalTransfer(HypothesisTransfer):
             fu = array_functions.normalize_rows(fu)
             o.fu = fu
             o.y = fu.argmax(1)
+        o.bias = self.g_learner.bias
+        o.g = self.g_learner.g
         assert not (np.isnan(o.y)).any()
         assert not (np.isnan(o.fu)).any()
         return o

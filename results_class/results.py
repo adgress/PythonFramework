@@ -66,8 +66,8 @@ class ExperimentResults(ResultsContainer):
 
     def aggregate_error(self, loss_function):
         errors = self.compute_error(loss_function)
-        mean = errors.mean()
-        #mean = np.percentile(errors,50)
+        #mean = errors.mean()
+        mean = np.percentile(errors,50)
         n = len(errors)
         zn = 1.96
         #if self.is_regression or mean > 1:

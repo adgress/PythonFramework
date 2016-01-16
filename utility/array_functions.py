@@ -88,6 +88,16 @@ def to_boolean(x, length=None):
     b[x] = True
     return b
 
+def make_graph_readius(x, radius, metric):
+    assert metric == 'euclidean'
+    assert x.shape[1] == 1
+    x = normalize(x)
+    dists = pairwise.pairwise_distances(x,x,metric)
+    dists[np.diag(true(x.shape[0]))] = 0
+    dists[dists > radius] = 0
+    return dists
+
+
 def make_laplacian_kNN(x,k,metric):
     dists = pairwise.pairwise_distances(x,x,metric)
     dists[np.diag(true(x.shape[0]))] = np.inf

@@ -34,11 +34,11 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 data_data_to_use = None
 #data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION
 #data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION_LOCAL
-#data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
+data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
 #data_set_to_use = bc.DATA_BOSTONG_HOUSING
 #data_set_to_use = bc.DATA_NG
-data_set_to_use = bc.DATA_CONCRETE
+#data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_BIKE_SHARING
 #data_set_to_use = bc.DATA_WINE
 
@@ -333,6 +333,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             'LocalTransfer-NonParaHypTrans-l1-reg2-max_value=0.5.pkl',
             'LocalTransfer-no_reg-NonParaHypTrans-reg2-max_value=0.5.pkl',
             'SMS.pkl',
+            'LocalTransfer-NonParaHypTrans-reg2-bias.pkl',
         ]
 
 class BatchConfigs(bc.BatchConfigs):

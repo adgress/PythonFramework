@@ -95,6 +95,7 @@ def make_graph_readius(x, radius, metric):
     dists = pairwise.pairwise_distances(x,x,metric)
     dists[np.diag(true(x.shape[0]))] = 0
     dists[dists > radius] = 0
+    dists[dists != 0] = 1
     return dists
 
 

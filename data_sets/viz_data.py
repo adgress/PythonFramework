@@ -27,7 +27,7 @@ def train_on_data(x,y,domain_ids,learner):
     from methods import density
     kde = density.KDE()
 
-    max_n = 500.0
+    max_n = 200.0
     for i in np.unique(domain_ids):
         I = domain_ids == i
         data_i = data.get_subset(I)
@@ -68,9 +68,13 @@ def viz_features(x,y,domain_ids,feature_names=None,alpha=.1,learner=None):
 
 def run_main():
     import create_data_set
-    s = create_data_set.synthetic_step_transfer_file
+    from methods import method
+    learner = method.NadarayaWatsonMethod()
+    #s = create_data_set.synthetic_step_transfer_file
+    #s = create_data_set.boston_housing_raw_data_file % '-13'
+    s = create_data_set.concrete_file % '-7'
     data = helper_functions.load_object(s)
-    viz_features(data.x,data.y,data.data_set_ids)
+    viz_features(data.x,data.y,data.data_set_ids,learner=learner)
 
 if __name__ == "__main__":
     run_main()

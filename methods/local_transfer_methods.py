@@ -160,9 +160,9 @@ class LocalTransfer(HypothesisTransfer):
         if not self.configs.use_reg2:
             self.cv_params['C2'] = np.asarray([0])
 
-        #self.C = 1
         self.k = 1
         self.cv_params['k'] = np.asarray([1,2,4])
+
         self.target_learner = method.NadarayaWatsonMethod(configs)
         self.source_learner = method.NadarayaWatsonMethod(configs)
         self.base_learner = None
@@ -174,6 +174,7 @@ class LocalTransfer(HypothesisTransfer):
         #self.g_supervised = True
         self.g_supervised = False
         use_g_learner = configs.use_g_learner
+        self.include_bias = True
 
         if use_g_learner:
             #self.g_learner = scipy_opt_methods.ScipyOptCombinePrediction(configs)
@@ -181,6 +182,7 @@ class LocalTransfer(HypothesisTransfer):
             self.g_learner.g_supervised = self.g_supervised
             self.max_value = .5
             self.g_learner.max_value = self.max_value
+            self.g_learner.include_bias = self.include_bias
         self.no_reg = self.configs.no_reg
         if self.no_reg:
             self.cv_params['C'] = np.zeros(1)
@@ -409,10 +411,14 @@ class LocalTransfer(HypothesisTransfer):
             s += '-l2'
         if 'use_estimated_f' in self.__dict__ and self.use_estimated_f:
             s += '-est_f'
+        '''
         if 'max_value' in self.__dict__ and self.max_value != 1:
             s += '-max_value=' + str(self.max_value)
+        '''
         if 'g_supervised' in self.__dict__ and self.g_supervised:
             s += '-g_sup'
+        if 'include_bias' in self.__dict__ and self.include_bias:
+            s += '-bias'
         return s
 
 

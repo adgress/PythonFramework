@@ -15,6 +15,7 @@ class KDE(method.Method):
         self.cv_params = {
             'sigma': np.asarray(10.0**np.asarray(range(-4,5)))
         }
+        self.cv_params = {}
         self.is_classifier = False
         self._estimated_error = None
         self.quiet = True

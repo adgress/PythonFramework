@@ -8,6 +8,24 @@ import os
 import shutil
 import getpass
 
+
+#TODO: Way to do this without needing to login?
+def send_email(address='agress@ucdavis.edu', subject=''):
+    import smtplib
+    from email.mime.text import MIMEText
+    import email
+    msg = MIMEText('')
+    msg['Subject'] = subject
+    msg['From'] = address
+    msg['To'] = address
+    msg['Message-id'] = email.Utils.make_msgid()
+    #s = smtplib.SMTP('smtp.gmail.com:587')
+    #s.starttls()
+    s = smtplib.SMTP('smtp.gmail.com')
+
+    s.sendmail(address, [address], msg.as_string())
+    s.quit()
+
 def is_laptop():
     return get_user_name() == 'Aubrey'
 

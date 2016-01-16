@@ -153,6 +153,10 @@ def create_energy():
     viz_features(x,y,domain_ids,field_names)
     pass
 
+#0 - 1 to 3
+#3 - 1 to 3
+#4 - 1 to 3
+#5 -
 def create_concrete():
     file = 'concrete/Concrete_Data.csv'
     used_field_names, concrete_data = load_csv(file)

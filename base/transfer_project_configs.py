@@ -261,7 +261,7 @@ class MainConfigs(bc.MainConfigs):
         from methods import scipy_opt_methods
         method_configs = MethodConfigs()
         method_configs.metric = 'euclidean'
-        method_configs.use_fused_lasso = True
+        method_configs.use_fused_lasso = False
         method_configs.use_reg2 = True
         method_configs.no_reg = False
         method_configs.use_g_learner = True

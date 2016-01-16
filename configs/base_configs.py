@@ -138,6 +138,9 @@ class MethodConfigs(Configs):
         pc = create_project_configs()
         self.z_score = False
         self.quiet = False
+        self.loss_function = loss_function.MeanSquaredError()
+        self.cv_loss_function = loss_function.MeanSquaredError()
+        self.cv_loss_function = pc.cv_loss_function
         self.loss_function = pc.loss_function
 
     @property

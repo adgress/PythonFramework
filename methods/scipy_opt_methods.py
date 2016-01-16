@@ -97,9 +97,11 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
         self.g_nw.quiet = True
         self.k = 3
         self.metric = configs.metric
+        self.bias = 0
 
     @staticmethod
     def fused_lasso(x, W):
+        x = x[1:]
         n = x.shape[0]
         val = 0
         for i in range(n):
@@ -109,10 +111,27 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
         return val
 
     def train(self, data):
+
+        '''
+        self.C = 1
+        self.C2 = 10
+        self.k = 1
+        '''
+        #self.C = 100
+        #self.configs.use_fused_lasso = False
         f = self.create_eval(data, self.C)
         g = self.create_gradient(data, self.C)
         bounds = list((0, None) for i in range(data.n))
-        g0 = np.zeros(data.n)
+        #bounds = list((i, i) for i in range(data.n))
+        #bounds = list((0, 0) for i in range(data.n))
+        #bounds[0] = (0,None)
+        if self.include_bias:
+            bounds = [(None, None)] + bounds
+            #bounds = [(10, 10)] + bounds
+        else:
+            bounds = [(0, 0)] + bounds
+        n = data.n + 1
+        g0 = np.zeros(n)
         x = data.x
         y_s = np.squeeze(data.y_s[:,0])
         y_t = np.squeeze(data.y_t[:,0])
@@ -140,7 +159,7 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
         else:
             method = 'L-BFGS-B'
             max_iter = np.inf
-            max_fun = np.inf
+            maxfun = np.inf
             constraints = ()
             args = (x,y,y_s,y_t,self.C,reg,self.C2,reg2)
 
@@ -155,7 +174,8 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
         options = {
             'disp': False,
             'maxiter':max_iter,
-            'maxfun': maxfun
+            'maxfun': maxfun,
+            #'pgtol': 1e-8
         }
         results = optimize.minimize(
             f,
@@ -165,10 +185,17 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
             jac=g,
             options=options,
             constraints=constraints,
-            args=args
+            args=args,
         )
+        self.g = results.x[1:]
+        self.bias = results.x[0]
+        if not results.success:
+            print 'Failed: ' + results.message
+            self.g[:] = 0
+            self.bias = 0
         compare_results = False
         if compare_results:
+            options['approx_grad'] = True
             results2 = optimize.minimize(
                 f,
                 g0,
@@ -179,11 +206,15 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
                 args=args
             )
             err = results.x - results2.x
-            if norm(results2.x) == 0:
+            if norm(results2.x[1:]) == 0:
                 print 'All zeros - using absolute error'
-                print 'Abs Error - g: ' + str(norm(err))
+                print 'Abs Error - g: ' + str(norm(err[1:]))
             else:
-                print 'Rel Error - g: ' + str(norm(err)/norm(results2.x))
+                print 'Rel Error - g: ' + str(norm(err[1:])/norm(results2.x[1:]))
+            if norm(results2.x[0]) == 0:
+                print 'Abs Error - b: ' + str(norm(err[0]))
+            else:
+                print 'Rel Error - b: ' + str(norm(err[0])/norm(results2.x[0]))
             rel_error = norm(results.fun-results2.fun)/norm(results2.fun)
             print 'Rel Error - f(g*): ' + str(rel_error)
             if  rel_error > .001 and norm(results2.x) > 0:
@@ -198,11 +229,10 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
         print v
         print ''
         '''
-        self.g = results.x
         s = 'C=' + str(self.C) + ',C2=' + str(self.C2) + ',k=' + str(self.k) + '-'
         if not results.success:
             s += 'Opt failed - '
-        has_nonneg = (self.g < -1e-6).any()
+        has_nonneg = (self.g[1:] < -1e-6).any()
         if has_nonneg:
             s += 'Negative g - min value: ' + str(self.g.min())
         if not results.success or has_nonneg:
@@ -212,7 +242,7 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
             pass
         g_data = data_lib.Data()
         g_data.x = data.x
-        g_data.y = results.x
+        g_data.y = results.x[1:]
         g_data.is_regression = True
         g_data.set_defaults()
         self.g_nw.train_and_test(g_data)
@@ -237,9 +267,9 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
         if y_source.ndim > 1:
             a_t = array_functions.vec_to_2d(a_t)
             b_s = array_functions.vec_to_2d(b_s)
-            fu = a_t*y_target + b_s*y_source
+            fu = a_t*y_target + b_s * (y_source + self.bias)
         else:
-            fu = np.multiply(a_t, y_target) + np.multiply(b_s, y_source)
+            fu = np.multiply(a_t, y_target) + np.multiply(b_s, y_source + self.bias)
         return fu
 
     def predict_g(self, x):
@@ -260,10 +290,12 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
 
     @staticmethod
     def reg2(g):
+        g = g[1:]
         return norm(g)**2, 2*g
 
     @staticmethod
     def reg(g,L):
+        g = g[1:]
         Lg = L.dot(g)
         val = Lg.dot(g)
         return val, 2*Lg
@@ -279,28 +311,38 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
 
     @staticmethod
     def error(g,y,y_s,y_t):
+        bias = g[0]
+        g = g[1:]
         denom = 1 / (1+g)
         a_t = denom
         a_s = np.multiply(g,denom)
         err = np.multiply(y_t,a_t)
-        err += np.multiply(y_s,a_s)
+        err += np.multiply(y_s + bias,a_s)
         err -=  y
         return err
 
     @staticmethod
     def gradient(g,x,y,y_s,y_t,C,reg,C2,reg2):
         err = ScipyOptNonparametricHypothesisTransfer.error(g,y,y_s,y_t)
+        unused, grad_reg = reg(g)
+        unused, grad_reg2 = reg2(g)
+        bias = g[0]
+        g = g[1:]
         denom = 1 / np.square(1+g)
         a_t = -denom
         a_s = denom
         grad_loss = np.multiply(a_t,y_t)
-        grad_loss += np.multiply(a_s,y_s)
+        grad_loss += np.multiply(a_s,y_s + bias)
         grad_loss = np.multiply(grad_loss,err)
-        unused, grad_reg = reg(g)
-        unused, grad_reg2 = reg2(g)
+
+
+        g_gp1 = np.multiply(g, 1 / (1+g))
+        t = np.multiply(err, g_gp1)
+        grad_b_loss = 2*t.sum()
+
         grad = 2*grad_loss
         grad += (C*grad_reg + C2*grad_reg2)
-        #grad *= 2
+        grad = np.insert(grad, 0, grad_b_loss)
         return grad
 
     @property
@@ -320,6 +362,7 @@ class ScipyOptCombinePrediction(ScipyOptMethod):
         super(ScipyOptCombinePrediction, self).__init__(configs)
         self.cv_params['C'] = 10**np.asarray(range(-4,4),dtype='float64')
         self.max_value = 1
+        assert False, 'TODO: add bias'
 
     def train(self, data):
         f = self.create_eval(data, self.C)

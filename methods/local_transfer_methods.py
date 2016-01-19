@@ -175,7 +175,7 @@ class LocalTransfer(HypothesisTransfer):
         #self.g_supervised = True
         self.g_supervised = False
         use_g_learner = configs.use_g_learner
-        self.include_bias = True
+        self.include_bias = False
 
         if use_g_learner:
             #self.g_learner = scipy_opt_methods.ScipyOptCombinePrediction(configs)

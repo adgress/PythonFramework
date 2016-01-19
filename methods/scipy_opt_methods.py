@@ -86,6 +86,7 @@ class ScipyOptMethod(method.Method):
         return self.__class__.gradient
 
 
+use_huber = False
 class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
     def __init__(self,configs=base_configs.MethodConfigs()):
         super(ScipyOptNonparametricHypothesisTransfer, self).__init__(configs)
@@ -98,6 +99,7 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
         self.k = 3
         self.metric = configs.metric
         self.bias = 0
+        self.use_huber = use_huber
 
     @staticmethod
     def fused_lasso(x, W):
@@ -125,6 +127,7 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
         #bounds = list((i, i) for i in range(data.n))
         #bounds = list((0, 0) for i in range(data.n))
         #bounds[0] = (0,None)
+        #self.include_bias = False
         if self.include_bias:
             bounds = [(None, None)] + bounds
             #bounds = [(10, 10)] + bounds
@@ -132,6 +135,7 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
             bounds = [(0, 0)] + bounds
         n = data.n + 1
         g0 = np.zeros(n)
+        g0[:] = 1
         x = data.x
         y_s = np.squeeze(data.y_s[:,0])
         y_t = np.squeeze(data.y_t[:,0])
@@ -190,6 +194,7 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
         )
         compare_results = False
         if compare_results or not results.success:
+            options['disp'] = False
             options['approx_grad'] = True
             results2 = optimize.minimize(
                 f,
@@ -303,11 +308,31 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
         return val, 2*Lg
 
     @staticmethod
+    def huber(v):
+        delta = 1
+        val = np.zeros(v.shape)
+        v_abs = np.abs(v)
+        I = v_abs <= delta
+        val[I] = .5*np.square(v[I])
+        val[~I] = delta*(v_abs[~I] - .5*delta)
+
+        grad = np.zeros(v.shape)
+        grad[I] = v[I]
+        grad[~I] = delta*np.sign(v[~I])
+
+        #from scipy.special import huber
+        #t = huber(delta,v)
+        return val, grad
+
+
+    @staticmethod
     def eval(g,x,y,y_s,y_t,C,reg,C2,reg2):
         err = ScipyOptNonparametricHypothesisTransfer.error(g,y,y_s,y_t)
         val_reg, unused = reg(g)
         val_reg2, unused = reg2(g)
         val = norm(err)**2
+        if use_huber:
+            val = ScipyOptNonparametricHypothesisTransfer.huber(err)[0].sum()
         val += (C*val_reg + C2*val_reg2)
         return val
 
@@ -318,9 +343,8 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
         denom = 1 / (1+g)
         a_t = denom
         a_s = np.multiply(g,denom)
-        err = np.multiply(y_t,a_t)
-        err += np.multiply(y_s + bias,a_s)
-        err -=  y
+        pred = np.multiply(y_t,a_t) + np.multiply(y_s + bias,a_s)
+        err = pred - y
         return err
 
     @staticmethod
@@ -335,14 +359,19 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
         a_s = denom
         grad_loss = np.multiply(a_t,y_t)
         grad_loss += np.multiply(a_s,y_s + bias)
-        grad_loss = np.multiply(grad_loss,err)
 
 
         g_gp1 = np.multiply(g, 1 / (1+g))
-        t = np.multiply(err, g_gp1)
-        grad_b_loss = 2*t.sum()
+        if use_huber:
+            err_huber, grad_huber = ScipyOptNonparametricHypothesisTransfer.huber(err)
+            grad_loss = np.multiply(grad_huber, err)
+            t = np.multiply(grad_huber, g_gp1)
+        else:
+            grad_loss = 2*np.multiply(grad_loss,err)
+            t = 2*np.multiply(err, g_gp1)
+        grad_b_loss = t.sum()
 
-        grad = 2*grad_loss
+        grad = grad_loss
         grad += (C*grad_reg + C2*grad_reg2)
         grad = np.insert(grad, 0, grad_b_loss)
         return grad

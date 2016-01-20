@@ -142,6 +142,7 @@ class MethodConfigs(Configs):
         self.cv_loss_function = loss_function.MeanSquaredError()
         self.cv_loss_function = pc.cv_loss_function
         self.loss_function = pc.loss_function
+        self.use_validation = False
 
     @property
     def results_file_name(self):

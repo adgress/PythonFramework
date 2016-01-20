@@ -336,7 +336,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             'LocalTransfer-no_reg-NonParaHypTrans-reg2-max_value=0.5.pkl',
             'SMS.pkl',
             'LocalTransfer-NonParaHypTrans-reg2-bias.pkl',
-            'LocalTransfer-NonParaHypTrans-reg2.pkl'
+            'LocalTransfer-NonParaHypTrans-reg2.pkl',
+            'LocalTransfer-NonParaHypTrans-l1-reg2.pkl'
         ]
 
 class BatchConfigs(bc.BatchConfigs):

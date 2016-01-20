@@ -150,8 +150,8 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
         reg2 = self.create_reg2(data.x)
         if self.configs.use_fused_lasso:
             method = 'SLSQP'
-            max_iter = 1000
-            maxfun = 1000
+            max_iter = 10000
+            maxfun = 10000
             fused_lasso = ScipyOptNonparametricHypothesisTransfer.fused_lasso
             lasso = lambda x : self.C - fused_lasso(x,W)
             constraints = [{
@@ -212,10 +212,11 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
                 print 'Abs Error - g: ' + str(norm(err[1:]))
             else:
                 print 'Rel Error - g: ' + str(norm(err[1:])/norm(results2.x[1:]))
-            if norm(results2.x[0]) == 0:
-                print 'Abs Error - b: ' + str(norm(err[0]))
-            else:
-                print 'Rel Error - b: ' + str(norm(err[0])/norm(results2.x[0]))
+            if not self.include_bias:
+                if norm(results2.x[0]) == 0:
+                    print 'Abs Error - b: ' + str(norm(err[0]))
+                else:
+                    print 'Rel Error - b: ' + str(norm(err[0])/norm(results2.x[0]))
             rel_error = norm(results.fun-results2.fun)/norm(results2.fun)
             print 'Rel Error - f(g*): ' + str(rel_error)
             if rel_error > .001 and norm(results2.x) > 0:

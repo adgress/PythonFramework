@@ -71,10 +71,11 @@ def run_main():
     from methods import method
     learner = method.NadarayaWatsonMethod()
     #s = create_data_set.synthetic_step_transfer_file
+    s = create_data_set.synthetic_step_linear_transfer_file
     #s = create_data_set.boston_housing_raw_data_file % '-13'
     #s = create_data_set.concrete_file % '-7'
-    s = create_data_set.synthetic_classification_local_file
-    learner = None
+    #s = create_data_set.synthetic_classification_local_file
+    #learner = None
     data = helper_functions.load_object(s)
     viz_features(data.x,data.y,data.data_set_ids,learner=learner)
 

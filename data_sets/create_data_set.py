@@ -395,7 +395,7 @@ def create_synthetic_step_linear_transfer(file_dir=''):
     data.data_set_ids = np.zeros(n)
     data.data_set_ids[n_target:] = 1
     data.y = np.reshape(data.x*5,data.x.shape[0])
-    data.y[(data.data_set_ids == 1) & (data.x[:,0] >= .5)] += 2
+    data.y[(data.data_set_ids == 1) & (data.x[:,0] >= .5)] += 4
     data.y += np.random.normal(0,sigma,n)
     data.set_defaults()
     data.is_regression = True
@@ -558,6 +558,7 @@ if __name__ == "__main__":
     #create_synthetic_classification(local=True)
     #create_boston_housing()
     #create_bike_sharing()
-    create_wine()
+    #create_wine()
+    create_synthetic_step_linear_transfer()
     from data_sets import create_data_split
     create_data_split.run_main()

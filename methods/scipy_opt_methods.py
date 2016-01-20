@@ -135,7 +135,7 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
             bounds = [(0, 0)] + bounds
         n = data.n + 1
         g0 = np.zeros(n)
-        g0[:] = 1
+        #g0[:] = 1
         x = data.x
         y_s = np.squeeze(data.y_s[:,0])
         y_t = np.squeeze(data.y_t[:,0])

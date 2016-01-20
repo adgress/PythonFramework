@@ -101,7 +101,9 @@ class LabeledVector(object):
     def is_labeled(self):
         return ~np.isnan(self.y)
 
-    def reveal_labels(self, inds):
+    def reveal_labels(self, inds=None):
+        if inds is None:
+            inds = array_functions.true(self.n)
         self.y[inds] = self.true_y[inds]
 
     #Note: This changes both y AND true_y

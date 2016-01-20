@@ -64,6 +64,12 @@ class DataSplitter(object):
     def __init__(self):
         pass
 
+    def generate_identity_split(self, is_train):
+        s = data_lib.Split(is_train.shape[0])
+        s.is_train = is_train
+        s.permutation = np.asarray(range(is_train.shape[0]))
+        return [s]
+
     def generate_splits(self,y,num_splits=30,perc_train=.8,is_regression=False,keep_for_splitting=None):
         assert y.ndim == 1
         keep_in_train_set = array_functions.false(len(y))

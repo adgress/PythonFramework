@@ -33,8 +33,8 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
 data_data_to_use = None
 #data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION
-data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION_LOCAL
-#data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
+#data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION_LOCAL
+data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
 #data_set_to_use = bc.DATA_BOSTONG_HOUSING
 #data_set_to_use = bc.DATA_NG
@@ -79,8 +79,8 @@ class ProjectConfigs(bc.ProjectConfigs):
             #self.num_labels = range(20,61,20)
         elif data_set_to_use == bc.DATA_SYNTHETIC_STEP_TRANSFER:
             self.set_synthetic_step_transfer()
-            self.num_labels = range(10,31,10)
-            #self.num_labels = [50]
+            #self.num_labels = range(10,31,10)
+            self.num_labels = [20]
         elif data_set_to_use == bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER:
             self.set_synthetic_step_linear_transfer()
             #self.num_labels = [30]
@@ -261,10 +261,11 @@ class MainConfigs(bc.MainConfigs):
         from methods import scipy_opt_methods
         method_configs = MethodConfigs()
         method_configs.metric = 'euclidean'
-        method_configs.use_fused_lasso = False
+        method_configs.use_fused_lasso = True
         method_configs.use_reg2 = True
         method_configs.no_reg = False
         method_configs.use_g_learner = True
+        method_configs.use_validation = False
         if data_set_to_use == bc.DATA_NG:
             method_configs.metric = 'cosine'
             method_configs.use_fused_lasso = False
@@ -293,6 +294,7 @@ class MainConfigs(bc.MainConfigs):
         self.learner = local_transfer
         #self.learner = iwl_transfer
         #self.learner = sms_transfer
+        self.learner.configs.use_validation = True
 
 
 class MethodConfigs(bc.MethodConfigs):
@@ -334,6 +336,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             'LocalTransfer-no_reg-NonParaHypTrans-reg2-max_value=0.5.pkl',
             'SMS.pkl',
             'LocalTransfer-NonParaHypTrans-reg2-bias.pkl',
+            'LocalTransfer-NonParaHypTrans-reg2.pkl'
         ]
 
 class BatchConfigs(bc.BatchConfigs):

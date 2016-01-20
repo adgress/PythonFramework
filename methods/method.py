@@ -77,7 +77,13 @@ class Method(Saveable):
     def run_cross_validation(self,data):
         train_data = data.get_subset(data.is_train)
 
-        splits = self._create_cv_splits(train_data)
+        if self.configs.use_validation:
+            I = train_data.is_labeled
+            train_data.reveal_labels()
+            ds = create_data_split.DataSplitter()
+            splits = ds.generate_identity_split(I)
+        else:
+            splits = self._create_cv_splits(train_data)
         data_and_splits = data_lib.SplitData(train_data,splits)
         param_grid = list(grid_search.ParameterGrid(self.cv_params))
         if not self.cv_params:

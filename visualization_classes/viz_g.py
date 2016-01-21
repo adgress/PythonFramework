@@ -16,7 +16,7 @@ def run_main(results_file):
     results = helper_functions.load_object(results_file)
     x_list = []
     g_list = []
-    y_axes = [0,1]
+    y_axes = [-4,4]
     for i, r  in enumerate(results.results_list):
         x, g = aggregate_g(r)
         x_list.append(x)
@@ -26,6 +26,7 @@ def run_main(results_file):
 
 if __name__ == '__main__':
     dir = '../base/synthetic_step_linear_transfer/'
-    s = 'LocalTransfer-NonParaHypTrans-l1-reg2.pkl'
+    #s = 'LocalTransfer-NonParaHypTrans-l1-reg2.pkl'
     #s = 'LocalTransfer-no_reg-NonParaHypTrans-reg2.pkl'
+    s = 'LocalTransferDelta.pkl'
     run_main(dir + s)

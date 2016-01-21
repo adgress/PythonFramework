@@ -319,6 +319,7 @@ class ScikitLearnMethod(Method):
     def predict(self, data):
         o = Output(data)
         o.y = self.skl_method.predict(data.x)
+        o.fu = o.y
         return o
 
     def set_params(self, **kwargs):
@@ -337,6 +338,21 @@ class SKLRidgeRegression(ScikitLearnMethod):
         super(SKLRidgeRegression, self).__init__(configs, linear_model.Ridge())
         self.cv_params['alpha'] = 10**np.asarray(range(-8,8),dtype='float64')
         self.set_params(alpha=0,fit_intercept=True,normalize=True)
+
+    def predict_loo(self, data):
+        d = data.get_subset(data.is_train & data.is_labeled)
+        y = np.zeros(d.n)
+        for i in range(d.n):
+            xi = d.x[i,:]
+            d.y[i] = np.nan
+            self.train(d)
+            o_i = self.predict(d)
+            y[i] = o_i.y[i]
+            d.reveal_labels(i)
+        o = Output(d)
+        o.fu = y
+        o.y = y
+        return o
 
 class SKLLogisticRegression(ScikitLearnMethod):
     def __init__(self,configs=None):

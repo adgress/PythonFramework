@@ -151,15 +151,15 @@ class LocalTransfer(HypothesisTransfer):
         #self.cv_params['C'] = 10**np.asarray(range(-4,4),dtype='float64')
         self.cv_params['C'] = 10**np.asarray(range(-6,6),dtype='float64')
         if self.configs.use_fused_lasso:
-            self.cv_params['C'] = np.asarray([1,5,10,50,100,500,1000000])
+            self.cv_params['C'] = np.asarray([1,3,5,10,20])
+            #self.cv_params['C'] = np.asarray([1,5,10,50,100,500,1000000])
         self.cv_params['C'] = np.insert(self.cv_params['C'],0,0)
 
+
         self.cv_params['C2'] = np.asarray([0,.001,.01,.1,1,10,100,1000])
-        #self.cv_params['C'] = np.zeros(1)
-        #self.cv_params['C2'] = np.zeros(1)
         if not self.configs.use_reg2:
             self.cv_params['C2'] = np.asarray([0])
-
+        self.cv_params['C2'] = np.zeros(1)
         self.k = 1
         #self.cv_params['k'] = np.asarray([1,2,4])
         #self.cv_params['radius'] = np.asarray([.05, .1, .2])

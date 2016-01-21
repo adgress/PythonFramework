@@ -26,6 +26,6 @@ def run_main(results_file):
 
 if __name__ == '__main__':
     dir = '../base/synthetic_step_linear_transfer/'
-    #s = LocalTransfer-NonParaHypTrans-l1-reg2.pkl'
-    s = 'LocalTransfer-no_reg-NonParaHypTrans-reg2.pkl'
+    s = 'LocalTransfer-NonParaHypTrans-l1-reg2.pkl'
+    #s = 'LocalTransfer-no_reg-NonParaHypTrans-reg2.pkl'
     run_main(dir + s)

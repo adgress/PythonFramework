@@ -292,7 +292,7 @@ def plot_MDS(x, y=None, data_set_ids=None):
         #axes.scatter(x_mds[I,0],x_mds[I,1], alpha=alpha,c=colors[ind],s=60)
     move_fig(fig)
     pl.autoscale()
-    pl.show(block=False)
+    pl.show(block=True)
     pass
 
 def plot_line_sub(x_list, y_list, title=None, y_axes = None):

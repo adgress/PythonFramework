@@ -121,9 +121,12 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
         '''
         #self.C = 100
         #self.configs.use_fused_lasso = False
+        g_max = 2
+        g0_oracle = np.zeros(data.n)
+        g0_oracle[data.x[:,0] < .5] = g_max
         f = self.create_eval(data, self.C)
         g = self.create_gradient(data, self.C)
-        bounds = list((0, None) for i in range(data.n))
+        bounds = list((0, g_max) for i in range(data.n))
         #bounds = list((i, i) for i in range(data.n))
         #bounds = list((0, 0) for i in range(data.n))
         #bounds[0] = (0,None)
@@ -134,7 +137,9 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
         else:
             bounds = [(0, 0)] + bounds
         n = data.n + 1
+
         g0 = np.zeros(n)
+        g0[1:] = g0_oracle
         #g0[:] = 1
         x = data.x
         y_s = np.squeeze(data.y_s[:,0])

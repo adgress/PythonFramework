@@ -162,7 +162,7 @@ class LocalTransfer(HypothesisTransfer):
 
         self.k = 1
         #self.cv_params['k'] = np.asarray([1,2,4])
-        self.cv_params['radius'] = np.asarray([.05, .1, .2])
+        #self.cv_params['radius'] = np.asarray([.05, .1, .2])
 
         self.target_learner = method.NadarayaWatsonMethod(configs)
         self.source_learner = method.NadarayaWatsonMethod(configs)
@@ -187,6 +187,8 @@ class LocalTransfer(HypothesisTransfer):
         self.no_reg = self.configs.no_reg
         if self.no_reg:
             self.cv_params['C'] = np.zeros(1)
+            self.cv_params['C2'] = np.zeros(1)
+            self.cv_params['radius'] = np.zeros(1)
         #self.g_learner = None
         self.use_estimated_f = False
         #self.metric = 'euclidean'

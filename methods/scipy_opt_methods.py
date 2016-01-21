@@ -141,7 +141,8 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
         y_t = np.squeeze(data.y_t[:,0])
         y = data.y
         #W = -array_functions.make_laplacian_kNN(data.x,self.k,self.configs.metric)
-        W = array_functions.make_graph_readius(data.x, self.radius, self.configs.metric)
+        #W = array_functions.make_graph_readius(data.x, self.radius, self.configs.metric)
+        W = array_functions.make_graph_adjacent(data.x, self.configs.metric)
         W = array_functions.try_toarray(W)
         if not data.is_regression:
             y = array_functions.make_label_matrix(data.y)[:,data.classes].toarray()

@@ -88,6 +88,29 @@ def to_boolean(x, length=None):
     b[x] = True
     return b
 
+
+def make_graph_adjacent(x, metric):
+    assert metric == 'euclidean'
+    assert x.shape[1] == 1
+    I = x.argsort(0)
+    x = normalize(x)
+    dists = pairwise.pairwise_distances(x,x,metric)
+    W = np.zeros((I.size, I.size))
+    for i, x_index in enumerate(I):
+        if i > 0:
+            neighbor_left = I[i-1]
+            W[x_index, neighbor_left] = 1
+        if i < I.size-1:
+            neighbor_right = I[i+1]
+            W[x_index, neighbor_right] = 1
+    return W
+
+
+    dists[np.diag(true(x.shape[0]))] = 0
+    dists[dists > radius] = 0
+    dists[dists != 0] = 1
+    return dists
+
 def make_graph_readius(x, radius, metric):
     assert metric == 'euclidean'
     assert x.shape[1] == 1
@@ -272,6 +295,19 @@ def plot_MDS(x, y=None, data_set_ids=None):
     pl.show(block=False)
     pass
 
+def plot_line_sub(x_list, y_list, title=None, y_axes = None):
+    pl.close()
+    fig = pl.figure(len(x_list))
+    fig.suptitle(title)
+    for i, (x,y) in enumerate(zip(x_list, y_list)):
+        pl.subplot(len(x_list),1,i)
+        if y_axes is not None:
+            a = pl.gca()
+            a.set_ylim(y_axes)
+
+        pl.plot(x,y)
+    move_fig(fig)
+    pl.show(block=False)
 
 def plot_2d_sub(x,y,data_set_ids=None,alpha=1,title=None,sizes=None):
     if sizes is None:

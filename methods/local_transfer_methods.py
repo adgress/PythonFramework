@@ -14,6 +14,7 @@ from numpy.linalg import norm
 from data import data as data_lib
 from utility import helper_functions
 from scipy import optimize
+from methods import delta_transfer
 import scipy
 
 if helper_functions.is_laptop():
@@ -396,8 +397,6 @@ class LocalTransfer(HypothesisTransfer):
             fu = array_functions.normalize_rows(fu)
             o.fu = fu
             o.y = fu.argmax(1)
-        o.bias = self.g_learner.bias
-        o.g = self.g_learner.g
         if data.x.shape[1] == 1:
             x = array_functions.vec_to_2d(scipy.linspace(data.x.min(),data.x.max(),100))
             o.linspace_x = x
@@ -431,6 +430,57 @@ class LocalTransfer(HypothesisTransfer):
         if 'include_bias' in self.__dict__ and self.include_bias:
             s += '-bias'
         return s
+
+class LocalTransferDelta(LocalTransfer):
+    def __init__(self, configs=None):
+        super(LocalTransferDelta, self).__init__(configs)
+        self.cv_params = {}
+        #self.cv_params['radius'] = np.asarray([.01, .05, .1, .15, .2],dtype='float64')
+        self.radius = .05
+        self.cv_params['C'] = 10**np.asarray(range(-6,6),dtype='float64')
+        #self.cv_params['C'] = np.asarray([1,3,5,10,20])
+        self.cv_params['C'] = np.insert(self.cv_params['C'],0,0)
+        #self.cv_params['C2'] = np.asarray([0,.001,.01,.1,1,10,100,1000])
+        #self.cv_params['C'] = np.asarray([0])
+        self.cv_params['C2'] = np.asarray([0])
+        self.cv_params['C3'] = np.asarray([.5])
+        self.target_learner = method.NadarayaWatsonMethod(configs)
+        self.source_learner = method.NadarayaWatsonMethod(configs)
+
+        self.g_learner = delta_transfer.CombinePredictionsDelta(configs)
+        self.g_learner.quiet = True
+        self.g_learner.use_fused_lasso = configs.use_fused_lasso
+        self.metric = configs.metric
+        self.quiet = False
+
+    def train_g_learner(self, target_data):
+        self.g_learner.C3 = self.C3
+        super(LocalTransferDelta, self).train_g_learner(target_data)
+        pass
+
+    def train_and_test(self, data):
+        r = super(LocalTransferDelta, self).train_and_test(data)
+        '''
+        self.plot_g()
+        I = np.squeeze(self.g_learner.g_nw.x.argsort(0))
+        sorted_x = self.g_learner.g_nw.x[I,:]
+        sorted_g = self.g_learner.g_nw.y[I]
+        print sorted_x.T
+        print sorted_g
+        print self.g_learner.g_nw.sigma
+        '''
+        return r
+
+    def plot_g(self):
+        x = np.linspace(0,1)
+        x = array_functions.vec_to_2d(x)
+        g = self.g_learner.predict_g(x)
+        array_functions.plot_2d(x,g)
+        pass
+
+    @property
+    def prefix(self):
+        return 'LocalTransferDelta'
 
 
 class IWTLTransfer(method.Method):

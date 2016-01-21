@@ -83,8 +83,8 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.num_labels = [20]
         elif data_set_to_use == bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER:
             self.set_synthetic_step_linear_transfer()
-            #self.num_labels = [30]
-            self.num_labels = range(10,31,10)
+            self.num_labels = [30]
+            #self.num_labels = range(10,31,10)
         elif data_set_to_use == bc.DATA_SYNTHETIC_CLASSIFICATION:
             self.set_synthetic_classification()
             self.num_labels = [4,8,16]
@@ -287,13 +287,14 @@ class MainConfigs(bc.MainConfigs):
         hyp_transfer = methods.local_transfer_methods.HypothesisTransfer(method_configs)
         iwl_transfer = methods.local_transfer_methods.IWTLTransfer(method_configs)
         sms_transfer = methods.local_transfer_methods.SMSTransfer(method_configs)
-
+        dt_local_transfer = methods.local_transfer_methods.LocalTransferDelta(method_configs)
 
         #self.learner = target_nw
         #self.learner = hyp_transfer
-        self.learner = local_transfer
+        #self.learner = local_transfer
         #self.learner = iwl_transfer
         #self.learner = sms_transfer
+        self.learner = dt_local_transfer
         self.learner.configs.use_validation = True
 
 

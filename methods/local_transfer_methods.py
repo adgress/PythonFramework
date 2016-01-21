@@ -396,6 +396,11 @@ class LocalTransfer(HypothesisTransfer):
             o.y = fu.argmax(1)
         o.bias = self.g_learner.bias
         o.g = self.g_learner.g
+        if data.x.shape[1] == 1:
+            x = array_functions.vec_to_2d(scipy.linspace(data.x.min(),data.x.max(),100))
+            o.linspace_x = x
+            o.linspace_g = self.g_learner.predict_g(x)
+
         assert not (np.isnan(o.y)).any()
         assert not (np.isnan(o.fu)).any()
         return o

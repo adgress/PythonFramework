@@ -83,8 +83,8 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.num_labels = [20]
         elif data_set_to_use == bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER:
             self.set_synthetic_step_linear_transfer()
-            #self.num_labels = [30]
-            self.num_labels = range(10,31,10)
+            self.num_labels = [30]
+            #self.num_labels = range(10,31,10)
         elif data_set_to_use == bc.DATA_SYNTHETIC_CLASSIFICATION:
             self.set_synthetic_classification()
             self.num_labels = [4,8,16]

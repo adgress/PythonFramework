@@ -220,7 +220,8 @@ class LocalTransfer(HypothesisTransfer):
         parametric_data.b = b
         parametric_data.y_s = y_s
         parametric_data.y_t = y_t
-        parametric_data.set_defaults()
+        parametric_data.set_target()
+        parametric_data.set_train()
         #assert target_data.is_regression
         if target_data.is_regression:
             parametric_data.data_set_ids[:] = self.configs.target_labels[0]
@@ -445,7 +446,7 @@ class LocalTransferDelta(LocalTransfer):
         vals2.reverse()
         self.cv_params['C2'] = np.asarray(vals2)
         #self.cv_params['C'] = np.asarray([0])
-        #self.cv_params['C2'] = np.asarray([0])
+        self.cv_params['C2'] = np.asarray([0])
         self.cv_params['C3'] = np.asarray([.5])
         self.target_learner = method.NadarayaWatsonMethod(configs)
         self.source_learner = method.NadarayaWatsonMethod(configs)

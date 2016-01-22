@@ -34,13 +34,14 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 data_data_to_use = None
 #data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION
 #data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION_LOCAL
-data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
+#data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
 #data_set_to_use = bc.DATA_BOSTONG_HOUSING
 #data_set_to_use = bc.DATA_NG
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_BIKE_SHARING
 #data_set_to_use = bc.DATA_WINE
+data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
 
 synthetic_dim = 1
 if helper_functions.is_laptop():
@@ -105,6 +106,9 @@ class ProjectConfigs(bc.ProjectConfigs):
         elif data_set_to_use == bc.DATA_WINE:
             self.set_wine()
             self.num_labels = [5,10,20]
+        elif data_set_to_use == bc.DATA_SYNTHETIC_DELTA_LINEAR:
+            self.set_synthetic_regression('synthetic_delta_linear_transfer')
+            self.num_labels = np.asarray([10,20,30])
         else:
             assert False
         assert self.source_labels.size > 0
@@ -201,6 +205,17 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.cv_loss_function = loss_function.LogLoss()
         #self.cv_loss_function = loss_function.ZeroOneError()
 
+    def set_synthetic_regression(self, name):
+        self.loss_function = loss_function.MeanSquaredError()
+        self.target_labels = np.zeros(1)
+        self.source_labels = np.ones(1)
+        self.loss_function = loss_function.MeanSquaredError()
+        self.data_dir = 'data_sets/' + name
+        self.data_name = name
+        self.results_dir = name
+        self.data_set_file_name = 'split_data.pkl'
+
+
     def set_synthetic_step_linear_transfer(self):
         self.loss_function = loss_function.MeanSquaredError()
         self.data_dir = 'data_sets/synthetic_step_linear_transfer'
@@ -290,12 +305,12 @@ class MainConfigs(bc.MainConfigs):
         dt_local_transfer = methods.local_transfer_methods.LocalTransferDelta(method_configs)
 
         #self.learner = target_nw
-        #self.learner = hyp_transfer
+        self.learner = hyp_transfer
         #self.learner = local_transfer
         #self.learner = iwl_transfer
         #self.learner = sms_transfer
-        self.learner = dt_local_transfer
-        self.learner.configs.use_validation = True
+        #self.learner = dt_local_transfer
+        self.learner.configs.use_validation = False
 
 
 class MethodConfigs(bc.MethodConfigs):

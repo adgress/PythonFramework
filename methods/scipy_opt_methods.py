@@ -258,7 +258,9 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
         g_data.x = data.x
         g_data.y = results.x[1:]
         g_data.is_regression = True
-        g_data.set_defaults()
+        g_data.set_train()
+        g_data.set_target()
+        g_data.set_true_y()
         self.g_nw.train_and_test(g_data)
         if results.success:
             pass

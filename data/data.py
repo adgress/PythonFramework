@@ -207,6 +207,7 @@ class LabeledData(LabeledVector):
         self.permute(split.permutation)
 
     def set_defaults(self):
+        assert False, 'This function is dangerous!'
         self.set_train()
         self.set_target()
         self.set_true_y()

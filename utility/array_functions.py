@@ -340,7 +340,7 @@ def plot_2d(x,y,data_set_ids=None,alpha=1,title=None):
         data_set_ids = np.zeros(y.size)
     pl.title(title)
     pl.scatter(x,y,alpha=alpha,c=data_set_ids,s=60)
-    move_fig(fig)
+    #move_fig(fig)
     pl.show(block=False)
     pass
 

@@ -441,9 +441,11 @@ class LocalTransferDelta(LocalTransfer):
         vals.reverse()
         self.cv_params['C'] = 10**np.asarray(vals,dtype='float64')
         #self.cv_params['C'] = np.asarray([1,3,5,10,20])
-        #self.cv_params['C2'] = np.asarray([0,.00001,.0001,.001,.01,.1,1,10,100,1000])
+        vals2 = [0,.00001,.0001,.001,.01,.1,1,10,100,1000]
+        vals2.reverse()
+        self.cv_params['C2'] = np.asarray(vals2)
         #self.cv_params['C'] = np.asarray([0])
-        self.cv_params['C2'] = np.asarray([0])
+        #self.cv_params['C2'] = np.asarray([0])
         self.cv_params['C3'] = np.asarray([.5])
         self.target_learner = method.NadarayaWatsonMethod(configs)
         self.source_learner = method.NadarayaWatsonMethod(configs)

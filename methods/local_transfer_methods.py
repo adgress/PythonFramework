@@ -440,7 +440,7 @@ class LocalTransferDelta(LocalTransfer):
         self.cv_params['C'] = 10**np.asarray(range(-6,6),dtype='float64')
         #self.cv_params['C'] = np.asarray([1,3,5,10,20])
         self.cv_params['C'] = np.insert(self.cv_params['C'],0,0)
-        self.cv_params['C2'] = np.asarray([0,.001,.01,.1,1,10,100,1000])
+        self.cv_params['C2'] = np.asarray([0,.00001,.0001,.001,.01,.1,1,10,100,1000])
         #self.cv_params['C'] = np.asarray([0])
         #self.cv_params['C2'] = np.asarray([0])
         self.cv_params['C3'] = np.asarray([.5])

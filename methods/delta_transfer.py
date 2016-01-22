@@ -35,7 +35,7 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
         err = self.C3*y_s + (1-self.C3)*(y_t + g) - y
         err_abs = cvx.abs(err)
         err_l2 = cvx.power(err,2)
-        err_huber = cvx.huber(err)
+        err_huber = cvx.huber(err, 2)
         loss = cvx.sum_entries(err_huber)
         #constraints = [g >= -2, g <= 2]
         constraints = []

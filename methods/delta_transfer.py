@@ -53,7 +53,6 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
             print '\tC=' + str(self.C)
             print '\tC2=' + str(self.C2)
             g_value = k*np.ones(n_labeled)
-        assert (np.abs(g_value) <= 3).all()
         labeled_train_data = data.get_subset(labeled_inds)
         assert labeled_train_data.y.shape == g_value.shape
         labeled_train_data.is_regression = True

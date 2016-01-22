@@ -35,8 +35,10 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
         err = self.C3*y_s + (1-self.C3)*(y_t + g) - y
         err_abs = cvx.abs(err)
         err_l2 = cvx.power(err,2)
-        loss = cvx.sum_entries(err_abs)
-        constraints = [g >= -2, g <= 2]
+        err_huber = cvx.huber(err)
+        loss = cvx.sum_entries(err_huber)
+        #constraints = [g >= -2, g <= 2]
+        constraints = []
         obj = cvx.Minimize(loss + self.C*reg + self.C2*cvx.norm(g))
         prob = cvx.Problem(obj,constraints)
 
@@ -51,14 +53,13 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
             print '\tC=' + str(self.C)
             print '\tC2=' + str(self.C2)
             g_value = k*np.ones(n_labeled)
-
+        assert (np.abs(g_value) <= 3).all()
         labeled_train_data = data.get_subset(labeled_inds)
         assert labeled_train_data.y.shape == g_value.shape
         labeled_train_data.is_regression = True
         labeled_train_data.y = g_value
         labeled_train_data.true_y = g_value
 
-        self.g_nw.tune_loo(labeled_train_data)
         self.g_nw.train_and_test(labeled_train_data)
 
     def combine_predictions(self,x,y_source,y_target):

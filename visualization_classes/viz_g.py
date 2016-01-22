@@ -6,7 +6,8 @@ def aggregate_g(results):
     x = results.results_list[0].prediction.linspace_x
     g = np.zeros(results.results_list[0].prediction.linspace_g.shape)
     for r in results.results_list:
-        gi =  1 / (1+r.prediction.linspace_g)
+        #gi =  1 / (1+r.prediction.linspace_g)
+        gi = r.prediction.linspace_g
         g = g + gi
     g /= len(results.results_list)
     return x, g

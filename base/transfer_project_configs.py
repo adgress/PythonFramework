@@ -305,11 +305,11 @@ class MainConfigs(bc.MainConfigs):
         dt_local_transfer = methods.local_transfer_methods.LocalTransferDelta(method_configs)
 
         #self.learner = target_nw
-        self.learner = hyp_transfer
+        #self.learner = hyp_transfer
         #self.learner = local_transfer
         #self.learner = iwl_transfer
         #self.learner = sms_transfer
-        #self.learner = dt_local_transfer
+        self.learner = dt_local_transfer
         self.learner.configs.use_validation = False
 
 

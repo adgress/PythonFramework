@@ -33,8 +33,8 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
         else:
             assert False, 'Make Laplacian!'
             #reg = cvx.quad_form(g,L)
-        #err = self.C3*y_s + (1-self.C3)*(y_t + g) - y
-        err = y_s + g - y
+        err = self.C3*y_t + (1 - self.C3)*(y_s+g) - y
+        #err = y_s + g - y
         err_abs = cvx.abs(err)
         err_l2 = cvx.power(err,2)
         err_huber = cvx.huber(err, 2)
@@ -54,6 +54,7 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
             print 'CVX problem: setting g = ' + str(k)
             print '\tC=' + str(self.C)
             print '\tC2=' + str(self.C2)
+            print '\tC3=' + str(self.C3)
             g_value = k*np.ones(n_labeled)
         labeled_train_data = data.get_subset(labeled_inds)
         assert labeled_train_data.y.shape == g_value.shape
@@ -68,8 +69,8 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
         data.x = x
         data.is_regression = True
         g = self.g_nw.predict(data).fu
-        #fu = self.C3*y_target + (1-self.C3)*(y_source + g)
-        fu = y_source + g
+        fu = self.C3*y_target + (1-self.C3)*(y_source + g)
+        #fu = y_source + g
         return fu
 
     @property

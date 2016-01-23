@@ -447,7 +447,7 @@ class LocalTransferDelta(LocalTransfer):
         self.cv_params['C2'] = np.asarray(vals2)
         #self.cv_params['C'] = np.asarray([0])
         self.cv_params['C2'] = np.asarray([0])
-        self.cv_params['C3'] = np.asarray([.5])
+        self.cv_params['C3'] = np.asarray([0, .2, .4, .6, .8, 1])
         self.target_learner = method.NadarayaWatsonMethod(configs)
         self.source_learner = method.NadarayaWatsonMethod(configs)
 

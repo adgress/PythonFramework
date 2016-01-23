@@ -12,6 +12,7 @@ synthetic_dim = 5
 
 synthetic_step_transfer_file = 'synthetic_step_transfer/raw_data.pkl'
 synthetic_delta_linear_file = 'synthetic_delta_linear_transfer/raw_data.pkl'
+synthetic_cross_file = 'synthetic_cross_transfer/raw_data.pkl'
 synthetic_step_kd_transfer_file = 'synthetic_step_transfer_%d/raw_data.pkl'
 synthetic_step_linear_transfer_file = 'synthetic_step_linear_transfer/raw_data.pkl'
 synthetic_classification_file = 'synthetic_classification/raw_data.pkl'
@@ -115,6 +116,13 @@ def create_synthetic_delta_linear_transfer():
     s = synthetic_delta_linear_file
     helper_functions.save_object(s, data)
 
+def create_synthetic_cross_transfer():
+    slope = 5
+    target_fun = lambda x: slope*x
+    source_fun = lambda x: -slope*x + 5
+    data = create_synthetic_regression_transfer(target_fun, source_fun)
+    s = synthetic_cross_file
+    helper_functions.save_object(s, data)
 
 def create_synthetic_regression_transfer(target_fun, source_fun, n_target=100, n_source=100, sigma=.5):
     n = n_target + n_source

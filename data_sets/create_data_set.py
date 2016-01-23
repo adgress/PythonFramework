@@ -468,6 +468,7 @@ if __name__ == "__main__":
     #create_bike_sharing()
     #create_wine()
     #create_synthetic_step_linear_transfer()
-    create_synthetic_delta_linear_transfer()
+    #create_synthetic_delta_linear_transfer()
+    create_synthetic_cross_transfer()
     from data_sets import create_data_split
     create_data_split.run_main()

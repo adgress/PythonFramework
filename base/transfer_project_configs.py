@@ -41,7 +41,8 @@ data_data_to_use = None
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_BIKE_SHARING
 #data_set_to_use = bc.DATA_WINE
-data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
+#data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
+data_set_to_use = bc.DATA_SYNTHETIC_CROSS
 
 synthetic_dim = 1
 if helper_functions.is_laptop():
@@ -108,6 +109,9 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.num_labels = [5,10,20]
         elif data_set_to_use == bc.DATA_SYNTHETIC_DELTA_LINEAR:
             self.set_synthetic_regression('synthetic_delta_linear_transfer')
+            self.num_labels = np.asarray([10,20,30])
+        elif data_set_to_use == bc.DATA_SYNTHETIC_CROSS:
+            self.set_synthetic_regression('synthetic_cross_transfer')
             self.num_labels = np.asarray([10,20,30])
         else:
             assert False
@@ -354,7 +358,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             'LocalTransfer-NonParaHypTrans-reg2-bias.pkl',
             'LocalTransfer-NonParaHypTrans-reg2.pkl',
             'LocalTransfer-NonParaHypTrans-l1-reg2.pkl',
-            'LocalTransferDelta.pkl'
+            'LocalTransferDelta.pkl',
+            'LocalTransferDelta_C3=0.pkl'
         ]
 
 class BatchConfigs(bc.BatchConfigs):

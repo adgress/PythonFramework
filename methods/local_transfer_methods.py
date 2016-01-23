@@ -456,6 +456,9 @@ class LocalTransferDelta(LocalTransfer):
         self.g_learner.use_fused_lasso = configs.use_fused_lasso
         self.metric = configs.metric
         self.quiet = False
+        self.no_C3 = True
+        if self.no_C3:
+            self.cv_params['C3'] = np.zeros(1)
 
     def train_g_learner(self, target_data):
         self.g_learner.C3 = self.C3
@@ -484,7 +487,10 @@ class LocalTransferDelta(LocalTransfer):
 
     @property
     def prefix(self):
-        return 'LocalTransferDelta'
+        s = 'LocalTransferDelta'
+        if self.no_C3:
+            s += '_C3=0'
+        return s
 
 
 class IWTLTransfer(method.Method):

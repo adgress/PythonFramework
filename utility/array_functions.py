@@ -111,7 +111,7 @@ def make_graph_adjacent(x, metric):
     dists[dists != 0] = 1
     return dists
 
-def make_graph_readius(x, radius, metric):
+def make_graph_radius(x, radius, metric):
     assert metric == 'euclidean'
     assert x.shape[1] == 1
     x = normalize(x)

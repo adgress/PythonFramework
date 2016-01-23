@@ -41,8 +41,8 @@ data_data_to_use = None
 #data_set_to_use = bc.DATA_BIKE_SHARING
 #data_set_to_use = bc.DATA_WINE
 
-#data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
-data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
+data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
+#data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
 #data_set_to_use = bc.DATA_SYNTHETIC_CROSS
 
 synthetic_dim = 1
@@ -310,11 +310,11 @@ class MainConfigs(bc.MainConfigs):
         dt_local_transfer = methods.local_transfer_methods.LocalTransferDelta(method_configs)
 
         #self.learner = target_nw
-        self.learner = hyp_transfer
+        #self.learner = hyp_transfer
         #self.learner = local_transfer
         #self.learner = iwl_transfer
         #self.learner = sms_transfer
-        #self.learner = dt_local_transfer
+        self.learner = dt_local_transfer
         self.learner.configs.use_validation = False
 
 

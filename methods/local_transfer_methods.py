@@ -436,8 +436,8 @@ class LocalTransferDelta(LocalTransfer):
     def __init__(self, configs=None):
         super(LocalTransferDelta, self).__init__(configs)
         self.cv_params = {}
-        #self.cv_params['radius'] = np.asarray([.01, .05, .1, .15, .2],dtype='float64')
-        self.radius = .05
+        self.cv_params['radius'] = np.asarray([.05, .1, .2],dtype='float64')
+        #self.radius = .05
         vals = [0] + list(range(-6,6))
         vals.reverse()
         self.cv_params['C'] = 10**np.asarray(vals,dtype='float64')

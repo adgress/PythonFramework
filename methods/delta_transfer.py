@@ -26,7 +26,8 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
         labeled_inds = is_labeled.nonzero()[0]
         n_labeled = len(labeled_inds)
         g = cvx.Variable(n_labeled)
-        W = array_functions.make_graph_adjacent(data.x[is_labeled,:], self.configs.metric)
+        #W = array_functions.make_graph_adjacent(data.x[is_labeled,:], self.configs.metric)
+        W = array_functions.make_graph_radius(data.x[is_labeled,:], self.radius, self.configs.metric)
         W = W / W.sum()
         if self.use_fused_lasso:
             reg = cvx_functions.create_fused_lasso(W, g)

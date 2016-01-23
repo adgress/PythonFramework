@@ -457,11 +457,13 @@ class LocalTransferDelta(LocalTransfer):
         self.metric = configs.metric
         self.quiet = False
         self.no_C3 = True
+        self.use_radius = True
         if self.no_C3:
             self.cv_params['C3'] = np.zeros(1)
 
     def train_g_learner(self, target_data):
         self.g_learner.C3 = self.C3
+        self.g_learner.use_radius = self.use_radius
         super(LocalTransferDelta, self).train_g_learner(target_data)
         pass
 
@@ -490,6 +492,8 @@ class LocalTransferDelta(LocalTransfer):
         s = 'LocalTransferDelta'
         if getattr(self, 'no_C3', False):
             s += '_C3=0'
+        if getattr(self, 'use_radius', False):
+            s += '_radius'
         return s
 
 

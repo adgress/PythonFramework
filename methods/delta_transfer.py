@@ -16,6 +16,7 @@ from methods import scipy_opt_methods
 class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisTransfer):
     def __init__(self, configs=None):
         super(CombinePredictionsDelta, self).__init__(configs)
+        self.use_radius = True
 
     def train(self, data):
         y_s = np.squeeze(data.y_s[:,0])
@@ -26,9 +27,13 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
         labeled_inds = is_labeled.nonzero()[0]
         n_labeled = len(labeled_inds)
         g = cvx.Variable(n_labeled)
-        #W = array_functions.make_graph_adjacent(data.x[is_labeled,:], self.configs.metric)
-        W = array_functions.make_graph_radius(data.x[is_labeled,:], self.radius, self.configs.metric)
-        W = W / W.sum()
+        if self.use_radius:
+            W = array_functions.make_graph_radius(data.x[is_labeled,:], self.radius, self.configs.metric)
+        else:
+            W = array_functions.make_graph_adjacent(data.x[is_labeled,:], self.configs.metric)
+
+        if W.sum() > 0:
+            W = W / W.sum()
         if self.use_fused_lasso:
             reg = cvx_functions.create_fused_lasso(W, g)
         else:

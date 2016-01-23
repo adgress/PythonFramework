@@ -488,7 +488,7 @@ class LocalTransferDelta(LocalTransfer):
     @property
     def prefix(self):
         s = 'LocalTransferDelta'
-        if self.no_C3:
+        if getattr(self, 'no_C3', False):
             s += '_C3=0'
         return s
 

@@ -11,7 +11,9 @@ def train_on_data(x,y,domain_ids,learner):
     data.is_regression = True
     data.x = array_functions.vec_to_2d(x)
     data.y = y
-    data.set_defaults()
+    data.set_train()
+    data.set_true_y()
+    data.set_target()
     x_plot = np.zeros((0,1))
     y_plot = np.zeros(0)
     ids_plot = np.zeros(0)
@@ -71,9 +73,9 @@ def run_main():
     from methods import method
     learner = method.NadarayaWatsonMethod()
     #s = create_data_set.synthetic_step_transfer_file
-    s = create_data_set.synthetic_step_linear_transfer_file
+    #s = create_data_set.synthetic_step_linear_transfer_file
     #s = create_data_set.boston_housing_raw_data_file % '-13'
-    #s = create_data_set.concrete_file % '-7'
+    s = create_data_set.concrete_file % '-7'
     #s = create_data_set.synthetic_classification_local_file
     #learner = None
     data = helper_functions.load_object(s)

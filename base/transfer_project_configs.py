@@ -37,11 +37,11 @@ data_data_to_use = None
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
 #data_set_to_use = bc.DATA_BOSTONG_HOUSING
 #data_set_to_use = bc.DATA_NG
-#data_set_to_use = bc.DATA_CONCRETE
+data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_BIKE_SHARING
 #data_set_to_use = bc.DATA_WINE
 
-data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
+#data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
 #data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
 #data_set_to_use = bc.DATA_SYNTHETIC_CROSS
 
@@ -51,7 +51,7 @@ if helper_functions.is_laptop():
     pool_size = 2
 else:
     use_pool = True
-    pool_size = 12
+    pool_size = 24
 max_features = create_data_set.max_features
 
 class ProjectConfigs(bc.ProjectConfigs):
@@ -332,35 +332,10 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         pc = create_project_configs()
         self.copy_fields(pc,pc_fields_to_copy)
         self.files = [
-            'TargetTransfer+SKL-LogReg.pkl',
-            'FuseTransfer+SKL-LogReg.pkl',
-            'ModelSelTransfer.pkl',
-            'HypothesisTransfer.pkl',
-            'SKL-LogReg.pkl',
-            'NW.pkl',
-            'SKL-RidgeReg.pkl',
-            'TargetTransfer+SKL-KNN.pkl',
-            'LocalTransfer.pkl',
-            'FuseTransfer+NW.pkl',
-            'HypothesisTransfer-Oracle.pkl',
-            'FuseTransfer+NW-Oracle.pkl',
-            'LocalTransfer-NonParaHypTrans.pkl',
-            'LocalTransfer-SigComb-max_value=0.5.pkl',
-            'LocalTransfer-NonParaHypTrans-max_value=0.5.pkl',
-            'LocalTransfer-NonParaHypTrans-l1-max_value=0.5.pkl',
-            'LocalTransfer-no_reg-l1.pkl',
             'TargetTransfer+NW.pkl',
-            'FuseTransfer+NW-tws=0.5.pkl',
-            'FuseTransfer+NW-tws=0.9.pkl',
-            'TargetTransfer+SKL-RidgeReg.pkl',
-            'LocalTransfer-NonParaHypTrans-l1-reg2-max_value=0.5.pkl',
-            'LocalTransfer-no_reg-NonParaHypTrans-reg2-max_value=0.5.pkl',
-            'SMS.pkl',
-            'LocalTransfer-NonParaHypTrans-reg2-bias.pkl',
-            'LocalTransfer-NonParaHypTrans-reg2.pkl',
-            'LocalTransfer-NonParaHypTrans-l1-reg2.pkl',
-            'LocalTransferDelta.pkl',
-            'LocalTransferDelta_C3=0.pkl'
+            'HypothesisTransfer.pkl',
+            'LocalTransferDelta_C3=0_radius.pkl',
+            'LocalTransferDelta_radius.pkl',
         ]
 
 class BatchConfigs(bc.BatchConfigs):

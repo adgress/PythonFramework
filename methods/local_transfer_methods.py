@@ -457,7 +457,7 @@ class LocalTransferDelta(LocalTransfer):
         self.metric = configs.metric
         self.quiet = False
         self.no_C3 = True
-        self.use_radius = True
+        self.use_radius = False
         if self.no_C3:
             self.cv_params['C3'] = np.zeros(1)
 

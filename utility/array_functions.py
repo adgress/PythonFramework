@@ -8,6 +8,7 @@ from sklearn.metrics import pairwise
 import matplotlib as plt
 import matplotlib.pylab as pl
 import copy
+from numpy.linalg import norm
 from sklearn import preprocessing
 from timer.timer import Timer
 from timer.timer import tic
@@ -113,9 +114,11 @@ def make_graph_adjacent(x, metric):
 
 def make_graph_radius(x, radius, metric):
     assert metric == 'euclidean'
-    assert x.shape[1] == 1
+    #assert x.shape[1] == 1
+    p = x.shape[1]
+    max_dist = norm(np.ones(p) - np.zeros(p))
     x = normalize(x)
-    dists = pairwise.pairwise_distances(x,x,metric)
+    dists = pairwise.pairwise_distances(x,x,metric) / max_dist
     dists[np.diag(true(x.shape[0]))] = 0
     dists[dists > radius] = 0
     dists[dists != 0] = 1

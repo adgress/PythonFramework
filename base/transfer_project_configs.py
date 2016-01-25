@@ -100,7 +100,6 @@ class ProjectConfigs(bc.ProjectConfigs):
         elif data_set_to_use == bc.DATA_CONCRETE:
             self.set_concrete_transfer()
             #self.num_labels = [5,10,20,40]
-            self.num_labels = [5,10,20,40]
             self.num_labels = [5,10,20]
         elif data_set_to_use == bc.DATA_BIKE_SHARING:
             self.set_bike_sharing()
@@ -172,6 +171,7 @@ class ProjectConfigs(bc.ProjectConfigs):
     def set_concrete_transfer(self):
         self.loss_function = loss_function.MeanSquaredError()
         self.cv_loss_function = loss_function.MeanSquaredError()
+        '''
         self.data_dir = 'data_sets/concrete-feat=0'
         self.data_name = 'concrete-feat=0'
         self.results_dir = 'concrete-feat=0'
@@ -179,7 +179,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.data_dir = 'data_sets/concrete-7'
         self.data_name = 'concrete-7'
         self.results_dir = 'concrete-7'
-        '''
+
         self.data_set_file_name = 'split_data.pkl'
         self.target_labels = np.asarray([1])
         self.source_labels = np.asarray([3])
@@ -335,7 +335,9 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             'TargetTransfer+NW.pkl',
             'HypothesisTransfer.pkl',
             'LocalTransferDelta_C3=0_radius.pkl',
+            'LocalTransferDelta_C3=0.pkl',
             'LocalTransferDelta_radius.pkl',
+            'LocalTransferDelta.pkl',
         ]
 
 class BatchConfigs(bc.BatchConfigs):

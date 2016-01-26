@@ -35,11 +35,12 @@ data_data_to_use = None
 #data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION
 #data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION_LOCAL
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
-#data_set_to_use = bc.DATA_BOSTONG_HOUSING
 #data_set_to_use = bc.DATA_NG
-data_set_to_use = bc.DATA_CONCRETE
+
+#data_set_to_use = bc.DATA_BOSTONG_HOUSING
+#data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_BIKE_SHARING
-#data_set_to_use = bc.DATA_WINE
+data_set_to_use = bc.DATA_WINE
 
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
 #data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR

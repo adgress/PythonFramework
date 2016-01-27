@@ -231,6 +231,7 @@ class LocalTransfer(HypothesisTransfer):
         self.g_learner.C2 = self.C2
         self.g_learner.k = self.k
         self.g_learner.radius = self.radius
+        self.g_learner.sigma = self.sigma
         self.g_learner.cv_params = {}
         self.g_learner.train_and_test(parametric_data)
         '''
@@ -432,9 +433,15 @@ class LocalTransfer(HypothesisTransfer):
             s += '-bias'
         return s
 
+
+
+
 class LocalTransferDelta(LocalTransfer):
     def __init__(self, configs=None):
         super(LocalTransferDelta, self).__init__(configs)
+        self.C = None
+        self.C2 = None
+        self.C3 = None
         self.cv_params = {}
         self.cv_params['radius'] = np.asarray([.05, .1, .2],dtype='float64')
         #self.radius = .05
@@ -456,8 +463,8 @@ class LocalTransferDelta(LocalTransfer):
         self.g_learner.use_fused_lasso = configs.use_fused_lasso
         self.metric = configs.metric
         self.quiet = False
-        self.no_C3 = True
-        self.use_radius = True
+        self.no_C3 = configs.no_C3
+        self.use_radius = configs.use_radius
         if self.no_C3:
             self.cv_params['C3'] = np.zeros(1)
 
@@ -494,8 +501,28 @@ class LocalTransferDelta(LocalTransfer):
             s += '_C3=0'
         if getattr(self, 'use_radius', False):
             s += '_radius'
+        if getattr(self.configs, 'constraints', []):
+            s += '_cons'
         return s
 
+
+class LocalTransferDeltaSMS(LocalTransferDelta):
+    def __init__(self, configs=None):
+        super(LocalTransferDeltaSMS, self).__init__(configs)
+        self.cv_params = {}
+        self.cv_params['sigma'] = 10**np.asarray(range(-4,5),dtype='float64')
+        vals = [0] + list(range(-6,6))
+        vals.reverse()
+        self.cv_params['C'] = 10**np.asarray(vals,dtype='float64')
+
+        self.g_learner = delta_transfer.CombinePredictionsDeltaSMS(configs)
+        self.g_learner.quiet = True
+        self.quiet = False
+
+    @property
+    def prefix(self):
+        s = 'LocalTransferDeltaSMS'
+        return s
 
 class IWTLTransfer(method.Method):
     def __init__(self, configs=None):

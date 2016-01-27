@@ -17,6 +17,7 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
     def __init__(self, configs=None):
         super(CombinePredictionsDelta, self).__init__(configs)
         self.use_radius = True
+        self.C3 = None
 
     def train(self, data):
         y_s = np.squeeze(data.y_s[:,0])
@@ -48,7 +49,7 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
         #constraints = [g >= -2, g <= 2]
         #constraints = [g >= -4, g <= 0]
         #constraints = [g >= 4, g <= 4]
-        constraints = []
+        constraints = [f(g) for f in self.configs.constraints]
         obj = cvx.Minimize(loss + self.C*reg + self.C2*cvx.norm(g))
         prob = cvx.Problem(obj,constraints)
 
@@ -84,4 +85,60 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
     @property
     def prefix(self):
         s = 'DelTra'
+        return s
+
+class CombinePredictionsDeltaSMS(CombinePredictionsDelta):
+    def __init__(self, configs=None):
+        super(CombinePredictionsDeltaSMS, self).__init__(configs)
+        self.g_nw = None
+
+
+    def train(self, data):
+        y_s = np.squeeze(data.y_s[:,0])
+        y = data.y
+
+        is_labeled = data.is_labeled
+        labeled_inds = is_labeled.nonzero()[0]
+        n_labeled = len(labeled_inds)
+        g = cvx.Variable(n_labeled)
+        W_ll = array_functions.make_rbf(data.x[is_labeled,:], self.sigma, self.configs.metric)
+
+
+        self.x = data.x[is_labeled,:]
+        self.y = y
+
+        self.R_ll = W_ll*np.linalg.inv(W_ll + np.eye(W_ll.shape[0]))
+        err = y_s + self.R_ll*g - y
+        err_l2 = cvx.power(err,2)
+        loss = cvx.sum_entries(err_l2)
+        constraints = []
+        obj = cvx.Minimize(loss)
+        prob = cvx.Problem(obj,constraints)
+
+        assert prob.is_dcp()
+        try:
+            prob.solve()
+            g_value = np.reshape(np.asarray(g.value),n_labeled)
+        except:
+            k = 0
+            #assert prob.status is None
+            print 'CVX problem: setting g = ' + str(k)
+            print '\tC=' + str(self.C)
+            print '\tsigma=' + str(self.sigma)
+            g_value = k*np.ones(n_labeled)
+        self.g = g_value
+
+    def predict_g(self, x):
+        W_ul = array_functions.make_rbf(x, self.sigma, self.configs.metric, self.x)
+        R_ul = W_ul.dot(self.R_ll)
+        g = R_ul.dot(self.g)
+        return g
+
+    def combine_predictions(self,x,y_source,y_target):
+        fu = y_source + self.predict_g(x)
+        return fu
+
+    @property
+    def prefix(self):
+        s = 'SMSTra'
         return s

@@ -37,8 +37,8 @@ data_data_to_use = None
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
 #data_set_to_use = bc.DATA_NG
 
-data_set_to_use = bc.DATA_BOSTONG_HOUSING
-#data_set_to_use = bc.DATA_CONCRETE
+#data_set_to_use = bc.DATA_BOSTON_HOUSING
+data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_BIKE_SHARING
 #data_set_to_use = bc.DATA_WINE
 
@@ -49,7 +49,7 @@ data_set_to_use = bc.DATA_BOSTONG_HOUSING
 synthetic_dim = 1
 if helper_functions.is_laptop():
     use_pool = False
-    pool_size = 2
+    pool_size = 4
 else:
     use_pool = True
     pool_size = 24
@@ -75,7 +75,7 @@ class ProjectConfigs(bc.ProjectConfigs):
             #self.num_labels = range(20,61,20)
             self.num_labels = [5,10,20]
             #self.num_labels = [20]
-        elif data_set_to_use == bc.DATA_BOSTONG_HOUSING:
+        elif data_set_to_use == bc.DATA_BOSTON_HOUSING:
             self.set_boston_housing_transfer()
             #self.num_labels = [5,10,20,40]
             self.num_labels = [5,10,20]
@@ -145,7 +145,7 @@ class ProjectConfigs(bc.ProjectConfigs):
     def set_boston_housing_transfer(self):
         self.loss_function = loss_function.MeanSquaredError()
         self.cv_loss_function = loss_function.MeanSquaredError()
-        '''
+
         self.data_dir = 'data_sets/boston_housing-13'
         self.data_name = 'boston_housing-13'
         self.data_set_file_name = 'split_data.pkl'
@@ -155,6 +155,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.data_name = 'boston_housing'
         self.data_set_file_name = 'split_data.pkl'
         self.results_dir = 'boston_housing'
+        '''
         self.target_labels = np.asarray([0])
         self.source_labels = np.asarray([1])
 
@@ -172,7 +173,7 @@ class ProjectConfigs(bc.ProjectConfigs):
     def set_concrete_transfer(self):
         self.loss_function = loss_function.MeanSquaredError()
         self.cv_loss_function = loss_function.MeanSquaredError()
-        '''
+
         self.data_dir = 'data_sets/concrete-feat=0'
         self.data_name = 'concrete-feat=0'
         self.results_dir = 'concrete-feat=0'
@@ -180,7 +181,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.data_dir = 'data_sets/concrete-7'
         self.data_name = 'concrete-7'
         self.results_dir = 'concrete-7'
-
+        '''
         self.data_set_file_name = 'split_data.pkl'
         self.target_labels = np.asarray([1])
         self.source_labels = np.asarray([3])
@@ -287,9 +288,16 @@ class MainConfigs(bc.MainConfigs):
         method_configs.no_reg = False
         method_configs.use_g_learner = True
         method_configs.use_validation = False
+        method_configs.no_C3 = True
+        method_configs.use_radius = False
         if data_set_to_use == bc.DATA_NG:
             method_configs.metric = 'cosine'
             method_configs.use_fused_lasso = False
+
+        method_configs.constraints = []
+        if data_set_to_use == bc.DATA_CONCRETE:
+            method_configs.constraints.append(lambda x: x <= 0)
+
 
         fuse_log_reg = transfer_methods.FuseTransfer(method_configs)
         fuse_nw = transfer_methods.FuseTransfer(method_configs)
@@ -309,6 +317,7 @@ class MainConfigs(bc.MainConfigs):
         iwl_transfer = methods.local_transfer_methods.IWTLTransfer(method_configs)
         sms_transfer = methods.local_transfer_methods.SMSTransfer(method_configs)
         dt_local_transfer = methods.local_transfer_methods.LocalTransferDelta(method_configs)
+        dt_sms = methods.local_transfer_methods.LocalTransferDeltaSMS(method_configs)
 
         #self.learner = target_nw
         #self.learner = hyp_transfer
@@ -316,6 +325,7 @@ class MainConfigs(bc.MainConfigs):
         #self.learner = iwl_transfer
         #self.learner = sms_transfer
         self.learner = dt_local_transfer
+        #self.learner = dt_sms
         self.learner.configs.use_validation = False
 
 
@@ -332,12 +342,20 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         super(VisualizationConfigs, self).__init__()
         pc = create_project_configs()
         self.copy_fields(pc,pc_fields_to_copy)
+        '''
         self.files = [
             'TargetTransfer+NW.pkl',
             'HypothesisTransfer.pkl',
             'LocalTransferDelta_C3=0_radius.pkl',
             'LocalTransferDelta_C3=0.pkl',
             'LocalTransferDelta_radius.pkl',
+            'LocalTransferDelta.pkl',
+            'LocalTransferDeltaSMS.pkl',
+        ]
+        '''
+        self.files = [
+            'TargetTransfer+NW.pkl',
+            'LocalTransferDelta_C3=0.pkl',
             'LocalTransferDelta.pkl',
         ]
 

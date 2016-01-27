@@ -48,7 +48,7 @@ data_set_to_use = bc.DATA_CONCRETE
 
 synthetic_dim = 1
 if helper_functions.is_laptop():
-    use_pool = True
+    use_pool = False
     pool_size = 4
 else:
     use_pool = True

@@ -440,20 +440,14 @@ class LocalTransferDelta(LocalTransfer):
     def __init__(self, configs=None):
         super(LocalTransferDelta, self).__init__(configs)
         self.C = None
-        self.C2 = None
+        self.C2 = 0
         self.C3 = None
+        self.radius = None
         self.cv_params = {}
         self.cv_params['radius'] = np.asarray([.05, .1, .2],dtype='float64')
-        #self.radius = .05
         vals = [0] + list(range(-6,6))
         vals.reverse()
         self.cv_params['C'] = 10**np.asarray(vals,dtype='float64')
-        #self.cv_params['C'] = np.asarray([1,3,5,10,20])
-        vals2 = [0,.00001,.0001,.001,.01,.1,1,10,100,1000]
-        vals2.reverse()
-        self.cv_params['C2'] = np.asarray(vals2)
-        #self.cv_params['C'] = np.asarray([0])
-        self.cv_params['C2'] = np.asarray([0])
         self.cv_params['C3'] = np.asarray([0, .2, .4, .6, .8, 1])
         self.target_learner = method.NadarayaWatsonMethod(configs)
         self.source_learner = method.NadarayaWatsonMethod(configs)
@@ -465,8 +459,11 @@ class LocalTransferDelta(LocalTransfer):
         self.quiet = False
         self.no_C3 = configs.no_C3
         self.use_radius = configs.use_radius
+        if not self.use_radius:
+            del self.cv_params['radius']
         if self.no_C3:
-            self.cv_params['C3'] = np.zeros(1)
+            del self.cv_params['C3']
+            self.C3 = 0
 
     def train_g_learner(self, target_data):
         self.g_learner.C3 = self.C3

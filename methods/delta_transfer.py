@@ -16,7 +16,7 @@ from methods import scipy_opt_methods
 class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisTransfer):
     def __init__(self, configs=None):
         super(CombinePredictionsDelta, self).__init__(configs)
-        self.use_radius = True
+        self.use_radius = None
         self.C3 = None
 
     def train(self, data):

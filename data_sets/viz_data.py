@@ -73,10 +73,15 @@ def run_main():
     from methods import method
     learner = method.NadarayaWatsonMethod()
     #s = create_data_set.synthetic_step_transfer_file
+    #s = create_data_set.synthetic_delta_linear_file
     #s = create_data_set.synthetic_step_linear_transfer_file
     #s = create_data_set.boston_housing_raw_data_file % '-13'
-    s = create_data_set.concrete_file % '-7'
+    #s = create_data_set.concrete_file % '-7'
+    s = create_data_set.concrete_file % '-feat=0'
     #s = create_data_set.synthetic_classification_local_file
+    #s = create_data_set.bike_file % '-feat=1'
+    #s = create_data_set.wine_file % '-small-11'
+    #s = create_data_set.boston_housing_raw_data_file % ''
     #learner = None
     data = helper_functions.load_object(s)
     viz_features(data.x,data.y,data.data_set_ids,learner=learner)

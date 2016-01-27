@@ -48,7 +48,7 @@ data_set_to_use = bc.DATA_CONCRETE
 
 synthetic_dim = 1
 if helper_functions.is_laptop():
-    use_pool = False
+    use_pool = True
     pool_size = 4
 else:
     use_pool = True
@@ -273,6 +273,9 @@ class ProjectConfigs(bc.ProjectConfigs):
         #self.cv_loss_function = loss_function.ZeroOneError()
         self.cv_loss_function = loss_function.LogLoss()
 
+def nonpositive_constraint(g):
+    return g <= 0
+
 class MainConfigs(bc.MainConfigs):
     def __init__(self):
         super(MainConfigs, self).__init__()
@@ -296,7 +299,8 @@ class MainConfigs(bc.MainConfigs):
 
         method_configs.constraints = []
         if data_set_to_use == bc.DATA_CONCRETE:
-            method_configs.constraints.append(lambda x: x <= 0)
+            method_configs.constraints.append(nonpositive_constraint)
+            #method_configs.constraints.append(lambda x: x <= 0)
 
 
         fuse_log_reg = transfer_methods.FuseTransfer(method_configs)

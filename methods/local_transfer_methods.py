@@ -506,19 +506,42 @@ class LocalTransferDelta(LocalTransfer):
 class LocalTransferDeltaSMS(LocalTransferDelta):
     def __init__(self, configs=None):
         super(LocalTransferDeltaSMS, self).__init__(configs)
+        self.C2 = 0
+        self.include_scale = configs.include_scale
         self.cv_params = {}
-        self.cv_params['sigma'] = 10**np.asarray(range(-4,5),dtype='float64')
-        vals = [0] + list(range(-6,6))
+        vals = [0] + list(range(-4,5))
         vals.reverse()
+        #vals = [0,1,2]
+        self.cv_params['sigma'] = 10**np.asarray(vals,dtype='float64')
         self.cv_params['C'] = 10**np.asarray(vals,dtype='float64')
-
+        if self.include_scale:
+            self.cv_params['C2'] = 10**np.asarray(vals,dtype='float64')
         self.g_learner = delta_transfer.CombinePredictionsDeltaSMS(configs)
         self.g_learner.quiet = True
         self.quiet = False
+        self.num_splits = 5
+
+
+    def train_g_learner(self, target_data):
+        target_data = copy.deepcopy(target_data)
+        target_data.remove_test_labels()
+        assert (~target_data.is_labeled[~target_data.is_train]).all()
+        o_source = self.source_learner.predict(target_data)
+        target_data.y_s = o_source.fu
+        target_data.y_t = None
+        is_labeled = target_data.is_labeled
+        self.g_learner.C = self.C
+        self.g_learner.C2 = self.C2
+        self.g_learner.sigma = self.sigma
+        self.g_learner.cv_params = {}
+        self.g_learner.train_and_test(target_data)
+        pass
 
     @property
     def prefix(self):
         s = 'LocalTransferDeltaSMS'
+        if getattr(self, 'include_scale', False):
+            s += '_scale'
         return s
 
 class IWTLTransfer(method.Method):

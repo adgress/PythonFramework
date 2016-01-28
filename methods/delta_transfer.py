@@ -91,27 +91,33 @@ class CombinePredictionsDeltaSMS(CombinePredictionsDelta):
     def __init__(self, configs=None):
         super(CombinePredictionsDeltaSMS, self).__init__(configs)
         self.g_nw = None
-
+        self.include_scale = True
 
     def train(self, data):
-        y_s = np.squeeze(data.y_s[:,0])
-        y = data.y
-
+        assert data.is_regression
         is_labeled = data.is_labeled
+        y_s = data.y_s[is_labeled]
+        y = data.y[is_labeled]
+        assert not is_labeled.all()
         labeled_inds = is_labeled.nonzero()[0]
         n_labeled = len(labeled_inds)
         g = cvx.Variable(n_labeled)
+        w = cvx.Variable(n_labeled)
         W_ll = array_functions.make_rbf(data.x[is_labeled,:], self.sigma, self.configs.metric)
 
 
         self.x = data.x[is_labeled,:]
         self.y = y
 
-        self.R_ll = W_ll*np.linalg.inv(W_ll + np.eye(W_ll.shape[0]))
+        self.R_ll = W_ll*np.linalg.inv(W_ll + self.C*np.eye(W_ll.shape[0]))
+        R_ul = self.make_R_ul(data.x)
         err = y_s + self.R_ll*g - y
         err_l2 = cvx.power(err,2)
-        loss = cvx.sum_entries(err_l2)
+        reg = cvx.norm(R_ul*w - 1)
+        loss = cvx.sum_entries(err_l2) + self.C2*reg
         constraints = []
+        if not self.include_scale:
+            constraints.append(w == 1)
         obj = cvx.Minimize(loss)
         prob = cvx.Problem(obj,constraints)
 
@@ -119,26 +125,41 @@ class CombinePredictionsDeltaSMS(CombinePredictionsDelta):
         try:
             prob.solve()
             g_value = np.reshape(np.asarray(g.value),n_labeled)
+            w_value = np.reshape(np.asarray(w.value),n_labeled)
         except:
             k = 0
             #assert prob.status is None
             print 'CVX problem: setting g = ' + str(k)
             print '\tC=' + str(self.C)
+            print '\tC2=' + str(self.C2)
             print '\tsigma=' + str(self.sigma)
             g_value = k*np.ones(n_labeled)
+            w_value = np.ones(n_labeled)
         self.g = g_value
+        self.w = w_value
 
-    def predict_g(self, x):
+    def make_R_ul(self, x):
         W_ul = array_functions.make_rbf(x, self.sigma, self.configs.metric, self.x)
         R_ul = W_ul.dot(self.R_ll)
+        return R_ul
+
+    def predict_g(self, x):
+        R_ul = self.make_R_ul(x)
         g = R_ul.dot(self.g)
         return g
 
+    def predict_w(self, x):
+        R_ul = self.make_R_ul(x)
+        w = R_ul.dot(self.w)
+        return w
+
     def combine_predictions(self,x,y_source,y_target):
-        fu = y_source + self.predict_g(x)
+        fu = np.multiply(self.predict_w(x), y_source) + self.predict_g(x)
         return fu
 
     @property
     def prefix(self):
         s = 'SMSTra'
+        if getattr(self,'include_scale',False):
+            s += '_scale'
         return s

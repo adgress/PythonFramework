@@ -38,12 +38,12 @@ data_data_to_use = None
 #data_set_to_use = bc.DATA_NG
 
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
-data_set_to_use = bc.DATA_CONCRETE
+#data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_BIKE_SHARING
 #data_set_to_use = bc.DATA_WINE
 
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
-#data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
+data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
 #data_set_to_use = bc.DATA_SYNTHETIC_CROSS
 
 synthetic_dim = 1
@@ -293,6 +293,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.use_validation = False
         method_configs.no_C3 = True
         method_configs.use_radius = False
+        method_configs.include_scale = True
         if data_set_to_use == bc.DATA_NG:
             method_configs.metric = 'cosine'
             method_configs.use_fused_lasso = False
@@ -328,8 +329,8 @@ class MainConfigs(bc.MainConfigs):
         #self.learner = local_transfer
         #self.learner = iwl_transfer
         #self.learner = sms_transfer
-        self.learner = dt_local_transfer
-        #self.learner = dt_sms
+        #self.learner = dt_local_transfer
+        self.learner = dt_sms
         self.learner.configs.use_validation = False
 
 
@@ -361,6 +362,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             'TargetTransfer+NW.pkl',
             'LocalTransferDelta_C3=0.pkl',
             'LocalTransferDelta.pkl',
+            'LocalTransferDelta_C3=0_cons.pkl',
+            'LocalTransferDelta_cons.pkl',
         ]
 
 class BatchConfigs(bc.BatchConfigs):

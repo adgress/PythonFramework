@@ -66,6 +66,8 @@ class Method(Saveable):
     def _create_cv_splits(self,data):
         data_splitter = create_data_split.DataSplitter()
         num_splits = 10
+        if hasattr(self, 'num_splits'):
+            num_splits = self.num_splits
         perc_train = .8
         is_regression = data.is_regression
         if self.cv_use_data_type:

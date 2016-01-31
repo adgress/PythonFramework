@@ -72,7 +72,10 @@ real_data_sets_full = [
 all_1d = synthetic_data_sets + real_data_sets_1d
 
 data_sets_for_exps = [data_set_to_use]
-data_sets_for_exps = all_1d
+if use_1d_data:
+    data_sets_for_exps = all_1d
+else:
+    data_sets_for_exps = real_data_sets_full
 #data_sets_for_exps = real_data_sets_full
 
 synthetic_dim = 1
@@ -315,7 +318,7 @@ class MainConfigs(bc.MainConfigs):
         from methods import transfer_methods
         from methods import method
         from methods import scipy_opt_methods
-        method_configs = MethodConfigs()
+        method_configs = MethodConfigs(pc)
         method_configs.metric = 'euclidean'
         method_configs.use_fused_lasso = True
         method_configs.use_reg2 = True
@@ -323,7 +326,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.use_g_learner = True
         method_configs.use_validation = False
 
-        method_configs.no_C3 = False
+        method_configs.no_C3 = True
         method_configs.use_radius = True
         method_configs.include_scale = True
         if self.data_set == bc.DATA_NG:
@@ -344,7 +347,7 @@ class MainConfigs(bc.MainConfigs):
         target_ridge = transfer_methods.TargetTranfer(method_configs)
         target_ridge.base_learner = method.SKLRidgeRegression(method_configs)
         nw = method.NadarayaWatsonMethod(method_configs)
-        log_reg = method.SKLLogisticRegression(MethodConfigs())
+        log_reg = method.SKLLogisticRegression(method_configs)
         target_knn = transfer_methods.TargetTranfer(method_configs)
         target_knn.base_learner = method.SKLKNN(method_configs)
         local_transfer = methods.local_transfer_methods.LocalTransfer(method_configs)
@@ -367,9 +370,8 @@ class MainConfigs(bc.MainConfigs):
 
 
 class MethodConfigs(bc.MethodConfigs):
-    def __init__(self):
+    def __init__(self, pc):
         super(MethodConfigs, self).__init__()
-        pc = create_project_configs()
         self.copy_fields(pc,pc_fields_to_copy)
         self.target_labels = pc.target_labels
         self.source_labels = pc.source_labels

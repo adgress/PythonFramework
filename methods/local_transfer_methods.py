@@ -312,6 +312,7 @@ class LocalTransfer(HypothesisTransfer):
     def train_and_test(self, data):
         target_labels = self.configs.target_labels
         target_data = data.get_transfer_subset(target_labels,include_unlabeled=True)
+        assert target_data.n > 0
         self.target_learner.train_and_test(target_data)
         results =  super(LocalTransfer, self).train_and_test(data)
         #print self.g_learner.g

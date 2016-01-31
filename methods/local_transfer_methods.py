@@ -452,8 +452,11 @@ class LocalTransferDelta(LocalTransfer):
         self.target_learner = method.NadarayaWatsonMethod(configs)
         self.source_learner = method.NadarayaWatsonMethod(configs)
 
+        self.use_l2 = True
+
         self.g_learner = delta_transfer.CombinePredictionsDelta(configs)
         self.g_learner.quiet = True
+        self.g_learner.use_l2 = self.use_l2
         self.g_learner.use_fused_lasso = configs.use_fused_lasso
         self.metric = configs.metric
         self.quiet = False
@@ -500,6 +503,8 @@ class LocalTransferDelta(LocalTransfer):
             s += '_radius'
         if getattr(self.configs, 'constraints', []):
             s += '_cons'
+        if getattr(self, 'use_l2', False):
+            s += '_l2'
         return s
 
 

@@ -18,6 +18,7 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
         super(CombinePredictionsDelta, self).__init__(configs)
         self.use_radius = None
         self.C3 = None
+        self.use_l2 = True
 
     def train(self, data):
         y_s = np.squeeze(data.y_s[:,0])
@@ -45,7 +46,10 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
         err_abs = cvx.abs(err)
         err_l2 = cvx.power(err,2)
         err_huber = cvx.huber(err, 2)
-        loss = cvx.sum_entries(err_huber)
+        if self.use_l2:
+            loss = cvx.sum_entries(err_l2)
+        else:
+            loss = cvx.sum_entries(err_huber)
         #constraints = [g >= -2, g <= 2]
         #constraints = [g >= -4, g <= 0]
         #constraints = [g >= 4, g <= 4]

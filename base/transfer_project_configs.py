@@ -330,8 +330,8 @@ class MainConfigs(bc.MainConfigs):
         #self.learner = local_transfer
         #self.learner = iwl_transfer
         #self.learner = sms_transfer
-        #self.learner = dt_local_transfer
-        self.learner = dt_sms
+        self.learner = dt_local_transfer
+        #self.learner = dt_sms
         self.learner.configs.use_validation = False
 
 

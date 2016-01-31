@@ -96,6 +96,10 @@ class ProjectConfigs(Configs):
         self.num_splits = 30
         self.labels_to_keep = None
         self.labels_to_not_sample = {}
+        self.data_set = None
+
+    def set_data_set(self, data_set):
+        assert False
 
 
 pc_fields_to_copy = ['data_dir',

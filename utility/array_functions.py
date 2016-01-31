@@ -15,6 +15,12 @@ from timer.timer import tic
 from timer.timer import toc
 from sklearn import manifold
 
+def plot_histogram(x, num_bins=10):
+    assert x.ndim == 1 or x.shape[1] == 1
+    pl.hist(x, num_bins, normed=1, facecolor='green', alpha=0.75)
+    pl.show()
+
+
 def append_column(x,y):
     return np.hstack((x, vec_to_2d(y)))
 

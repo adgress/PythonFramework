@@ -86,6 +86,8 @@ class MethodExperimentManager(ExperimentManager):
         if os.path.isfile(results_file):
             print results_file + ' already exists - skipping'
             return
+        else:
+            print 'Running experiments: ' + results_file
         learner = self.configs.learner
 
         num_labels = len(self.configs.num_labels)

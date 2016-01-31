@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 import os
 from os import path
+import matplotlib.pylab as pl
+from utility import array_functions
 
 def run_main():
     #grades_dir = 'C:\Users\Aubrey\Desktop\Homework #1'
@@ -16,6 +18,7 @@ def run_main():
     id_length = 8
     grade_col = (column_names == 'grade').nonzero()[0]
     grade_names = column_names[grade_col:]
+    grades = data[:,grade_col].astype('float')
     for i, row in enumerate(data):
         try:
             id = row[1].strip()

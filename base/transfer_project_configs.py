@@ -29,7 +29,9 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
     'source_labels',
     'oracle_labels',
     'use_pool',
-    'pool_size'
+    'pool_size',
+    'use_1d_data',
+    'data_set'
 ]
 data_data_to_use = None
 #data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION
@@ -37,17 +39,40 @@ data_data_to_use = None
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
 #data_set_to_use = bc.DATA_NG
 
-
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_BIKE_SHARING
 #data_set_to_use = bc.DATA_WINE
 
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
-#data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
-data_set_to_use = bc.DATA_SYNTHETIC_CROSS
+data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
+#data_set_to_use = bc.DATA_SYNTHETIC_CROSS
 
 use_1d_data = True
+
+synthetic_data_sets = [
+    bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER,
+    bc.DATA_SYNTHETIC_DELTA_LINEAR,
+    bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
+]
+
+real_data_sets_1d = [
+    bc.DATA_BOSTON_HOUSING,
+    bc.DATA_CONCRETE,
+    bc.DATA_BIKE_SHARING,
+]
+
+real_data_sets_full = [
+    bc.DATA_BOSTON_HOUSING,
+    bc.DATA_CONCRETE,
+    bc.DATA_WINE,
+]
+
+all_1d = synthetic_data_sets + real_data_sets_1d
+
+data_sets_for_exps = [data_set_to_use]
+data_sets_for_exps = all_1d
+#data_sets_for_exps = real_data_sets_full
 
 synthetic_dim = 1
 if helper_functions.is_laptop():
@@ -59,7 +84,7 @@ else:
 max_features = create_data_set.max_features
 
 class ProjectConfigs(bc.ProjectConfigs):
-    def __init__(self):
+    def __init__(self, data_set=None):
         super(ProjectConfigs, self).__init__()
         self.target_labels = np.empty(0)
         self.source_labels = np.empty(0)
@@ -70,51 +95,56 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.pool_size = pool_size
         self.num_splits = 10
         self.num_splits = 30
+        if data_set is None:
+            data_set = data_set_to_use
+        self.set_data_set(data_set, use_1d_data)
 
-
-        if data_set_to_use == bc.DATA_NG:
+    def set_data_set(self, data_set, use_1d):
+        self.data_set = data_set
+        self.use_1d_data = use_1d
+        if data_set == bc.DATA_NG:
             self.set_ng_transfer()
             #self.num_labels = range(20,61,20) + [120, 180]
             #self.num_labels = range(20,61,20)
             self.num_labels = [5,10,20]
             #self.num_labels = [20]
-        elif data_set_to_use == bc.DATA_BOSTON_HOUSING:
+        elif data_set == bc.DATA_BOSTON_HOUSING:
             self.set_boston_housing_transfer()
             #self.num_labels = [5,10,20,40]
             self.num_labels = [5,10,20]
             #self.set_boston_housing()
             #self.num_labels = range(20,61,20)
-        elif data_set_to_use == bc.DATA_SYNTHETIC_STEP_TRANSFER:
+        elif data_set == bc.DATA_SYNTHETIC_STEP_TRANSFER:
             self.set_synthetic_step_transfer()
             #self.num_labels = range(10,31,10)
             self.num_labels = [20]
-        elif data_set_to_use == bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER:
+        elif data_set == bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER:
             self.set_synthetic_step_linear_transfer()
             #self.num_labels = [30]
             self.num_labels = range(10,31,10)
-        elif data_set_to_use == bc.DATA_SYNTHETIC_CLASSIFICATION:
+        elif data_set == bc.DATA_SYNTHETIC_CLASSIFICATION:
             self.set_synthetic_classification()
             self.num_labels = [4,8,16]
             #self.num_labels = [10]
             #self.num_labels = range(10,31,10)
             #self.num_labels = range(10,71,10)
-        elif data_set_to_use == bc.DATA_SYNTHETIC_CLASSIFICATION_LOCAL:
+        elif data_set == bc.DATA_SYNTHETIC_CLASSIFICATION_LOCAL:
             self.set_synthetic_classification_local()
             self.num_labels = [4,8,16]
-        elif data_set_to_use == bc.DATA_CONCRETE:
+        elif data_set == bc.DATA_CONCRETE:
             self.set_concrete_transfer()
             #self.num_labels = [5,10,20,40]
             self.num_labels = [5,10,20]
-        elif data_set_to_use == bc.DATA_BIKE_SHARING:
+        elif data_set == bc.DATA_BIKE_SHARING:
             self.set_bike_sharing()
             self.num_labels = [5,10,20,40]
-        elif data_set_to_use == bc.DATA_WINE:
+        elif data_set == bc.DATA_WINE:
             self.set_wine()
             self.num_labels = [5,10,20]
-        elif data_set_to_use == bc.DATA_SYNTHETIC_DELTA_LINEAR:
+        elif data_set == bc.DATA_SYNTHETIC_DELTA_LINEAR:
             self.set_synthetic_regression('synthetic_delta_linear_transfer')
             self.num_labels = np.asarray([10,20,30])
-        elif data_set_to_use == bc.DATA_SYNTHETIC_CROSS:
+        elif data_set == bc.DATA_SYNTHETIC_CROSS:
             self.set_synthetic_regression('synthetic_cross_transfer')
             self.num_labels = np.asarray([10,20,30])
         else:
@@ -129,7 +159,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.loss_function = loss_function.MeanSquaredError()
         self.cv_loss_function = loss_function.MeanSquaredError()
 
-        if use_1d_data:
+        if self.use_1d_data:
             self.data_dir = 'data_sets/wine-small-feat=1'
             self.data_name = 'wine-small-feat=1'
             self.results_dir = 'wine-small-feat=1'
@@ -146,7 +176,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.loss_function = loss_function.MeanSquaredError()
         self.cv_loss_function = loss_function.MeanSquaredError()
 
-        if use_1d_data:
+        if self.use_1d_data:
             self.data_dir = 'data_sets/boston_housing'
             self.data_name = 'boston_housing'
             self.results_dir = 'boston_housing'
@@ -161,7 +191,7 @@ class ProjectConfigs(bc.ProjectConfigs):
     def set_bike_sharing(self):
         self.loss_function = loss_function.MeanSquaredError()
         self.cv_loss_function = loss_function.MeanSquaredError()
-        assert use_1d_data == True
+        assert self.use_1d_data == True
         self.data_dir = 'data_sets/bike_sharing-feat=1'
         self.data_name = 'bike_sharing-feat=1'
         self.results_dir = 'bike_sharing-feat=1'
@@ -174,7 +204,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.loss_function = loss_function.MeanSquaredError()
         self.cv_loss_function = loss_function.MeanSquaredError()
 
-        if use_1d_data:
+        if self.use_1d_data:
             self.data_dir = 'data_sets/concrete-feat=0'
             self.data_name = 'concrete-feat=0'
             self.results_dir = 'concrete-feat=0'
@@ -277,9 +307,9 @@ def nonpositive_constraint(g):
     return g <= 0
 
 class MainConfigs(bc.MainConfigs):
-    def __init__(self):
+    def __init__(self, pc):
         super(MainConfigs, self).__init__()
-        pc = create_project_configs()
+        #pc = create_project_configs()
         self.copy_fields(pc,pc_fields_to_copy)
         from methods import transfer_methods
         from methods import method
@@ -295,12 +325,12 @@ class MainConfigs(bc.MainConfigs):
         method_configs.no_C3 = False
         method_configs.use_radius = True
         method_configs.include_scale = True
-        if data_set_to_use == bc.DATA_NG:
+        if self.data_set == bc.DATA_NG:
             method_configs.metric = 'cosine'
             method_configs.use_fused_lasso = False
 
         method_configs.constraints = []
-        if data_set_to_use == bc.DATA_CONCRETE and False:
+        if self.data_set == bc.DATA_CONCRETE and False:
             method_configs.constraints.append(nonpositive_constraint)
             #method_configs.constraints.append(lambda x: x <= 0)
 
@@ -372,16 +402,23 @@ class VisualizationConfigs(bc.VisualizationConfigs):
 
         self.files = {
             'TargetTransfer+NW.pkl': 'Target Only',
-            'LocalTransferDelta_C3=0_radius.pkl': 'Our Method, ball graph, alpha=0',
-            'LocalTransferDelta_radius.pkl': 'Our Method, ball graph'
+            'LocalTransferDelta_radius.pkl': 'Our Method, ball graph',
+            'LocalTransferDelta_radius_l2.pkl': 'Our Method, ball graph, l2 loss'
         }
-        self.title = bc.data_name_dict.get(data_set_to_use, 'Unknown Data Set')
-        if use_1d_data:
+        #self.files['LocalTransferDelta_C3=0_radius.pkl'] = 'Our Method, ball graph, alpha=0'
+        self.files['LocalTransferDeltaSMS.pkl'] = 'SMS no scale'
+        self.files['LocalTransferDeltaSMS_scale.pkl'] = 'SMS with scale'
+        self.title = bc.data_name_dict.get(self.data_set_to_use, 'Unknown Data Set')
+        if self.use_1d_data:
             self.title += ' 1D'
         self.x_axis_string = 'Number of labeled target instances'
 
 
 class BatchConfigs(bc.BatchConfigs):
-    def __init__(self):
+    def __init__(self, pc):
         super(BatchConfigs, self).__init__()
-        self.config_list = [MainConfigs()]
+        self.config_list = []
+        for i in data_sets_for_exps:
+            pc = ProjectConfigs(i)
+            self.config_list += [MainConfigs(pc)]
+        assert len(self.config_list) > 0

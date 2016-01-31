@@ -19,9 +19,10 @@ from data.data import Data
 from loss_functions.loss_function import MeanSquaredError
 from loss_functions import loss_function
 
+
 def run_main():
     pc = configs_lib.ProjectConfigs()
-    bc = configs_lib.BatchConfigs()
+    bc = configs_lib.BatchConfigs(pc)
     batch_exp_manager = experiment_manager.BatchExperimentManager(bc)
     batch_exp_manager.run_experiments()
     #exp_manager = ExperimentManager(configs)

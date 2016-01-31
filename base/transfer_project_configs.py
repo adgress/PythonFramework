@@ -60,6 +60,7 @@ real_data_sets_1d = [
     bc.DATA_BOSTON_HOUSING,
     bc.DATA_CONCRETE,
     bc.DATA_BIKE_SHARING,
+    bc.DATA_WINE
 ]
 
 real_data_sets_full = [

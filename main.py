@@ -33,9 +33,9 @@ def run_visualization():
 
     #plt.plot([1,2,3], [1,4,9], 'rs-',  label='line 2')
     plt.figure()
-    plt.title = vis_configs.title
+    plt.title(vis_configs.title)
     axis = [0, 1, 0, .2]
-    for i, file in enumerate(vis_configs.results_files):
+    for file, legend_str in vis_configs.results_files.iteritems():
         if not os.path.isfile(file):
             print file + ' doesn''t exist - skipping'
             continue
@@ -43,10 +43,13 @@ def run_visualization():
         #plt.plot([1,2,3], [1,2,3], 'go-', label='line 1', linewidth=2)
         processed_results = results.compute_error_processed(vis_configs.loss_function)
         sizes = results.sizes
+        s = legend_str
+        if s is None:
+            s = results.configs.learner.name_string
         plt.errorbar(sizes,
                      processed_results.means,
                      yerr=[processed_results.lows, processed_results.highs],
-                     label=results.configs.learner.name_string
+                     label=s
         )
         highs = np.asarray(processed_results.means) + np.asarray(processed_results.highs)
         lows = np.asarray(processed_results.means) - np.asarray(processed_results.lows)

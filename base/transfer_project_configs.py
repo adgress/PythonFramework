@@ -37,14 +37,17 @@ data_data_to_use = None
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
 #data_set_to_use = bc.DATA_NG
 
+
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_BIKE_SHARING
 #data_set_to_use = bc.DATA_WINE
 
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
-data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
-#data_set_to_use = bc.DATA_SYNTHETIC_CROSS
+#data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
+data_set_to_use = bc.DATA_SYNTHETIC_CROSS
+
+use_1d_data = True
 
 synthetic_dim = 1
 if helper_functions.is_laptop():
@@ -125,19 +128,16 @@ class ProjectConfigs(bc.ProjectConfigs):
     def set_wine(self):
         self.loss_function = loss_function.MeanSquaredError()
         self.cv_loss_function = loss_function.MeanSquaredError()
-        '''
-        self.data_dir = 'data_sets/wine-feat=1'
-        self.data_name = 'wine-feat=1'
-        self.results_dir = 'wine-feat=1'
-        '''
-        '''
-        self.data_dir = 'data_sets/wine-small-feat=1'
-        self.data_name = 'wine-small-feat=1'
-        self.results_dir = 'wine-small-feat=1'
-        '''
-        self.data_dir = 'data_sets/wine-small-11'
-        self.data_name = 'wine-small-11'
-        self.results_dir = 'wine-small-11'
+
+        if use_1d_data:
+            self.data_dir = 'data_sets/wine-small-feat=1'
+            self.data_name = 'wine-small-feat=1'
+            self.results_dir = 'wine-small-feat=1'
+        else:
+            self.data_dir = 'data_sets/wine-small-11'
+            self.data_name = 'wine-small-11'
+            self.results_dir = 'wine-small-11'
+
         self.data_set_file_name = 'split_data.pkl'
         self.target_labels = np.asarray([0])
         self.source_labels = np.asarray([1])
@@ -146,22 +146,22 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.loss_function = loss_function.MeanSquaredError()
         self.cv_loss_function = loss_function.MeanSquaredError()
 
-        self.data_dir = 'data_sets/boston_housing-13'
-        self.data_name = 'boston_housing-13'
+        if use_1d_data:
+            self.data_dir = 'data_sets/boston_housing'
+            self.data_name = 'boston_housing'
+            self.results_dir = 'boston_housing'
+        else:
+            self.data_dir = 'data_sets/boston_housing-13'
+            self.data_name = 'boston_housing-13'
+            self.results_dir = 'boston_housing-13'
         self.data_set_file_name = 'split_data.pkl'
-        self.results_dir = 'boston_housing-13'
-        '''
-        self.data_dir = 'data_sets/boston_housing'
-        self.data_name = 'boston_housing'
-        self.data_set_file_name = 'split_data.pkl'
-        self.results_dir = 'boston_housing'
-        '''
         self.target_labels = np.asarray([0])
         self.source_labels = np.asarray([1])
 
     def set_bike_sharing(self):
         self.loss_function = loss_function.MeanSquaredError()
         self.cv_loss_function = loss_function.MeanSquaredError()
+        assert use_1d_data == True
         self.data_dir = 'data_sets/bike_sharing-feat=1'
         self.data_name = 'bike_sharing-feat=1'
         self.results_dir = 'bike_sharing-feat=1'
@@ -174,14 +174,14 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.loss_function = loss_function.MeanSquaredError()
         self.cv_loss_function = loss_function.MeanSquaredError()
 
-        self.data_dir = 'data_sets/concrete-feat=0'
-        self.data_name = 'concrete-feat=0'
-        self.results_dir = 'concrete-feat=0'
-        '''
-        self.data_dir = 'data_sets/concrete-7'
-        self.data_name = 'concrete-7'
-        self.results_dir = 'concrete-7'
-        '''
+        if use_1d_data:
+            self.data_dir = 'data_sets/concrete-feat=0'
+            self.data_name = 'concrete-feat=0'
+            self.results_dir = 'concrete-feat=0'
+        else:
+            self.data_dir = 'data_sets/concrete-7'
+            self.data_name = 'concrete-7'
+            self.results_dir = 'concrete-7'
         self.data_set_file_name = 'split_data.pkl'
         self.target_labels = np.asarray([1])
         self.source_labels = np.asarray([3])
@@ -291,15 +291,16 @@ class MainConfigs(bc.MainConfigs):
         method_configs.no_reg = False
         method_configs.use_g_learner = True
         method_configs.use_validation = False
-        method_configs.no_C3 = True
-        method_configs.use_radius = False
+
+        method_configs.no_C3 = False
+        method_configs.use_radius = True
         method_configs.include_scale = True
         if data_set_to_use == bc.DATA_NG:
             method_configs.metric = 'cosine'
             method_configs.use_fused_lasso = False
 
         method_configs.constraints = []
-        if data_set_to_use == bc.DATA_CONCRETE:
+        if data_set_to_use == bc.DATA_CONCRETE and False:
             method_configs.constraints.append(nonpositive_constraint)
             #method_configs.constraints.append(lambda x: x <= 0)
 
@@ -358,13 +359,27 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             'LocalTransferDeltaSMS.pkl',
         ]
         '''
-        self.files = [
-            'TargetTransfer+NW.pkl',
-            'LocalTransferDelta_C3=0.pkl',
-            'LocalTransferDelta.pkl',
-            'LocalTransferDelta_C3=0_cons.pkl',
-            'LocalTransferDelta_cons.pkl',
-        ]
+
+        self.files = {
+            'TargetTransfer+NW.pkl': 'Target Only',
+            'LocalTransferDelta_C3=0.pkl': 'Our Method, alpha=0',
+            'LocalTransferDelta.pkl': 'Our Method',
+            'LocalTransferDelta_C3=0_cons.pkl': None,
+            'LocalTransferDelta_cons.pkl': None,
+            'LocalTransferDelta_C3=0_radius.pkl': 'Our Method, ball graph, alpha=0',
+            'LocalTransferDelta_radius.pkl': 'Our Method, ball graph'
+        }
+
+        self.files = {
+            'TargetTransfer+NW.pkl': 'Target Only',
+            'LocalTransferDelta_C3=0_radius.pkl': 'Our Method, ball graph, alpha=0',
+            'LocalTransferDelta_radius.pkl': 'Our Method, ball graph'
+        }
+        self.title = bc.data_name_dict.get(data_set_to_use, 'Unknown Data Set')
+        if use_1d_data:
+            self.title += ' 1D'
+        self.x_axis_string = 'Number of labeled target instances'
+
 
 class BatchConfigs(bc.BatchConfigs):
     def __init__(self):

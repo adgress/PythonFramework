@@ -12,6 +12,19 @@ DATA_WINE = 9
 DATA_SYNTHETIC_DELTA_LINEAR = 10
 DATA_SYNTHETIC_CROSS = 11
 
+data_name_dict = {
+    DATA_NG: '20ng',
+    DATA_BOSTON_HOUSING: 'Boston Housing',
+    DATA_SYNTHETIC_STEP_TRANSFER: 'Synthetic Step',
+    DATA_SYNTHETIC_STEP_LINEAR_TRANSFER: 'Synthetic Step',
+    DATA_SYNTHETIC_CLASSIFICATION: 'Synthetic Classification',
+    DATA_CONCRETE: 'Concrete',
+    DATA_BIKE_SHARING: 'Bike Sharing',
+    DATA_WINE: 'Wine',
+    DATA_SYNTHETIC_DELTA_LINEAR: 'Synthetic Delta',
+    DATA_SYNTHETIC_CROSS: 'Synthetic Cross',
+}
+
 class Configs(object):
     def __init__(self):
         pass
@@ -176,7 +189,9 @@ class VisualizationConfigs(Configs):
     @property
     def results_files(self):
         dir = self.results_directory
-        files = [dir + '/' + s for s in self.files]
+        files = {}
+        for key, value in self.files.iteritems():
+            files[dir + '/' + key] = value
         return files
 
 

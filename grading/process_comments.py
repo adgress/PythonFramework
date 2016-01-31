@@ -4,8 +4,10 @@ import os
 from os import path
 
 def run_main():
-    grades_dir = 'C:\Users\Aubrey\Desktop\Homework #1'
-    full_csv =  'C:\Users\Aubrey\Google Drive\ECS170 2016\ps1\grades\\full.csv'
+    #grades_dir = 'C:\Users\Aubrey\Desktop\Homework #1'
+    #full_csv =  'C:\Users\Aubrey\Google Drive\ECS170 2016\ps1\grades\\full.csv'
+    grades_dir = 'C:\Users\Aubrey\Desktop\Homework #2'
+    full_csv =  'C:\Users\Aubrey\Google Drive\ECS170 2016\ps2\grades\\full.csv'
     comments_file = 'comments.txt'
     data = pd.read_csv(full_csv)
     data = np.asarray(data)

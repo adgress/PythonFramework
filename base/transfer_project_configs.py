@@ -41,14 +41,16 @@ data_data_to_use = None
 
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
-#data_set_to_use = bc.DATA_BIKE_SHARING
+data_set_to_use = bc.DATA_BIKE_SHARING
 #data_set_to_use = bc.DATA_WINE
 
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
-data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
+#data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
 #data_set_to_use = bc.DATA_SYNTHETIC_CROSS
 
+run_batch_exps = False
 use_1d_data = True
+use_constraints = False
 
 synthetic_data_sets = [
     bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER,
@@ -72,10 +74,11 @@ real_data_sets_full = [
 all_1d = synthetic_data_sets + real_data_sets_1d
 
 data_sets_for_exps = [data_set_to_use]
-if use_1d_data:
-    data_sets_for_exps = all_1d
-else:
-    data_sets_for_exps = real_data_sets_full
+if run_batch_exps:
+    if use_1d_data:
+        data_sets_for_exps = all_1d
+    else:
+        data_sets_for_exps = real_data_sets_full
 #data_sets_for_exps = real_data_sets_full
 
 synthetic_dim = 1
@@ -310,6 +313,9 @@ class ProjectConfigs(bc.ProjectConfigs):
 def nonpositive_constraint(g):
     return g <= 0
 
+def nonnegative_constraint(g):
+    return g >= 0
+
 class MainConfigs(bc.MainConfigs):
     def __init__(self, pc):
         super(MainConfigs, self).__init__()
@@ -326,17 +332,20 @@ class MainConfigs(bc.MainConfigs):
         method_configs.use_g_learner = True
         method_configs.use_validation = False
 
-        method_configs.no_C3 = True
+        method_configs.no_C3 = False
         method_configs.use_radius = True
         method_configs.include_scale = True
+        method_configs.constant_b = True
         if self.data_set == bc.DATA_NG:
             method_configs.metric = 'cosine'
             method_configs.use_fused_lasso = False
 
         method_configs.constraints = []
-        if self.data_set == bc.DATA_CONCRETE and False:
-            method_configs.constraints.append(nonpositive_constraint)
-            #method_configs.constraints.append(lambda x: x <= 0)
+        if use_constraints:
+            if self.data_set == bc.DATA_CONCRETE:
+                method_configs.constraints.append(nonpositive_constraint)
+            elif self.data_set == bc.DATA_BIKE_SHARING:
+                method_configs.constraints.append(nonnegative_constraint)
 
 
         fuse_log_reg = transfer_methods.FuseTransfer(method_configs)
@@ -408,10 +417,14 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             'LocalTransferDelta_radius.pkl': 'Our Method, ball graph',
             'LocalTransferDelta_radius_l2.pkl': 'Our Method, ball graph, l2 loss'
         }
+        self.files['LocalTransferDelta_l2.pkl'] = 'Our Method, l2 loss'
         #self.files['LocalTransferDelta_C3=0_radius.pkl'] = 'Our Method, ball graph, alpha=0'
-        self.files['LocalTransferDeltaSMS.pkl'] = 'SMS no scale'
-        self.files['LocalTransferDeltaSMS_scale.pkl'] = 'SMS with scale'
+        #self.files['LocalTransferDeltaSMS.pkl'] = 'SMS no scale'
+        #self.files['LocalTransferDeltaSMS_scale.pkl'] = 'SMS with scale'
+        self.files['LocalTransferDelta_radius_l2_constant-b.pkl'] = 'Our Method, constant b'
+        self.data_set_to_use = data_set_to_use
         self.title = bc.data_name_dict.get(self.data_set_to_use, 'Unknown Data Set')
+
         if self.use_1d_data:
             self.title += ' 1D'
         self.x_axis_string = 'Number of labeled target instances'

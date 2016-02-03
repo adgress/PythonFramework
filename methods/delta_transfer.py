@@ -19,11 +19,15 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
         self.use_radius = None
         self.C3 = None
         self.use_l2 = True
+        self.constant_b = configs.constant_b
 
     def train(self, data):
         y_s = np.squeeze(data.y_s[:,0])
         y_t = np.squeeze(data.y_t[:,0])
         y = data.y
+        if self.constant_b:
+            self.g = (y_t - y_s).mean()
+            return
 
         is_labeled = data.is_labeled
         labeled_inds = is_labeled.nonzero()[0]
@@ -81,10 +85,21 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
         data = data_lib.Data()
         data.x = x
         data.is_regression = True
-        g = self.g_nw.predict(data).fu
+        if self.constant_b:
+            g = self.g
+        else:
+            g = self.g_nw.predict(data).fu
         fu = self.C3*y_target + (1-self.C3)*(y_source + g)
         #fu = y_source + g
         return fu
+
+
+    def predict_g(self, x):
+        if self.constant_b:
+            g = self.g
+        else:
+            g = super(CombinePredictionsDelta, self).predict_g(x)
+        return g
 
     @property
     def prefix(self):

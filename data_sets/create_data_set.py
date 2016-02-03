@@ -112,8 +112,8 @@ def create_forest_fires():
     y = forest_data[:,-1]
     i = field_names == 'month'
     domain_ids = forest_data[:,i]
-    #months_to_use = np.asarray([6,7,8])
-    months_to_use = np.asarray([1,2,3,4,5,6,7,8,9,10,11,12])
+    months_to_use = np.asarray([6,7,8])
+    #months_to_use = np.asarray([1,2,3,4,5,6,7,8,9,10,11,12])
     to_use = array_functions.find_set(domain_ids,months_to_use)
     x = x[to_use,:]
     y = y[to_use]
@@ -124,7 +124,10 @@ def create_forest_fires():
     x = x[I,:]
     y = y[I]
     domain_ids = domain_ids[I]
-    viz_features(x,y,domain_ids,field_names)
+
+    from methods import method
+    learner = method.NadarayaWatsonMethod()
+    viz_features(x,y,domain_ids,field_names,learner=learner)
     pass
 
 def create_mpg():
@@ -141,13 +144,16 @@ def create_mpg():
     viz_features(x,y,domain_ids)
     pass
 
+#4-7 for domains?
 def create_energy():
     file = 'energy/ENB2012_data.csv'
     field_names, energy_data = load_csv(file)
-    domain_ids = energy_data[:,0]
+    domain_ids = energy_data[:,4]
     x = energy_data
-    y = energy_data[:,-1]
-    viz_features(x,y,domain_ids,field_names)
+    y = energy_data[:,-2]
+    from methods import method
+    learner = method.NadarayaWatsonMethod()
+    viz_features(x,y,domain_ids,field_names, learner=learner)
     pass
 
 #0 - 1 to 3
@@ -358,7 +364,10 @@ def create_boston_housing(file_dir=''):
     data.x = boston_data.data
     data.y = boston_data.target
     data.feature_names = list(boston_data.feature_names)
-    data.set_defaults()
+
+    data.set_train()
+    data.set_target()
+    data.set_true_y()
     data.is_regression = True
     s = boston_housing_raw_data_file
     x = data.x
@@ -467,8 +476,10 @@ if __name__ == "__main__":
     #create_boston_housing()
     #create_bike_sharing()
     #create_wine()
+    create_energy()
+    #create_forest_fires()
     #create_synthetic_step_linear_transfer()
     #create_synthetic_delta_linear_transfer()
-    create_synthetic_cross_transfer()
+    #create_synthetic_cross_transfer()
     from data_sets import create_data_split
     create_data_split.run_main()

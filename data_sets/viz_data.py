@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 
 def train_on_data(x,y,domain_ids,learner):
+    domain_ids = np.squeeze(domain_ids)
     data = data_class.Data()
     data.is_regression = True
     data.x = array_functions.vec_to_2d(x)
@@ -40,11 +41,14 @@ def train_on_data(x,y,domain_ids,learner):
         x_plot = np.vstack((x_plot,x_test))
         y_plot = np.hstack((y_plot,o.y))
         ids_plot = np.hstack((ids_plot,np.ones(100)*i))
-
+        '''
         kde.train_and_test(data_i)
         dens = kde.predict(data_test)
         dens.y = dens.y / dens.y.max()
-        density_plot = np.hstack((density_plot,dens.y))
+        den_y = dens.y
+        '''
+        dens_y = np.ones(data_test.n)
+        density_plot = np.hstack((density_plot,dens_y))
     return x_plot,y_plot,ids_plot,density_plot
 
 
@@ -65,7 +69,7 @@ def viz_features(x,y,domain_ids,feature_names=None,alpha=.1,learner=None):
             density[I] = 200
             alpha = 1
         array_functions.plot_2d_sub(xi,yi,alpha=alpha,title=title,data_set_ids=ids_i,sizes=density)
-        pass
+        k = 1
 
 
 def run_main():
@@ -77,8 +81,7 @@ def run_main():
     #s = create_data_set.synthetic_step_linear_transfer_file
     #s = create_data_set.boston_housing_raw_data_file % '-13'
     #s = create_data_set.concrete_file % '-7'
-    s = create_data_set.concrete_file % '-feat=0'
-    #s = create_data_set.synthetic_classification_local_file
+    #s = create_data_set.concrete_file % '-feat=0'
     #s = create_data_set.bike_file % '-feat=1'
     #s = create_data_set.wine_file % '-small-11'
     #s = create_data_set.boston_housing_raw_data_file % ''

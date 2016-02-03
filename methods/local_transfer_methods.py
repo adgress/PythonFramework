@@ -462,7 +462,11 @@ class LocalTransferDelta(LocalTransfer):
         self.metric = configs.metric
         self.quiet = False
         self.no_C3 = configs.no_C3
+        self.constant_b = configs.constant_b
         self.use_radius = configs.use_radius
+        if self.constant_b:
+            del self.cv_params['radius']
+            del self.cv_params['C']
         if not self.use_radius:
             del self.cv_params['radius']
         if self.no_C3:
@@ -506,6 +510,8 @@ class LocalTransferDelta(LocalTransfer):
             s += '_cons'
         if getattr(self, 'use_l2', False):
             s += '_l2'
+        if getattr(self, 'constant_b', False):
+            s += '_constant-b'
         return s
 
 

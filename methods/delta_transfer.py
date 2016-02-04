@@ -20,6 +20,7 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
         self.C3 = None
         self.use_l2 = True
         self.constant_b = configs.constant_b
+        self.linear_b = configs.linear_b
 
     def train(self, data):
         y_s = np.squeeze(data.y_s[:,0])
@@ -32,23 +33,29 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
         is_labeled = data.is_labeled
         labeled_inds = is_labeled.nonzero()[0]
         n_labeled = len(labeled_inds)
-        g = cvx.Variable(n_labeled)
-        if self.use_radius:
-            W = array_functions.make_graph_radius(data.x[is_labeled,:], self.radius, self.configs.metric)
+        if self.linear_b:
+            g = cvx.Variable(data.p)
+            b = cvx.Variable(1)
+            err = self.C3*y_t + (1 - self.C3)*(y_s + data.x[is_labeled,:]*g + b) - y
+            reg = cvx.square(cvx.norm2(g))
         else:
-            W = array_functions.make_graph_adjacent(data.x[is_labeled,:], self.configs.metric)
+            g = cvx.Variable(n_labeled)
+            if self.use_radius:
+                W = array_functions.make_graph_radius(data.x[is_labeled,:], self.radius, self.configs.metric)
+            else:
+                W = array_functions.make_graph_adjacent(data.x[is_labeled,:], self.configs.metric)
 
-        if W.sum() > 0:
-            W = W / W.sum()
-        if self.use_fused_lasso:
-            reg = cvx_functions.create_fused_lasso(W, g)
-        else:
-            #assert False, 'Make Laplacian!'
-            reg =0
-            if W.any():
-                L = array_functions.make_laplacian_with_W(W)
-                reg = cvx.quad_form(g,L)
-        err = self.C3*y_t + (1 - self.C3)*(y_s+g) - y
+            if W.sum() > 0:
+                W = W / W.sum()
+            if self.use_fused_lasso:
+                reg = cvx_functions.create_fused_lasso(W, g)
+            else:
+                #assert False, 'Make Laplacian!'
+                reg =0
+                if W.any():
+                    L = array_functions.make_laplacian_with_W(W)
+                    reg = cvx.quad_form(g,L)
+            err = self.C3*y_t + (1 - self.C3)*(y_s+g) - y
         #err = y_s + g - y
         err_abs = cvx.abs(err)
         err_l2 = cvx.power(err,2)
@@ -67,15 +74,25 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
         assert prob.is_dcp()
         try:
             prob.solve()
-            g_value = np.reshape(np.asarray(g.value),n_labeled)
+            if self.linear_b:
+                b_value = b.value
+                g_value = np.reshape(np.asarray(g.value),data.p)
+            else:
+                g_value = np.reshape(np.asarray(g.value),n_labeled)
         except:
             k = 0
             #assert prob.status is None
             print 'CVX problem: setting g = ' + str(k)
+            g_value = k*np.ones(n_labeled)
+            if self.linear_b:
+                b_value = 0
             print '\tC=' + str(self.C)
             print '\tC2=' + str(self.C2)
             print '\tC3=' + str(self.C3)
-            g_value = k*np.ones(n_labeled)
+        if self.linear_b:
+            self.g = g_value
+            self.b = b_value
+            return
         labeled_train_data = data.get_subset(labeled_inds)
         assert labeled_train_data.y.shape == g_value.shape
         labeled_train_data.is_regression = True
@@ -90,6 +107,8 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
         data.is_regression = True
         if self.constant_b:
             g = self.g
+        elif self.linear_b:
+            g = data.x.dot(self.g) + self.b
         else:
             g = self.g_nw.predict(data).fu
         fu = self.C3*y_target + (1-self.C3)*(y_source + g)
@@ -100,6 +119,8 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
     def predict_g(self, x):
         if self.constant_b:
             g = self.g
+        elif self.linear_b:
+            g = x.dot(self.g) + self.b
         else:
             g = super(CombinePredictionsDelta, self).predict_g(x)
         return g

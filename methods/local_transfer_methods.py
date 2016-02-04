@@ -459,14 +459,18 @@ class LocalTransferDelta(LocalTransfer):
         self.g_learner.quiet = True
         self.g_learner.use_l2 = self.use_l2
         self.g_learner.use_fused_lasso = configs.use_fused_lasso
+
         self.metric = configs.metric
         self.quiet = False
         self.no_C3 = configs.no_C3
         self.constant_b = configs.constant_b
         self.use_radius = configs.use_radius
+        self.linear_b = configs.linear_b
         if self.constant_b:
             del self.cv_params['radius']
             del self.cv_params['C']
+        if self.linear_b:
+            del self.cv_params['radius']
         if not self.use_radius:
             del self.cv_params['radius']
         if self.no_C3:
@@ -512,6 +516,8 @@ class LocalTransferDelta(LocalTransfer):
             s += '_l2'
         if getattr(self, 'constant_b', False):
             s += '_constant-b'
+        if getattr(self, 'linear_b', False):
+            s += '_linear-b'
         if getattr(self.configs, 'use_validation', False):
             s += '_use-val'
         if not self.use_fused_lasso:

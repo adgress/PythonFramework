@@ -56,6 +56,7 @@ def viz_features(x,y,domain_ids,feature_names=None,alpha=.1,learner=None):
     #y = array_functions.normalize(y)
     for i in range(x.shape[1]):
         xi = x[:,i]
+        xi_train = xi
         yi = y
         ids_i = domain_ids
         title = str(i)
@@ -70,6 +71,8 @@ def viz_features(x,y,domain_ids,feature_names=None,alpha=.1,learner=None):
             alpha = 1
         array_functions.plot_2d_sub(xi,yi,alpha=alpha,title=title,data_set_ids=ids_i,sizes=density)
         k = 1
+        array_functions.plot_histogram(xi_train,100)
+        k=1
 
 
 def run_main():

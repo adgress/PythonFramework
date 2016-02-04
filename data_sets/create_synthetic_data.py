@@ -17,6 +17,7 @@ synthetic_step_kd_transfer_file = 'synthetic_step_transfer_%d/raw_data.pkl'
 synthetic_step_linear_transfer_file = 'synthetic_step_linear_transfer/raw_data.pkl'
 synthetic_classification_file = 'synthetic_classification/raw_data.pkl'
 synthetic_classification_local_file = 'synthetic_classification_local/raw_data.pkl'
+synthetic_slant_file = 'synthetic_slant/raw_data.pkl'
 
 def create_synthetic_classification(file_dir='',local=True):
     dim = 1
@@ -122,6 +123,13 @@ def create_synthetic_cross_transfer():
     source_fun = lambda x: -slope*x + 5
     data = create_synthetic_regression_transfer(target_fun, source_fun)
     s = synthetic_cross_file
+    helper_functions.save_object(s, data)
+
+def create_synthetic_slant_transfer():
+    target_fun = lambda x: 2*x
+    source_fun = lambda x: 2.5*x + 1
+    data = create_synthetic_regression_transfer(target_fun, source_fun)
+    s = synthetic_slant_file
     helper_functions.save_object(s, data)
 
 def create_synthetic_regression_transfer(target_fun, source_fun, n_target=100, n_source=100, sigma=.5):

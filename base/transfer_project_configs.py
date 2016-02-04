@@ -33,7 +33,7 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
     'use_1d_data',
     'data_set'
 ]
-data_data_to_use = None
+data_set_to_use = None
 #data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION
 #data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION_LOCAL
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
@@ -42,13 +42,14 @@ data_data_to_use = None
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_BIKE_SHARING
-data_set_to_use = bc.DATA_WINE
+#data_set_to_use = bc.DATA_WINE
 
+data_set_to_use = bc.DATA_SYNTHETIC_SLANT
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
 #data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
 #data_set_to_use = bc.DATA_SYNTHETIC_CROSS
 
-run_batch_exps = True
+run_batch_exps = False
 use_1d_data = True
 use_constraints = False
 
@@ -153,6 +154,9 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.num_labels = np.asarray([10,20,30])
         elif data_set == bc.DATA_SYNTHETIC_CROSS:
             self.set_synthetic_regression('synthetic_cross_transfer')
+            self.num_labels = np.asarray([10,20,30])
+        elif data_set == bc.DATA_SYNTHETIC_SLANT:
+            self.set_synthetic_regression('synthetic_slant')
             self.num_labels = np.asarray([10,20,30])
         else:
             assert False
@@ -335,7 +339,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.no_C3 = False
         method_configs.use_radius = True
         method_configs.include_scale = True
-        method_configs.constant_b = False
+        method_configs.constant_b = True
         if self.data_set == bc.DATA_NG:
             method_configs.metric = 'cosine'
             method_configs.use_fused_lasso = False
@@ -375,7 +379,7 @@ class MainConfigs(bc.MainConfigs):
         #self.learner = sms_transfer
         self.learner = dt_local_transfer
         #self.learner = dt_sms
-        self.learner.configs.use_validation = True
+        self.learner.configs.use_validation = False
 
 
 class MethodConfigs(bc.MethodConfigs):
@@ -422,6 +426,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #self.files['LocalTransferDeltaSMS.pkl'] = 'SMS no scale'
         #self.files['LocalTransferDeltaSMS_scale.pkl'] = 'SMS with scale'
         self.files['LocalTransferDelta_radius_l2_constant-b.pkl'] = 'Our Method, constant b'
+        self.files['LocalTransferDelta_radius_cons_l2.pkl'] = 'Our Method, ball graph, l2 loss, constrained'
         self.data_set_to_use = data_set_to_use
         self.title = bc.data_name_dict.get(self.data_set_to_use, 'Unknown Data Set')
 

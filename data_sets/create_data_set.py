@@ -152,7 +152,8 @@ def create_energy():
     x = energy_data
     y = energy_data[:,-2]
     from methods import method
-    learner = method.NadarayaWatsonMethod()
+    #learner = method.NadarayaWatsonMethod()
+    learner = None
     viz_features(x,y,domain_ids,field_names, learner=learner)
     pass
 
@@ -187,11 +188,13 @@ def create_concrete():
         assert False
 
     data.y = concrete_data[:,-1]
-    data.set_defaults()
+    data.set_train()
+    data.set_target()
+    data.set_true_y()
     data.is_regression = True
     data.data_set_ids = domain_ids
 
-    viz = False
+    viz = True
     if viz:
         to_use = domain_ids > 0
         domain_ids = domain_ids[to_use]
@@ -334,9 +337,10 @@ def create_wine():
     ids = wine_data[:,-1]
     x = wine_data[:,:-2]
     used_field_names = field_names[:-1]
-    viz = False
+    viz = True
     if viz:
         learner = make_learner()
+        #learner = None
         viz_features(x,y,ids,used_field_names,alpha=.01,learner=learner)
 
     feat_idx = 1
@@ -371,11 +375,11 @@ def create_boston_housing(file_dir=''):
     data.is_regression = True
     s = boston_housing_raw_data_file
     x = data.x
-    #y = data.y
+    y = data.y
     domain_ids = np.ones(x.shape[0])
     domain_ids = array_functions.bin_data(x[:,domain_ind],num_bins=4)
     x = np.delete(x,domain_ind,1)
-    #viz_features(x,y,domain_ids,boston_data.feature_names)
+    viz_features(x,y,domain_ids,boston_data.feature_names)
     data.data_set_ids = domain_ids
 
     if boston_num_feats == 1:
@@ -450,7 +454,8 @@ def create_bike_sharing():
     used_field_names = used_field_names[to_use]
     y = bike_data[:,-1]
     if viz:
-        learner = make_learner()
+        #learner = make_learner()
+        learner = None
         viz_features(x,y,domain_ids,used_field_names,learner=learner)
     field_to_use = 1
     x = x[:,field_to_use]
@@ -472,14 +477,13 @@ def create_bike_sharing():
 if __name__ == "__main__":
     #create_boston_housing()
     #create_concrete()
-    #create_synthetic_classification(local=True)
-    #create_boston_housing()
     #create_bike_sharing()
     #create_wine()
-    create_energy()
+    #create_energy()
     #create_forest_fires()
     #create_synthetic_step_linear_transfer()
     #create_synthetic_delta_linear_transfer()
     #create_synthetic_cross_transfer()
+    create_synthetic_slant_transfer()
     from data_sets import create_data_split
     create_data_split.run_main()

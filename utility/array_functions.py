@@ -18,6 +18,7 @@ from sklearn import manifold
 def plot_histogram(x, num_bins=10):
     assert x.ndim == 1 or x.shape[1] == 1
     pl.hist(x, num_bins, normed=1, facecolor='green', alpha=0.75)
+    #move_fig()
     pl.show()
 
 
@@ -304,6 +305,9 @@ def plot_MDS(x, y=None, data_set_ids=None):
     pl.show(block=True)
     pass
 
+def plot_line(x,y,title=None,y_axes=None):
+    plot_line_sub([x],[y],title,y_axes)
+
 def plot_line_sub(x_list, y_list, title=None, y_axes = None):
     pl.close()
     fig = pl.figure(len(x_list))
@@ -316,7 +320,7 @@ def plot_line_sub(x_list, y_list, title=None, y_axes = None):
 
         pl.plot(x,y)
     move_fig(fig)
-    pl.show(block=False)
+    pl.show(block=True)
 
 def plot_2d_sub(x,y,data_set_ids=None,alpha=1,title=None,sizes=None):
     if sizes is None:

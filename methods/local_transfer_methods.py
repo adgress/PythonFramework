@@ -514,6 +514,8 @@ class LocalTransferDelta(LocalTransfer):
             s += '_constant-b'
         if getattr(self.configs, 'use_validation', False):
             s += '_use-val'
+        if not self.use_fused_lasso:
+            s += '_lap-reg'
         return s
 
 

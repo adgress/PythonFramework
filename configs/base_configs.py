@@ -11,6 +11,7 @@ DATA_BIKE_SHARING = 8
 DATA_WINE = 9
 DATA_SYNTHETIC_DELTA_LINEAR = 10
 DATA_SYNTHETIC_CROSS = 11
+DATA_SYNTHETIC_SLANT = 12
 
 data_name_dict = {
     DATA_NG: '20ng',
@@ -23,6 +24,7 @@ data_name_dict = {
     DATA_WINE: 'Wine',
     DATA_SYNTHETIC_DELTA_LINEAR: 'Synthetic Delta',
     DATA_SYNTHETIC_CROSS: 'Synthetic Cross',
+    DATA_SYNTHETIC_SLANT: 'Synthetic Slant',
 }
 
 class Configs(object):

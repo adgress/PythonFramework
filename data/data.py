@@ -81,7 +81,8 @@ class LabeledVector(object):
     @property
     def is_target(self):
         if self.type is None:
-            return np.ones(self.y.shape)
+            assert False
+            #return np.ones(self.y.shape)
         return self.type == TYPE_TARGET
 
     @property

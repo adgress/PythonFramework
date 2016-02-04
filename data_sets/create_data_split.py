@@ -74,7 +74,8 @@ class DataSplitter(object):
         assert y.ndim == 1
         keep_in_train_set = array_functions.false(len(y))
         if keep_for_splitting is not None and len(keep_for_splitting) > 0:
-            keep_in_train_set[~array_functions.to_boolean(keep_for_splitting)] = True
+            keep_in_train_set[~keep_for_splitting] = True
+            #keep_in_train_set[~array_functions.to_boolean(keep_for_splitting)] = True
         is_labeled = ~np.isnan(y)
         keep_in_train_set[~is_labeled] = True
 
@@ -130,6 +131,8 @@ def run_main():
     #split_data(create_data_set.wine_file % '-small-feat=1', regression_configs())
     #split_data(create_data_set.wine_file % '-small-11', regression_configs())
     #split_data(create_data_set.synthetic_delta_linear_file, regression_configs())
-    split_data(create_data_set.synthetic_cross_file, regression_configs())
+    #split_data(create_data_set.synthetic_cross_file, regression_configs())
+
+    split_data(create_data_set.synthetic_slant_file, regression_configs())
 if __name__ == '__main__':
     run_main()

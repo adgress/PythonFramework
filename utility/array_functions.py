@@ -132,6 +132,12 @@ def make_graph_radius(x, radius, metric):
     return dists
 
 
+def make_laplacian_with_W(W):
+    D = W.sum(1)
+    L = np.diag(D) - W
+    L = scipy.sparse.csc_matrix(L)
+    return L
+
 def make_laplacian_kNN(x,k,metric):
     dists = pairwise.pairwise_distances(x,x,metric)
     dists[np.diag(true(x.shape[0]))] = np.inf
@@ -145,9 +151,7 @@ def make_laplacian_kNN(x,k,metric):
 
     #Make symmetric for quad_form
     #W = .5*(W + W.T)
-    D = W.sum(1)
-    L = np.diag(D) - W
-    L = scipy.sparse.csc_matrix(L)
+    L = make_laplacian_with_W(W)
     return L
 
 def make_laplacian_uniform(x,radius,metric):

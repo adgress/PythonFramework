@@ -330,16 +330,16 @@ class MainConfigs(bc.MainConfigs):
         from methods import scipy_opt_methods
         method_configs = MethodConfigs(pc)
         method_configs.metric = 'euclidean'
-        method_configs.use_fused_lasso = True
-        method_configs.use_reg2 = True
+        method_configs.use_fused_lasso = False
         method_configs.no_reg = False
         method_configs.use_g_learner = True
         method_configs.use_validation = False
 
-        method_configs.no_C3 = False
+        method_configs.use_reg2 = True
+        method_configs.no_C3 = True
         method_configs.use_radius = True
         method_configs.include_scale = True
-        method_configs.constant_b = True
+        method_configs.constant_b = False
         if self.data_set == bc.DATA_NG:
             method_configs.metric = 'cosine'
             method_configs.use_fused_lasso = False
@@ -426,6 +426,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #self.files['LocalTransferDeltaSMS.pkl'] = 'SMS no scale'
         #self.files['LocalTransferDeltaSMS_scale.pkl'] = 'SMS with scale'
         self.files['LocalTransferDelta_radius_l2_constant-b.pkl'] = 'Our Method, constant b'
+        self.files['LocalTransferDelta_C3=0_radius_l2_constant-b.pkl'] = 'Our Method, constant b, alpha=0'
         self.files['LocalTransferDelta_radius_cons_l2.pkl'] = 'Our Method, ball graph, l2 loss, constrained'
         self.data_set_to_use = data_set_to_use
         self.title = bc.data_name_dict.get(self.data_set_to_use, 'Unknown Data Set')

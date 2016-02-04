@@ -41,14 +41,14 @@ data_data_to_use = None
 
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
-data_set_to_use = bc.DATA_BIKE_SHARING
-#data_set_to_use = bc.DATA_WINE
+#data_set_to_use = bc.DATA_BIKE_SHARING
+data_set_to_use = bc.DATA_WINE
 
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
 #data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
 #data_set_to_use = bc.DATA_SYNTHETIC_CROSS
 
-run_batch_exps = False
+run_batch_exps = True
 use_1d_data = True
 use_constraints = False
 
@@ -335,7 +335,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.no_C3 = False
         method_configs.use_radius = True
         method_configs.include_scale = True
-        method_configs.constant_b = True
+        method_configs.constant_b = False
         if self.data_set == bc.DATA_NG:
             method_configs.metric = 'cosine'
             method_configs.use_fused_lasso = False
@@ -375,7 +375,7 @@ class MainConfigs(bc.MainConfigs):
         #self.learner = sms_transfer
         self.learner = dt_local_transfer
         #self.learner = dt_sms
-        self.learner.configs.use_validation = False
+        self.learner.configs.use_validation = True
 
 
 class MethodConfigs(bc.MethodConfigs):

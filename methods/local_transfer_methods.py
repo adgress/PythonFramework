@@ -512,6 +512,8 @@ class LocalTransferDelta(LocalTransfer):
             s += '_l2'
         if getattr(self, 'constant_b', False):
             s += '_constant-b'
+        if getattr(self.configs, 'use_validation', False):
+            s += '_use-val'
         return s
 
 

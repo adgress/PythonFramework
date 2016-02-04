@@ -44,9 +44,10 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
             reg = cvx_functions.create_fused_lasso(W, g)
         else:
             #assert False, 'Make Laplacian!'
-            L = array_functions.make_laplacian_with_W(W)
-            L = array_functions.try_toarray(L)
-            reg = cvx.quad_form(g,L)
+            reg =0
+            if W.any():
+                L = array_functions.make_laplacian_with_W(W)
+                reg = cvx.quad_form(g,L)
         err = self.C3*y_t + (1 - self.C3)*(y_s+g) - y
         #err = y_s + g - y
         err_abs = cvx.abs(err)

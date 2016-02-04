@@ -506,11 +506,12 @@ class LocalTransferDelta(LocalTransfer):
     @property
     def prefix(self):
         s = 'LocalTransferDelta'
+        is_nonparametric = getattr(self,'linear_b',False) or getattr(self,'constant_b',False)
         if getattr(self, 'no_C3', False):
             s += '_C3=0'
         if getattr(self, 'use_radius', False):
             s += '_radius'
-        if getattr(self.configs, 'constraints', []):
+        if getattr(self.configs, 'constraints', []) and is_nonparametric:
             s += '_cons'
         if getattr(self, 'use_l2', False):
             s += '_l2'
@@ -520,7 +521,7 @@ class LocalTransferDelta(LocalTransfer):
             s += '_linear-b'
         if getattr(self.configs, 'use_validation', False):
             s += '_use-val'
-        if not self.use_fused_lasso:
+        if not self.use_fused_lasso and is_nonparametric:
             s += '_lap-reg'
         return s
 

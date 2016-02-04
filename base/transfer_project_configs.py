@@ -39,24 +39,33 @@ data_set_to_use = None
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
 #data_set_to_use = bc.DATA_NG
 
-#data_set_to_use = bc.DATA_BOSTON_HOUSING
+data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_BIKE_SHARING
 #data_set_to_use = bc.DATA_WINE
 
 #data_set_to_use = bc.DATA_SYNTHETIC_SLANT
-data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
+#data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
 #data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
 #data_set_to_use = bc.DATA_SYNTHETIC_CROSS
 
-run_batch_exps = False
+run_batch_exps = True
 use_1d_data = True
 use_constraints = False
+
+use_fused_lasso = True
+no_C3 = True
+use_radius = True
+include_scale = True
+constant_b = False
+linear_b = True
+use_validation = False
 
 synthetic_data_sets = [
     bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER,
     bc.DATA_SYNTHETIC_DELTA_LINEAR,
-    bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
+    bc.DATA_SYNTHETIC_CROSS,
+    bc.DATA_SYNTHETIC_SLANT,
 ]
 
 real_data_sets_1d = [
@@ -333,14 +342,16 @@ class MainConfigs(bc.MainConfigs):
         method_configs.no_reg = False
         method_configs.use_g_learner = True
         method_configs.use_validation = False
-
-        method_configs.use_fused_lasso = True
         method_configs.use_reg2 = True
-        method_configs.no_C3 = True
-        method_configs.use_radius = True
-        method_configs.include_scale = True
-        method_configs.constant_b = False
-        method_configs.linear_b = True
+
+        method_configs.use_fused_lasso = use_fused_lasso
+        method_configs.no_C3 = no_C3
+        method_configs.use_radius = use_radius
+        method_configs.include_scale = include_scale
+        method_configs.constant_b = constant_b
+        method_configs.linear_b = linear_b
+
+        assert not (constant_b and linear_b)
 
         if self.data_set == bc.DATA_NG:
             method_configs.metric = 'cosine'
@@ -381,7 +392,7 @@ class MainConfigs(bc.MainConfigs):
         #self.learner = sms_transfer
         self.learner = dt_local_transfer
         #self.learner = dt_sms
-        self.learner.configs.use_validation = False
+        self.learner.configs.use_validation = use_validation
 
 
 class MethodConfigs(bc.MethodConfigs):
@@ -417,17 +428,16 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             'LocalTransferDelta_C3=0_radius.pkl': 'Our Method, ball graph, alpha=0',
             'LocalTransferDelta_radius.pkl': 'Our Method, ball graph'
         }
-
-        self.files = {
-            'TargetTransfer+NW.pkl': 'Target Only',
-            'LocalTransferDelta_radius.pkl': 'Our Method, ball graph',
-            'LocalTransferDelta_radius_l2.pkl': 'Our Method, ball graph, l2 loss'
-        }
-        self.files['LocalTransferDelta_l2.pkl'] = 'Our Method, l2 loss'
+        self.files = {}
+        self.files['TargetTransfer+NW.pkl'] = 'Target Only'
+        #self.files['LocalTransferDelta_radius.pkl'] = 'Our Method, ball graph'
+        #self.files['LocalTransferDelta_radius_l2.pkl'] = 'Our Method, ball graph, l2 loss'
+        #self.files['LocalTransferDelta_l2.pkl'] = 'Our Method, l2 loss'
         #self.files['LocalTransferDelta_C3=0_radius.pkl'] = 'Our Method, ball graph, alpha=0'
         #self.files['LocalTransferDeltaSMS.pkl'] = 'SMS no scale'
         #self.files['LocalTransferDeltaSMS_scale.pkl'] = 'SMS with scale'
         self.files['LocalTransferDelta_radius_l2_constant-b.pkl'] = 'Our Method, constant b'
+        self.files['LocalTransferDelta_C3=0_radius_l2_linear-b.pkl'] = 'Our Method, linear b, alpha=0'
         self.files['LocalTransferDelta_C3=0_radius_l2_constant-b.pkl'] = 'Our Method, constant b, alpha=0'
         #self.files['LocalTransferDelta_radius_cons_l2.pkl'] = 'Our Method, ball graph, l2 loss, constrained'
         self.files['LocalTransferDelta_radius_l2_use-val.pkl'] = 'Our method, ball graph, l2 loss, used validation'

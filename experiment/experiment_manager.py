@@ -2,6 +2,7 @@ __author__ = 'Aubrey'
 
 import abc
 from utility import helper_functions
+from utility import multiprocessing_utility
 from results_class import results
 import os
 import numpy as np
@@ -109,7 +110,8 @@ class MethodExperimentManager(ExperimentManager):
         shared_args = (self, results_file, data_and_splits, method_results)
         args = [shared_args + (i_labels, split) for i_labels,split in num_labels_list]
         if self.configs.use_pool:
-            pool = multiprocessing.Pool(processes=self.configs.pool_size)
+            pool = multiprocessing_utility.LoggingPool(processes=self.configs.pool_size)
+            #pool = multiprocessing.Pool(processes=self.configs.pool_size)
             all_results = pool.map(_run_experiment, args)
         else:
 

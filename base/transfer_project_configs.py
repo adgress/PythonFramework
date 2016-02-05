@@ -41,8 +41,9 @@ data_set_to_use = None
 
 data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
-#data_set_to_use = bc.DATA_BIKE_SHARING
 #data_set_to_use = bc.DATA_WINE
+#data_set_to_use = bc.DATA_BIKE_SHARING
+
 
 #data_set_to_use = bc.DATA_SYNTHETIC_SLANT
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
@@ -60,6 +61,7 @@ include_scale = True
 constant_b = False
 linear_b = True
 use_validation = False
+clip_b = True
 
 synthetic_data_sets = [
     bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER,
@@ -350,6 +352,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.include_scale = include_scale
         method_configs.constant_b = constant_b
         method_configs.linear_b = linear_b
+        method_configs.clip_b = clip_b
 
         assert not (constant_b and linear_b)
 
@@ -440,9 +443,10 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #self.files['LocalTransferDelta_C3=0_radius.pkl'] = 'Our Method, ball graph, alpha=0'
         #self.files['LocalTransferDeltaSMS.pkl'] = 'SMS no scale'
         #self.files['LocalTransferDeltaSMS_scale.pkl'] = 'SMS with scale'
-        #self.files['LocalTransferDelta_radius_l2_constant-b.pkl'] = 'Our Method, constant b'
 
-        #self.files['LocalTransferDelta_C3=0_radius_l2_constant-b.pkl'] = 'Our Method, constant b, alpha=0'
+        self.files['LocalTransferDelta_radius_l2_constant-b.pkl'] = 'Our Method, constant b'
+        self.files['LocalTransferDelta_C3=0_radius_l2_constant-b.pkl'] = 'Our Method, constant b, alpha=0'
+
         #self.files['LocalTransferDelta_radius_cons_l2.pkl'] = 'Our Method, ball graph, l2 loss, constrained'
 
         self.files['LocalTransferDelta_C3=0_radius_l2_linear-b_use-val.pkl'] = 'Our Method, linear b, alpha=0, used validation'

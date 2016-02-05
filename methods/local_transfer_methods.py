@@ -466,6 +466,7 @@ class LocalTransferDelta(LocalTransfer):
         self.constant_b = configs.constant_b
         self.use_radius = configs.use_radius
         self.linear_b = configs.linear_b
+        self.clip_b = configs.clip_b
         if self.constant_b:
             del self.cv_params['radius']
             del self.cv_params['C']
@@ -519,6 +520,8 @@ class LocalTransferDelta(LocalTransfer):
             s += '_constant-b'
         if getattr(self, 'linear_b', False):
             s += '_linear-b'
+            if getattr(self, 'clip_b', False):
+                s += '_clip-b'
         if getattr(self.configs, 'use_validation', False):
             s += '_use-val'
         if not self.use_fused_lasso and is_nonparametric:

@@ -15,6 +15,13 @@ from timer.timer import tic
 from timer.timer import toc
 from sklearn import manifold
 
+def clip(x, min, max):
+    assert min <= max
+    y = x.copy()
+    y[x < min] = min
+    y[x > max] = max
+    return y
+
 def plot_histogram(x, num_bins=10):
     assert x.ndim == 1 or x.shape[1] == 1
     pl.hist(x, num_bins, normed=1, facecolor='green', alpha=0.75)

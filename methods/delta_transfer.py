@@ -23,8 +23,9 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
         self.use_l2 = True
         self.constant_b = configs.constant_b
         self.linear_b = configs.linear_b
-        #self.transform = StandardScaler()
-        self.transform = MinMaxScaler()
+        self.clip_b = configs.clip_b
+        self.transform = StandardScaler()
+        #self.transform = MinMaxScaler()
 
     def train(self, data):
         y_s = np.squeeze(data.y_s[:,0])
@@ -98,6 +99,9 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
         if self.linear_b:
             self.g = g_value
             self.b = b_value
+            g_pred = x.dot(g_value)
+            self.g_min = g_pred.min()
+            self.g_max = g_pred.max()
             return
         labeled_train_data = data.get_subset(labeled_inds)
         assert labeled_train_data.y.shape == g_value.shape
@@ -115,7 +119,10 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
             g = self.g
         elif self.linear_b:
             x = self.transform.transform(data.x)
-            g = x.dot(self.g) + self.b
+            g = x.dot(self.g)
+            if self.clip_b:
+                g = array_functions.clip(g,self.g_min,self.g_max)
+            g += self.b
         else:
             g = self.g_nw.predict(data).fu
         fu = self.C3*y_target + (1-self.C3)*(y_source + g)
@@ -128,7 +135,10 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
             g = self.g
         elif self.linear_b:
             x = self.transform.transform(x)
-            g = x.dot(self.g) + self.b
+            g = x.dot(self.g)
+            if self.clip_b:
+                g = array_functions.clip(g,self.g_min,self.g_max)
+            g += self.b
         else:
             g = super(CombinePredictionsDelta, self).predict_g(x)
         return g

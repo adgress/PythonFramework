@@ -50,15 +50,14 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
                 W = array_functions.make_graph_radius(data.x[is_labeled,:], self.radius, self.configs.metric)
             else:
                 W = array_functions.make_graph_adjacent(data.x[is_labeled,:], self.configs.metric)
-
+            array_functions.try_toarray(W)
             if W.sum() > 0:
                 W = W / W.sum()
-            if self.use_fused_lasso:
-                reg = cvx_functions.create_fused_lasso(W, g)
-            else:
-                #assert False, 'Make Laplacian!'
-                reg =0
-                if W.any():
+            reg = 0
+            if W.any():
+                if self.use_fused_lasso:
+                    reg = cvx_functions.create_fused_lasso(W, g)
+                else:
                     L = array_functions.make_laplacian_with_W(W)
                     reg = cvx.quad_form(g,L)
             err = self.C3*y_t + (1 - self.C3)*(y_s+g) - y

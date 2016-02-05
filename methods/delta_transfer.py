@@ -50,7 +50,7 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
                 W = array_functions.make_graph_radius(data.x[is_labeled,:], self.radius, self.configs.metric)
             else:
                 W = array_functions.make_graph_adjacent(data.x[is_labeled,:], self.configs.metric)
-            array_functions.try_toarray(W)
+            W = array_functions.try_toarray(W)
             if W.sum() > 0:
                 W = W / W.sum()
             reg = 0

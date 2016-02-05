@@ -1,4 +1,5 @@
 import scipy
+from sklearn.preprocessing import StandardScaler
 from methods import method
 from configs import base_configs
 from utility import array_functions
@@ -21,6 +22,7 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
         self.use_l2 = True
         self.constant_b = configs.constant_b
         self.linear_b = configs.linear_b
+        self.transform = StandardScaler()
 
     def train(self, data):
         y_s = np.squeeze(data.y_s[:,0])
@@ -36,7 +38,8 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
         if self.linear_b:
             g = cvx.Variable(data.p)
             b = cvx.Variable(1)
-            err = self.C3*y_t + (1 - self.C3)*(y_s + data.x[is_labeled,:]*g + b) - y
+            x = self.transform.fit_transform(data.x[is_labeled,:])
+            err = self.C3*y_t + (1 - self.C3)*(y_s + x*g + b) - y
             reg = cvx.square(cvx.norm2(g))
         else:
             g = cvx.Variable(n_labeled)
@@ -85,6 +88,7 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
             print 'CVX problem: setting g = ' + str(k)
             g_value = k*np.ones(n_labeled)
             if self.linear_b:
+                g_value = k*np.ones(data.p)
                 b_value = 0
             print '\tC=' + str(self.C)
             print '\tC2=' + str(self.C2)
@@ -108,7 +112,8 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
         if self.constant_b:
             g = self.g
         elif self.linear_b:
-            g = data.x.dot(self.g) + self.b
+            x = self.transform.transform(data.x)
+            g = x.dot(self.g) + self.b
         else:
             g = self.g_nw.predict(data).fu
         fu = self.C3*y_target + (1-self.C3)*(y_source + g)
@@ -120,6 +125,7 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
         if self.constant_b:
             g = self.g
         elif self.linear_b:
+            x = self.transform.transform(x)
             g = x.dot(self.g) + self.b
         else:
             g = super(CombinePredictionsDelta, self).predict_g(x)

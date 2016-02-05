@@ -50,7 +50,7 @@ data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_SYNTHETIC_CROSS
 
 run_batch_exps = True
-use_1d_data = True
+use_1d_data = False
 use_constraints = False
 
 use_fused_lasso = True
@@ -430,17 +430,24 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         }
         self.files = {}
         self.files['TargetTransfer+NW.pkl'] = 'Target Only'
+
+        #self.files['LocalTransferDelta_C3=0_radius_l2_use-val.pkl'] = 'Our Method, ball graph, alpha=0, used validation'
+        #self.files['LocalTransferDelta_radius_l2_use-val.pkl'] = 'Our method, ball graph, l2 loss, used validation'
+
         #self.files['LocalTransferDelta_radius.pkl'] = 'Our Method, ball graph'
         #self.files['LocalTransferDelta_radius_l2.pkl'] = 'Our Method, ball graph, l2 loss'
         #self.files['LocalTransferDelta_l2.pkl'] = 'Our Method, l2 loss'
         #self.files['LocalTransferDelta_C3=0_radius.pkl'] = 'Our Method, ball graph, alpha=0'
         #self.files['LocalTransferDeltaSMS.pkl'] = 'SMS no scale'
         #self.files['LocalTransferDeltaSMS_scale.pkl'] = 'SMS with scale'
-        self.files['LocalTransferDelta_radius_l2_constant-b.pkl'] = 'Our Method, constant b'
-        self.files['LocalTransferDelta_C3=0_radius_l2_linear-b.pkl'] = 'Our Method, linear b, alpha=0'
-        self.files['LocalTransferDelta_C3=0_radius_l2_constant-b.pkl'] = 'Our Method, constant b, alpha=0'
+        #self.files['LocalTransferDelta_radius_l2_constant-b.pkl'] = 'Our Method, constant b'
+
+        #self.files['LocalTransferDelta_C3=0_radius_l2_constant-b.pkl'] = 'Our Method, constant b, alpha=0'
         #self.files['LocalTransferDelta_radius_cons_l2.pkl'] = 'Our Method, ball graph, l2 loss, constrained'
-        self.files['LocalTransferDelta_radius_l2_use-val.pkl'] = 'Our method, ball graph, l2 loss, used validation'
+
+        self.files['LocalTransferDelta_C3=0_radius_l2_linear-b_use-val.pkl'] = 'Our Method, linear b, alpha=0, used validation'
+        self.files['LocalTransferDelta_C3=0_radius_l2_linear-b.pkl'] = 'Our Method, linear b, alpha=0'
+
         #self.files['LocalTransferDelta_C3=0_radius_l2_lap-reg.pkl'] = 'Ours, ball, l2 loss, lap-reg'
         #self.files['LocalTransferDelta_C3=0_radius_l2_use-val_lap-reg.pkl'] = 'Ours, ball, alpha=0, lap-reg, use validation'
         self.data_set_to_use = data_set_to_use

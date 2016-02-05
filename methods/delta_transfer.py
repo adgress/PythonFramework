@@ -122,7 +122,7 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
             g = x.dot(self.g)
             if self.clip_b:
                 g = array_functions.clip(g,self.g_min,self.g_max)
-            g += self.b
+            g = g + self.b
         else:
             g = self.g_nw.predict(data).fu
         fu = self.C3*y_target + (1-self.C3)*(y_source + g)
@@ -138,7 +138,7 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
             g = x.dot(self.g)
             if self.clip_b:
                 g = array_functions.clip(g,self.g_min,self.g_max)
-            g += self.b
+            g = g + self.b
         else:
             g = super(CombinePredictionsDelta, self).predict_g(x)
         return g

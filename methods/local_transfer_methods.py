@@ -507,7 +507,7 @@ class LocalTransferDelta(LocalTransfer):
     @property
     def prefix(self):
         s = 'LocalTransferDelta'
-        is_nonparametric = getattr(self,'linear_b',False) or getattr(self,'constant_b',False)
+        is_nonparametric = not (getattr(self,'linear_b',False) or getattr(self,'constant_b',False))
         if getattr(self, 'no_C3', False):
             s += '_C3=0'
         if getattr(self, 'use_radius', False):

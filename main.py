@@ -101,7 +101,8 @@ def run_visualization():
 if __name__ == "__main__":
     print 'Starting experiments...'
     timer.tic()
-    run_main()
+    if configs_lib.run_experiments:
+        run_main()
     timer.toc()
     if helper_functions.is_laptop():
         run_visualization()

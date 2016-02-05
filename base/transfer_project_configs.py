@@ -50,12 +50,14 @@ data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
 #data_set_to_use = bc.DATA_SYNTHETIC_CROSS
 
+run_experiments = True
+
 run_batch_exps = True
-use_1d_data = False
+use_1d_data = True
 use_constraints = False
 
-use_fused_lasso = True
-no_C3 = False
+use_fused_lasso = False
+no_C3 = True
 use_radius = True
 include_scale = True
 constant_b = False
@@ -453,13 +455,17 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #self.files['LocalTransferDelta_C3=0_radius_l2_linear-b_clip-b.pkl'] = 'Our Method, linear b, alpha=0, clipped'
         #self.files.append(('LocalTransferDelta_radius_l2_linear-b_clip-b.pkl','Our Method, linear b, clipped'))
 
-        #self.files['LocalTransferDelta_C3=0_radius_l2_lap-reg.pkl'] = 'Ours, ball, l2 loss, lap-reg'
-        #self.files['LocalTransferDelta_C3=0_radius_l2_use-val_lap-reg.pkl'] = 'Ours, ball, alpha=0, lap-reg, use validation'
+        #self.files.append(('LocalTransferDelta_C3=0_radius_l2_lap-reg.pkl', 'Ours, ball, l2 loss, lap-reg'))
+        self.files.append(('LocalTransferDelta_C3=0_radius_l2_lap-reg.pkl', 'Ours, ball, alpha=0, lap-reg'))
+        self.files.append(('LocalTransferDelta_C3=0_radius_l2_use-val_lap-reg.pkl', 'Ours, ball, alpha=0, lap-reg, use validation'))
 
+
+        '''
         self.files.append(('LocalTransferDelta_C3=0_radius.pkl', 'Our Method, ball graph, alpha=0'))
         self.files.append(('LocalTransferDelta_C3=0_radius_l2_use-val.pkl', 'Our Method, ball graph, alpha=0, used validation'))
         self.files.append(('LocalTransferDelta_radius_l2.pkl','Our Method, ball graph, l2 loss'))
         self.files.append(('LocalTransferDelta_radius_l2_use-val.pkl', 'Our method, ball graph, l2 loss, used validation'))
+        '''
 
         self.data_set_to_use = pc.data_set
         self.title = bc.data_name_dict.get(self.data_set_to_use, 'Unknown Data Set')

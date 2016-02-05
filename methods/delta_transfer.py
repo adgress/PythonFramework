@@ -1,5 +1,6 @@
 import scipy
 from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
 from methods import method
 from configs import base_configs
 from utility import array_functions
@@ -22,7 +23,8 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
         self.use_l2 = True
         self.constant_b = configs.constant_b
         self.linear_b = configs.linear_b
-        self.transform = StandardScaler()
+        #self.transform = StandardScaler()
+        self.transform = MinMaxScaler()
 
     def train(self, data):
         y_s = np.squeeze(data.y_s[:,0])

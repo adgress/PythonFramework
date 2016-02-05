@@ -195,9 +195,9 @@ class VisualizationConfigs(Configs):
     @property
     def results_files(self):
         dir = self.results_directory
-        files = {}
-        for key, value in self.files.iteritems():
-            files[dir + '/' + key] = value
+        files = []
+        for key, value in self.files:
+            files.append((dir + '/' + key, value))
         return files
 
 

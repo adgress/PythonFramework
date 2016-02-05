@@ -55,12 +55,12 @@ use_1d_data = False
 use_constraints = False
 
 use_fused_lasso = True
-no_C3 = True
+no_C3 = False
 use_radius = True
 include_scale = True
 constant_b = False
-linear_b = True
-use_validation = False
+linear_b = False
+use_validation = True
 clip_b = True
 
 synthetic_data_sets = [
@@ -406,9 +406,9 @@ class MethodConfigs(bc.MethodConfigs):
         self.source_labels = pc.source_labels
 
 class VisualizationConfigs(bc.VisualizationConfigs):
-    def __init__(self):
+    def __init__(self, data_set=None):
         super(VisualizationConfigs, self).__init__()
-        pc = create_project_configs()
+        pc = ProjectConfigs(data_set)
         self.copy_fields(pc,pc_fields_to_copy)
         '''
         self.files = [
@@ -431,30 +431,37 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             'LocalTransferDelta_C3=0_radius.pkl': 'Our Method, ball graph, alpha=0',
             'LocalTransferDelta_radius.pkl': 'Our Method, ball graph'
         }
-        self.files = {}
-        self.files['TargetTransfer+NW.pkl'] = 'Target Only'
+        self.files = []
+        self.files.append(('TargetTransfer+NW.pkl', 'Target Only'))
 
-        #self.files['LocalTransferDelta_C3=0_radius_l2_use-val.pkl'] = 'Our Method, ball graph, alpha=0, used validation'
-        #self.files['LocalTransferDelta_radius_l2_use-val.pkl'] = 'Our method, ball graph, l2 loss, used validation'
 
-        #self.files['LocalTransferDelta_radius.pkl'] = 'Our Method, ball graph'
-        #self.files['LocalTransferDelta_radius_l2.pkl'] = 'Our Method, ball graph, l2 loss'
+
         #self.files['LocalTransferDelta_l2.pkl'] = 'Our Method, l2 loss'
-        #self.files['LocalTransferDelta_C3=0_radius.pkl'] = 'Our Method, ball graph, alpha=0'
+
         #self.files['LocalTransferDeltaSMS.pkl'] = 'SMS no scale'
         #self.files['LocalTransferDeltaSMS_scale.pkl'] = 'SMS with scale'
 
-        self.files['LocalTransferDelta_radius_l2_constant-b.pkl'] = 'Our Method, constant b'
-        self.files['LocalTransferDelta_C3=0_radius_l2_constant-b.pkl'] = 'Our Method, constant b, alpha=0'
 
         #self.files['LocalTransferDelta_radius_cons_l2.pkl'] = 'Our Method, ball graph, l2 loss, constrained'
 
-        self.files['LocalTransferDelta_C3=0_radius_l2_linear-b_use-val.pkl'] = 'Our Method, linear b, alpha=0, used validation'
-        self.files['LocalTransferDelta_C3=0_radius_l2_linear-b.pkl'] = 'Our Method, linear b, alpha=0'
+        #self.files['LocalTransferDelta_C3=0_radius_l2_linear-b_use-val.pkl'] = 'Our Method, linear b, alpha=0, used validation'
+        #self.files['LocalTransferDelta_C3=0_radius_l2_linear-b.pkl'] = 'Our Method, linear b, alpha=0'
+
+        #self.files.append(('LocalTransferDelta_radius_l2_constant-b.pkl','Our Method, constant b'))
+        #self.files['LocalTransferDelta_C3=0_radius_l2_constant-b.pkl'] = 'Our Method, constant b, alpha=0'
+
+        #self.files['LocalTransferDelta_C3=0_radius_l2_linear-b_clip-b.pkl'] = 'Our Method, linear b, alpha=0, clipped'
+        #self.files.append(('LocalTransferDelta_radius_l2_linear-b_clip-b.pkl','Our Method, linear b, clipped'))
 
         #self.files['LocalTransferDelta_C3=0_radius_l2_lap-reg.pkl'] = 'Ours, ball, l2 loss, lap-reg'
         #self.files['LocalTransferDelta_C3=0_radius_l2_use-val_lap-reg.pkl'] = 'Ours, ball, alpha=0, lap-reg, use validation'
-        self.data_set_to_use = data_set_to_use
+
+        self.files.append(('LocalTransferDelta_C3=0_radius.pkl', 'Our Method, ball graph, alpha=0'))
+        self.files.append(('LocalTransferDelta_C3=0_radius_l2_use-val.pkl', 'Our Method, ball graph, alpha=0, used validation'))
+        self.files.append(('LocalTransferDelta_radius_l2.pkl','Our Method, ball graph, l2 loss'))
+        self.files.append(('LocalTransferDelta_radius_l2_use-val.pkl', 'Our method, ball graph, l2 loss, used validation'))
+
+        self.data_set_to_use = pc.data_set
         self.title = bc.data_name_dict.get(self.data_set_to_use, 'Unknown Data Set')
 
         if self.use_1d_data:

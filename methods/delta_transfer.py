@@ -51,6 +51,7 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
             else:
                 W = array_functions.make_graph_adjacent(data.x[is_labeled,:], self.configs.metric)
             W = array_functions.try_toarray(W)
+            W = .5*(W + W.T)
             if W.sum() > 0:
                 W = W / W.sum()
             reg = 0
@@ -59,8 +60,8 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
                     reg = cvx_functions.create_fused_lasso(W, g)
                 else:
                     L = array_functions.make_laplacian_with_W(W)
-                    #reg = cvx.quad_form(g,L)
-                    reg = g.T * L * g
+                    reg = cvx.quad_form(g,L)
+                    #reg = g.T * L * g
             err = self.C3*y_t + (1 - self.C3)*(y_s+g) - y
         #err = y_s + g - y
         err_abs = cvx.abs(err)

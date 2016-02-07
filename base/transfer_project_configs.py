@@ -39,10 +39,11 @@ data_set_to_use = None
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
 #data_set_to_use = bc.DATA_NG
 
-data_set_to_use = bc.DATA_BOSTON_HOUSING
+#data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_WINE
 #data_set_to_use = bc.DATA_BIKE_SHARING
+data_set_to_use = bc.DATA_SYNTHETIC_CURVE
 
 
 #data_set_to_use = bc.DATA_SYNTHETIC_SLANT
@@ -56,16 +57,17 @@ run_batch_exps = True
 use_1d_data = True
 use_constraints = False
 
-use_fused_lasso = False
-no_C3 = True
+use_fused_lasso = True
+no_C3 = False
 use_radius = True
 include_scale = True
 constant_b = False
-linear_b = False
-use_validation = True
+linear_b = True
+use_validation = False
 clip_b = True
 
 synthetic_data_sets = [
+    bc.DATA_SYNTHETIC_CURVE,
     bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER,
     bc.DATA_SYNTHETIC_DELTA_LINEAR,
     bc.DATA_SYNTHETIC_CROSS,
@@ -170,6 +172,9 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.num_labels = np.asarray([10,20,30])
         elif data_set == bc.DATA_SYNTHETIC_SLANT:
             self.set_synthetic_regression('synthetic_slant')
+            self.num_labels = np.asarray([10,20,30])
+        elif data_set_to_use == bc.DATA_SYNTHETIC_CURVE:
+            self.set_synthetic_regression('synthetic_curve')
             self.num_labels = np.asarray([10,20,30])
         else:
             assert False
@@ -390,12 +395,12 @@ class MainConfigs(bc.MainConfigs):
         dt_local_transfer = methods.local_transfer_methods.LocalTransferDelta(method_configs)
         dt_sms = methods.local_transfer_methods.LocalTransferDeltaSMS(method_configs)
 
-        #self.learner = target_nw
+        self.learner = target_nw
         #self.learner = hyp_transfer
         #self.learner = local_transfer
         #self.learner = iwl_transfer
         #self.learner = sms_transfer
-        self.learner = dt_local_transfer
+        #self.learner = dt_local_transfer
         #self.learner = dt_sms
         self.learner.configs.use_validation = use_validation
 
@@ -436,36 +441,26 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files = []
         self.files.append(('TargetTransfer+NW.pkl', 'Target Only'))
 
-
-
-        #self.files['LocalTransferDelta_l2.pkl'] = 'Our Method, l2 loss'
-
-        #self.files['LocalTransferDeltaSMS.pkl'] = 'SMS no scale'
-        #self.files['LocalTransferDeltaSMS_scale.pkl'] = 'SMS with scale'
-
-
         #self.files['LocalTransferDelta_radius_cons_l2.pkl'] = 'Our Method, ball graph, l2 loss, constrained'
 
-        #self.files['LocalTransferDelta_C3=0_radius_l2_linear-b_use-val.pkl'] = 'Our Method, linear b, alpha=0, used validation'
-        #self.files['LocalTransferDelta_C3=0_radius_l2_linear-b.pkl'] = 'Our Method, linear b, alpha=0'
-
         #self.files.append(('LocalTransferDelta_radius_l2_constant-b.pkl','Our Method, constant b'))
-        #self.files['LocalTransferDelta_C3=0_radius_l2_constant-b.pkl'] = 'Our Method, constant b, alpha=0'
+        #self.files.append(('LocalTransferDelta_C3=0_radius_l2_constant-b.pkl','Our Method, constant b, alpha=0'))
 
         #self.files['LocalTransferDelta_C3=0_radius_l2_linear-b_clip-b.pkl'] = 'Our Method, linear b, alpha=0, clipped'
         #self.files.append(('LocalTransferDelta_radius_l2_linear-b_clip-b.pkl','Our Method, linear b, clipped'))
+        self.files.append(('LocalTransferDelta_radius_l2_linear-b_clip-b_use-val.pkl','Our Method, linear b, clipped, used validation'))
 
-        #self.files.append(('LocalTransferDelta_C3=0_radius_l2_lap-reg.pkl', 'Ours, ball, l2 loss, lap-reg'))
-        self.files.append(('LocalTransferDelta_C3=0_radius_l2_lap-reg.pkl', 'Ours, ball, alpha=0, lap-reg'))
-        self.files.append(('LocalTransferDelta_C3=0_radius_l2_use-val_lap-reg.pkl', 'Ours, ball, alpha=0, lap-reg, use validation'))
+        #self.files.append(('LocalTransferDelta_radius_l2_lap-reg.pkl', 'Ours, ball, lap-reg'))
+        #self.files.append(('LocalTransferDelta_C3=0_radius_l2_lap-reg.pkl', 'Ours, ball, alpha=0, lap-reg'))
+        #self.files.append(('LocalTransferDelta_C3=0_radius_l2_use-val_lap-reg.pkl', 'Ours, ball, alpha=0, lap-reg, use validation'))
 
-
-        '''
-        self.files.append(('LocalTransferDelta_C3=0_radius.pkl', 'Our Method, ball graph, alpha=0'))
-        self.files.append(('LocalTransferDelta_C3=0_radius_l2_use-val.pkl', 'Our Method, ball graph, alpha=0, used validation'))
-        self.files.append(('LocalTransferDelta_radius_l2.pkl','Our Method, ball graph, l2 loss'))
+        #self.files.append(('LocalTransferDelta_C3=0_radius_l2.pkl', 'Our Method, ball graph, alpha=0'))
+        #self.files.append(('LocalTransferDelta_C3=0_radius_l2_use-val.pkl', 'Our Method, ball graph, alpha=0, used validation'))
+        #self.files.append(('LocalTransferDelta_radius_l2.pkl','Our Method, ball graph, l2 loss'))
         self.files.append(('LocalTransferDelta_radius_l2_use-val.pkl', 'Our method, ball graph, l2 loss, used validation'))
-        '''
+
+        #self.files.append(('LocalTransferDelta_radius_l2_lap-reg.pkl','Our Method, ball graph, LapReg'))
+        #self.files.append(('LocalTransferDelta_radius_l2_use-val_lap-reg.pkl', 'Our method, ball graph, LapReg, used validation'))
 
         self.data_set_to_use = pc.data_set
         self.title = bc.data_name_dict.get(self.data_set_to_use, 'Unknown Data Set')

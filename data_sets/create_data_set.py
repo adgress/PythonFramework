@@ -484,6 +484,6 @@ if __name__ == "__main__":
     #create_synthetic_step_linear_transfer()
     #create_synthetic_delta_linear_transfer()
     #create_synthetic_cross_transfer()
-    create_synthetic_slant_transfer()
+    create_synthetic_curve_transfer()
     from data_sets import create_data_split
     create_data_split.run_main()

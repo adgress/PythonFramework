@@ -54,6 +54,7 @@ def train_on_data(x,y,domain_ids,learner):
 
 def viz_features(x,y,domain_ids,feature_names=None,alpha=.1,learner=None):
     #y = array_functions.normalize(y)
+    x = array_functions.vec_to_2d(x)
     for i in range(x.shape[1]):
         xi = x[:,i]
         xi_train = xi

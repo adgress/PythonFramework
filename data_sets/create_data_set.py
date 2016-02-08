@@ -41,6 +41,10 @@ concrete_file = 'concrete%s/raw_data.pkl'
 bike_file = 'bike_sharing%s/raw_data.pkl'
 wine_file = 'wine%s/raw_data.pkl'
 
+def pair_file(i,j):
+    s = 'pair_data_' + str(i) + '_' + str(j) + '/raw_data.pkl'
+    return s
+
 def make_learner():
     from methods.method import NadarayaWatsonMethod
     from loss_functions.loss_function import MeanSquaredError
@@ -49,7 +53,16 @@ def make_learner():
     learner.configs.loss_function = MeanSquaredError()
     return learner
 
-
+def create_and_save_data(x,y,domain_ids,file):
+    data = data_class.Data()
+    data.x = array_functions.vec_to_2d(x)
+    data.y = y
+    data.set_train()
+    data.set_target()
+    data.set_true_y()
+    data.is_regression = True
+    data.data_set_ids = domain_ids
+    helper_functions.save_object(file,data)
 
 def load_csv(file, has_field_names=True, dtype='float', delim=',',converters=None):
     nrows = 1
@@ -130,6 +143,27 @@ def create_forest_fires():
     viz_features(x,y,domain_ids,field_names,learner=learner)
     pass
 
+def load_pair(num):
+    file_base = 'pair_data/pair%s.txt'
+    file = file_base % str(num).zfill(4)
+    data = pd.read_csv(file,skiprows=0,delim_whitespace=True,dtype='float')
+    return np.asarray(data)[:,0:2]
+
+def create_pair_82_83():
+    create_pair(82,83,y_col=1)
+
+def create_pair(i,j,y_col):
+    file = pair_file(i,j)
+    data_i = load_pair(i)
+    data_j = load_pair(j)
+    data_all = np.vstack((data_i,data_j))
+    x = data_all[:,0]
+    y = data_all[:,1]
+    domain_ids = np.zeros(data_i.shape[0] + data_i.shape[0])
+    domain_ids[data_i.shape[0]:] = 1
+    viz_features(x,y,domain_ids)
+    create_and_save_data(x,y,domain_ids,file)
+
 def create_mpg():
     file = 'mpg/auto-mpg.data.txt'
     #field_names, mpg_data = load_csv(file,has_field_names=False,dtype='string',delim=' ')
@@ -156,6 +190,8 @@ def create_energy():
     learner = None
     viz_features(x,y,domain_ids,field_names, learner=learner)
     pass
+
+
 
 #0 - 1 to 3
 #3 - 1 to 3
@@ -484,6 +520,7 @@ if __name__ == "__main__":
     #create_synthetic_step_linear_transfer()
     #create_synthetic_delta_linear_transfer()
     #create_synthetic_cross_transfer()
-    create_synthetic_curve_transfer()
+    #create_synthetic_curve_transfer()
+    create_pair_82_83()
     from data_sets import create_data_split
     create_data_split.run_main()

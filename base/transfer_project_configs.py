@@ -43,19 +43,20 @@ data_set_to_use = None
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_WINE
 #data_set_to_use = bc.DATA_BIKE_SHARING
+data_set_to_use = bc.DATA_PAIR_82_83
 
-data_set_to_use = bc.DATA_SYNTHETIC_CURVE
+#data_set_to_use = bc.DATA_SYNTHETIC_CURVE
 #data_set_to_use = bc.DATA_SYNTHETIC_SLANT
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
 #data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
 #data_set_to_use = bc.DATA_SYNTHETIC_CROSS
 
 run_experiments = True
-show_legend_on_all = False
+show_legend_on_all = True
 
-run_batch_exps = True
+run_batch_exps = False
 use_1d_data = True
-use_constraints = True
+use_constraints = False
 
 use_fused_lasso = True
 no_C3 = False
@@ -176,6 +177,9 @@ class ProjectConfigs(bc.ProjectConfigs):
         elif data_set == bc.DATA_SYNTHETIC_CURVE:
             self.set_synthetic_regression('synthetic_curve')
             self.num_labels = np.asarray([10,20,30])
+        elif data_set == bc.DATA_PAIR_82_83:
+            self.set_synthetic_regression('pair_data_82_83')
+            self.num_labels = np.asarray([10,20,30])
         else:
             assert False
         assert self.source_labels.size > 0
@@ -270,6 +274,16 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.source_labels = array_functions.vec_to_2d(self.source_labels).T
         self.cv_loss_function = loss_function.LogLoss()
         #self.cv_loss_function = loss_function.ZeroOneError()
+
+    def set_regression(self, name):
+        self.loss_function = loss_function.MeanSquaredError()
+        self.cv_loss_function = loss_function.MeanSquaredError()
+        self.target_labels = np.zeros(1)
+        self.source_labels = np.ones(1)
+        self.data_dir = 'data_sets/' + name
+        self.data_name = name
+        self.results_dir = name
+        self.data_set_file_name = 'split_data.pkl'
 
     def set_synthetic_regression(self, name):
         self.loss_function = loss_function.MeanSquaredError()
@@ -489,7 +503,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
 
         PLOT_PARAMETRIC = 1
         PLOT_VALIDATION = 2
-        plot_idx = PLOT_VALIDATION
+        PLOT_CONSTRAINED = 3
+        plot_idx = PLOT_CONSTRAINED
 
         if plot_idx == PLOT_PARAMETRIC:
             self.files = []
@@ -500,8 +515,13 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         elif plot_idx == PLOT_VALIDATION:
             self.files = []
             self.files.append(('TargetTransfer+NW.pkl', 'Target Only'))
-            self.files.append(('LocalTransferDelta_C3=0_radius_l2_use-val.pkl', 'Nonparametric b, validation'))
+            self.files.append(('LocalTransferDelta_radius_l2_use-val.pkl', 'Nonparametric b, validation'))
             self.files.append(('LocalTransferDelta_radius_l2_linear-b_clip-b_use-val.pkl','Linear b, validation'))
+        elif plot_idx == PLOT_CONSTRAINED:
+            self.files = []
+            self.files.append(('TargetTransfer+NW.pkl', 'Target Only'))
+            self.files.append(('LocalTransferDelta_radius_l2.pkl','Nonparametric b'))
+            self.files.append(('LocalTransferDelta_radius_cons_l2.pkl', 'Nonparametric b, constrained'))
         if use_1d_data:
             self.figsize = (12,10)
             self.borders = (.05,.95,.95,.05)

@@ -134,6 +134,7 @@ def run_main():
     #split_data(create_data_set.synthetic_cross_file, regression_configs())
 
     #split_data(create_data_set.synthetic_slant_file, regression_configs())
-    split_data(create_data_set.synthetic_curve_file, regression_configs())
+    #split_data(create_data_set.synthetic_curve_file, regression_configs())
+    split_data(create_data_set.pair_file(82,83), regression_configs())
 if __name__ == '__main__':
     run_main()

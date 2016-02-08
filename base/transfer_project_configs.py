@@ -43,26 +43,26 @@ data_set_to_use = None
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_WINE
 #data_set_to_use = bc.DATA_BIKE_SHARING
+
 data_set_to_use = bc.DATA_SYNTHETIC_CURVE
-
-
 #data_set_to_use = bc.DATA_SYNTHETIC_SLANT
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
 #data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
 #data_set_to_use = bc.DATA_SYNTHETIC_CROSS
 
 run_experiments = True
+show_legend_on_all = False
 
 run_batch_exps = True
 use_1d_data = True
-use_constraints = False
+use_constraints = True
 
 use_fused_lasso = True
 no_C3 = False
 use_radius = True
 include_scale = True
 constant_b = False
-linear_b = True
+linear_b = False
 use_validation = False
 clip_b = True
 
@@ -173,7 +173,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         elif data_set == bc.DATA_SYNTHETIC_SLANT:
             self.set_synthetic_regression('synthetic_slant')
             self.num_labels = np.asarray([10,20,30])
-        elif data_set_to_use == bc.DATA_SYNTHETIC_CURVE:
+        elif data_set == bc.DATA_SYNTHETIC_CURVE:
             self.set_synthetic_regression('synthetic_curve')
             self.num_labels = np.asarray([10,20,30])
         else:
@@ -338,6 +338,9 @@ def nonpositive_constraint(g):
 def nonnegative_constraint(g):
     return g >= 0
 
+def bound_4(g):
+    return g <= 4
+
 class MainConfigs(bc.MainConfigs):
     def __init__(self, pc):
         super(MainConfigs, self).__init__()
@@ -373,6 +376,22 @@ class MainConfigs(bc.MainConfigs):
                 method_configs.constraints.append(nonpositive_constraint)
             elif self.data_set == bc.DATA_BIKE_SHARING:
                 method_configs.constraints.append(nonnegative_constraint)
+            elif self.data_set == bc.DATA_BOSTON_HOUSING:
+                method_configs.constraints.append(nonnegative_constraint)
+            elif self.data_set == bc.DATA_WINE:
+                method_configs.constraints.append(nonnegative_constraint)
+            elif self.data_set == bc.DATA_SYNTHETIC_CURVE:
+                method_configs.constraints.append(nonpositive_constraint)
+            elif self.data_set == bc.DATA_SYNTHETIC_SLANT:
+                method_configs.constraints.append(nonpositive_constraint)
+            elif self.data_set == bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER:
+                method_configs.constraints.append(nonpositive_constraint)
+            elif self.data_set == bc.DATA_SYNTHETIC_DELTA_LINEAR:
+                method_configs.constraints.append(nonpositive_constraint)
+            elif self.data_set == bc.DATA_SYNTHETIC_CROSS:
+                method_configs.constraints.append(bound_4)
+            else:
+                assert False
 
 
         fuse_log_reg = transfer_methods.FuseTransfer(method_configs)
@@ -395,12 +414,12 @@ class MainConfigs(bc.MainConfigs):
         dt_local_transfer = methods.local_transfer_methods.LocalTransferDelta(method_configs)
         dt_sms = methods.local_transfer_methods.LocalTransferDeltaSMS(method_configs)
 
-        self.learner = target_nw
+        #self.learner = target_nw
         #self.learner = hyp_transfer
         #self.learner = local_transfer
         #self.learner = iwl_transfer
         #self.learner = sms_transfer
-        #self.learner = dt_local_transfer
+        self.learner = dt_local_transfer
         #self.learner = dt_sms
         self.learner.configs.use_validation = use_validation
 
@@ -416,6 +435,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
     def __init__(self, data_set=None):
         super(VisualizationConfigs, self).__init__()
         pc = ProjectConfigs(data_set)
+        self.figsize = None
         self.copy_fields(pc,pc_fields_to_copy)
         '''
         self.files = [
@@ -443,12 +463,12 @@ class VisualizationConfigs(bc.VisualizationConfigs):
 
         #self.files['LocalTransferDelta_radius_cons_l2.pkl'] = 'Our Method, ball graph, l2 loss, constrained'
 
-        #self.files.append(('LocalTransferDelta_radius_l2_constant-b.pkl','Our Method, constant b'))
+        self.files.append(('LocalTransferDelta_radius_l2_constant-b.pkl','Our Method, constant b'))
         #self.files.append(('LocalTransferDelta_C3=0_radius_l2_constant-b.pkl','Our Method, constant b, alpha=0'))
 
         #self.files['LocalTransferDelta_C3=0_radius_l2_linear-b_clip-b.pkl'] = 'Our Method, linear b, alpha=0, clipped'
-        #self.files.append(('LocalTransferDelta_radius_l2_linear-b_clip-b.pkl','Our Method, linear b, clipped'))
-        self.files.append(('LocalTransferDelta_radius_l2_linear-b_clip-b_use-val.pkl','Our Method, linear b, clipped, used validation'))
+        self.files.append(('LocalTransferDelta_radius_l2_linear-b_clip-b.pkl','Our Method, linear b, clipped'))
+        #self.files.append(('LocalTransferDelta_radius_l2_linear-b_clip-b_use-val.pkl','Our Method, linear b, clipped, used validation'))
 
         #self.files.append(('LocalTransferDelta_radius_l2_lap-reg.pkl', 'Ours, ball, lap-reg'))
         #self.files.append(('LocalTransferDelta_C3=0_radius_l2_lap-reg.pkl', 'Ours, ball, alpha=0, lap-reg'))
@@ -456,16 +476,43 @@ class VisualizationConfigs(bc.VisualizationConfigs):
 
         #self.files.append(('LocalTransferDelta_C3=0_radius_l2.pkl', 'Our Method, ball graph, alpha=0'))
         #self.files.append(('LocalTransferDelta_C3=0_radius_l2_use-val.pkl', 'Our Method, ball graph, alpha=0, used validation'))
-        #self.files.append(('LocalTransferDelta_radius_l2.pkl','Our Method, ball graph, l2 loss'))
-        self.files.append(('LocalTransferDelta_radius_l2_use-val.pkl', 'Our method, ball graph, l2 loss, used validation'))
+        self.files.append(('LocalTransferDelta_radius_l2.pkl','Our Method, ball graph, l2 loss'))
+        #self.files.append(('LocalTransferDelta_radius_l2_use-val.pkl', 'Our method, ball graph, l2 loss, used validation'))
 
         #self.files.append(('LocalTransferDelta_radius_l2_lap-reg.pkl','Our Method, ball graph, LapReg'))
         #self.files.append(('LocalTransferDelta_radius_l2_use-val_lap-reg.pkl', 'Our method, ball graph, LapReg, used validation'))
 
+        #self.files.append(('LocalTransferDeltaSMS_scale.pkl', 'SMS, scale'))
+
+
+        #plot 1
+
+        PLOT_PARAMETRIC = 1
+        PLOT_VALIDATION = 2
+        plot_idx = PLOT_VALIDATION
+
+        if plot_idx == PLOT_PARAMETRIC:
+            self.files = []
+            self.files.append(('TargetTransfer+NW.pkl', 'Target Only'))
+            self.files.append(('LocalTransferDelta_radius_l2_constant-b.pkl','Constant b'))
+            self.files.append(('LocalTransferDelta_radius_l2_linear-b_clip-b.pkl','Linear b, clipped'))
+            self.files.append(('LocalTransferDelta_radius_l2.pkl','Nonparametric b'))
+        elif plot_idx == PLOT_VALIDATION:
+            self.files = []
+            self.files.append(('TargetTransfer+NW.pkl', 'Target Only'))
+            self.files.append(('LocalTransferDelta_C3=0_radius_l2_use-val.pkl', 'Nonparametric b, validation'))
+            self.files.append(('LocalTransferDelta_radius_l2_linear-b_clip-b_use-val.pkl','Linear b, validation'))
+        if use_1d_data:
+            self.figsize = (12,10)
+            self.borders = (.05,.95,.95,.05)
+        else:
+            self.figsize = (4,10)
+            self.borders = (.1,.9,.95,.05)
+
         self.data_set_to_use = pc.data_set
         self.title = bc.data_name_dict.get(self.data_set_to_use, 'Unknown Data Set')
-
-        if self.use_1d_data:
+        self.show_legend_on_all = show_legend_on_all
+        if self.use_1d_data and self.data_set_to_use < bc.DATA_SYNTHETIC_START:
             self.title += ' 1D'
         self.x_axis_string = 'Number of labeled target instances'
 

@@ -29,7 +29,7 @@ def run_main():
 
     #array_functions.plot_line(x,y_t-y_s,pc.data_set,y_axes=np.asarray([-5,5]))
     y = y_t-y_s
-    y = y - y.mean()
+    #y = y - y.mean()
     array_functions.plot_line(x,y,pc.data_set)
     array_functions.plot_histogram(data.x,20)
     x=1

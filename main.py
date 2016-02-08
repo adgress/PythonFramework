@@ -30,20 +30,17 @@ def run_main():
     #exp_exec.run_experiments()
 
 def run_visualization():
-    #pc = configs_lib.ProjectConfigs()
-    #vis_configs = configs_lib.VisualizationConfigs()
-
-    #plt.plot([1,2,3], [1,4,9], 'rs-',  label='line 2')
-    #plt.figure()
-    #plt.title(vis_configs.title)
-
+    vis_configs = configs_lib.VisualizationConfigs()
     data_sets = configs_lib.data_sets_for_exps
-
     max_rows = 3
     n = len(data_sets)
     #fig = plt.figure(len(data_sets))
-    fig = plt.figure()
-    fig.suptitle('Results')
+
+    if getattr(vis_configs, 'figsize', None):
+        fig = plt.figure(figsize=vis_configs.figsize)
+    else:
+        fig = plt.figure()
+    #fig.suptitle('Results')
     num_rows = min(n, max_rows)
     num_cols = math.ceil(float(n) / num_rows)
     for i, data_set_id in enumerate(data_sets):
@@ -54,6 +51,7 @@ def run_visualization():
         for file, legend_str in vis_configs.results_files:
             if not os.path.isfile(file):
                 print file + ' doesn''t exist - skipping'
+                assert vis_configs.show_legend_on_all, 'Just to be safe, set show_legend_on_all=True if files are missing'
                 continue
             results = helper_functions.load_object(file)
             #plt.plot([1,2,3], [1,2,3], 'go-', label='line 1', linewidth=2)
@@ -83,7 +81,12 @@ def run_visualization():
         #axis[1] *= 2
         axis[3] *= 1.5
         plt.axis(axis)
-        plt.legend()
+        if i == 0 or vis_configs.show_legend_on_all:
+            plt.legend()
+    #fig.tight_layout(rect=[.05,.05,.95,.95])
+    if getattr(vis_configs,'borders',None):
+        left,right,top,bottom = vis_configs.borders
+        fig.subplots_adjust(left=left,right=right,top=top,bottom=bottom)
     plt.show()
     x = 1
 

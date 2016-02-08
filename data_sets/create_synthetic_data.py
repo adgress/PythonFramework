@@ -155,3 +155,6 @@ def create_synthetic_regression_transfer(target_fun, source_fun, n_target=100, n
     data.set_train()
     data.is_regression = True
     return data
+
+if __name__ == '__main__':
+    create_synthetic_delta_linear_transfer()

@@ -368,10 +368,10 @@ def bound_4(g,):
 def nonpositive_constraint_linear(g,b,X):
     return X * g + b <= 0
 
-def nonnegative_constraint(g,b,X):
+def nonnegative_constraint_linear(g,b,X):
     return X * g + b >= 0
 
-def bound_4(g,b,X):
+def bound_4_linear(g,b,X):
     return X * g + b <= 4
 
 class MainConfigs(bc.MainConfigs):

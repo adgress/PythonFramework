@@ -8,8 +8,10 @@ from utility import array_functions
 def run_main():
     #grades_dir = 'C:\Users\Aubrey\Desktop\Homework #1'
     #full_csv =  'C:\Users\Aubrey\Google Drive\ECS170 2016\ps1\grades\\full.csv'
-    grades_dir = 'C:\Users\Aubrey\Desktop\Homework #2'
-    full_csv =  'C:\Users\Aubrey\Google Drive\ECS170 2016\ps2\grades\\full.csv'
+    #grades_dir = 'C:\Users\Aubrey\Desktop\Homework #2'
+    #full_csv =  'C:\Users\Aubrey\Google Drive\ECS170 2016\ps2\grades\\full.csv'
+    grades_dir = 'C:\Users\Aubrey\Desktop\Homework #3'
+    full_csv = 'C:\Users\Aubrey\Google Drive\ECS170 2016\ps3\grades\\full.csv'
     comments_file = 'comments.txt'
     data = pd.read_csv(full_csv)
     data = np.asarray(data)
@@ -43,7 +45,7 @@ def run_main():
                 problem_name = int(problem_name)
             except:
                 pass
-            f.write(str(problem_name) + ': ' + str(int(grade)) + '\n')
+            f.write(str(problem_name) + ': ' + str(int(float(grade))) + '\n')
         f.close()
         with open(student_comments_file, 'r') as f:
             print f.read().replace('\r', '')

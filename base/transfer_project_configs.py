@@ -43,27 +43,28 @@ data_set_to_use = None
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_WINE
 #data_set_to_use = bc.DATA_BIKE_SHARING
-data_set_to_use = bc.DATA_PAIR_82_83
+#data_set_to_use = bc.DATA_PAIR_82_83
 
 #data_set_to_use = bc.DATA_SYNTHETIC_CURVE
 #data_set_to_use = bc.DATA_SYNTHETIC_SLANT
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
-#data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
+data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
 #data_set_to_use = bc.DATA_SYNTHETIC_CROSS
 
 run_experiments = True
 show_legend_on_all = True
 
-run_batch_exps = False
+run_batch_exps = True
 use_1d_data = True
-use_constraints = False
+use_sms_plot_data_sets = False
 
+use_constraints = True
 use_fused_lasso = True
 no_C3 = False
 use_radius = True
 include_scale = True
 constant_b = False
-linear_b = False
+linear_b = True
 use_validation = False
 clip_b = True
 
@@ -92,7 +93,13 @@ all_1d = synthetic_data_sets + real_data_sets_1d
 
 data_sets_for_exps = [data_set_to_use]
 if run_batch_exps:
-    if use_1d_data:
+    if use_sms_plot_data_sets:
+        data_sets_for_exps = [
+            bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER,
+            bc.DATA_SYNTHETIC_DELTA_LINEAR,
+            bc.DATA_SYNTHETIC_CROSS,
+        ]
+    elif use_1d_data:
         data_sets_for_exps = all_1d
     else:
         data_sets_for_exps = real_data_sets_full
@@ -179,6 +186,9 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.num_labels = np.asarray([10,20,30])
         elif data_set == bc.DATA_PAIR_82_83:
             self.set_synthetic_regression('pair_data_82_83')
+            self.num_labels = np.asarray([10,20,30])
+        elif data_set == bc.DATA_PAIR_13_14:
+            self.set_synthetic_regression('pair_data__83')
             self.num_labels = np.asarray([10,20,30])
         else:
             assert False
@@ -346,14 +356,23 @@ class ProjectConfigs(bc.ProjectConfigs):
         #self.cv_loss_function = loss_function.ZeroOneError()
         self.cv_loss_function = loss_function.LogLoss()
 
-def nonpositive_constraint(g):
+def nonpositive_constraint(g,):
     return g <= 0
 
-def nonnegative_constraint(g):
+def nonnegative_constraint(g,):
     return g >= 0
 
-def bound_4(g):
+def bound_4(g,):
     return g <= 4
+
+def nonpositive_constraint_linear(g,b,X):
+    return X * g + b <= 0
+
+def nonnegative_constraint(g,b,X):
+    return X * g + b >= 0
+
+def bound_4(g,b,X):
+    return X * g + b <= 4
 
 class MainConfigs(bc.MainConfigs):
     def __init__(self, pc):
@@ -386,26 +405,48 @@ class MainConfigs(bc.MainConfigs):
 
         method_configs.constraints = []
         if use_constraints:
-            if self.data_set == bc.DATA_CONCRETE:
-                method_configs.constraints.append(nonpositive_constraint)
-            elif self.data_set == bc.DATA_BIKE_SHARING:
-                method_configs.constraints.append(nonnegative_constraint)
-            elif self.data_set == bc.DATA_BOSTON_HOUSING:
-                method_configs.constraints.append(nonnegative_constraint)
-            elif self.data_set == bc.DATA_WINE:
-                method_configs.constraints.append(nonnegative_constraint)
-            elif self.data_set == bc.DATA_SYNTHETIC_CURVE:
-                method_configs.constraints.append(nonpositive_constraint)
-            elif self.data_set == bc.DATA_SYNTHETIC_SLANT:
-                method_configs.constraints.append(nonpositive_constraint)
-            elif self.data_set == bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER:
-                method_configs.constraints.append(nonpositive_constraint)
-            elif self.data_set == bc.DATA_SYNTHETIC_DELTA_LINEAR:
-                method_configs.constraints.append(nonpositive_constraint)
-            elif self.data_set == bc.DATA_SYNTHETIC_CROSS:
-                method_configs.constraints.append(bound_4)
+            if linear_b:
+                if self.data_set == bc.DATA_CONCRETE:
+                    method_configs.constraints.append(nonpositive_constraint_linear)
+                elif self.data_set == bc.DATA_BIKE_SHARING:
+                    method_configs.constraints.append(nonnegative_constraint_linear)
+                elif self.data_set == bc.DATA_BOSTON_HOUSING:
+                    method_configs.constraints.append(nonnegative_constraint_linear)
+                elif self.data_set == bc.DATA_WINE:
+                    method_configs.constraints.append(nonnegative_constraint_linear)
+                elif self.data_set == bc.DATA_SYNTHETIC_CURVE:
+                    method_configs.constraints.append(nonpositive_constraint_linear)
+                elif self.data_set == bc.DATA_SYNTHETIC_SLANT:
+                    method_configs.constraints.append(nonpositive_constraint_linear)
+                elif self.data_set == bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER:
+                    method_configs.constraints.append(nonpositive_constraint_linear)
+                elif self.data_set == bc.DATA_SYNTHETIC_DELTA_LINEAR:
+                    method_configs.constraints.append(nonpositive_constraint_linear)
+                elif self.data_set == bc.DATA_SYNTHETIC_CROSS:
+                    method_configs.constraints.append(bound_4_linear)
+                else:
+                    assert False
             else:
-                assert False
+                if self.data_set == bc.DATA_CONCRETE:
+                    method_configs.constraints.append(nonpositive_constraint)
+                elif self.data_set == bc.DATA_BIKE_SHARING:
+                    method_configs.constraints.append(nonnegative_constraint)
+                elif self.data_set == bc.DATA_BOSTON_HOUSING:
+                    method_configs.constraints.append(nonnegative_constraint)
+                elif self.data_set == bc.DATA_WINE:
+                    method_configs.constraints.append(nonnegative_constraint)
+                elif self.data_set == bc.DATA_SYNTHETIC_CURVE:
+                    method_configs.constraints.append(nonpositive_constraint)
+                elif self.data_set == bc.DATA_SYNTHETIC_SLANT:
+                    method_configs.constraints.append(nonpositive_constraint)
+                elif self.data_set == bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER:
+                    method_configs.constraints.append(nonpositive_constraint)
+                elif self.data_set == bc.DATA_SYNTHETIC_DELTA_LINEAR:
+                    method_configs.constraints.append(nonpositive_constraint)
+                elif self.data_set == bc.DATA_SYNTHETIC_CROSS:
+                    method_configs.constraints.append(bound_4)
+                else:
+                    assert False
 
 
         fuse_log_reg = transfer_methods.FuseTransfer(method_configs)
@@ -499,35 +540,57 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #self.files.append(('LocalTransferDeltaSMS_scale.pkl', 'SMS, scale'))
 
 
-        #plot 1
-
         PLOT_PARAMETRIC = 1
         PLOT_VALIDATION = 2
         PLOT_CONSTRAINED = 3
-        plot_idx = PLOT_CONSTRAINED
+        PLOT_SMS = 4
+        plot_idx = PLOT_PARAMETRIC
 
         if plot_idx == PLOT_PARAMETRIC:
             self.files = []
             self.files.append(('TargetTransfer+NW.pkl', 'Target Only'))
             self.files.append(('LocalTransferDelta_radius_l2_constant-b.pkl','Constant b'))
             self.files.append(('LocalTransferDelta_radius_l2_linear-b_clip-b.pkl','Linear b, clipped'))
-            self.files.append(('LocalTransferDelta_radius_l2.pkl','Nonparametric b'))
+            #self.files.append(('LocalTransferDelta_radius_l2.pkl','Nonparametric b'))
+            self.files.append(('LocalTransferDelta_radius_l2_lap-reg.pkl','Nonparametric b'))
+
+            #self.files.append(('HypothesisTransfer.pkl','Hypothesis Transfer'))
         elif plot_idx == PLOT_VALIDATION:
             self.files = []
             self.files.append(('TargetTransfer+NW.pkl', 'Target Only'))
-            self.files.append(('LocalTransferDelta_radius_l2_use-val.pkl', 'Nonparametric b, validation'))
+            #self.files.append(('LocalTransferDelta_radius_l2_use-val.pkl', 'Nonparametric b, validation'))
+            self.files.append(('LocalTransferDelta_radius_l2_use-val_lap-reg.pkl', 'Nonparametric b, lap-reg, use validation'))
             self.files.append(('LocalTransferDelta_radius_l2_linear-b_clip-b_use-val.pkl','Linear b, validation'))
         elif plot_idx == PLOT_CONSTRAINED:
             self.files = []
             self.files.append(('TargetTransfer+NW.pkl', 'Target Only'))
-            self.files.append(('LocalTransferDelta_radius_l2.pkl','Nonparametric b'))
-            self.files.append(('LocalTransferDelta_radius_cons_l2.pkl', 'Nonparametric b, constrained'))
-        if use_1d_data:
+            #self.files.append(('LocalTransferDelta_radius_l2.pkl','Nonparametric b'))
+            #self.files.append(('LocalTransferDelta_radius_cons_l2.pkl', 'Nonparametric b, constrained'))
+
+            self.files.append(('LocalTransferDelta_radius_l2_lap-reg.pkl','Nonparametric b'))
+            self.files.append(('LocalTransferDelta_radius_cons_l2_lap-reg.pkl', 'Nonparametric b, constrained'))
+        elif plot_idx == PLOT_SMS:
+            self.files = []
+            self.files.append(('TargetTransfer+NW.pkl', 'Target Only'))
+            self.files.append((('LocalTransferDeltaSMS_scale.pkl', 'SMS scale')))
+            self.files.append((('LocalTransferDeltaSMS.pkl', 'SMS no scale')))
+            self.files.append(('LocalTransferDelta_C3=0_radius_l2_constant-b.pkl','Constant b, alpha=0'))
+
+        if use_sms_plot_data_sets:
+            self.figsize = (4,10)
+            self.borders = (.15,.9,.95,.05)
+            if data_set == bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER:
+                self.ylims = (0,10)
+            elif data_set == bc.DATA_SYNTHETIC_DELTA_LINEAR:
+                self.ylims = (0,200)
+            elif data_set == bc.DATA_SYNTHETIC_CROSS:
+                self.ylims = (0,20)
+        elif use_1d_data:
             self.figsize = (12,10)
             self.borders = (.05,.95,.95,.05)
         else:
             self.figsize = (4,10)
-            self.borders = (.1,.9,.95,.05)
+            self.borders = (.15,.9,.95,.05)
 
         self.data_set_to_use = pc.data_set
         self.title = bc.data_name_dict.get(self.data_set_to_use, 'Unknown Data Set')

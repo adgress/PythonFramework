@@ -80,6 +80,10 @@ def run_visualization():
             plt.ylabel(vis_configs.y_axis_string)
         #axis[1] *= 2
         axis[3] *= 1.5
+        ylims = getattr(vis_configs,'ylims',None)
+        if ylims is not None:
+            axis[2] = ylims[0]
+            axis[3] = ylims[1]
         plt.axis(axis)
         if i == 0 or vis_configs.show_legend_on_all:
             plt.legend()

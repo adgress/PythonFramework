@@ -316,22 +316,28 @@ def plot_MDS(x, y=None, data_set_ids=None):
     pl.show(block=True)
     pass
 
-def plot_line(x,y,title=None,y_axes=None):
-    plot_line_sub([x],[y],title,y_axes)
+def plot_line(x,y,title=None,y_axes=None,fig=None,show=True):
+    plot_line_sub([x],[y],title,y_axes,fig,show)
 
-def plot_line_sub(x_list, y_list, title=None, y_axes = None):
-    pl.close()
-    fig = pl.figure(len(x_list))
-    fig.suptitle(title)
+def plot_line_sub(x_list, y_list, title=None, y_axes = None,fig=None,show=True):
+    #pl.close()
+    passed_fig = fig is not None
+    if fig is None:
+        fig = pl.figure(len(x_list))
+    if title is not None:
+        fig.suptitle(title)
     for i, (x,y) in enumerate(zip(x_list, y_list)):
-        pl.subplot(len(x_list),1,i)
+        if not passed_fig:
+            assert len(x_list) == 1
+            pl.subplot(len(x_list),1,i)
         if y_axes is not None:
             a = pl.gca()
             a.set_ylim(y_axes)
 
         pl.plot(x,y)
-    move_fig(fig)
-    pl.show(block=True)
+    if show:
+        move_fig(fig)
+        pl.show(block=True)
 
 def plot_2d_sub(x,y,data_set_ids=None,alpha=1,title=None,sizes=None):
     if sizes is None:

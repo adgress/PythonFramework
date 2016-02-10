@@ -28,6 +28,12 @@ ng_o = np.asarray(15)
 ng_t = np.asarray(range(16,20))
 
 
+#Abalone data - looks promising
+#pair_target = 5
+#pair_source = 6
+
+pair_target = 56
+pair_source = 59
 
 max_features=2000
 pca_feats=20
@@ -157,11 +163,12 @@ def create_pair(i,j,y_col):
     data_i = load_pair(i)
     data_j = load_pair(j)
     data_all = np.vstack((data_i,data_j))
-    x = data_all[:,0]
-    y = data_all[:,1]
-    domain_ids = np.zeros(data_i.shape[0] + data_i.shape[0])
+    x = data_all[:,1-y_col]
+    y = data_all[:,y_col]
+    domain_ids = np.zeros(data_i.shape[0] + data_j.shape[0])
     domain_ids[data_i.shape[0]:] = 1
-    viz_features(x,y,domain_ids)
+    #viz_features(x,y,domain_ids,learner=make_learner())
+    viz_features(x,y,domain_ids,learner=None)
     create_and_save_data(x,y,domain_ids,file)
 
 def create_mpg():
@@ -521,6 +528,7 @@ if __name__ == "__main__":
     #create_synthetic_delta_linear_transfer()
     #create_synthetic_cross_transfer()
     #create_synthetic_curve_transfer()
-    create_pair_82_83()
+    #create_pair_82_83()
+    create_pair(pair_target,pair_source,0)
     from data_sets import create_data_split
     create_data_split.run_main()

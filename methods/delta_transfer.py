@@ -24,8 +24,8 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
         self.constant_b = configs.constant_b
         self.linear_b = configs.linear_b
         self.clip_b = configs.clip_b
-        self.transform = StandardScaler()
-        #self.transform = MinMaxScaler()
+        #self.transform = StandardScaler()
+        self.transform = MinMaxScaler()
 
     def train(self, data):
         y_s = np.squeeze(data.y_s[:,0])
@@ -74,7 +74,10 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
         #constraints = [g >= -2, g <= 2]
         #constraints = [g >= -4, g <= 0]
         #constraints = [g >= 4, g <= 4]
-        constraints = [f(g) for f in self.configs.constraints]
+        if self.linear_b:
+            constraints = [f(g,b,x) for f in self.configs.constraints]
+        else:
+            constraints = [f(g) for f in self.configs.constraints]
         obj = cvx.Minimize(loss + self.C*reg + self.C2*cvx.norm(g))
         prob = cvx.Problem(obj,constraints)
 

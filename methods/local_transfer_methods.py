@@ -512,7 +512,7 @@ class LocalTransferDelta(LocalTransfer):
             s += '_C3=0'
         if getattr(self, 'use_radius', False):
             s += '_radius'
-        if getattr(self.configs, 'constraints', []) and is_nonparametric:
+        if getattr(self.configs, 'constraints', []):
             s += '_cons'
         if getattr(self, 'use_l2', False):
             s += '_l2'

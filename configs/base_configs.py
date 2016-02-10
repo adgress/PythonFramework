@@ -5,7 +5,11 @@ DATA_BOSTON_HOUSING = 2
 DATA_CONCRETE = 3
 DATA_BIKE_SHARING = 4
 DATA_WINE = 5
-DATA_PAIR_82_83 = 6
+
+DATA_PAIR_START = 100
+DATA_PAIR_82_83 = 101
+DATA_PAIR_13_14 = 102
+DATA_PAIR_END = 103
 
 DATA_SYNTHETIC_START = 1000
 DATA_SYNTHETIC_CLASSIFICATION_LOCAL = DATA_SYNTHETIC_START + 1
@@ -31,6 +35,12 @@ data_name_dict = {
     DATA_SYNTHETIC_SLANT: 'Slant',
     DATA_SYNTHETIC_CURVE: 'Curve',
 }
+
+def is_synthetic_data(data_idx):
+    return data_idx > DATA_SYNTHETIC_START
+
+def is_pair_data(data_idx):
+    return data_idx > DATA_PAIR_START and data_idx < DATA_PAIR_END
 
 class Configs(object):
     def __init__(self):

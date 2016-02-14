@@ -48,15 +48,23 @@ data_set_to_use = None
 #data_set_to_use = bc.DATA_SYNTHETIC_CURVE
 #data_set_to_use = bc.DATA_SYNTHETIC_SLANT
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
-data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
-#data_set_to_use = bc.DATA_SYNTHETIC_CROSS
+#data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
+data_set_to_use = bc.DATA_SYNTHETIC_CROSS
 
-run_experiments = True
+PLOT_PARAMETRIC = 1
+PLOT_VALIDATION = 2
+PLOT_CONSTRAINED = 3
+PLOT_SMS = 4
+plot_idx = PLOT_PARAMETRIC
+max_rows = 1
+fontsize = 10
+
+run_experiments = False
 show_legend_on_all = True
 
 run_batch_exps = True
-use_1d_data = True
-use_sms_plot_data_sets = False
+use_1d_data = False
+use_sms_plot_data_sets = plot_idx == PLOT_SMS
 
 use_constraints = True
 use_fused_lasso = True
@@ -539,36 +547,38 @@ class VisualizationConfigs(bc.VisualizationConfigs):
 
         #self.files.append(('LocalTransferDeltaSMS_scale.pkl', 'SMS, scale'))
 
-
-        PLOT_PARAMETRIC = 1
-        PLOT_VALIDATION = 2
-        PLOT_CONSTRAINED = 3
-        PLOT_SMS = 4
-        plot_idx = PLOT_PARAMETRIC
-
         if plot_idx == PLOT_PARAMETRIC:
             self.files = []
             self.files.append(('TargetTransfer+NW.pkl', 'Target Only'))
-            self.files.append(('LocalTransferDelta_radius_l2_constant-b.pkl','Constant b'))
-            self.files.append(('LocalTransferDelta_radius_l2_linear-b_clip-b.pkl','Linear b, clipped'))
-            #self.files.append(('LocalTransferDelta_radius_l2.pkl','Nonparametric b'))
-            self.files.append(('LocalTransferDelta_radius_l2_lap-reg.pkl','Nonparametric b'))
-
-            #self.files.append(('HypothesisTransfer.pkl','Hypothesis Transfer'))
+            '''
+            self.files.append(('LocalTransferDelta_radius_l2_constant-b.pkl','Ours: Constant'))
+            self.files.append(('LocalTransferDelta_radius_l2_linear-b_clip-b.pkl','Ours: Linear'))
+            self.files.append(('LocalTransferDelta_radius_l2_lap-reg.pkl','Ours: Nonparametric'))
+            '''
+            self.files.append(('LocalTransferDelta_radius_l2_linear-b_clip-b.pkl','Ours: Linear'))
+            self.files.append(('LocalTransferDelta_C3=0_radius_l2_linear-b.pkl','Ours: Linear, alpha=0'))
         elif plot_idx == PLOT_VALIDATION:
             self.files = []
             self.files.append(('TargetTransfer+NW.pkl', 'Target Only'))
             #self.files.append(('LocalTransferDelta_radius_l2_use-val.pkl', 'Nonparametric b, validation'))
-            self.files.append(('LocalTransferDelta_radius_l2_use-val_lap-reg.pkl', 'Nonparametric b, lap-reg, use validation'))
-            self.files.append(('LocalTransferDelta_radius_l2_linear-b_clip-b_use-val.pkl','Linear b, validation'))
+            self.files.append(('LocalTransferDelta_radius_l2_linear-b_clip-b_use-val.pkl','Ours: Linear, validation'))
+            self.files.append(('LocalTransferDelta_radius_l2_use-val_lap-reg.pkl', 'Ours: Nonparametric, validation'))
         elif plot_idx == PLOT_CONSTRAINED:
             self.files = []
             self.files.append(('TargetTransfer+NW.pkl', 'Target Only'))
             #self.files.append(('LocalTransferDelta_radius_l2.pkl','Nonparametric b'))
             #self.files.append(('LocalTransferDelta_radius_cons_l2.pkl', 'Nonparametric b, constrained'))
 
-            self.files.append(('LocalTransferDelta_radius_l2_lap-reg.pkl','Nonparametric b'))
-            self.files.append(('LocalTransferDelta_radius_cons_l2_lap-reg.pkl', 'Nonparametric b, constrained'))
+            self.files.append(('LocalTransferDelta_radius_l2_linear-b_clip-b.pkl','Ours: Linear'))
+            self.files.append(('LocalTransferDelta_radius_l2_lap-reg.pkl','Ours: Nonparametric'))
+            self.files.append(('LocalTransferDelta_radius_cons_l2_lap-reg.pkl', 'Ours: Nonparametric, constrained'))
+
+            #self.files.append(('LocalTransferDelta_radius_l2_constant-b.pkl','Constant b'))
+            #self.files.append(('LocalTransferDelta_radius_cons_l2_linear-b_clip-b.pkl', 'Linear b, clipped, constrained'))
+
+            #self.files.append(('LocalTransferDelta_radius_l2_linear-b_clip-b.pkl','Linear b, clipped'))
+            #self.files.append(('LocalTransferDelta_radius_cons_l2_linear-b_clip-b.pkl', 'Linear b, clipped, constrained'))
+
         elif plot_idx == PLOT_SMS:
             self.files = []
             self.files.append(('TargetTransfer+NW.pkl', 'Target Only'))
@@ -577,8 +587,13 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files.append(('LocalTransferDelta_C3=0_radius_l2_constant-b.pkl','Constant b, alpha=0'))
 
         if use_sms_plot_data_sets:
-            self.figsize = (4,10)
-            self.borders = (.15,.9,.95,.05)
+            if max_rows == 3:
+                self.figsize = (4,10)
+                self.borders = (.15,.9,.95,.05)
+            else:
+                self.figsize = (6,6)
+                self.borders = (.1,.95,.95,.1)
+
             if data_set == bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER:
                 self.ylims = (0,10)
             elif data_set == bc.DATA_SYNTHETIC_DELTA_LINEAR:
@@ -586,11 +601,21 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             elif data_set == bc.DATA_SYNTHETIC_CROSS:
                 self.ylims = (0,20)
         elif use_1d_data:
-            self.figsize = (12,10)
             self.borders = (.05,.95,.95,.05)
+            if plot_idx in {PLOT_CONSTRAINED, PLOT_VALIDATION}:
+                self.borders = (.1,.95,.95,.05)
+            if max_rows == 3:
+                self.figsize = (12,10)
+            else:
+                self.figsize = (14,6)
+                self.borders = (.05,.95,.95,.1)
         else:
-            self.figsize = (4,10)
-            self.borders = (.15,.9,.95,.05)
+            if max_rows == 3:
+                self.figsize = (4,4)
+                self.borders = (.15,.9,.95,.05)
+            else:
+                self.figsize = (8,3)
+                self.borders = (.1,.95,.9,.15)
 
         self.data_set_to_use = pc.data_set
         self.title = bc.data_name_dict.get(self.data_set_to_use, 'Unknown Data Set')
@@ -598,6 +623,38 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         if self.use_1d_data and self.data_set_to_use < bc.DATA_SYNTHETIC_START:
             self.title += ' 1D'
         self.x_axis_string = 'Number of labeled target instances'
+    '''
+    def _results_files(self):
+        dir = self.results_directory
+
+        dir_prefixes = [
+            'base/old/',
+            'base/standard_scaler/',
+            'base/min_max_scaler/',
+        ]
+        dir_prefixes = 'base/old/'
+        i = 0
+        files = []
+        for key, value in self.files:
+            d = dir_prefixes
+            #d = dir_prefixes[i]
+            files.append((d + '/' + dir + '/' + key, value))
+            i += 1
+        return files
+    '''
+    '''
+    def _results_files(self):
+        dir = self.results_directory
+        dir = 'base/standard_scaler/' + self.results_directory
+        files = []
+        for key, value in self.files:
+            files.append((dir + '/' + key, value))
+
+        dir = 'base/min_max_scaler/' + self.results_directory
+        for key, value in self.files:
+            files.append((dir + '/' + key, value))
+        return files
+    '''
 
 
 class BatchConfigs(bc.BatchConfigs):

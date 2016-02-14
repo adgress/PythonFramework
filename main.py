@@ -32,7 +32,6 @@ def run_main():
 def run_visualization():
     vis_configs = configs_lib.VisualizationConfigs()
     data_sets = configs_lib.data_sets_for_exps
-    max_rows = 3
     n = len(data_sets)
     #fig = plt.figure(len(data_sets))
 
@@ -41,7 +40,7 @@ def run_visualization():
     else:
         fig = plt.figure()
     #fig.suptitle('Results')
-    num_rows = min(n, max_rows)
+    num_rows = min(n, configs_lib.max_rows)
     num_cols = math.ceil(float(n) / num_rows)
     for i, data_set_id in enumerate(data_sets):
         subplot_idx = i + 1
@@ -71,7 +70,9 @@ def run_visualization():
         plt.title(vis_configs.title)
         new_x_max = np.max(sizes) + .2*np.min(sizes)
         axis[1] = new_x_max
-        show_x_label = num_rows == 1 or subplot_idx > (num_rows-1)*num_cols
+        #show_x_label = num_rows == 1 or subplot_idx > (num_rows-1)*num_cols
+        #show_x_label = num_rows == 1 or subplot_idx == 8
+        show_x_label = subplot_idx == 2
         show_y_label = num_cols == 1 or subplot_idx % num_cols == 1
 
         if show_x_label:
@@ -86,7 +87,7 @@ def run_visualization():
             axis[3] = ylims[1]
         plt.axis(axis)
         if i == 0 or vis_configs.show_legend_on_all:
-            plt.legend()
+            plt.legend(loc='upper right', fontsize=configs_lib.fontsize)
     #fig.tight_layout(rect=[.05,.05,.95,.95])
     if getattr(vis_configs,'borders',None):
         left,right,top,bottom = vis_configs.borders

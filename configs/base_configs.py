@@ -207,13 +207,16 @@ class VisualizationConfigs(Configs):
             'SKL-RidgeReg.pkl'
         ]
 
-    @property
-    def results_files(self):
+    def _results_files(self):
         dir = self.results_directory
         files = []
         for key, value in self.files:
             files.append((dir + '/' + key, value))
         return files
+
+    @property
+    def results_files(self):
+        return self._results_files()
 
 
 if __name__ == "__main__":

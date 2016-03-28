@@ -132,8 +132,6 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.oracle_labels = np.empty(0)
         self.use_pool = use_pool
         self.pool_size = pool_size
-        self.num_splits = 10
-        self.num_splits = 30
         if data_set is None:
             data_set = data_set_to_use
         self.set_data_set(data_set, use_1d_data)
@@ -498,7 +496,6 @@ class VisualizationConfigs(bc.VisualizationConfigs):
     def __init__(self, data_set=None):
         super(VisualizationConfigs, self).__init__()
         pc = ProjectConfigs(data_set)
-        self.figsize = None
         self.copy_fields(pc,pc_fields_to_copy)
         '''
         self.files = [

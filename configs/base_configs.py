@@ -114,6 +114,9 @@ class ProjectConfigs(Configs):
         self.labels_to_keep = None
         self.labels_to_not_sample = {}
         self.data_set = None
+        self.use_pool = False
+        self.pool_size = 2
+
 
     def set_data_set(self, data_set):
         assert False
@@ -193,9 +196,8 @@ class DataProcessingConfigs(Configs):
         self.labels_to_use = None
 
 class VisualizationConfigs(Configs):
-    def __init__(self):
-        pc = create_project_configs()
-        self.title = 'My Plot'
+    def __init__(self, data_set=None):
+        pc = ProjectConfigs(data_set)
         self.copy_fields(pc,pc_fields_to_copy)
         self.axis_to_use = None
         self.show_legend = True
@@ -203,6 +205,12 @@ class VisualizationConfigs(Configs):
         self.x_axis_field = 'num_labels'
         self.x_axis_string = 'Size'
         self.y_axis_string = 'Error'
+        self.figsize = None
+        self.borders = (.05,.95,.95,.05)
+
+        self.data_set_to_use = pc.data_set
+        self.show_legend_on_all = True
+
         self.files = [
             'SKL-RidgeReg.pkl'
         ]

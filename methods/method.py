@@ -406,7 +406,10 @@ class RelativeRegressionMethod(Method):
         self.b = None
         self.transform = StandardScaler()
         self.add_random_pairwise = True
+        self.use_pairwise = False
         self.num_pairwise = 10
+        if not self.use_pairwise:
+            self.cv_params['C2'] = np.asarray([0])
 
     def train(self, data):
         if self.add_random_pairwise:
@@ -468,7 +471,10 @@ class RelativeRegressionMethod(Method):
 
     @property
     def prefix(self):
-        return 'RelReg'
+        s = 'RelReg'
+        if not self.use_pairwise:
+            s += '-noPairwiseReg'
+        return s
 
 '''
 class PyQtFitMethod(Method):

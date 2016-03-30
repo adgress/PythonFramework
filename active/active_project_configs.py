@@ -89,7 +89,7 @@ class MainConfigs(bc.MainConfigs):
             self.learner = active
         else:
             self.learner = relative_reg
-            self.learner = ridge_reg
+            #self.learner = ridge_reg
 
 class MethodConfigs(bc.MethodConfigs):
     def __init__(self, pc):
@@ -105,6 +105,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files = {}
         #self.files['ActiveRandom+SKL-RidgeReg.pkl'] = 'Random+Ridge'
         self.files['SKL-RidgeReg.pkl'] = 'Ridge'
+        self.files['RelReg.pkl'] = 'Relative Ridge'
 
         self.figsize = (4,4)
         self.borders = (.1,.9,.9,.1)

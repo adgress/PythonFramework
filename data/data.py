@@ -104,6 +104,7 @@ class LabeledVector(object):
 
     def reveal_labels(self, inds=None):
         if inds is None:
+            assert False, 'Is this a good way of doing this?  Wouldn''t "None" imply nothing should be revealed?'
             inds = array_functions.true(self.n)
         self.y[inds] = self.true_y[inds]
 
@@ -134,6 +135,7 @@ class LabeledData(LabeledVector):
     def __init__(self):
         super(LabeledData, self).__init__()
         self.is_regression = None
+        self.pairwise_relationships = []
 
     def repair_data(self):
         if self.type is None or len(self.type) == 0:

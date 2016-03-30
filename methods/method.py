@@ -21,7 +21,8 @@ from metrics import metrics
 import collections
 import scipy
 from timer.timer import tic,toc
-
+import cvxpy as cvx
+from sklearn.preprocessing import StandardScaler
 
 #from pyqt_fit import nonparam_regression
 #from pyqt_fit import npr_methods
@@ -107,7 +108,8 @@ class Method(Saveable):
         errors = np.empty(len(param_grid))
         for i in range(len(param_grid)):
             agg_results = param_results[i].aggregate_error(self.configs.cv_loss_function)
-            errors[i] = agg_results.mean
+            assert len(agg_results) == 1
+            errors[i] = agg_results[0].mean
 
         min_error = errors.min()
         best_params = param_grid[errors.argmin()]
@@ -394,6 +396,79 @@ class SKLMeanRegressor(ScikitLearnMethod):
     def __init__(self,configs=None):
         assert False, 'Test this'
         super(SKLMeanRegressor, self).__init__(configs,dummy.DummyRegressor('mean'))
+
+class RelativeRegressionMethod(Method):
+    def __init__(self,configs=MethodConfigs()):
+        super(RelativeRegressionMethod, self).__init__(configs)
+        self.cv_params['C'] = 10**np.asarray(range(-8,8),dtype='float64')
+        self.cv_params['C2'] = 10**np.asarray(range(-8,8),dtype='float64')
+        self.w = None
+        self.b = None
+        self.transform = StandardScaler()
+        self.add_random_pairwise = True
+        self.num_pairwise = 10
+
+    def train(self, data):
+        if self.add_random_pairwise:
+            data.pairwise_relationships = []
+            I = data.is_train & ~data.is_labeled
+            sampled_pairs = array_functions.sample_pairs(I.nonzero()[0], self.num_pairwise)
+            pairwise_relationships = []
+            for i,j in sampled_pairs:
+                pair = (i,j)
+                if data.true_y[i] >= data.true_y[j]:
+                    pair = (j,i)
+                pairwise_relationships.append(pair)
+            data.pairwise_relationships = pairwise_relationships
+        is_labeled_train = data.is_train & data.is_labeled
+        labeled_train = data.labeled_training_data()
+        x = labeled_train.x
+        y = labeled_train.y
+
+        x = self.transform.fit_transform(x, y)
+
+        n, p = x.shape
+        w = cvx.Variable(p)
+        b = cvx.Variable(1)
+        loss = cvx.sum_entries(
+            cvx.power(
+                x*w + b - y,
+                2
+            )
+        )
+        reg = cvx.norm(w)**2
+        pairwise_reg = 0
+        for i,j in data.pairwise_relationships:
+            pairwise_reg += (data.x[j,:] - data.x[i,:])*w
+        constraints = []
+        obj = cvx.Minimize(loss + self.C*reg + self.C2*pairwise_reg)
+        prob = cvx.Problem(obj,constraints)
+        assert prob.is_dcp()
+        try:
+            prob.solve()
+            w_value = w.value
+            b_value = b.value
+            assert prob.status == cvx.OPTIMAL
+        except:
+            #print 'cvx status:'
+            k = 0
+            w_value = k*np.zeros((p,1))
+            b_value = 0
+        self.w = w_value
+        self.b = b_value
+        assert self.b is not None
+
+    def predict(self, data):
+        o = Output(data)
+        x = self.transform.transform(data.x)
+        y = data.x.dot(self.w) + self.b
+        o.fu = y
+        o.y = y
+        return o
+
+    @property
+    def prefix(self):
+        return 'RelReg'
 
 '''
 class PyQtFitMethod(Method):

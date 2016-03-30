@@ -60,11 +60,13 @@ class ExperimentManager(object):
 class BatchExperimentManager(ExperimentManager):
     def __init__(self,configs=None):
         super(BatchExperimentManager, self).__init__(configs)
-        pass
+        self.method_experiment_manager_class = getattr(configs,
+                                                       'method_experiment_manager_class',
+                                                       MethodExperimentManager)
 
     def run_experiments(self):
         for configs in self.configs.config_list:
-            exp_manager = MethodExperimentManager(configs)
+            exp_manager = self.method_experiment_manager_class(configs)
             exp_manager.run_experiments()
 
 class MethodExperimentManager(ExperimentManager):
@@ -93,49 +95,19 @@ class MethodExperimentManager(ExperimentManager):
 
         num_labels = len(self.configs.num_labels)
         num_splits = self.configs.num_splits
-        method_results = results.MethodResults(n_exp=num_labels, n_splits=num_splits)
+        #method_results = results.MethodResults(n_exp=num_labels, n_splits=num_splits)
+        method_results = self.configs.method_results_class(n_exp=num_labels, n_splits=num_splits)
         for i, nl in enumerate(self.configs.num_labels):
             method_results.results_list[i].num_labels = nl
         num_labels_list = list(itertools.product(range(num_labels), range(num_splits)))
 
-        # load existing data
-        '''
-        for i_labels, split in num_labels_list:
-            num_labels = self.configs.num_labels[i_labels]
-            curr_results = _load_temp_split_file(results_file, num_labels, split)
-            if not curr_results:
-                continue
-            method_results.set(curr_results, i_labels, split)
-        '''
         shared_args = (self, results_file, data_and_splits, method_results)
         args = [shared_args + (i_labels, split) for i_labels,split in num_labels_list]
         if self.configs.use_pool:
             pool = multiprocessing_utility.LoggingPool(processes=self.configs.pool_size)
-            #pool = multiprocessing.Pool(processes=self.configs.pool_size)
             all_results = pool.map(_run_experiment, args)
         else:
-
             all_results = [_run_experiment(a) for a in args]
-
-            '''
-            for i_labels, split in num_labels_list:
-                num_labels = self.configs.num_labels[i_labels]
-                s = str(num_labels) + '-' + str(split)
-
-                curr_results = _load_temp_split_file(results_file, num_labels, split)
-                if curr_results:
-                    continue
-                print 'num_labels-split: ' + s
-                curr_data = data_and_splits.get_split(split, num_labels)
-                curr_learner = copy.deepcopy(learner)
-                curr_results = curr_learner.train_and_test(curr_data)
-                helper_functions.save_object(_temp_split_file_name(results_file,num_labels,split),curr_results)
-                method_results.set(curr_results, i_labels, split)
-                print s + '-' + str(curr_learner.best_params) + ' Error: ' + str(curr_results.compute_error(self.configs.loss_function))
-                if method_results.results_list[i_labels].is_full:
-                    s = str(num_labels) + ' Mean Error: ' + str(method_results.results_list[i_labels].aggregate_error(self.configs.loss_function).mean)
-                    print  s
-            '''
         for curr_results,s in zip(all_results,num_labels_list):
             if curr_results is None:
                 continue
@@ -147,7 +119,6 @@ class MethodExperimentManager(ExperimentManager):
         for i_labels, split in num_labels_list:
             num_labels = self.configs.num_labels[i_labels]
             _delete_temp_split_files(results_file, num_labels, split)
-        #self._delete_temp_experiment_files(results_file, self.configs.num_labels)
         _delete_temp_folder(results_file)
         pass
 
@@ -166,10 +137,8 @@ def _run_experiment_args(self, results_file, data_and_splits, method_results, i_
     curr_learner = copy.deepcopy(learner)
     curr_results = curr_learner.train_and_test(curr_data)
     helper_functions.save_object(_temp_split_file_name(results_file,num_labels,split),curr_results)
-    print s + '-' + str(curr_learner.best_params) + ' Error: ' + str(curr_results.compute_error(self.configs.loss_function))
-    '''
-    method_results.set(curr_results, i_labels, split)
-    if method_results.results_list[i_labels].is_full:
-        print str(num_labels) + ' Mean Error: ' + str(method_results.compute_error(self.configs.loss_function)[i].mean)
-    '''
+    if hasattr(curr_learner, 'best_params'):
+        print s + '-' + str(curr_learner.best_params) + ' Error: ' + str(curr_results.compute_error(self.configs.loss_function))
+    else:
+        print s + ' Done'
     return curr_results

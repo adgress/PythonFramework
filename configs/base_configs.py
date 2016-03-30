@@ -1,4 +1,5 @@
 from loss_functions import loss_function
+from results_class import results as results_lib
 
 DATA_NG = 1
 DATA_BOSTON_HOUSING = 2
@@ -88,8 +89,7 @@ class Configs(object):
 
     @property
     def results_directory(self):
-        pc = create_project_configs()
-        s = pc.project_dir + '/' + self.results_dir
+        s = self.project_dir + '/' + self.results_dir
         return s
 
 
@@ -97,7 +97,8 @@ def create_project_configs():
     return ProjectConfigs()
 
 class ProjectConfigs(Configs):
-    def __init__(self):
+    def __init__(self, data_set=None):
+        self.data_set = data_set
         self.project_dir = 'base'
         self.loss_function = loss_function.MeanSquaredError()
         self.cv_loss_function = loss_function.MeanSquaredError()
@@ -107,6 +108,8 @@ class ProjectConfigs(Configs):
         self.results_dir = ''
         self.include_name_in_results = False
         self.labels_to_use = None
+        self.labels_to_not_sample = None
+        self.target_labels = None
         self.num_labels = range(40,201,40)
         #self.num_labels = range(40,81,40)
         self.set_boston_housing()
@@ -116,6 +119,8 @@ class ProjectConfigs(Configs):
         self.data_set = None
         self.use_pool = False
         self.pool_size = 2
+        self.method_results_class = results_lib.MethodResults
+
 
 
     def set_data_set(self, data_set):
@@ -125,6 +130,7 @@ class ProjectConfigs(Configs):
 pc_fields_to_copy = ['data_dir',
                      'data_name',
                      'data_set_file_name',
+                     'project_dir',
                      'results_dir',
                      'include_name_in_results',
                      'labels_to_use',
@@ -133,7 +139,12 @@ pc_fields_to_copy = ['data_dir',
                      'loss_function',
                      'cv_loss_function',
                      'labels_to_keep',
-                     'labels_to_not_sample']
+                     'labels_to_not_sample',
+                     'target_labels',
+                     'use_pool',
+                     'pool_size',
+                     'data_set',
+                     'method_results_class']
 
 class BatchConfigs(Configs):
     def __init__(self):
@@ -206,8 +217,8 @@ class VisualizationConfigs(Configs):
         self.x_axis_string = 'Size'
         self.y_axis_string = 'Error'
         self.figsize = None
-        self.borders = (.05,.95,.95,.05)
-
+        self.borders = (.1,.9,.9,.1)
+        self.fontsize = None
         self.data_set_to_use = pc.data_set
         self.show_legend_on_all = True
 
@@ -218,7 +229,7 @@ class VisualizationConfigs(Configs):
     def _results_files(self):
         dir = self.results_directory
         files = []
-        for key, value in self.files:
+        for key, value in self.files.iteritems():
             files.append((dir + '/' + key, value))
         return files
 

@@ -110,10 +110,10 @@ class DataSplitter(object):
         return splits
 
 def run_main():
-    '''
-    s = create_data_set.boston_housing_raw_data_file % '-13'
+
+    s = create_data_set.boston_housing_raw_data_file % ''
     split_data(s, boston_housing_configs())
-    '''
+
     #split_data(create_data_set.ng_raw_data_file, ng_configs())
     #split_data(create_data_set.synthetic_classification_file, synthetic_classification_configs())
     #split_data(create_data_set.synthetic_classification_local_file, synthetic_classification_configs())
@@ -135,6 +135,6 @@ def run_main():
 
     #split_data(create_data_set.synthetic_slant_file, regression_configs())
     #split_data(create_data_set.synthetic_curve_file, regression_configs())
-    split_data(create_data_set.pair_file(create_data_set.pair_target,create_data_set.pair_source), regression_configs())
+    #split_data(create_data_set.pair_file(create_data_set.pair_target,create_data_set.pair_source), regression_configs())
 if __name__ == '__main__':
     run_main()

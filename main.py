@@ -7,7 +7,8 @@ import importlib
 
 #import configs.base_configs as configs_lib
 #import base.project_configs as configs_lib
-import base.transfer_project_configs as configs_lib
+#import base.transfer_project_configs as configs_lib
+import active.active_project_configs as configs_lib
 import boto
 import math
 from experiment import experiment_manager
@@ -47,6 +48,7 @@ def run_visualization():
         plt.subplot(num_rows,num_cols,subplot_idx)
         axis = [0, 1, 0, .2]
         vis_configs = configs_lib.VisualizationConfigs(data_set_id)
+        sizes = None
         for file, legend_str in vis_configs.results_files:
             if not os.path.isfile(file):
                 print file + ' doesn''t exist - skipping'
@@ -67,9 +69,13 @@ def run_visualization():
             highs = np.asarray(processed_results.means) + np.asarray(processed_results.highs)
             lows = np.asarray(processed_results.means) - np.asarray(processed_results.lows)
             axis[3] = max(axis[3], highs.max() +  .2*lows.min())
+        if sizes is None:
+            print 'Empty plot - skipping'
+            continue
         plt.title(vis_configs.title)
-        new_x_max = np.max(sizes) + .2*np.min(sizes)
-        axis[1] = new_x_max
+        axis_range = np.max(sizes) - np.min(sizes)
+        axis[1] = np.max(sizes) + .1*axis_range
+        axis[0] = np.min(sizes) - .1*axis_range
         #show_x_label = num_rows == 1 or subplot_idx > (num_rows-1)*num_cols
         #show_x_label = num_rows == 1 or subplot_idx == 8
         show_x_label = subplot_idx == 2
@@ -87,7 +93,7 @@ def run_visualization():
             axis[3] = ylims[1]
         plt.axis(axis)
         if i == 0 or vis_configs.show_legend_on_all:
-            plt.legend(loc='upper right', fontsize=configs_lib.fontsize)
+            plt.legend(loc='upper right', fontsize=vis_configs.fontsize)
     #fig.tight_layout(rect=[.05,.05,.95,.95])
     if getattr(vis_configs,'borders',None):
         left,right,top,bottom = vis_configs.borders

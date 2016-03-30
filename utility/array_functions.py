@@ -14,6 +14,26 @@ from timer.timer import Timer
 from timer.timer import tic
 from timer.timer import toc
 from sklearn import manifold
+import warnings
+
+def sample_pairs(n_or_vector, num_samples=1):
+    if np.asarray(n_or_vector).size == 1:
+        n_or_vector = np.asarray(range(n_or_vector))
+    p = np.ones(n_or_vector.shape)
+    pairs = set()
+    draws = 0
+    while len(pairs) < num_samples:
+        if draws > 10*num_samples:
+            warnings.warn('Took too many draws to generate pairs')
+            break
+        draws += 1
+        x = np.random.choice(n_or_vector, 2, replace=False)
+        x.sort()
+        pairs.add((x[0], x[1]))
+    return pairs
+
+def sample(n_or_vector, num_samples=1, distribution=None):
+    return np.random.choice(n_or_vector, num_samples, replace=False, p=distribution)
 
 def clip(x, min, max):
     assert min <= max

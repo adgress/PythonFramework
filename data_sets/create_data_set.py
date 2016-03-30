@@ -40,6 +40,7 @@ pca_feats=20
 #max_features=100
 boston_num_feats = np.inf
 concrete_num_feats = np.inf
+create_transfer_data = False
 
 boston_housing_raw_data_file = 'boston_housing%s/raw_data.pkl'
 ng_raw_data_file = '20ng-%d/raw_data.pkl' % max_features
@@ -404,8 +405,6 @@ def create_wine():
 
 
 def create_boston_housing(file_dir=''):
-    x_ind = 5
-    domain_ind = 12
     boston_data = datasets.load_boston()
     data = data_class.Data()
     data.x = boston_data.data
@@ -419,22 +418,27 @@ def create_boston_housing(file_dir=''):
     s = boston_housing_raw_data_file
     x = data.x
     y = data.y
-    domain_ids = np.ones(x.shape[0])
-    domain_ids = array_functions.bin_data(x[:,domain_ind],num_bins=4)
-    x = np.delete(x,domain_ind,1)
-    viz_features(x,y,domain_ids,boston_data.feature_names)
-    data.data_set_ids = domain_ids
+    if create_transfer_data:
+        x_ind = 5
+        domain_ind = 12
+        domain_ids = np.ones(x.shape[0])
+        domain_ids = array_functions.bin_data(x[:,domain_ind],num_bins=4)
+        x = np.delete(x,domain_ind,1)
+        #viz_features(x,y,domain_ids,boston_data.feature_names)
+        data.data_set_ids = domain_ids
 
-    if boston_num_feats == 1:
-        data.x = data.x[:,x_ind]
-        data.x = array_functions.vec_to_2d(data.x)
-        s = s % ''
-    elif boston_num_feats >= data.x.shape[1]:
-        data.x = array_functions.standardize(data.x)
-        p = min(boston_num_feats,data.x.shape[1])
-        s = s % ('-' + str(p))
+        if boston_num_feats == 1:
+            data.x = data.x[:,x_ind]
+            data.x = array_functions.vec_to_2d(data.x)
+            s = s % ''
+        elif boston_num_feats >= data.x.shape[1]:
+            data.x = array_functions.standardize(data.x)
+            p = min(boston_num_feats,data.x.shape[1])
+            s = s % ('-' + str(p))
+        else:
+            assert False
     else:
-        assert False
+        s %= ''
     if file_dir != '':
         s = file_dir + '/' + s
     helper_functions.save_object(s,data)
@@ -518,7 +522,7 @@ def create_bike_sharing():
     pass
 
 if __name__ == "__main__":
-    #create_boston_housing()
+    create_boston_housing()
     #create_concrete()
     #create_bike_sharing()
     #create_wine()
@@ -529,6 +533,6 @@ if __name__ == "__main__":
     #create_synthetic_cross_transfer()
     #create_synthetic_curve_transfer()
     #create_pair_82_83()
-    create_pair(pair_target,pair_source,0)
+    #create_pair(pair_target,pair_source,0)
     from data_sets import create_data_split
     create_data_split.run_main()

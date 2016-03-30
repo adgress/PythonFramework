@@ -43,7 +43,11 @@ class MethodResults(ResultsContainer):
     def compute_error(self, loss_function):
         errors = []
         for i, f in enumerate(self.results_list):
-            errors.append(f.aggregate_error(loss_function))
+            e = f.aggregate_error(loss_function)
+            if len(self.results_list) == 1 and len(e) > 1:
+                errors = e
+            else:
+                errors.append(e[0])
         return errors
 
     @property
@@ -55,6 +59,15 @@ class MethodResults(ResultsContainer):
         a = [getattr(x,field) for x in self.results_list]
         return np.asarray(a)
 
+class ActiveMethodResults(MethodResults):
+    def __init__(self, n_exp, n_splits):
+        super(ActiveMethodResults, self).__init__(n_exp, n_splits)
+
+    @property
+    def sizes(self):
+        a = [x.num_labels for x in self.results_list]
+        num_iterations = len(self.results_list[0].results_list[0].results_list)
+        return np.asarray(range(num_iterations))
 
 
 class ExperimentResults(ResultsContainer):
@@ -65,40 +78,38 @@ class ExperimentResults(ResultsContainer):
         self.is_regression = True
 
     def aggregate_error(self, loss_function):
+        agg_res = []
         errors = self.compute_error(loss_function)
-        #mean = errors.mean()
-        mean = np.percentile(errors,50)
-        n = len(errors)
-        zn = 1.96
-        #if self.is_regression or mean > 1:
-        if mean > 1:
-            std = errors.std()
-            se = std / math.sqrt(n)
-            low = se*zn
-            high = se*zn
-        else:
-            low = zn*math.sqrt(mean*(1-mean)/n)
-            high = low
-            #low = mean - np.percentile(errors,10)
-            #high = np.percentile(errors,90) - mean
+        for i in range(errors.shape[1]):
+            #mean = errors.mean()
+            mean = np.percentile(errors[:,i],50)
+            n = errors.shape[0]
+            zn = 1.96
+            #if self.is_regression or mean > 1:
+            if mean > 1:
+                std = errors[:,i].std()
+                se = std / math.sqrt(n)
+                low = se*zn
+                high = se*zn
+            else:
+                low = zn*math.sqrt(mean*(1-mean)/n)
+                high = low
+                #low = mean - np.percentile(errors,10)
+                #high = np.percentile(errors,90) - mean
 
-        agg_res = aggregated_results(mean,low,high)
+            agg_res.append(aggregated_results(mean,low,high))
         return agg_res
 
     def compute_error(self, loss_function):
-        errors = np.empty(len(self.results_list))
         for i, f in enumerate(self.results_list):
-            output = f.prediction
-            #TODO: Check if we should use y or fu
-            if output.fu.ndim > 1 and isinstance(loss_function, loss_function_lib.LogLoss):
-                fu = output.fu[~output.is_train,:]
-                true_fu = array_functions.make_label_matrix(output.true_y[~output.is_train]).toarray()
-                errors[i] = loss_function.compute_score(fu,true_fu)
-            else:
-                errors[i] = loss_function.compute_score(output.y,output.true_y,~output.is_train)
-
-        assert all(~np.isnan(errors))
+            e = f.compute_error(loss_function)
+            e = np.asarray(e)
+            if i == 0:
+                errors = np.empty((len(self.results_list),e.size))
+            errors[i,:] = e
+        assert np.all(~np.isnan(errors))
         return errors
+
 
 class FoldResults(object):
     def __init__(self):
@@ -106,11 +117,31 @@ class FoldResults(object):
         self.estimated_error = None
 
     def compute_error(self,loss_function):
-        return loss_function.compute_score(
-            self.prediction.y,
-            self.prediction.true_y,
-            ~self.prediction.is_train
-        )
+        #TODO: Check if we should use y or fu
+        if self.prediction.fu.ndim > 1 and isinstance(loss_function, loss_function_lib.LogLoss):
+            fu = self.prediction.fu[~self.prediction.is_train,:]
+            true_fu = array_functions.make_label_matrix(output.true_y[~self.prediction.is_train]).toarray()
+            return loss_function.compute_score(fu,true_fu)
+        return loss_function.compute_score(self.prediction.y,self.prediction.true_y,~self.prediction.is_train)
+
+class ActiveFoldResults(ResultsContainer):
+    def __init__(self, num_iterations):
+        super(ActiveFoldResults, self).__init__(num_iterations)
+
+    def compute_error(self,loss_function):
+        errors = np.empty(len(self.results_list))
+        for i, f in enumerate(self.results_list):
+            errors[i] = f.compute_error(loss_function)
+        assert all(~np.isnan(errors))
+        return errors
+
+class ActiveIterationResults(object):
+    def __init__(self, fold_results=None, queried_idx=None):
+        self.fold_results = fold_results
+        self.queried_idx = queried_idx
+
+    def compute_error(self,loss_function):
+        return self.fold_results.compute_error(loss_function)
 
 class Output(data_lib.LabeledVector):
     def __init__(self,data=None,y=None):

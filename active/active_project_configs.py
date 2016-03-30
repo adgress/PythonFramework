@@ -24,6 +24,8 @@ data_sets_for_exps = [data_set_to_use]
 active_iterations = 5
 active_items_per_iteration = 5
 
+run_active_experiments = False
+
 run_experiments = True
 show_legend_on_all = True
 
@@ -43,7 +45,8 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.project_dir = 'active'
         self.use_pool = use_pool
         self.pool_size = pool_size
-        self.method_results_class = results_lib.ActiveMethodResults
+        if run_active_experiments:
+            self.method_results_class = results_lib.ActiveMethodResults
         if data_set is None:
             data_set = data_set_to_use
         self.set_data_set(data_set)
@@ -53,6 +56,8 @@ class ProjectConfigs(bc.ProjectConfigs):
         if data_set == bc.DATA_BOSTON_HOUSING:
             self.set_boston_housing()
             self.num_labels = [5, 10, 20]
+            if run_active_experiments:
+                self.num_labels = [5]
 
 
     def set_boston_housing(self):
@@ -79,8 +84,12 @@ class MainConfigs(bc.MainConfigs):
         active = active_methods.ActiveMethod(method_configs)
         active.base_learner = method.RelativeRegressionMethod(method_configs)
         relative_reg = method.RelativeRegressionMethod(method_configs)
-        #self.learner = active
-        self.learner = relative_reg
+        ridge_reg = method.SKLRidgeRegression(method_configs)
+        if run_active_experiments:
+            self.learner = active
+        else:
+            self.learner = relative_reg
+            self.learner = ridge_reg
 
 class MethodConfigs(bc.MethodConfigs):
     def __init__(self, pc):
@@ -93,9 +102,9 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         pc = ProjectConfigs(data_set)
         self.copy_fields(pc,pc_fields_to_copy)
 
-        self.files = {
-            'ActiveRandom+SKL-RidgeReg.pkl': 'Random+Ridge',
-        }
+        self.files = {}
+        #self.files['ActiveRandom+SKL-RidgeReg.pkl'] = 'Random+Ridge'
+        self.files['SKL-RidgeReg.pkl'] = 'Ridge'
 
         self.figsize = (4,4)
         self.borders = (.1,.9,.9,.1)

@@ -110,7 +110,7 @@ class DataSplitter(object):
         return splits
 
 def run_main():
-    split_data('synthetic_linear_reg500-50/raw_data.pkl', boston_housing_configs())
+    split_data('synthetic_linear_reg500-50-1/raw_data.pkl', boston_housing_configs())
 
 if __name__ == '__main__':
     run_main()

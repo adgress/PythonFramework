@@ -75,9 +75,9 @@ class ProjectConfigs(bc.ProjectConfigs):
     def set_synthetic_linear_reg(self):
         self.loss_function = loss_function.MeanSquaredError()
         self.cv_loss_function = loss_function.MeanSquaredError()
-        self.data_dir = 'data_sets/synthetic_linear_reg500-50'
-        self.data_name = 'synthetic_linear_reg500-50'
-        self.results_dir = 'synthetic_linear_reg500-50'
+        self.data_dir = 'data_sets/synthetic_linear_reg500-50-1'
+        self.data_name = 'synthetic_linear_reg500-50-1'
+        self.results_dir = 'synthetic_linear_reg500-50-1'
         self.data_set_file_name = 'split_data.pkl'
 
 

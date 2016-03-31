@@ -17,7 +17,8 @@ def create_project_configs():
 
 pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
-data_set_to_use = bc.DATA_BOSTON_HOUSING
+#data_set_to_use = bc.DATA_BOSTON_HOUSING
+data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
 
 data_sets_for_exps = [data_set_to_use]
 
@@ -58,6 +59,9 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.num_labels = [5, 10, 20]
             if run_active_experiments:
                 self.num_labels = [5]
+        elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
+            self.set_synthetic_linear_reg()
+            self.num_labels = [10, 20, 40]
 
 
     def set_boston_housing(self):
@@ -66,6 +70,14 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.data_dir = 'data_sets/boston_housing'
         self.data_name = 'boston_housing'
         self.results_dir = 'boston_housing'
+        self.data_set_file_name = 'split_data.pkl'
+
+    def set_synthetic_linear_reg(self):
+        self.loss_function = loss_function.MeanSquaredError()
+        self.cv_loss_function = loss_function.MeanSquaredError()
+        self.data_dir = 'data_sets/synthetic_linear_reg500-50'
+        self.data_name = 'synthetic_linear_reg500-50'
+        self.results_dir = 'synthetic_linear_reg500-50'
         self.data_set_file_name = 'split_data.pkl'
 
 
@@ -106,6 +118,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #self.files['ActiveRandom+SKL-RidgeReg.pkl'] = 'Random+Ridge'
         self.files['SKL-RidgeReg.pkl'] = 'Ridge'
         self.files['RelReg-noPairwiseReg.pkl'] = 'Relative Ridge no Pairwise Reg'
+        self.files['RelReg-numRandPairs=10.pkl'] = 'Relative Ridge, 10 random pairs'
+        self.files['RelReg-numRandPairs=50.pkl'] = 'Relative Ridge, 50 random pairs'
         #self.files['RelReg-ridge-noPairwiseReg.pkl'] = 'Relative Ridge, ridge w'
         #self.files['RelReg-ridge-surr-noPairwiseReg.pkl'] = 'Relative Ridge, ridge surrogate'
 

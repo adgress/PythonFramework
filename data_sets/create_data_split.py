@@ -110,31 +110,7 @@ class DataSplitter(object):
         return splits
 
 def run_main():
+    split_data('synthetic_linear_reg500-50/raw_data.pkl', boston_housing_configs())
 
-    s = create_data_set.boston_housing_raw_data_file % ''
-    split_data(s, boston_housing_configs())
-
-    #split_data(create_data_set.ng_raw_data_file, ng_configs())
-    #split_data(create_data_set.synthetic_classification_file, synthetic_classification_configs())
-    #split_data(create_data_set.synthetic_classification_local_file, synthetic_classification_configs())
-    '''
-    s = create_data_set.synthetic_step_transfer_file
-    if create_data_set.synthetic_dim > 1:
-        s = create_data_set.synthetic_step_kd_transfer_file % create_data_set.synthetic_dim
-    split_data(s, synthetic_step_transfer_configs())
-    '''
-    #split_data(create_data_set.synthetic_step_linear_transfer_file, synthetic_step_transfer_configs())
-    #split_data(create_data_set.concrete_file % '-feat=0', regression_configs())
-    #split_data(create_data_set.concrete_file % '-7', regression_configs())
-    #split_data(create_data_set.boston_housing_raw_data_file, regression_configs())
-    #split_data(create_data_set.bike_file % '-feat=1', regression_configs())
-    #split_data(create_data_set.wine_file % '-small-feat=1', regression_configs())
-    #split_data(create_data_set.wine_file % '-small-11', regression_configs())
-    #split_data(create_data_set.synthetic_delta_linear_file, regression_configs())
-    #split_data(create_data_set.synthetic_cross_file, regression_configs())
-
-    #split_data(create_data_set.synthetic_slant_file, regression_configs())
-    #split_data(create_data_set.synthetic_curve_file, regression_configs())
-    #split_data(create_data_set.pair_file(create_data_set.pair_target,create_data_set.pair_source), regression_configs())
 if __name__ == '__main__':
     run_main()

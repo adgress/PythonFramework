@@ -19,6 +19,7 @@ synthetic_classification_file = 'synthetic_classification/raw_data.pkl'
 synthetic_classification_local_file = 'synthetic_classification_local/raw_data.pkl'
 synthetic_slant_file = 'synthetic_slant/raw_data.pkl'
 synthetic_curve_file = 'synthetic_curve/raw_data.pkl'
+synthetic_linear_reg_file = 'synthetic_linear_reg%s/raw_data.pkl'
 
 def create_synthetic_classification(file_dir='',local=True):
     dim = 1
@@ -156,5 +157,17 @@ def create_synthetic_regression_transfer(target_fun, source_fun, n_target=100, n
     data.is_regression = True
     return data
 
+def create_synthetic_linear_regression(n=500, p=50):
+    data = data_class.Data()
+    data.x = np.random.uniform(0,1,(n,p))
+    w = np.random.normal(0,1,p)
+    data.y = data.x.dot(w)
+    data.is_regression = True
+    data.set_true_y()
+    data.set_train()
+    s = synthetic_linear_reg_file % (str(n) + '-' + str(p))
+    helper_functions.save_object(s,data)
+
+
 if __name__ == '__main__':
-    create_synthetic_delta_linear_transfer()
+    create_synthetic_linear_regression()

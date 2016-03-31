@@ -431,7 +431,7 @@ class RelativeRegressionMethod(Method):
         self.b = None
         self.transform = StandardScaler()
         self.add_random_pairwise = True
-        self.use_pairwise = True
+        self.use_pairwise = False
         self.num_pairwise = 10
 
         self.method = RelativeRegressionMethod.METHOD_CVX

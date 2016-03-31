@@ -84,6 +84,7 @@ def is_all_zero_column(x):
     return ~x.any(axis=0)
 
 def relative_error(x,y):
+    assert x.shape == y.shape
     return np.linalg.norm(x-y)/np.linalg.norm(x)
 
 def add_bias(x):

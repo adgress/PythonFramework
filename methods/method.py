@@ -22,6 +22,7 @@ import collections
 import scipy
 from timer.timer import tic,toc
 import cvxpy as cvx
+from numpy.linalg import norm
 from sklearn.preprocessing import StandardScaler
 
 #from pyqt_fit import nonparam_regression
@@ -318,11 +319,18 @@ class ScikitLearnMethod(Method):
 
     def train(self, data):
         labeled_train = data.labeled_training_data()
-        self.skl_method.fit(labeled_train.x, labeled_train.y)
+        x = labeled_train.x
+        if self.transform is not None:
+            x = self.transform.fit_transform(x)
+        self.skl_method.fit(x, labeled_train.y)
 
     def predict(self, data):
         o = Output(data)
-        o.y = self.skl_method.predict(data.x)
+        x = data.x
+        if self.transform is not None:
+            x = self.transform.transform(x)
+        o.y = self.skl_method.predict(x)
+        o.y = array_functions.vec_to_2d(o.y)
         o.fu = o.y
         return o
 
@@ -341,7 +349,13 @@ class SKLRidgeRegression(ScikitLearnMethod):
     def __init__(self,configs=None):
         super(SKLRidgeRegression, self).__init__(configs, linear_model.Ridge())
         self.cv_params['alpha'] = 10**np.asarray(range(-8,8),dtype='float64')
-        self.set_params(alpha=0,fit_intercept=True,normalize=True)
+        self.set_params(alpha=0,fit_intercept=True,normalize=True,tol=1e-12)
+        self.set_params(solver='auto')
+
+        useStandardScale = True
+        if useStandardScale:
+            self.set_params(normalize=False)
+            self.transform = StandardScaler()
 
     def predict_loo(self, data):
         d = data.get_subset(data.is_train & data.is_labeled)
@@ -398,6 +412,17 @@ class SKLMeanRegressor(ScikitLearnMethod):
         super(SKLMeanRegressor, self).__init__(configs,dummy.DummyRegressor('mean'))
 
 class RelativeRegressionMethod(Method):
+    METHOD_ANALYTIC = 1
+    METHOD_CVX = 2
+    METHOD_RIDGE = 3
+    METHOD_RIDGE_SURROGATE = 4
+
+    METHOD_NAMES = {
+        METHOD_ANALYTIC: 'analytic',
+        METHOD_CVX: 'cvx',
+        METHOD_RIDGE: 'ridge',
+        METHOD_RIDGE_SURROGATE: 'ridge-surr',
+    }
     def __init__(self,configs=MethodConfigs()):
         super(RelativeRegressionMethod, self).__init__(configs)
         self.cv_params['C'] = 10**np.asarray(range(-8,8),dtype='float64')
@@ -408,6 +433,9 @@ class RelativeRegressionMethod(Method):
         self.add_random_pairwise = True
         self.use_pairwise = False
         self.num_pairwise = 10
+
+        self.method = RelativeRegressionMethod.METHOD_CVX
+
         if not self.use_pairwise:
             self.cv_params['C2'] = np.asarray([0])
 
@@ -427,51 +455,100 @@ class RelativeRegressionMethod(Method):
         labeled_train = data.labeled_training_data()
         x = labeled_train.x
         y = labeled_train.y
-
+        x_orig = x
         x = self.transform.fit_transform(x, y)
 
+        use_ridge = self.method in {
+            RelativeRegressionMethod.METHOD_RIDGE,
+            RelativeRegressionMethod.METHOD_RIDGE_SURROGATE
+        }
         n, p = x.shape
-        w = cvx.Variable(p)
-        b = cvx.Variable(1)
-        loss = cvx.sum_entries(
-            cvx.power(
-                x*w + b - y,
-                2
+        if use_ridge:
+            ridge_reg = SKLRidgeRegression(self.configs)
+            ridge_reg.set_params(alpha=self.C)
+            ridge_reg.set_params(normalize=False)
+            '''
+            d = deepcopy(data)
+            d.x[is_labeled_train,:] = x
+            ridge_reg.train(d)
+            '''
+            ridge_reg.train(data)
+            w_ridge = array_functions.vec_to_2d(ridge_reg.skl_method.coef_)
+            b_ridge = ridge_reg.skl_method.intercept_
+            self.w = w_ridge
+            self.b = b_ridge
+            self.ridge_reg = ridge_reg
+        elif self.method == RelativeRegressionMethod.METHOD_ANALYTIC:
+            x_bias = np.hstack((x,np.ones((n,1))))
+            A = np.eye(p+1)
+            A[p,p] = 0
+            XX = x_bias.T.dot(x_bias)
+            v = np.linalg.lstsq(XX + self.C*A,x_bias.T.dot(y))
+            w_anal = array_functions.vec_to_2d(v[0][0:p])
+            b_anal = v[0][p]
+            self.w = w_anal
+            self.b = b_anal
+        elif self.method == RelativeRegressionMethod.METHOD_CVX:
+            w = cvx.Variable(p)
+            b = cvx.Variable(1)
+            loss = cvx.sum_entries(
+                cvx.power(
+                    x*w + b - y,
+                    2
+                )
             )
-        )
-        reg = cvx.norm(w)**2
-        pairwise_reg = 0
-        for i,j in data.pairwise_relationships:
-            pairwise_reg += (data.x[j,:] - data.x[i,:])*w
-        constraints = []
-        obj = cvx.Minimize(loss + self.C*reg + self.C2*pairwise_reg)
-        prob = cvx.Problem(obj,constraints)
-        assert prob.is_dcp()
-        try:
-            prob.solve()
-            w_value = w.value
-            b_value = b.value
-            assert prob.status == cvx.OPTIMAL
-        except:
-            #print 'cvx status:'
-            k = 0
-            w_value = k*np.zeros((p,1))
-            b_value = 0
-        self.w = w_value
-        self.b = b_value
+            reg = cvx.norm(w)**2
+            pairwise_reg = 0
+            for i,j in data.pairwise_relationships:
+                xj = self.transform.transform(data.x[j,:])
+                xi = self.transform.transform(data.x[i,:])
+                pairwise_reg += (xj - xi)*w
+            pairwise_reg = 0
+            constraints = []
+            obj = cvx.Minimize(loss + self.C*reg + self.C2*pairwise_reg)
+            prob = cvx.Problem(obj,constraints)
+            assert prob.is_dcp()
+            try:
+                prob.solve()
+                w_value = w.value
+                b_value = b.value
+                assert w_value is not None and b_value is not None
+            except:
+                print 'cvx status: ' + str(prob.status)
+                k = 0
+                w_value = k*np.zeros((p,1))
+                b_value = 0
+            self.w = w_value
+            self.b = b_value
+        '''
+        print 'w rel error: ' + str(array_functions.relative_error(w_value,w_ridge))
+        #print 'b rel error: ' + str(array_functions.relative_error(b_value,b_ridge))
+
+        print 'w analytic rel error: ' + str(array_functions.relative_error(w_value,w_anal))
+        #print 'b analytic rel error: ' + str(array_functions.relative_error(b_value,b_anal))
+        print 'w norm: ' + str(norm(w_value))
+        print 'w analytic norm: ' + str(norm(w_anal))
+        print 'w ridge norm: ' + str(norm(w_ridge))
         assert self.b is not None
+        '''
 
     def predict(self, data):
         o = Output(data)
-        x = self.transform.transform(data.x)
-        y = data.x.dot(self.w) + self.b
-        o.fu = y
-        o.y = y
+
+        if self.method == RelativeRegressionMethod.METHOD_RIDGE_SURROGATE:
+            o = self.ridge_reg.predict(data)
+        else:
+            x = self.transform.transform(data.x)
+            y = x.dot(self.w) + self.b
+            o.fu = y
+            o.y = y
         return o
 
     @property
     def prefix(self):
         s = 'RelReg'
+        if self.method != RelativeRegressionMethod.METHOD_CVX:
+            s += '-' + RelativeRegressionMethod.METHOD_NAMES[self.method]
         if not self.use_pairwise:
             s += '-noPairwiseReg'
         return s

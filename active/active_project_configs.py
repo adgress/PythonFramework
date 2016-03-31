@@ -105,10 +105,9 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files = {}
         #self.files['ActiveRandom+SKL-RidgeReg.pkl'] = 'Random+Ridge'
         self.files['SKL-RidgeReg.pkl'] = 'Ridge'
-        self.files['RelReg.pkl'] = 'Relative Ridge'
         self.files['RelReg-noPairwiseReg.pkl'] = 'Relative Ridge no Pairwise Reg'
-        self.files['RelReg-ridge-noPairwiseReg.pkl'] = 'Relative Ridge, ridge w'
-        self.files['RelReg-ridge-surr-noPairwiseReg.pkl'] = 'Relative Ridge, ridge surrogate'
+        #self.files['RelReg-ridge-noPairwiseReg.pkl'] = 'Relative Ridge, ridge w'
+        #self.files['RelReg-ridge-surr-noPairwiseReg.pkl'] = 'Relative Ridge, ridge surrogate'
 
         self.figsize = (4,4)
         self.borders = (.1,.9,.9,.1)

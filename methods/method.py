@@ -431,7 +431,7 @@ class RelativeRegressionMethod(Method):
         self.b = None
         self.transform = StandardScaler()
         self.add_random_pairwise = True
-        self.use_pairwise = False
+        self.use_pairwise = True
         self.num_pairwise = 10
 
         self.method = RelativeRegressionMethod.METHOD_CVX
@@ -551,6 +551,8 @@ class RelativeRegressionMethod(Method):
             s += '-' + RelativeRegressionMethod.METHOD_NAMES[self.method]
         if not self.use_pairwise:
             s += '-noPairwiseReg'
+        elif self.num_pairwise > 0:
+            s += '-numRandPairs=' + str(int(self.num_pairwise))
         return s
 
 '''

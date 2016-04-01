@@ -455,7 +455,7 @@ class RelativeRegressionMethod(Method):
         self.transform = StandardScaler()
         self.add_random_pairwise = True
         self.use_pairwise = configs.use_pairwise
-        self.num_pairwise = 10
+        self.num_pairwise = configs.num_pairwise
         self.use_test_error_for_model_selection = True
 
         self.method = RelativeRegressionMethod.METHOD_CVX
@@ -528,7 +528,6 @@ class RelativeRegressionMethod(Method):
                 x1 = self.transform.transform(data.x[i,:])
                 x2 = self.transform.transform(data.x[j,:])
                 pairwise_reg += (x1 - x2)*w
-            pairwise_reg = 0
             constraints = []
             obj = cvx.Minimize(loss + self.C*reg + self.C2*pairwise_reg)
             prob = cvx.Problem(obj,constraints)
@@ -545,6 +544,19 @@ class RelativeRegressionMethod(Method):
                 b_value = 0
             self.w = w_value
             self.b = b_value
+            '''
+            obj2 = cvx.Minimize(loss + self.C*reg)
+            try:
+                prob2 = cvx.Problem(obj2, constraints)
+                prob2.solve()
+                w2 = w.value
+                b2 = b.value
+                print 'b error: ' + str(array_functions.relative_error(b_value,b2))
+                print 'w error: ' + str(array_functions.relative_error(w_value,w2))
+                print 'pairwise_reg value: ' + str(pairwise_reg.value)
+            except:
+                pass
+            '''
         '''
         print 'w rel error: ' + str(array_functions.relative_error(w_value,w_ridge))
         #print 'b rel error: ' + str(array_functions.relative_error(b_value,b_ridge))

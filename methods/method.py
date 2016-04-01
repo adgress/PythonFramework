@@ -456,7 +456,7 @@ class RelativeRegressionMethod(Method):
         self.add_random_pairwise = True
         self.use_pairwise = configs.use_pairwise
         self.num_pairwise = configs.num_pairwise
-        self.use_test_error_for_model_selection = True
+        self.use_test_error_for_model_selection = False
 
         self.method = RelativeRegressionMethod.METHOD_CVX
 

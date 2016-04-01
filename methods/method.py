@@ -37,6 +37,8 @@ class Method(Saveable):
         self.is_classifier = True
         self.experiment_results_class = results_lib.ExperimentResults
         self.cv_use_data_type = True
+        self.use_test_error_for_model_selection = False
+        self.can_use_test_error_for_model_selection = False
         self._estimated_error = None
         self.quiet = True
         self.best_params = None
@@ -79,21 +81,29 @@ class Method(Saveable):
         return splits
 
     def run_cross_validation(self,data):
-        train_data = data.get_subset(data.is_train)
-
+        train_data = deepcopy(data)
+        test_data = data.get_subset(data.is_test)
         if self.configs.use_validation:
             I = train_data.is_labeled
             train_data.reveal_labels()
             ds = create_data_split.DataSplitter()
             splits = ds.generate_identity_split(I)
+        elif self.use_test_error_for_model_selection:
+            I = train_data.is_train
+            ds = create_data_split.DataSplitter()
+            splits = ds.generate_identity_split(I)
         else:
+            train_data = data.get_subset(data.is_train)
             splits = self._create_cv_splits(train_data)
         data_and_splits = data_lib.SplitData(train_data,splits)
         param_grid = list(grid_search.ParameterGrid(self.cv_params))
         if not self.cv_params:
             return param_grid[0], None
-        param_results =[self.experiment_results_class(len(splits)) for i in range(len(param_grid))]
-        unused_breakpoint = 1
+        #Results when using cross validation
+        param_results = [self.experiment_results_class(len(splits)) for i in range(len(param_grid))]
+
+        #Results when using test data to do model selection
+        param_results_on_test = [self.experiment_results_class(len(splits)) for i in range(len(param_grid))]
         for i in range(len(splits)):
             curr_split = data_and_splits.get_split(i)
             curr_split.remove_test_labels()
@@ -103,21 +113,31 @@ class Method(Saveable):
                 fold_results = FoldResults()
                 fold_results.prediction = results
                 param_results[param_idx].set(fold_results, i)
+                results_on_test_data = self.predict(test_data)
+                fold_results_on_test_data = FoldResults()
+                fold_results_on_test_data.prediction = results_on_test_data
+                param_results_on_test[param_idx].set(fold_results_on_test_data, i)
+
                 #Make sure error can be computed
                 #param_results[param_idx].aggregate_error(self.configs.cv_loss_function)
 
         errors = np.empty(len(param_grid))
+        errors_on_test_data = np.empty(len(param_grid))
         for i in range(len(param_grid)):
             agg_results = param_results[i].aggregate_error(self.configs.cv_loss_function)
             assert len(agg_results) == 1
             errors[i] = agg_results[0].mean
+
+            agg_results_test = param_results_on_test[i].aggregate_error(self.configs.cv_loss_function)
+            assert len(agg_results_test) == 1
+            errors_on_test_data[i] = agg_results_test[0].mean
 
         min_error = errors.min()
         best_params = param_grid[errors.argmin()]
         if not self.quiet:
             print best_params
         self.best_params = best_params
-        return [best_params, min_error]
+        return [best_params, min_error, errors_on_test_data[errors.argmin()]]
 
     def process_data(self, data):
         labels_to_keep = np.empty(0)
@@ -139,14 +159,16 @@ class Method(Saveable):
     def train_and_test(self, data):
         self.should_plot_g = False
         data = self.process_data(data)
-        best_params, min_error = self.run_cross_validation(data)
+        best_params, min_error, error_on_test_data = self.run_cross_validation(data)
         self.set_params(**best_params)
         self.should_plot_g = True
         output = self.run_method(data)
         f = FoldResults()
         f.prediction = output
         f.estimated_error = min_error
+        f.error_on_test_data = error_on_test_data
         self.estimated_error = min_error
+        self.error_on_test_data = error_on_test_data
         for key,value in best_params.iteritems():
             setattr(f,key,value)
         return f
@@ -425,14 +447,16 @@ class RelativeRegressionMethod(Method):
     }
     def __init__(self,configs=MethodConfigs()):
         super(RelativeRegressionMethod, self).__init__(configs)
+        self.can_use_test_error_for_model_selection = True
         self.cv_params['C'] = 10**np.asarray(range(-8,8),dtype='float64')
         self.cv_params['C2'] = 10**np.asarray(range(-8,8),dtype='float64')
         self.w = None
         self.b = None
         self.transform = StandardScaler()
         self.add_random_pairwise = True
-        self.use_pairwise = False
+        self.use_pairwise = configs.use_pairwise
         self.num_pairwise = 10
+        self.use_test_error_for_model_selection = True
 
         self.method = RelativeRegressionMethod.METHOD_CVX
 
@@ -553,6 +577,8 @@ class RelativeRegressionMethod(Method):
             s += '-noPairwiseReg'
         elif self.num_pairwise > 0:
             s += '-numRandPairs=' + str(int(self.num_pairwise))
+        if self.use_test_error_for_model_selection:
+            s += '-TEST'
         return s
 
 '''

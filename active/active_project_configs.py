@@ -24,6 +24,7 @@ data_sets_for_exps = [data_set_to_use]
 
 active_iterations = 5
 active_items_per_iteration = 5
+use_pairwise = True
 
 run_active_experiments = False
 
@@ -92,6 +93,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.active_iterations = active_iterations
         method_configs.active_items_per_iteration = active_items_per_iteration
         method_configs.metric = 'euclidean'
+        method_configs.use_pairwise = use_pairwise
         #nw = method.NadarayaWatsonMethod(method_configs)
         active = active_methods.ActiveMethod(method_configs)
         active.base_learner = method.RelativeRegressionMethod(method_configs)
@@ -116,14 +118,14 @@ class VisualizationConfigs(bc.VisualizationConfigs):
 
         self.files = {}
         #self.files['ActiveRandom+SKL-RidgeReg.pkl'] = 'Random+Ridge'
-        self.files['SKL-RidgeReg.pkl'] = 'Ridge'
         self.files['RelReg-noPairwiseReg.pkl'] = 'Relative Ridge no Pairwise Reg'
         self.files['RelReg-numRandPairs=10.pkl'] = 'Relative Ridge, 10 random pairs'
         self.files['RelReg-numRandPairs=50.pkl'] = 'Relative Ridge, 50 random pairs'
+        self.files['RelReg-noPairwiseReg-TEST.pkl'] = 'Ridge, Test model selection'
         #self.files['RelReg-ridge-noPairwiseReg.pkl'] = 'Relative Ridge, ridge w'
         #self.files['RelReg-ridge-surr-noPairwiseReg.pkl'] = 'Relative Ridge, ridge surrogate'
 
-        self.figsize = (4,4)
+        self.figsize = (7,7)
         self.borders = (.1,.9,.9,.1)
         self.data_set_to_use = pc.data_set
         self.title = bc.data_name_dict.get(self.data_set_to_use, 'Unknown Data Set')

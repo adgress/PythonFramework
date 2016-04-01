@@ -471,8 +471,8 @@ class RelativeRegressionMethod(Method):
             pairwise_relationships = []
             for i,j in sampled_pairs:
                 pair = (i,j)
-                if data.true_y[i] >= data.true_y[j]:
-                    pair = (i,j)
+                if data.true_y[j] <= data.true_y[i]:
+                    pair = (j,i)
                 pairwise_relationships.append(pair)
             data.pairwise_relationships = pairwise_relationships
         is_labeled_train = data.is_train & data.is_labeled
@@ -524,9 +524,10 @@ class RelativeRegressionMethod(Method):
             reg = cvx.norm(w)**2
             pairwise_reg = 0
             for i,j in data.pairwise_relationships:
-                xj = self.transform.transform(data.x[j,:])
-                xi = self.transform.transform(data.x[i,:])
-                pairwise_reg += (xj - xi)*w
+                #x1 <= x2
+                x1 = self.transform.transform(data.x[i,:])
+                x2 = self.transform.transform(data.x[j,:])
+                pairwise_reg += (x1 - x2)*w
             pairwise_reg = 0
             constraints = []
             obj = cvx.Minimize(loss + self.C*reg + self.C2*pairwise_reg)

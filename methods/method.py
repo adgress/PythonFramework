@@ -448,8 +448,8 @@ class RelativeRegressionMethod(Method):
     def __init__(self,configs=MethodConfigs()):
         super(RelativeRegressionMethod, self).__init__(configs)
         self.can_use_test_error_for_model_selection = True
-        self.cv_params['C'] = 10**np.asarray(range(-8,8),dtype='float64')
-        self.cv_params['C2'] = 10**np.asarray(range(-8,8),dtype='float64')
+        self.cv_params['C'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
+        self.cv_params['C2'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         self.w = None
         self.b = None
         self.transform = StandardScaler()

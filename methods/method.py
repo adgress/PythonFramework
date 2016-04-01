@@ -538,7 +538,7 @@ class RelativeRegressionMethod(Method):
                 b_value = b.value
                 assert w_value is not None and b_value is not None
             except:
-                print 'cvx status: ' + str(prob.status)
+                #print 'cvx status: ' + str(prob.status)
                 k = 0
                 w_value = k*np.zeros((p,1))
                 b_value = 0

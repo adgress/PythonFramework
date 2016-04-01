@@ -1,7 +1,7 @@
 import methods.local_transfer_methods
 
 __author__ = 'Aubrey'
-
+from collections import OrderedDict
 from configs import base_configs as bc
 import numpy as np
 from data_sets import create_data_set
@@ -116,12 +116,13 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         pc = ProjectConfigs(data_set)
         self.copy_fields(pc,pc_fields_to_copy)
 
-        self.files = {}
+        self.files = OrderedDict()
         #self.files['ActiveRandom+SKL-RidgeReg.pkl'] = 'Random+Ridge'
-        self.files['RelReg-noPairwiseReg.pkl'] = 'Relative Ridge no Pairwise Reg'
+        self.files['RelReg-numRandPairs=10-TEST.pkl'] = 'Test MS: Relative Ridge, 10'
+        self.files['RelReg-noPairwiseReg.pkl'] = 'Test MS: Relative Ridge no Pairwise Reg'
+        self.files['RelReg-noPairwiseReg-TEST.pkl'] = 'Ridge, Test model selection'
         self.files['RelReg-numRandPairs=10.pkl'] = 'Relative Ridge, 10 random pairs'
         self.files['RelReg-numRandPairs=50.pkl'] = 'Relative Ridge, 50 random pairs'
-        self.files['RelReg-noPairwiseReg-TEST.pkl'] = 'Ridge, Test model selection'
         #self.files['RelReg-ridge-noPairwiseReg.pkl'] = 'Relative Ridge, ridge w'
         #self.files['RelReg-ridge-surr-noPairwiseReg.pkl'] = 'Relative Ridge, ridge surrogate'
 

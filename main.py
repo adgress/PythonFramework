@@ -113,6 +113,10 @@ def run_visualization():
 
 
 if __name__ == "__main__":
+    import warnings
+    print 'Ignoring Deprecation Warnings'
+    warnings.filterwarnings("ignore",category=DeprecationWarning)
+
     print 'Starting experiments...'
     timer.tic()
     if configs_lib.run_experiments:

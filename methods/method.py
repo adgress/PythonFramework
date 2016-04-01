@@ -472,7 +472,7 @@ class RelativeRegressionMethod(Method):
             for i,j in sampled_pairs:
                 pair = (i,j)
                 if data.true_y[i] >= data.true_y[j]:
-                    pair = (j,i)
+                    pair = (i,j)
                 pairwise_relationships.append(pair)
             data.pairwise_relationships = pairwise_relationships
         is_labeled_train = data.is_train & data.is_labeled

@@ -53,7 +53,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         if data_set is None:
             data_set = data_set_to_use
         self.set_data_set(data_set)
-        self.num_splits = 10
+        self.num_splits = 30
 
     def set_data_set(self, data_set):
         self.data_set = data_set
@@ -64,8 +64,8 @@ class ProjectConfigs(bc.ProjectConfigs):
                 self.num_labels = [5]
         elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
             self.set_synthetic_linear_reg()
-            #self.num_labels = [10, 20, 40]
-            self.num_labels = [10]
+            self.num_labels = [10, 20, 40]
+            #self.num_labels = [10]
 
 
     def set_boston_housing(self):

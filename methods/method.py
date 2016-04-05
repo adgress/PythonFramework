@@ -538,7 +538,8 @@ class RelativeRegressionMethod(Method):
                     if self.C2 == 0:
                         continue
                     s = 1/self.C2
-                    b = -a/s
+                    #b = -a/s
+                    b = a/s
                     from utility import cvx_logistic
                     #c = cvx.logistic(b)
                     #c = cvx.log1p(cvx.exp(b))

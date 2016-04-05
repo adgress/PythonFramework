@@ -53,6 +53,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         if data_set is None:
             data_set = data_set_to_use
         self.set_data_set(data_set)
+        self.num_splits = 10
 
     def set_data_set(self, data_set):
         self.data_set = data_set
@@ -63,7 +64,8 @@ class ProjectConfigs(bc.ProjectConfigs):
                 self.num_labels = [5]
         elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
             self.set_synthetic_linear_reg()
-            self.num_labels = [10, 20, 40]
+            #self.num_labels = [10, 20, 40]
+            self.num_labels = [10]
 
 
     def set_boston_housing(self):
@@ -126,6 +128,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files['RelReg-noPairwiseReg-TEST.pkl'] = 'Test MS: Ridge'
         '''
         self.files['RelReg-noPairwiseReg.pkl'] = 'Relative Ridge no Pairwise Reg'
+        self.files['RelReg-cvx-log-numRandPairs=10.pkl'] = 'Relative Ridge Log, 10 random pairs'
         self.files['RelReg-numRandPairs=10.pkl'] = 'Relative Ridge, 10 random pairs'
         self.files['RelReg-numRandPairs=50.pkl'] = 'Relative Ridge, 50 random pairs'
 

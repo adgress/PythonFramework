@@ -120,15 +120,14 @@ class VisualizationConfigs(bc.VisualizationConfigs):
 
         self.files = OrderedDict()
         #self.files['ActiveRandom+SKL-RidgeReg.pkl'] = 'Random+Ridge'
+        '''
         self.files['RelReg-numRandPairs=10-TEST.pkl'] = 'Test MS: Relative Ridge, 10'
         self.files['RelReg-numRandPairs=50-TEST.pkl'] = 'Test MS: Relative Ridge, 50'
         self.files['RelReg-noPairwiseReg-TEST.pkl'] = 'Test MS: Ridge'
-
+        '''
         self.files['RelReg-noPairwiseReg.pkl'] = 'Relative Ridge no Pairwise Reg'
         self.files['RelReg-numRandPairs=10.pkl'] = 'Relative Ridge, 10 random pairs'
         self.files['RelReg-numRandPairs=50.pkl'] = 'Relative Ridge, 50 random pairs'
-        #self.files['RelReg-ridge-noPairwiseReg.pkl'] = 'Relative Ridge, ridge w'
-        #self.files['RelReg-ridge-surr-noPairwiseReg.pkl'] = 'Relative Ridge, ridge surrogate'
 
         self.figsize = (7,7)
         self.borders = (.1,.9,.9,.1)

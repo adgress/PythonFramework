@@ -438,12 +438,13 @@ class RelativeRegressionMethod(Method):
     METHOD_CVX = 2
     METHOD_RIDGE = 3
     METHOD_RIDGE_SURROGATE = 4
-
+    METHOD_CVX_LOGISTIC = 5
     METHOD_NAMES = {
         METHOD_ANALYTIC: 'analytic',
         METHOD_CVX: 'cvx',
         METHOD_RIDGE: 'ridge',
         METHOD_RIDGE_SURROGATE: 'ridge-surr',
+        METHOD_CVX_LOGISTIC: 'cvx-log'
     }
     def __init__(self,configs=MethodConfigs()):
         super(RelativeRegressionMethod, self).__init__(configs)
@@ -458,7 +459,7 @@ class RelativeRegressionMethod(Method):
         self.num_pairwise = configs.num_pairwise
         self.use_test_error_for_model_selection = False
 
-        self.method = RelativeRegressionMethod.METHOD_CVX
+        self.method = RelativeRegressionMethod.METHOD_CVX_LOGISTIC
 
         if not self.use_pairwise:
             self.cv_params['C2'] = np.asarray([0])
@@ -512,7 +513,8 @@ class RelativeRegressionMethod(Method):
             b_anal = v[0][p]
             self.w = w_anal
             self.b = b_anal
-        elif self.method == RelativeRegressionMethod.METHOD_CVX:
+        elif self.method in {RelativeRegressionMethod.METHOD_CVX,
+                             RelativeRegressionMethod.METHOD_CVX_LOGISTIC}:
             w = cvx.Variable(p)
             b = cvx.Variable(1)
             loss = cvx.sum_entries(
@@ -523,13 +525,29 @@ class RelativeRegressionMethod(Method):
             )
             reg = cvx.norm(w)**2
             pairwise_reg = 0
+            pairwise_reg2 = 0
             for i,j in data.pairwise_relationships:
                 #x1 <= x2
                 x1 = self.transform.transform(data.x[i,:])
                 x2 = self.transform.transform(data.x[j,:])
-                pairwise_reg += (x1 - x2)*w
+                if self.method == RelativeRegressionMethod.METHOD_CVX:
+                    pairwise_reg += (x1 - x2)*w
+                elif self.method == RelativeRegressionMethod.METHOD_CVX_LOGISTIC:
+                    a = (x1 - x2)*w
+                    pairwise_reg += a
+                    if self.C2 == 0:
+                        continue
+                    s = 1/self.C2
+                    b = -a/s
+                    from utility import cvx_logistic
+                    #c = cvx.logistic(b)
+                    #c = cvx.log1p(cvx.exp(b))
+                    c = cvx_logistic.logistic(b)
+                    pairwise_reg2 += c
+                else:
+                    assert False, 'Unknown CVX Method'
             constraints = []
-            obj = cvx.Minimize(loss + self.C*reg + self.C2*pairwise_reg)
+            obj = cvx.Minimize(loss + self.C*reg + self.C2*pairwise_reg + pairwise_reg2)
             prob = cvx.Problem(obj,constraints)
             assert prob.is_dcp()
             try:

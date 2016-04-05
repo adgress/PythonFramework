@@ -534,13 +534,12 @@ class RelativeRegressionMethod(Method):
                     pairwise_reg += (x1 - x2)*w
                 elif self.method == RelativeRegressionMethod.METHOD_CVX_LOGISTIC:
                     a = (x1 - x2)*w
+                    C2 = self.C2
+                    C2 = 1
                     pairwise_reg += a
                     if self.C2 == 0:
                         continue
-                    #s = 1/self.C2
-                    s=1
-                    #b = -a/s
-                    b = a/s
+                    b = -a*C2
                     from utility import cvx_logistic
                     #c = cvx.logistic(b)
                     #c = cvx.log1p(cvx.exp(b))

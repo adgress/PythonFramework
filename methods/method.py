@@ -537,7 +537,8 @@ class RelativeRegressionMethod(Method):
                     pairwise_reg += a
                     if self.C2 == 0:
                         continue
-                    s = 1/self.C2
+                    #s = 1/self.C2
+                    s=1
                     #b = -a/s
                     b = a/s
                     from utility import cvx_logistic
@@ -548,7 +549,7 @@ class RelativeRegressionMethod(Method):
                 else:
                     assert False, 'Unknown CVX Method'
             constraints = []
-            obj = cvx.Minimize(loss + self.C*reg + self.C2*pairwise_reg + pairwise_reg2)
+            obj = cvx.Minimize(loss + self.C*reg + self.C2*pairwise_reg + self.C2*pairwise_reg2)
             prob = cvx.Problem(obj,constraints)
             assert prob.is_dcp()
             try:

@@ -439,12 +439,23 @@ class RelativeRegressionMethod(Method):
     METHOD_RIDGE = 3
     METHOD_RIDGE_SURROGATE = 4
     METHOD_CVX_LOGISTIC = 5
+    METHOD_CVX_LOGISTIC_WITH_LOG = 6
+    CVX_METHODS = {
+        METHOD_CVX,
+        METHOD_CVX_LOGISTIC,
+        METHOD_CVX_LOGISTIC_WITH_LOG
+    }
+    CVX_METHODS_LOGISTIC = {
+        METHOD_CVX_LOGISTIC,
+        METHOD_CVX_LOGISTIC_WITH_LOG
+    }
     METHOD_NAMES = {
         METHOD_ANALYTIC: 'analytic',
         METHOD_CVX: 'cvx',
         METHOD_RIDGE: 'ridge',
         METHOD_RIDGE_SURROGATE: 'ridge-surr',
-        METHOD_CVX_LOGISTIC: 'cvx-log'
+        METHOD_CVX_LOGISTIC: 'cvx-log',
+        METHOD_CVX_LOGISTIC_WITH_LOG: 'cvx-log-with-log',
     }
     def __init__(self,configs=MethodConfigs()):
         super(RelativeRegressionMethod, self).__init__(configs)
@@ -459,7 +470,7 @@ class RelativeRegressionMethod(Method):
         self.num_pairwise = configs.num_pairwise
         self.use_test_error_for_model_selection = False
 
-        self.method = RelativeRegressionMethod.METHOD_CVX_LOGISTIC
+        self.method = RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG
 
         if not self.use_pairwise:
             self.cv_params['C2'] = np.asarray([0])
@@ -513,8 +524,7 @@ class RelativeRegressionMethod(Method):
             b_anal = v[0][p]
             self.w = w_anal
             self.b = b_anal
-        elif self.method in {RelativeRegressionMethod.METHOD_CVX,
-                             RelativeRegressionMethod.METHOD_CVX_LOGISTIC}:
+        elif self.method in RelativeRegressionMethod.CVX_METHODS:
             w = cvx.Variable(p)
             b = cvx.Variable(1)
             loss = cvx.sum_entries(
@@ -532,24 +542,25 @@ class RelativeRegressionMethod(Method):
                 x2 = self.transform.transform(data.x[j,:])
                 if self.method == RelativeRegressionMethod.METHOD_CVX:
                     pairwise_reg += (x1 - x2)*w
-                elif self.method == RelativeRegressionMethod.METHOD_CVX_LOGISTIC:
+                elif self.method in RelativeRegressionMethod.CVX_METHODS_LOGISTIC:
                     a = (x1 - x2)*w
-                    C2 = self.C2
-                    C2 = 1
-                    pairwise_reg += a
-                    continue
-                    if self.C2 == 0:
-                        continue
-                    b = -a*C2
-                    from utility import cvx_logistic
-                    #c = cvx.logistic(b)
-                    #c = cvx.log1p(cvx.exp(b))
-                    c = cvx_logistic.logistic(b)
-                    pairwise_reg2 += c
+                    if self.method == RelativeRegressionMethod.METHOD_CVX_LOGISTIC:
+                        pairwise_reg += self.C2*a
+                    elif self.method == RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG:
+                        if self.C2 == 0:
+                            continue
+
+                        #Should this be -a?
+                        b = a*self.C2
+                        from utility import cvx_logistic
+                        #c = cvx.logistic(b)
+                        #c = cvx.log1p(cvx.exp(b))
+                        c = cvx_logistic.logistic(b)
+                        pairwise_reg2 += c
                 else:
                     assert False, 'Unknown CVX Method'
             constraints = []
-            obj = cvx.Minimize(loss + self.C*reg + self.C2*pairwise_reg + self.C2*pairwise_reg2)
+            obj = cvx.Minimize(loss + self.C*reg + self.C2*pairwise_reg + pairwise_reg2)
             prob = cvx.Problem(obj,constraints)
             assert prob.is_dcp()
             try:

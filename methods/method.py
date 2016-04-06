@@ -537,6 +537,7 @@ class RelativeRegressionMethod(Method):
                     C2 = self.C2
                     C2 = 1
                     pairwise_reg += a
+                    continue
                     if self.C2 == 0:
                         continue
                     b = -a*C2
@@ -555,6 +556,7 @@ class RelativeRegressionMethod(Method):
                 prob.solve()
                 w_value = w.value
                 b_value = b.value
+                print prob.status
                 assert w_value is not None and b_value is not None
             except:
                 #print 'cvx status: ' + str(prob.status)

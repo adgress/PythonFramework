@@ -440,14 +440,21 @@ class RelativeRegressionMethod(Method):
     METHOD_RIDGE_SURROGATE = 4
     METHOD_CVX_LOGISTIC = 5
     METHOD_CVX_LOGISTIC_WITH_LOG = 6
+    METHOD_CVX_LOGISTIC_WITH_LOG_NEG = 6
     CVX_METHODS = {
         METHOD_CVX,
         METHOD_CVX_LOGISTIC,
-        METHOD_CVX_LOGISTIC_WITH_LOG
+        METHOD_CVX_LOGISTIC_WITH_LOG,
+        METHOD_CVX_LOGISTIC_WITH_LOG_NEG
     }
     CVX_METHODS_LOGISTIC = {
         METHOD_CVX_LOGISTIC,
-        METHOD_CVX_LOGISTIC_WITH_LOG
+        METHOD_CVX_LOGISTIC_WITH_LOG,
+        METHOD_CVX_LOGISTIC_WITH_LOG_NEG
+    }
+    CVX_METHODS_LOGISTIC_WITH_LOG = {
+        METHOD_CVX_LOGISTIC_WITH_LOG,
+        METHOD_CVX_LOGISTIC_WITH_LOG_NEG,
     }
     METHOD_NAMES = {
         METHOD_ANALYTIC: 'analytic',
@@ -456,6 +463,7 @@ class RelativeRegressionMethod(Method):
         METHOD_RIDGE_SURROGATE: 'ridge-surr',
         METHOD_CVX_LOGISTIC: 'cvx-log',
         METHOD_CVX_LOGISTIC_WITH_LOG: 'cvx-log-with-log',
+        METHOD_CVX_LOGISTIC_WITH_LOG_NEG: 'cvx-log-with-log-neg'
     }
     def __init__(self,configs=MethodConfigs()):
         super(RelativeRegressionMethod, self).__init__(configs)
@@ -470,7 +478,7 @@ class RelativeRegressionMethod(Method):
         self.num_pairwise = configs.num_pairwise
         self.use_test_error_for_model_selection = False
 
-        self.method = RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG
+        self.method = RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG_NEG
 
         if not self.use_pairwise:
             self.cv_params['C2'] = np.asarray([0])
@@ -546,13 +554,14 @@ class RelativeRegressionMethod(Method):
                     a = (x1 - x2)*w
                     if self.method == RelativeRegressionMethod.METHOD_CVX_LOGISTIC:
                         pairwise_reg += self.C2*a
-                    elif self.method == RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG:
+                    elif self.method in RelativeRegressionMethod.CVX_METHODS_LOGISTIC_WITH_LOG:
                         pairwise_reg += self.C2*a
                         if self.C2 == 0:
                             continue
-
                         #Should this be -a?
                         b = a*self.C2
+                        if self.method == RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG_NEG:
+                            b = -b
                         from utility import cvx_logistic
                         #c = cvx.logistic(b)
                         #c = cvx.log1p(cvx.exp(b))

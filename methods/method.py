@@ -547,6 +547,7 @@ class RelativeRegressionMethod(Method):
                     if self.method == RelativeRegressionMethod.METHOD_CVX_LOGISTIC:
                         pairwise_reg += self.C2*a
                     elif self.method == RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG:
+                        pairwise_reg += self.C2*a
                         if self.C2 == 0:
                             continue
 

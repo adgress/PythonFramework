@@ -483,7 +483,7 @@ class RelativeRegressionMethod(Method):
         self.num_pairwise = configs.num_pairwise
         self.use_test_error_for_model_selection = False
 
-        self.method = RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG_SCALE
+        self.method = RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG
 
         if not self.use_pairwise:
             self.cv_params['C2'] = np.asarray([0])

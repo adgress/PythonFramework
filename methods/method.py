@@ -481,7 +481,8 @@ class RelativeRegressionMethod(Method):
         self.add_random_pairwise = True
         self.use_pairwise = configs.use_pairwise
         self.num_pairwise = configs.num_pairwise
-        self.use_test_error_for_model_selection = False
+        self.use_test_error_for_model_selection = True
+        self.no_linear_term = False
 
         self.method = RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG
 
@@ -563,7 +564,6 @@ class RelativeRegressionMethod(Method):
                         pairwise_reg += self.C2*a
                         if self.C2 == 0:
                             continue
-                        #Should this be -a?
                         b = a
                         if self.method != RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG_SCALE:
                             b *= self.C2
@@ -578,8 +578,10 @@ class RelativeRegressionMethod(Method):
                         pairwise_reg2 += c
                 else:
                     assert False, 'Unknown CVX Method'
+            if self.no_linear_term:
+                pairwise_reg = 0
             constraints = []
-            obj = cvx.Minimize(loss + self.C*reg + self.C2*pairwise_reg + pairwise_reg2)
+            obj = cvx.Minimize(loss + self.C*reg + pairwise_reg + pairwise_reg2)
             prob = cvx.Problem(obj,constraints)
             assert prob.is_dcp()
             try:
@@ -588,6 +590,8 @@ class RelativeRegressionMethod(Method):
                 b_value = b.value
                 #print prob.status
                 assert w_value is not None and b_value is not None
+                print a.value
+                print b.value
             except:
                 #print 'cvx status: ' + str(prob.status)
                 k = 0
@@ -641,6 +645,8 @@ class RelativeRegressionMethod(Method):
             s += '-noPairwiseReg'
         elif self.num_pairwise > 0:
             s += '-numRandPairs=' + str(int(self.num_pairwise))
+            if self.no_linear_term:
+                s += '-noLinear'
         if self.use_test_error_for_model_selection:
             s += '-TEST'
         return s

@@ -483,7 +483,7 @@ class RelativeRegressionMethod(Method):
         self.num_pairwise = configs.num_pairwise
         self.use_test_error_for_model_selection = True
         self.no_linear_term = True
-        self.neg_log = True
+        self.neg_log = False
 
         self.method = RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG_SCALE
 

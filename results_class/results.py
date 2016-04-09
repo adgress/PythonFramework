@@ -35,6 +35,20 @@ class MethodResults(ResultsContainer):
 
     def compute_error_processed(self, loss_function):
         errors = self.compute_error(loss_function)
+        hyper_params = []
+        for i, curr_results in enumerate(self.results_list):
+            hps_C = np.asarray([r.C for r in curr_results.results_list])
+            hps_C2 = np.asarray([r.C2 for r in curr_results.results_list])
+            d = {
+                'C': hps_C,
+                'C2': hps_C2
+            }
+            hyper_params.append(d)
+        mean_Cs = np.asarray([np.log10(d['C']).mean() for d in hyper_params])
+        mean_C2s = np.asarray([np.log10(d['C2']).mean() for d in hyper_params])
+
+        var_Cs = np.asarray([np.log10(d['C']).var() for d in hyper_params])
+        var_C2s = np.asarray([np.log10(d['C2']).var() for d in hyper_params])
         means = [x.mean for x in errors]
         lows = [x.low for x in errors]
         highs = [x.high for x in errors]

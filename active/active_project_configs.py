@@ -25,7 +25,7 @@ data_sets_for_exps = [data_set_to_use]
 active_iterations = 5
 active_items_per_iteration = 5
 use_pairwise = True
-num_pairwise = 50
+num_pairwise = 10
 
 run_active_experiments = False
 
@@ -129,7 +129,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         '''
         #self.files['RelReg-noPairwiseReg.pkl'] = 'Relative Ridge no Pairwise Reg'
 
-        self.files['RelReg-cvx-log-numRandPairs=10.pkl'] = 'Relative Ridge Log, 10 random pairs'
+        #self.files['RelReg-cvx-log-numRandPairs=10.pkl'] = 'Relative Ridge Log, 10 random pairs'
         #self.files['RelReg-cvx-log-numRandPairs=50.pkl'] = 'Relative Ridge Log, 50 random pairs'
 
         #self.files['RelReg-cvx-log-with-log-numRandPairs=10.pkl'] = 'Relative Ridge Log with Log, 10 random pairs'
@@ -141,7 +141,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #self.files['RelReg-cvx-log-with-log-scale-numRandPairs=50.pkl'] = 'Relative Ridge Log with Log-scale, 50 random pairs'
         #self.files['RelReg-cvx-log-with-log-scale-numRandPairs=10-TEST.pkl'] = 'Test: Relative Ridge Log with Log-scale, 10 random pairs'
 
-        self.files['RelReg-cvx-log-with-log-scale-numRandPairs=10-noLinear-TEST.pkl'] = 'Test: Relative Ridge Log with Log-scale, no Linear , 10 random pairs'
+        #self.files['RelReg-cvx-log-with-log-scale-numRandPairs=10-noLinear-TEST.pkl'] = 'Test: Relative Ridge Log with Log-scale, no Linear , 10 random pairs'
+        #self.files['RelReg-cvx-log-with-log-scale-numRandPairs=50-noLinear-TEST.pkl'] = 'Test: Relative Ridge Log with Log-scale, no Linear , 50 random pairs'
 
         self.files['RelReg-cvx-log-with-log-scale-numRandPairs=10-noLinear-negLog-TEST.pkl'] = 'Test: Relative Ridge Log with Log-scale, no Linear, neg, 10 random pairs'
 

@@ -483,7 +483,7 @@ class RelativeRegressionMethod(Method):
         self.num_pairwise = configs.num_pairwise
         self.use_test_error_for_model_selection = True
         self.no_linear_term = True
-        self.neg_log = False
+        self.neg_log = True
 
         self.method = RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG_SCALE
 
@@ -562,10 +562,10 @@ class RelativeRegressionMethod(Method):
                     if self.method == RelativeRegressionMethod.METHOD_CVX_LOGISTIC:
                         pairwise_reg += self.C2*a
                     elif self.method in RelativeRegressionMethod.CVX_METHODS_LOGISTIC_WITH_LOG:
-                        pairwise_reg += self.C2*a
+                        pairwise_reg += self.C2*(x1 - x2)*w
                         if self.C2 == 0:
                             continue
-                        b = a
+                        b = (x1 - x2)*w
                         if self.method != RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG_SCALE:
                             b *= self.C2
                         if self.method == RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG_NEG or self.neg_log:

@@ -482,9 +482,10 @@ class RelativeRegressionMethod(Method):
         self.use_pairwise = configs.use_pairwise
         self.num_pairwise = configs.num_pairwise
         self.use_test_error_for_model_selection = True
-        self.no_linear_term = False
+        self.no_linear_term = True
+        self.neg_log = True
 
-        self.method = RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG
+        self.method = RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG_SCALE
 
         if not self.use_pairwise:
             self.cv_params['C2'] = np.asarray([0])
@@ -567,7 +568,7 @@ class RelativeRegressionMethod(Method):
                         b = a
                         if self.method != RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG_SCALE:
                             b *= self.C2
-                        if self.method == RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG_NEG:
+                        if self.method == RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG_NEG or self.neg_log:
                             b = -b
                         from utility import cvx_logistic
                         #c = cvx.logistic(b)
@@ -647,6 +648,8 @@ class RelativeRegressionMethod(Method):
             s += '-numRandPairs=' + str(int(self.num_pairwise))
             if self.no_linear_term:
                 s += '-noLinear'
+            if self.neg_log:
+                s += '-negLog'
         if self.use_test_error_for_model_selection:
             s += '-TEST'
         return s

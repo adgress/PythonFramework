@@ -579,8 +579,6 @@ class RelativeRegressionMethod(Method):
                     assert False, 'Unknown CVX Method'
             if self.no_linear_term:
                 pairwise_reg = 0
-            pairwise_reg = 0
-            pairwise_reg2 = 0
             constraints = []
             obj = cvx.Minimize(loss + self.C*reg + pairwise_reg + pairwise_reg2)
             prob = cvx.Problem(obj,constraints)

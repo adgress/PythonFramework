@@ -64,7 +64,7 @@ class ProjectConfigs(bc.ProjectConfigs):
                 self.num_labels = [5]
         elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
             self.set_synthetic_linear_reg()
-            self.num_labels = [10, 20, 30, 40, 50, 60]
+            self.num_labels = [10, 20, 40]
             #self.num_labels = [10]
 
 
@@ -144,6 +144,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #self.files['RelReg-cvx-log-with-log-scale-numRandPairs=10-noLinear-TEST.pkl'] = 'Test: Relative Ridge Log with Log-scale, no Linear , 10 random pairs'
         #self.files['RelReg-cvx-log-with-log-scale-numRandPairs=50-noLinear-TEST.pkl'] = 'Test: Relative Ridge Log with Log-scale, no Linear , 50 random pairs'
 
+        self.files['RelReg-cvx-log-with-log-scale-numRandPairs=11-noLinear-negLog-TEST.pkl'] = 'Test: Relative Ridge Log with Log-scale, no Linear, neg, 11 random pairs (0''ed out pairwise_reg2'
         self.files['RelReg-cvx-log-with-log-scale-numRandPairs=10-noLinear-negLog-TEST.pkl'] = 'Test: Relative Ridge Log with Log-scale, no Linear, neg, 10 random pairs'
 
         #self.files['RelReg-numRandPairs=10.pkl'] = 'Relative Ridge, 10 random pairs'

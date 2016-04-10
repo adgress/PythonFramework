@@ -482,10 +482,10 @@ class RelativeRegressionMethod(Method):
         self.use_pairwise = configs.use_pairwise
         self.num_pairwise = configs.num_pairwise
         self.use_test_error_for_model_selection = True
-        self.no_linear_term = True
-        self.neg_log = True
+        self.no_linear_term = False
+        self.neg_log = False
 
-        self.method = RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG_SCALE
+        self.method = RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG
 
         if not self.use_pairwise:
             self.cv_params['C2'] = np.asarray([0])
@@ -562,25 +562,25 @@ class RelativeRegressionMethod(Method):
                     if self.method == RelativeRegressionMethod.METHOD_CVX_LOGISTIC:
                         pairwise_reg += self.C2*a
                     elif self.method in RelativeRegressionMethod.CVX_METHODS_LOGISTIC_WITH_LOG:
-                        pairwise_reg += self.C2*(x1 - x2)*w
+                        pairwise_reg += self.C2*a
                         if self.C2 == 0:
                             continue
-                        b = (x1 - x2)*w
+                        a2 = (x1 - x2)*w
                         if self.method != RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG_SCALE:
-                            b *= self.C2
+                            a2 *= self.C2
                         if self.method == RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG_NEG or self.neg_log:
-                            b = -b
+                            a2 = -a2
                         from utility import cvx_logistic
-                        #c = cvx.logistic(b)
-                        #c = cvx.log1p(cvx.exp(b))
-                        c = cvx_logistic.logistic(b)
+                        a3 = cvx_logistic.logistic(a2)
                         if self.method == RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG_SCALE:
-                            c *= self.C2
-                        pairwise_reg2 += c
+                            a3 *= self.C2
+                        pairwise_reg2 += a3
                 else:
                     assert False, 'Unknown CVX Method'
             if self.no_linear_term:
                 pairwise_reg = 0
+            pairwise_reg = 0
+            pairwise_reg2 = 0
             constraints = []
             obj = cvx.Minimize(loss + self.C*reg + pairwise_reg + pairwise_reg2)
             prob = cvx.Problem(obj,constraints)
@@ -591,8 +591,8 @@ class RelativeRegressionMethod(Method):
                 b_value = b.value
                 #print prob.status
                 assert w_value is not None and b_value is not None
-                print a.value
-                print b.value
+                #print a.value
+                #print b.value
             except:
                 #print 'cvx status: ' + str(prob.status)
                 k = 0

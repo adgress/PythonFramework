@@ -66,7 +66,7 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.set_synthetic_linear_reg()
             self.num_labels = [10, 20, 40]
             if run_active_experiments:
-                self.num_labels = [10]
+                self.num_labels = [40]
 
 
     def set_boston_housing(self):
@@ -125,6 +125,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         if run_active_experiments:
             self.files['RelActiveRandom+SKL-RidgeReg.pkl'] = 'Random Pairwise, SKLRidge'
             self.files['ActiveRandom+SKL-RidgeReg.pkl'] = 'Random, SKLRidge'
+            self.files['RelActiveRandom+RelReg-cvx-log-with-log-TEST.pkl'] = 'TEST: RandomPairwise, RelReg'
         else:
             self.files['RelReg-noPairwiseReg.pkl'] = 'Relative Ridge no Pairwise Reg'
             self.files['RelReg-cvx-log-numRandPairs=50.pkl'] = 'Relative Ridge Log, 50 random pairs'

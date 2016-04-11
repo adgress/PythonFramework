@@ -6,7 +6,7 @@ import numpy as np
 import collections
 import copy
 from utility import array_functions
-
+from sets import Set
 data_subset = collections.namedtuple('DataSubset',['x','y'])
 
 TYPE_TARGET = 1
@@ -106,7 +106,25 @@ class LabeledVector(object):
         if inds is None:
             assert False, 'Is this a good way of doing this?  Wouldn''t "None" imply nothing should be revealed?'
             inds = array_functions.true(self.n)
-        self.y[inds] = self.true_y[inds]
+        #if inds are pairwise relationships
+        try:
+            #Old instances may be missing 'pairwise_relationships' or it will be a list
+            if not hasattr(self,'pairwise_relationships') or len(self.pairwise_relationships) == 0:
+                self.pairwise_relationships = Set()
+            assert inds.shape[1] == 2
+            #assert np.asarray([len(i) == 2 for i in inds]).all()
+            inds_set = Set([tuple(x) for x in inds])
+            self.pairwise_relationships.update(inds_set)
+        #If inds are for instances
+        except TypeError as error:
+            self.y[inds] = self.true_y[inds]
+        except IndexError as error:
+            self.y[inds] = self.true_y[inds]
+        #If 'pairwise' data has a number of indices other than 2
+        except AssertionError:
+            assert False, 'Number of inds for pairwise data must be 2'
+
+
 
     #Note: This changes both y AND true_y
     def add_noise(self, noise_rate, I=None, classes=None):
@@ -135,7 +153,7 @@ class LabeledData(LabeledVector):
     def __init__(self):
         super(LabeledData, self).__init__()
         self.is_regression = None
-        self.pairwise_relationships = []
+        self.pairwise_relationships = Set()
 
     def repair_data(self):
         if self.type is None or len(self.type) == 0:

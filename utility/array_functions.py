@@ -33,7 +33,11 @@ def sample_pairs(n_or_vector, num_samples=1):
     return pairs
 
 def sample(n_or_vector, num_samples=1, distribution=None):
-    return np.random.choice(n_or_vector, num_samples, replace=False, p=distribution)
+    try:
+        indices = np.random.choice(n_or_vector.shape[0], num_samples, replace=False, p=distribution)
+        return n_or_vector[indices,:]
+    except Exception as error:
+        return np.random.choice(n_or_vector, num_samples, replace=False, p=distribution)
 
 def clip(x, min, max):
     assert min <= max

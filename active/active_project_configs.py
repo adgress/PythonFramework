@@ -27,7 +27,7 @@ active_items_per_iteration = 5
 use_pairwise = True
 num_pairwise = 10
 
-run_active_experiments = False
+run_active_experiments = True
 
 run_experiments = True
 show_legend_on_all = True
@@ -65,7 +65,8 @@ class ProjectConfigs(bc.ProjectConfigs):
         elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
             self.set_synthetic_linear_reg()
             self.num_labels = [10, 20, 40]
-            #self.num_labels = [10]
+            if run_active_experiments:
+                self.num_labels = [10]
 
 
     def set_boston_housing(self):
@@ -98,8 +99,9 @@ class MainConfigs(bc.MainConfigs):
         method_configs.metric = 'euclidean'
         method_configs.use_pairwise = use_pairwise
         method_configs.num_pairwise = num_pairwise
-        #nw = method.NadarayaWatsonMethod(method_configs)
-        active = active_methods.ActiveMethod(method_configs)
+
+        #active = active_methods.ActiveMethod(method_configs)
+        active = active_methods.RelativeActiveMethod(method_configs)
         active.base_learner = method.RelativeRegressionMethod(method_configs)
         relative_reg = method.RelativeRegressionMethod(method_configs)
         ridge_reg = method.SKLRidgeRegression(method_configs)
@@ -119,36 +121,16 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         super(VisualizationConfigs, self).__init__()
         pc = ProjectConfigs(data_set)
         self.copy_fields(pc,pc_fields_to_copy)
-
         self.files = OrderedDict()
-        #self.files['ActiveRandom+SKL-RidgeReg.pkl'] = 'Random+Ridge'
-        '''
-        self.files['RelReg-numRandPairs=10-TEST.pkl'] = 'Test MS: Relative Ridge, 10'
-        self.files['RelReg-numRandPairs=50-TEST.pkl'] = 'Test MS: Relative Ridge, 50'
-        self.files['RelReg-noPairwiseReg-TEST.pkl'] = 'Test MS: Ridge'
-        '''
-        #self.files['RelReg-noPairwiseReg.pkl'] = 'Relative Ridge no Pairwise Reg'
+        if run_active_experiments:
+            self.files['RelActiveRandom+SKL-RidgeReg.pkl'] = 'Random Pairwise, SKLRidge'
+            self.files['ActiveRandom+SKL-RidgeReg.pkl'] = 'Random, SKLRidge'
+        else:
+            self.files['RelReg-noPairwiseReg.pkl'] = 'Relative Ridge no Pairwise Reg'
+            self.files['RelReg-cvx-log-numRandPairs=50.pkl'] = 'Relative Ridge Log, 50 random pairs'
 
-        #self.files['RelReg-cvx-log-numRandPairs=10.pkl'] = 'Relative Ridge Log, 10 random pairs'
-        #self.files['RelReg-cvx-log-numRandPairs=50.pkl'] = 'Relative Ridge Log, 50 random pairs'
-
-        #self.files['RelReg-cvx-log-with-log-numRandPairs=10.pkl'] = 'Relative Ridge Log with Log, 10 random pairs'
-        #self.files['RelReg-cvx-log-with-log-numRandPairs=50.pkl'] = 'Relative Ridge Log with Log, 50 random pairs'
-        #self.files['RelReg-cvx-log-with-log-numRandPairs=10-TEST.pkl'] = 'Test: Relative Ridge Log with Log, 10 random pairs'
-        #self.files['RelReg-cvx-log-with-log-neg-numRandPairs=10.pkl'] = 'Relative Ridge Log with Log-Neg, 10 random pairs'
-
-        #self.files['RelReg-cvx-log-with-log-scale-numRandPairs=10.pkl'] = 'Relative Ridge Log with Log-scale, 10 random pairs'
-        #self.files['RelReg-cvx-log-with-log-scale-numRandPairs=50.pkl'] = 'Relative Ridge Log with Log-scale, 50 random pairs'
-        #self.files['RelReg-cvx-log-with-log-scale-numRandPairs=10-TEST.pkl'] = 'Test: Relative Ridge Log with Log-scale, 10 random pairs'
-
-        #self.files['RelReg-cvx-log-with-log-scale-numRandPairs=10-noLinear-TEST.pkl'] = 'Test: Relative Ridge Log with Log-scale, no Linear , 10 random pairs'
-        #self.files['RelReg-cvx-log-with-log-scale-numRandPairs=50-noLinear-TEST.pkl'] = 'Test: Relative Ridge Log with Log-scale, no Linear , 50 random pairs'
-
-        self.files['RelReg-cvx-log-with-log-scale-numRandPairs=11-noLinear-negLog-TEST.pkl'] = 'Test: Relative Ridge Log with Log-scale, no Linear, neg, 11 random pairs (0''ed out pairwise_reg2'
-        self.files['RelReg-cvx-log-with-log-scale-numRandPairs=10-noLinear-negLog-TEST.pkl'] = 'Test: Relative Ridge Log with Log-scale, no Linear, neg, 10 random pairs'
-
-        #self.files['RelReg-numRandPairs=10.pkl'] = 'Relative Ridge, 10 random pairs'
-        #self.files['RelReg-numRandPairs=50.pkl'] = 'Relative Ridge, 50 random pairs'
+            #self.files['RelReg-cvx-log-with-log-scale-numRandPairs=10-noLinear-TEST.pkl'] = 'Test: Relative Ridge Log with Log-scale, no Linear , 10 random pairs'
+            self.files['RelReg-cvx-log-with-log-scale-numRandPairs=50-noLinear.pkl'] = 'Relative Ridge Log with Log-scale, no Linear , 50 random pairs'
 
         self.figsize = (7,7)
         self.borders = (.1,.9,.9,.1)

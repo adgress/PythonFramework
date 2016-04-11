@@ -23,6 +23,7 @@ import scipy
 from timer.timer import tic,toc
 import cvxpy as cvx
 from numpy.linalg import norm
+from sets import Set
 from sklearn.preprocessing import StandardScaler
 
 #from pyqt_fit import nonparam_regression
@@ -478,11 +479,11 @@ class RelativeRegressionMethod(Method):
         self.w = None
         self.b = None
         self.transform = StandardScaler()
-        self.add_random_pairwise = True
+        self.add_random_pairwise = False
         self.use_pairwise = configs.use_pairwise
         self.num_pairwise = configs.num_pairwise
         self.use_test_error_for_model_selection = True
-        self.no_linear_term = False
+        self.no_linear_term = True
         self.neg_log = False
 
         self.method = RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG
@@ -492,7 +493,7 @@ class RelativeRegressionMethod(Method):
 
     def train(self, data):
         if self.add_random_pairwise:
-            data.pairwise_relationships = []
+            data.pairwise_relationships = Set()
             I = data.is_train & ~data.is_labeled
             sampled_pairs = array_functions.sample_pairs(I.nonzero()[0], self.num_pairwise)
             pairwise_relationships = []
@@ -500,7 +501,7 @@ class RelativeRegressionMethod(Method):
                 pair = (i,j)
                 if data.true_y[j] <= data.true_y[i]:
                     pair = (j,i)
-                pairwise_relationships.append(pair)
+                pairwise_relationships.add(pair)
             data.pairwise_relationships = pairwise_relationships
         is_labeled_train = data.is_train & data.is_labeled
         labeled_train = data.labeled_training_data()
@@ -584,7 +585,7 @@ class RelativeRegressionMethod(Method):
             prob = cvx.Problem(obj,constraints)
             assert prob.is_dcp()
             try:
-                prob.solve()
+                prob.solve(verbose=False)
                 w_value = w.value
                 b_value = b.value
                 #print prob.status
@@ -642,7 +643,7 @@ class RelativeRegressionMethod(Method):
             s += '-' + RelativeRegressionMethod.METHOD_NAMES[self.method]
         if not self.use_pairwise:
             s += '-noPairwiseReg'
-        elif self.num_pairwise > 0:
+        elif self.num_pairwise > 0 and self.add_random_pairwise:
             s += '-numRandPairs=' + str(int(self.num_pairwise))
             if self.no_linear_term:
                 s += '-noLinear'

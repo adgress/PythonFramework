@@ -26,6 +26,9 @@ def send_email(address='agress@ucdavis.edu', subject=''):
     s.sendmail(address, [address], msg.as_string())
     s.quit()
 
+def flatten_list_of_lists(list_of_lists):
+    return [item for sublist in list_of_lists for item in sublist]
+
 def is_laptop():
     return get_user_name() == 'Aubrey'
 

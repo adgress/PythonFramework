@@ -643,8 +643,9 @@ class RelativeRegressionMethod(Method):
             s += '-' + RelativeRegressionMethod.METHOD_NAMES[self.method]
         if not self.use_pairwise:
             s += '-noPairwiseReg'
-        elif self.num_pairwise > 0 and self.add_random_pairwise:
-            s += '-numRandPairs=' + str(int(self.num_pairwise))
+        else:
+            if self.num_pairwise > 0 and self.add_random_pairwise:
+                s += '-numRandPairs=' + str(int(self.num_pairwise))
             if self.no_linear_term:
                 s += '-noLinear'
             if self.neg_log:

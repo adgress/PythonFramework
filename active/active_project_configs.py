@@ -22,8 +22,8 @@ data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
 
 data_sets_for_exps = [data_set_to_use]
 
-active_iterations = 5
-active_items_per_iteration = 5
+active_iterations = 2
+active_items_per_iteration = 50
 use_pairwise = True
 num_pairwise = 10
 
@@ -66,7 +66,7 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.set_synthetic_linear_reg()
             self.num_labels = [10, 20, 40]
             if run_active_experiments:
-                self.num_labels = [40]
+                self.num_labels = [20]
 
 
     def set_boston_housing(self):

@@ -113,8 +113,14 @@ class LabeledVector(object):
                 self.pairwise_relationships = Set()
             assert inds.shape[1] == 2
             #assert np.asarray([len(i) == 2 for i in inds]).all()
-            inds_set = Set([tuple(x) for x in inds])
-            self.pairwise_relationships.update(inds_set)
+            inds_set = Set()
+            for x1, x2 in inds:
+                if len(Set([(x1,x2),(x2,x1)]) & self.pairwise_relationships) > 0:
+                    continue
+                item = (x2,x1)
+                if self.true_y[x1] <= self.true_y[x2]:
+                    item = (x1,x2)
+                self.pairwise_relationships.add(item)
         #If inds are for instances
         except TypeError as error:
             self.y[inds] = self.true_y[inds]

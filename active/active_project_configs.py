@@ -29,7 +29,7 @@ num_pairwise = 10
 
 run_active_experiments = True
 
-run_experiments = True
+run_experiments = run_active_experiments
 show_legend_on_all = True
 
 max_rows = 3
@@ -125,7 +125,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         if run_active_experiments:
             self.files['RelActiveRandom+SKL-RidgeReg.pkl'] = 'Random Pairwise, SKLRidge'
             self.files['ActiveRandom+SKL-RidgeReg.pkl'] = 'Random, SKLRidge'
-            self.files['RelActiveRandom+RelReg-cvx-log-with-log-TEST.pkl'] = 'TEST: RandomPairwise, RelReg'
+            self.files['RelActiveRandom+RelReg-cvx-log-with-log-noLinear-TEST.pkl'] = 'TEST: RandomPairwise, RelReg'
         else:
             self.files['RelReg-noPairwiseReg.pkl'] = 'Relative Ridge no Pairwise Reg'
             self.files['RelReg-cvx-log-numRandPairs=50.pkl'] = 'Relative Ridge Log, 50 random pairs'

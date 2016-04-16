@@ -496,13 +496,11 @@ class RelativeRegressionMethod(Method):
             data.pairwise_relationships = Set()
             I = data.is_train & ~data.is_labeled
             sampled_pairs = array_functions.sample_pairs(I.nonzero()[0], self.num_pairwise)
-            pairwise_relationships = []
             for i,j in sampled_pairs:
                 pair = (i,j)
                 if data.true_y[j] <= data.true_y[i]:
                     pair = (j,i)
-                pairwise_relationships.add(pair)
-            data.pairwise_relationships = pairwise_relationships
+                data.pairwise_relationships.add(pair)
         is_labeled_train = data.is_train & data.is_labeled
         labeled_train = data.labeled_training_data()
         x = labeled_train.x

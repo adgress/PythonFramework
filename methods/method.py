@@ -479,7 +479,7 @@ class RelativeRegressionMethod(Method):
         self.w = None
         self.b = None
         self.transform = StandardScaler()
-        self.add_random_pairwise = False
+        self.add_random_pairwise = True
         self.use_pairwise = configs.use_pairwise
         self.num_pairwise = configs.num_pairwise
         self.use_test_error_for_model_selection = True

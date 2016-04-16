@@ -18,18 +18,19 @@ def create_project_configs():
 pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
-data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 
 data_sets_for_exps = [data_set_to_use]
 
 active_iterations = 2
 active_items_per_iteration = 50
-use_pairwise = True
+use_pairwise = False
 num_pairwise = 10
 
-run_active_experiments = True
+run_active_experiments = False
 
-run_experiments = run_active_experiments
+run_experiments = True
 show_legend_on_all = True
 
 max_rows = 3
@@ -67,6 +68,11 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.num_labels = [10, 20, 40]
             if run_active_experiments:
                 self.num_labels = [20]
+        elif data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
+            self.set_adience_aligned_cnn_1()
+            self.num_labels = [10, 20, 40]
+            if run_active_experiments:
+                self.num_labels = [20]
 
 
     def set_boston_housing(self):
@@ -83,6 +89,14 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.data_dir = 'data_sets/synthetic_linear_reg500-50-1'
         self.data_name = 'synthetic_linear_reg500-50-1'
         self.results_dir = 'synthetic_linear_reg500-50-1'
+        self.data_set_file_name = 'split_data.pkl'
+
+    def set_adience_aligned_cnn_1(self):
+        self.loss_function = loss_function.MeanSquaredError()
+        self.cv_loss_function = loss_function.MeanSquaredError()
+        self.data_dir = 'data_sets/adience_aligned_cnn_1_per_instance_id'
+        self.data_name = 'adience_aligned_cnn_1_per_instance_id'
+        self.results_dir = 'adience_aligned_cnn_1_per_instance_id'
         self.data_set_file_name = 'split_data.pkl'
 
 
@@ -132,6 +146,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
 
             #self.files['RelReg-cvx-log-with-log-scale-numRandPairs=10-noLinear-TEST.pkl'] = 'Test: Relative Ridge Log with Log-scale, no Linear , 10 random pairs'
             self.files['RelReg-cvx-log-with-log-scale-numRandPairs=50-noLinear.pkl'] = 'Relative Ridge Log with Log-scale, no Linear , 50 random pairs'
+            if pc.data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
+                self.files['SKL-RidgeReg.pkl'] = 'SKL RIdge'
 
         self.figsize = (7,7)
         self.borders = (.1,.9,.9,.1)

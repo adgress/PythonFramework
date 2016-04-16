@@ -85,6 +85,13 @@ class RelativeActiveMethod(ActiveMethod):
         super(RelativeActiveMethod, self).__init__(configs)
 
     def create_sampling_distribution(self, base_learner, data, fold_results):
+        all_pairs = self.create_pairs(data)
+        d = np.zeros(all_pairs.shape[0])
+        d[:] = 1
+        d = d / d.sum()
+        return d, all_pairs
+
+    def create_pairs(self, data):
         if not hasattr(data, 'pairwise_relationships'):
             data.pairwise_relationships = Set()
         I = data.is_train.nonzero()[0]
@@ -95,17 +102,26 @@ class RelativeActiveMethod(ActiveMethod):
                     continue
                 all_pairs.add((x1,x2))
         all_pairs = np.asarray(list(all_pairs))
+
+    @property
+    def prefix(self):
+        return 'RelActiveRandom+' + self.base_learner.prefix
+
+class IGRelativeActiveMethod(RelativeActiveMethod):
+    def __init__(self,configs=MethodConfigs()):
+        super(IGRelativeActiveMethod, self).__init__(configs)
+
+    def create_sampling_distribution(self, base_learner, data, fold_results):
+        all_pairs = self.create_pairs(data)
         d = np.zeros(all_pairs.shape[0])
-        d[:] = 1
+        for x1, x2 in all_pairs:
+            pass
         d = d / d.sum()
         return d, all_pairs
 
     @property
     def prefix(self):
         return 'RelActiveRandom+' + self.base_learner.prefix
-
-
-
 
 
 

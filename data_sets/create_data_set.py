@@ -47,6 +47,8 @@ ng_raw_data_file = '20ng-%d/raw_data.pkl' % max_features
 concrete_file = 'concrete%s/raw_data.pkl'
 bike_file = 'bike_sharing%s/raw_data.pkl'
 wine_file = 'wine%s/raw_data.pkl'
+adience_aligned_cnn_file = 'adience_aligned_cnn/raw_data.pkl'
+adience_aligned_cnn_1_per_instance_id_file = 'adience_aligned_cnn_1_per_instance_id/raw_data.pkl'
 
 def pair_file(i,j):
     s = 'pair_data_' + str(i) + '_' + str(j) + '/raw_data.pkl'
@@ -367,39 +369,63 @@ def create_20ng_data(file_dir=''):
     helper_functions.save_object(s,data)
 
 #1,9
-def create_wine():
+WINE_TRANSFER = 1
+WINE_RED = 2
+WINE_WHITE = 3
+def create_wine(data_to_create=WINE_RED):
     red_file = 'wine/winequality-red.csv'
     white_file = 'wine/winequality-white.csv'
     field_names, red_data = load_csv(red_file, delim=';')
     white_data = load_csv(white_file, delim=';')[1]
-    red_ids = np.zeros((red_data.shape[0],1))
-    white_ids = np.ones((white_data.shape[0],1))
-    red_data = np.hstack((red_data, red_ids))
-    white_data = np.hstack((white_data, white_ids))
-    wine_data = np.vstack((red_data,white_data))
-    y = wine_data[:,-2]
-    ids = wine_data[:,-1]
-    x = wine_data[:,:-2]
-    used_field_names = field_names[:-1]
-    viz = True
-    if viz:
-        learner = make_learner()
-        #learner = None
-        viz_features(x,y,ids,used_field_names,alpha=.01,learner=learner)
 
-    feat_idx = 1
+    if data_to_create == WINE_TRANSFER:
+        red_ids = np.zeros((red_data.shape[0],1))
+        white_ids = np.ones((white_data.shape[0],1))
+        red_data = np.hstack((red_data, red_ids))
+        white_data = np.hstack((white_data, white_ids))
+        wine_data = np.vstack((red_data,white_data))
+
+        ids = wine_data[:,-1]
+        x = wine_data[:,:-2]
+        y = wine_data[:,-2]
+        used_field_names = field_names[:-1]
+        viz = True
+        if viz:
+            learner = make_learner()
+            #learner = None
+            viz_features(x,y,ids,used_field_names,alpha=.01,learner=learner)
+        suffix = 'transfer'
+    else:
+        if data_to_create == WINE_RED:
+            wine_data = red_data
+            suffix = 'red'
+        elif data_to_create == WINE_WHITE:
+            wine_data = white_data
+            suffix = 'white'
+        else:
+            assert False
+
+        ids = []
+        x = wine_data[:,:-2]
+        y = wine_data[:,-2]
+        used_field_names = field_names[:-1]
     data = data_class.Data()
     data.x = data.x = array_functions.standardize(x)
-    #data.x = array_functions.vec_to_2d(x[:,feat_idx])
+    if data_to_create == WINE_TRANSFER:
+        pass
+        #feat_idx = 1
+        #data.x = array_functions.vec_to_2d(x[:,feat_idx])
 
     data.y = y
     data.set_defaults()
     data.data_set_ids = ids
+    data.is_regression = True
+    '''
     data = data.rand_sample(.25, data.data_set_ids == 0)
     data = data.rand_sample(.1, data.data_set_ids == 1)
-    data.is_regression = True
-    #s = wine_file % ('-small-feat=' + str(feat_idx))
     s = wine_file % ('-small-' + str(data.p))
+    '''
+    s = wine_file % ('-' + suffix)
     helper_functions.save_object(s,data)
 
 

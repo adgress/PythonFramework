@@ -19,6 +19,7 @@ class LabeledVector(object):
         self.is_train = np.empty(0)
         self.type = None
         self.data_set_ids = None
+        self.instance_ids = None
         self.instance_weights = None
         self.is_regression = None
 

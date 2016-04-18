@@ -405,7 +405,7 @@ def create_wine(data_to_create=WINE_RED):
         else:
             assert False
 
-        ids = []
+        ids = None
         x = wine_data[:,:-2]
         y = wine_data[:,-2]
         used_field_names = field_names[:-1]
@@ -417,7 +417,9 @@ def create_wine(data_to_create=WINE_RED):
         #data.x = array_functions.vec_to_2d(x[:,feat_idx])
 
     data.y = y
-    data.set_defaults()
+    data.set_train()
+    data.set_target()
+    data.set_true_y()
     data.data_set_ids = ids
     data.is_regression = True
     '''
@@ -548,7 +550,7 @@ def create_bike_sharing():
     pass
 
 if __name__ == "__main__":
-    create_boston_housing()
+    #create_boston_housing()
     #create_concrete()
     #create_bike_sharing()
     #create_wine()
@@ -560,5 +562,6 @@ if __name__ == "__main__":
     #create_synthetic_curve_transfer()
     #create_pair_82_83()
     #create_pair(pair_target,pair_source,0)
+    create_wine()
     from data_sets import create_data_split
-    create_data_split.run_main()
+    #create_data_split.run_main()

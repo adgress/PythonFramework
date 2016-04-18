@@ -43,6 +43,7 @@ class Method(Saveable):
         self._estimated_error = None
         self.quiet = True
         self.best_params = None
+        self.transform = None
 
     @property
     def params(self):
@@ -160,8 +161,13 @@ class Method(Saveable):
     def train_and_test(self, data):
         self.should_plot_g = False
         data = self.process_data(data)
-        best_params, min_error, error_on_test_data = self.run_cross_validation(data)
-        self.set_params(**best_params)
+        if len(self.cv_params) == 0:
+            best_params = None
+            min_error = None
+            error_on_test_data = None
+        else:
+            best_params, min_error, error_on_test_data = self.run_cross_validation(data)
+            self.set_params(**best_params)
         self.should_plot_g = True
         output = self.run_method(data)
         f = FoldResults()
@@ -170,8 +176,9 @@ class Method(Saveable):
         f.error_on_test_data = error_on_test_data
         self.estimated_error = min_error
         self.error_on_test_data = error_on_test_data
-        for key,value in best_params.iteritems():
-            setattr(f,key,value)
+        if best_params is not None:
+            for key,value in best_params.iteritems():
+                setattr(f,key,value)
         return f
 
 
@@ -332,8 +339,9 @@ class ScikitLearnMethod(Method):
     _short_name_dict = {
         'Ridge': 'RidgeReg',
         'DummyClassifier': 'DumClass',
+        'DummyRegressor': 'DumReg',
         'LogisticRegression': 'LogReg',
-        'KNeighborsClassifier': 'KNN'
+        'KNeighborsClassifier': 'KNN',
     }
 
     def __init__(self,configs=MethodConfigs(),skl_method=None):
@@ -431,7 +439,7 @@ class SKLGuessClassifier(ScikitLearnMethod):
 
 class SKLMeanRegressor(ScikitLearnMethod):
     def __init__(self,configs=None):
-        assert False, 'Test this'
+        #assert False, 'Test this'
         super(SKLMeanRegressor, self).__init__(configs,dummy.DummyRegressor('mean'))
 
 class RelativeRegressionMethod(Method):
@@ -482,7 +490,7 @@ class RelativeRegressionMethod(Method):
         self.add_random_pairwise = True
         self.use_pairwise = configs.use_pairwise
         self.num_pairwise = configs.num_pairwise
-        self.use_test_error_for_model_selection = True
+        self.use_test_error_for_model_selection = False
         self.no_linear_term = True
         self.neg_log = False
 

@@ -19,7 +19,8 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
+#data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
+data_set_to_use = bc.DATA_WINE_RED
 
 data_sets_for_exps = [data_set_to_use]
 
@@ -73,6 +74,11 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.num_labels = [10, 20, 40]
             if run_active_experiments:
                 self.num_labels = [20]
+        elif data_set == bc.DATA_WINE_RED:
+            self.set_wine_red()
+            self.num_labels = [10, 20, 40]
+            if run_active_experiments:
+                self.num_labels = [20]
 
 
     def set_boston_housing(self):
@@ -99,6 +105,15 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.results_dir = 'adience_aligned_cnn_1_per_instance_id'
         self.data_set_file_name = 'split_data.pkl'
 
+    def set_wine_red(self):
+        self.loss_function = loss_function.MeanSquaredError()
+        self.cv_loss_function = loss_function.MeanSquaredError()
+        s = 'wine-red'
+        self.data_dir = 'data_sets/' + s
+        self.data_name = s
+        self.results_dir = s
+        self.data_set_file_name = 'split_data.pkl'
+
 
 class MainConfigs(bc.MainConfigs):
     def __init__(self, pc):
@@ -119,11 +134,13 @@ class MainConfigs(bc.MainConfigs):
         active.base_learner = method.RelativeRegressionMethod(method_configs)
         relative_reg = method.RelativeRegressionMethod(method_configs)
         ridge_reg = method.SKLRidgeRegression(method_configs)
+        mean_reg = method.SKLMeanRegressor(method_configs)
         if run_active_experiments:
             self.learner = active
         else:
             self.learner = relative_reg
             #self.learner = ridge_reg
+            #self.learner = mean_reg
 
 class MethodConfigs(bc.MethodConfigs):
     def __init__(self, pc):
@@ -141,13 +158,16 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['ActiveRandom+SKL-RidgeReg.pkl'] = 'Random, SKLRidge'
             self.files['RelActiveRandom+RelReg-cvx-log-with-log-noLinear-TEST.pkl'] = 'TEST: RandomPairwise, RelReg'
         else:
-            self.files['RelReg-noPairwiseReg.pkl'] = 'Relative Ridge no Pairwise Reg'
-            self.files['RelReg-cvx-log-numRandPairs=50.pkl'] = 'Relative Ridge Log, 50 random pairs'
+            #self.files['SKL-RidgeReg.pkl'] = 'SKL Ridge'
+            #self.files['RelReg-cvx-log-with-log-noPairwiseReg-TEST.pkl'] = 'TEST: RelReg nopairwise '
+            #self.files['RelReg-cvx-log-with-log-numRandPairs=10-noLinear-TEST.pkl'] = 'TEST: RelReg, 10 pairs'
+            #self.files['RelReg-cvx-log-with-log-numRandPairs=50-noLinear-TEST.pkl'] = 'TEST: RelReg, 50 pairs'
 
-            #self.files['RelReg-cvx-log-with-log-scale-numRandPairs=10-noLinear-TEST.pkl'] = 'Test: Relative Ridge Log with Log-scale, no Linear , 10 random pairs'
-            self.files['RelReg-cvx-log-with-log-scale-numRandPairs=50-noLinear.pkl'] = 'Relative Ridge Log with Log-scale, no Linear , 50 random pairs'
-            if pc.data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
-                self.files['SKL-RidgeReg.pkl'] = 'SKL RIdge'
+            self.files['SKL-DumReg.pkl'] = 'Mean Regressione'
+            self.files['RelReg-cvx-log-with-log-noPairwiseReg.pkl'] = 'RelReg, No Pairwise'
+            self.files['RelReg-cvx-log-with-log-numRandPairs=10-noLinear.pkl'] = 'RelReg, 10 pairs'
+            self.files['RelReg-cvx-log-with-log-numRandPairs=50-noLinear.pkl'] = 'RelReg, 50 pairs'
+
 
         self.figsize = (7,7)
         self.borders = (.1,.9,.9,.1)

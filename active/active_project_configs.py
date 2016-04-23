@@ -1,5 +1,6 @@
 import methods.constrained_methods
 import methods.local_transfer_methods
+import methods.method
 
 __author__ = 'Aubrey'
 from collections import OrderedDict
@@ -140,8 +141,8 @@ class MainConfigs(bc.MainConfigs):
 
         #active = active_methods.ActiveMethod(method_configs)
         active = active_methods.RelativeActiveMethod(method_configs)
-        active.base_learner = methods.constrained_methods.RelativeRegressionMethod(method_configs)
-        relative_reg = methods.constrained_methods.RelativeRegressionMethod(method_configs)
+        active.base_learner = methods.method.RelativeRegressionMethod(method_configs)
+        relative_reg = methods.method.RelativeRegressionMethod(method_configs)
         ridge_reg = method.SKLRidgeRegression(method_configs)
         mean_reg = method.SKLMeanRegressor(method_configs)
         if run_active_experiments:
@@ -176,6 +177,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['RelReg-cvx-log-with-log-noPairwiseReg.pkl'] = 'RelReg, No Pairwise'
             self.files['RelReg-cvx-log-with-log-numRandPairs=10-noLinear.pkl'] = 'RelReg, 10 pairs'
             self.files['RelReg-cvx-log-with-log-numRandPairs=50-noLinear.pkl'] = 'RelReg, 50 pairs'
+            self.files['RelReg-cvx-log-with-log-numRandPairs=10-noLinear_constraints.pkl'] = 'RelReg, 10 pairs, new constraints'
 
 
         self.figsize = (7,7)

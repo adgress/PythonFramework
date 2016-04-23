@@ -17,4 +17,3 @@ class PairwiseConstraint(Constraint):
         x2 = self.x[1]
         d = (x1 - x2)*w
         return cvx_logistic.logistic(d)
-

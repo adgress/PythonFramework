@@ -604,6 +604,7 @@ class RelativeRegressionMethod(Method):
             pairwise_reg2 = 0
             assert self.no_linear_term
             for c in data.pairwise_relationships:
+                c.transform(self.transform)
                 pairwise_reg2 += c.to_cvx(w)
             '''
             for i,j in data.pairwise_relationships:
@@ -640,21 +641,21 @@ class RelativeRegressionMethod(Method):
             obj = cvx.Minimize(loss + self.C*reg + self.C2*pairwise_reg2)
             prob = cvx.Problem(obj,constraints)
             assert prob.is_dcp()
-            timer.tic()
+            #timer.tic()
             try:
-                prob.solve(verbose=False, solver='ECOS')
+                ret = prob.solve(verbose=False, solver = cvx.SCS)
                 w_value = w.value
                 b_value = b.value
                 #print prob.status
                 assert w_value is not None and b_value is not None
                 #print a.value
                 #print b.value
-            except:
+            except Exception as e:
                 #print 'cvx status: ' + str(prob.status)
                 k = 0
                 w_value = k*np.zeros((p,1))
                 b_value = 0
-            timer.toc()
+            #timer.toc()
             self.w = w_value
             self.b = b_value
             '''

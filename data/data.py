@@ -6,7 +6,6 @@ import numpy as np
 import collections
 import copy
 from utility import array_functions
-from sets import Set
 data_subset = collections.namedtuple('DataSubset',['x','y'])
 
 TYPE_TARGET = 1
@@ -114,7 +113,7 @@ class LabeledVector(object):
                 self.pairwise_relationships = Set()
             assert inds.shape[1] == 2
             #assert np.asarray([len(i) == 2 for i in inds]).all()
-            inds_set = Set()
+            inds_set = set()
             for x1, x2 in inds:
                 if len(Set([(x1,x2),(x2,x1)]) & self.pairwise_relationships) > 0:
                     continue
@@ -160,7 +159,7 @@ class LabeledData(LabeledVector):
     def __init__(self):
         super(LabeledData, self).__init__()
         self.is_regression = None
-        self.pairwise_relationships = Set()
+        self.pairwise_relationships = set()
 
     def repair_data(self):
         if self.type is None or len(self.type) == 0:
@@ -356,3 +355,17 @@ class SplitData(object):
                     class_inds_test = np.nonzero((d.y==c) & ~d.is_train)[0]
                     d.y[class_inds_test] = np.nan
         return d
+
+
+class Constraint(object):
+    def __init__(self):
+        self.x = []
+        pass
+
+    @abc.abstractmethod
+    def to_cvx(self):
+        pass
+
+    def transform(self, t):
+        for i, xi in enumerate(self.x):
+            self.x[i] = t.transform(xi)

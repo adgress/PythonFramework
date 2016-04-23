@@ -4,10 +4,14 @@ import sys
 import active.active_project_configs as configs_lib
 import itertools
 from utility import multiprocessing_utility
+from utility import helper_functions
 import main
 import multiprocessing
 
-pool_size = 2
+if helper_functions.is_laptop():
+    pool_size = 2
+else:
+    pool_size = 24
 
 def launch_subprocess_args(args):
     #print args

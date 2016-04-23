@@ -1,3 +1,4 @@
+import methods.constrained_methods
 import methods.local_transfer_methods
 
 __author__ = 'Aubrey'
@@ -28,7 +29,7 @@ data_sets_for_exps = [data_set_to_use]
 
 active_iterations = 2
 active_items_per_iteration = 50
-use_pairwise = False
+use_pairwise = True
 num_pairwise = 10
 
 run_active_experiments = False
@@ -139,15 +140,15 @@ class MainConfigs(bc.MainConfigs):
 
         #active = active_methods.ActiveMethod(method_configs)
         active = active_methods.RelativeActiveMethod(method_configs)
-        active.base_learner = method.RelativeRegressionMethod(method_configs)
-        relative_reg = method.RelativeRegressionMethod(method_configs)
+        active.base_learner = methods.constrained_methods.RelativeRegressionMethod(method_configs)
+        relative_reg = methods.constrained_methods.RelativeRegressionMethod(method_configs)
         ridge_reg = method.SKLRidgeRegression(method_configs)
         mean_reg = method.SKLMeanRegressor(method_configs)
         if run_active_experiments:
             self.learner = active
         else:
-            #self.learner = relative_reg
-            self.learner = ridge_reg
+            self.learner = relative_reg
+            #self.learner = ridge_reg
             #self.learner = mean_reg
 
 class MethodConfigs(bc.MethodConfigs):

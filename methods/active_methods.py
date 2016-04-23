@@ -23,7 +23,6 @@ from timer.timer import tic,toc
 from utility import helper_functions
 from copy import deepcopy
 from methods import method
-from sets import Set
 
 class ActiveMethod(method.Saveable):
     def __init__(self,configs=MethodConfigs()):
@@ -92,10 +91,11 @@ class RelativeActiveMethod(ActiveMethod):
         return d, all_pairs
 
     def create_pairs(self, data):
+        assert False, 'Use PairwiseConstraint instead of tuples'
         if not hasattr(data, 'pairwise_relationships'):
-            data.pairwise_relationships = Set()
+            data.pairwise_relationships = set()
         I = data.is_train.nonzero()[0]
-        all_pairs = Set()
+        all_pairs = set()
         for x1 in I:
             for x2 in I:
                 if x1 <= x2 or (x1,x2) in data.pairwise_relationships or (x2,x1) in data.pairwise_relationships:

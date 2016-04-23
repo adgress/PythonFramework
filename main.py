@@ -22,7 +22,7 @@ from loss_functions.loss_function import MeanSquaredError
 from loss_functions import loss_function
 
 
-def run_main():
+def run_experiments():
     pc = configs_lib.ProjectConfigs()
     bc = configs_lib.BatchConfigs(pc)
     batch_exp_manager = experiment_manager.BatchExperimentManager(bc)
@@ -112,7 +112,16 @@ def run_visualization():
     '''
 
 
-if __name__ == "__main__":
+def run_main():
+    import argparse
+    import sys
+    #print sys.argv
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-num_labels', type=int)
+    parser.add_argument('-split_idx', type=int)
+    parser.add_argument('-no_viz', action='store_true')
+    arguments = parser.parse_args(sys.argv[1:])
+    configs_lib.arguments = arguments
     import warnings
     print 'Ignoring Deprecation Warnings'
     warnings.filterwarnings("ignore",category=DeprecationWarning)
@@ -120,10 +129,14 @@ if __name__ == "__main__":
     print 'Starting experiments...'
     timer.tic()
     if configs_lib.run_experiments:
-        run_main()
+        run_experiments()
     timer.toc()
-    if helper_functions.is_laptop():
+    if helper_functions.is_laptop() and not arguments.no_viz:
         run_visualization()
+
+if __name__ == "__main__":
+    run_main()
+
 
 
 

@@ -1,21 +1,40 @@
 from subprocess import call, Popen
 from timer.timer import tic, toc
-import time
-tic()
-num_to_count = 50000000
-n = 4
-p = [0]*n
-split_size = num_to_count / n
-for i in range(0,n):
-    p[i] = Popen(['python',
-                  'count_test.py',
-                  str(i),
-                  str(i*split_size),
-                  str((i+1)*split_size)
-                  ])
-    #time.sleep(1)
-for i in range(0,n):
-    stdoutdata, stderrdata = p[i].communicate()
-    #print stdoutdata
-print 'All Done!'
-toc()
+import sys
+import active.active_project_configs as configs_lib
+import itertools
+from utility import multiprocessing_utility
+import main
+import multiprocessing
+
+pool_size = 2
+
+def launch_subprocess_args(args):
+    #print args
+    #return
+    launch_subprocess(*args)
+
+def launch_subprocess(num_labels, split_idx):
+     #sys.argv = ['C:/Users/Aubrey/Desktop/PythonFramework/main.py']
+     #multiprocessing.set_executable('C:/Python27/python.exe')
+     #multiprocessing.forking.set_executable('C:/Python27/python.exe')
+     sys.original_argv = sys.argv
+     p = call(['python',
+                'main.py',
+                '-num_labels', str(num_labels),
+                '-split_idx', str(split_idx),
+                '-no_viz'
+                ])
+
+
+if __name__ == '__main__':
+    pc = configs_lib.create_project_configs()
+    num_labels_list = list(itertools.product(pc.num_labels, range(pc.num_splits)))
+    #num_labels_list = num_labels_list[0:10]
+    '''
+    for i in num_labels_list:
+        launch_subprocess_args(i)
+    '''
+    pool = multiprocessing_utility.LoggingPool(processes=pool_size)
+    pool.map(launch_subprocess_args, num_labels_list)
+    main.run_main()

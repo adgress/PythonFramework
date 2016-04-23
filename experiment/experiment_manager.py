@@ -99,7 +99,12 @@ class MethodExperimentManager(ExperimentManager):
         method_results = self.configs.method_results_class(n_exp=num_labels, n_splits=num_splits)
         for i, nl in enumerate(self.configs.num_labels):
             method_results.results_list[i].num_labels = nl
-        num_labels_list = list(itertools.product(range(num_labels), range(num_splits)))
+
+        split_idx = self.configs.split_idx
+        if split_idx is not None:
+            num_labels_list = list(itertools.product(range(num_labels), [split_idx]))
+        else:
+            num_labels_list = list(itertools.product(range(num_labels), range(num_splits)))
 
         shared_args = (self, results_file, data_and_splits, method_results)
         args = [shared_args + (i_labels, split) for i_labels,split in num_labels_list]
@@ -115,12 +120,12 @@ class MethodExperimentManager(ExperimentManager):
             method_results.set(curr_results, i_labels, split)
 
         method_results.configs = self.configs
-        helper_functions.save_object(results_file,method_results)
-        for i_labels, split in num_labels_list:
-            num_labels = self.configs.num_labels[i_labels]
-            _delete_temp_split_files(results_file, num_labels, split)
-        _delete_temp_folder(results_file)
-        pass
+        if self.configs.should_load_temp_data:
+            helper_functions.save_object(results_file,method_results)
+            for i_labels, split in num_labels_list:
+                num_labels = self.configs.num_labels[i_labels]
+                _delete_temp_split_files(results_file, num_labels, split)
+            _delete_temp_folder(results_file)
 
 def _run_experiment(args):
     return _run_experiment_args(*args)

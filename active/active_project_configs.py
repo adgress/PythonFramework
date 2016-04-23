@@ -12,6 +12,8 @@ from utility import helper_functions
 from results_class import results as results_lib
 
 
+#Command line arguments for ProjectConfigs
+arguments = None
 def create_project_configs():
     return ProjectConfigs()
 
@@ -39,13 +41,13 @@ max_rows = 3
 synthetic_dim = 1
 if helper_functions.is_laptop():
     use_pool = False
-    pool_size = 4
+    pool_size = 1
 else:
-    use_pool = True
-    pool_size = 24
+    use_pool = False
+    pool_size = 1
 
 class ProjectConfigs(bc.ProjectConfigs):
-    def __init__(self, data_set=None):
+    def __init__(self, data_set=None, use_arguments=True):
         super(ProjectConfigs, self).__init__()
         self.project_dir = 'active'
         self.use_pool = use_pool
@@ -56,6 +58,12 @@ class ProjectConfigs(bc.ProjectConfigs):
             data_set = data_set_to_use
         self.set_data_set(data_set)
         self.num_splits = 30
+        if use_arguments and arguments is not None:
+            if arguments.num_labels is not None:
+                self.overwrite_num_labels = arguments.num_labels
+            if arguments.split_idx is not None:
+                self.split_idx = arguments.split_idx
+            pass
 
     def set_data_set(self, data_set):
         self.data_set = data_set
@@ -138,8 +146,8 @@ class MainConfigs(bc.MainConfigs):
         if run_active_experiments:
             self.learner = active
         else:
-            self.learner = relative_reg
-            #self.learner = ridge_reg
+            #self.learner = relative_reg
+            self.learner = ridge_reg
             #self.learner = mean_reg
 
 class MethodConfigs(bc.MethodConfigs):

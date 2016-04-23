@@ -83,6 +83,7 @@ class Method(Saveable):
         return splits
 
     def run_cross_validation(self,data):
+        assert data.n_train_labeled > 0
         train_data = deepcopy(data)
         test_data = data.get_subset(data.is_test)
         if self.configs.use_validation:

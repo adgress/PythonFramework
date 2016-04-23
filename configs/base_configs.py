@@ -52,6 +52,8 @@ def is_pair_data(data_idx):
 
 class Configs(object):
     def __init__(self):
+        self.overwrite_num_labels = None
+        self.split_idx = None
         pass
 
     def has(self,key):
@@ -70,24 +72,6 @@ class Configs(object):
         for k in keys:
             setattr(self,k,getattr(other,k))
 
-    def set_uci_yeast(self):
-        self.data_dir = 'data_sets/uci_yeast'
-        self.data_name = 'uci_yeast'
-        self.data_set_file_name = 'split_data.pkl'
-        self.results_dir = 'uci_yeast'
-
-    def set_boston_housing(self):
-        self.data_dir = 'data_sets/boston_housing'
-        self.data_name = 'boston_housing'
-        self.data_set_file_name = 'split_data.pkl'
-        self.results_dir = 'boston_housing'
-
-    def set_ng(self):
-        self.data_dir = 'data_sets/20ng'
-        self.data_name = 'ng_data'
-        self.data_set_file_name = 'split_data.pkl'
-        self.results_dir = '20ng'
-
     @property
     def data_file(self):
         pc = create_project_configs()
@@ -99,12 +83,34 @@ class Configs(object):
         s = self.project_dir + '/' + self.results_dir
         return s
 
+    def set_boston_housing(self):
+        self.data_dir = 'data_sets/boston_housing'
+        self.data_name = 'boston_housing'
+        self.data_set_file_name = 'split_data.pkl'
+        self.results_dir = 'boston_housing'
+
+    @property
+    def num_labels(self):
+        if self.overwrite_num_labels is not None:
+            return [self.overwrite_num_labels]
+        return self._num_labels
+
+    @num_labels.setter
+    def num_labels(self, value):
+        self._num_labels = value
+
+    @property
+    def should_load_temp_data(self):
+        return self.overwrite_num_labels is None and self.split_idx is None
+
 
 def create_project_configs():
     return ProjectConfigs()
 
 class ProjectConfigs(Configs):
     def __init__(self, data_set=None):
+        super(ProjectConfigs, self).__init__()
+        self._num_labels = None
         self.data_set = data_set
         self.project_dir = 'base'
         self.loss_function = loss_function.MeanSquaredError()
@@ -128,10 +134,10 @@ class ProjectConfigs(Configs):
         self.pool_size = 2
         self.method_results_class = results_lib.MethodResults
 
-
-
     def set_data_set(self, data_set):
         assert False
+
+
 
 
 pc_fields_to_copy = ['data_dir',
@@ -151,14 +157,18 @@ pc_fields_to_copy = ['data_dir',
                      'use_pool',
                      'pool_size',
                      'data_set',
+                     'overwrite_num_labels',
+                     'split_idx',
                      'method_results_class']
 
 class BatchConfigs(Configs):
     def __init__(self):
+        super(BatchConfigs, self).__init__()
         self.config_list = [MainConfigs()]
 
 class MainConfigs(Configs):
     def __init__(self):
+        super(MainConfigs, self).__init__()
         pc = create_project_configs()
         self.copy_fields(pc,pc_fields_to_copy)
         self.learner = None
@@ -192,6 +202,7 @@ class MainConfigs(Configs):
 
 class MethodConfigs(Configs):
     def __init__(self):
+        super(MethodConfigs, self).__init__()
         pc = create_project_configs()
         self.z_score = False
         self.quiet = False
@@ -215,6 +226,7 @@ class DataProcessingConfigs(Configs):
 
 class VisualizationConfigs(Configs):
     def __init__(self, data_set=None):
+        super(VisualizationConfigs, self).__init__()
         pc = ProjectConfigs(data_set)
         self.copy_fields(pc,pc_fields_to_copy)
         self.axis_to_use = None

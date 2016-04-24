@@ -111,8 +111,12 @@ def run_visualization():
     plt.show()
     '''
 
+test_mpi = False
 
-def run_main():
+def run_main_args(args):
+    run_main(*args)
+
+def run_main(num_labels=None, split_idx=None, no_viz=None):
     import argparse
     import sys
     #print sys.argv
@@ -121,6 +125,18 @@ def run_main():
     parser.add_argument('-split_idx', type=int)
     parser.add_argument('-no_viz', action='store_true')
     arguments = parser.parse_args(sys.argv[1:])
+    if num_labels is not None:
+        arguments.num_labels = num_labels
+    if split_idx is not None:
+        arguments.split_idx = split_idx
+    if no_viz is not None:
+        arguments.no_viz = no_viz
+
+    if test_mpi:
+        from mpi4py import MPI
+        print str(MPI.COMM_WORLD.Get_rank()) + '-' + str(arguments.num_labels) + '-' + str(arguments.split_idx)
+        return
+
     configs_lib.arguments = arguments
     import warnings
     print 'Ignoring Deprecation Warnings'

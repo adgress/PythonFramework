@@ -7,12 +7,11 @@ from utility import multiprocessing_utility
 from utility import helper_functions
 import main
 import multiprocessing
-from mpi4py import MPI
 
 if helper_functions.is_laptop():
     pool_size = 2
 else:
-    pool_size = 24
+    pool_size = 8
 
 def launch_subprocess_args(args):
     #print args
@@ -31,15 +30,28 @@ def launch_subprocess(num_labels, split_idx):
                 '-no_viz'
                 ])
 
+use_mpi = True
+debug_mpi_pool = False
+use_multiprocessing_pool = True
 
 if __name__ == '__main__':
+
     pc = configs_lib.create_project_configs()
     num_labels_list = list(itertools.product(pc.num_labels, range(pc.num_splits)))
-    #num_labels_list = num_labels_list[0:10]
-    '''
-    for i in num_labels_list:
-        launch_subprocess_args(i)
-    '''
-    pool = multiprocessing_utility.LoggingPool(processes=pool_size)
-    pool.map(launch_subprocess_args, num_labels_list)
+
+    if use_mpi:
+        from mpi4py import MPI
+        from mpipool import core as mpipool
+        pool = mpipool.MPIPool(debug=debug_mpi_pool, loadbalance=True)
+        num_labels_list = [i + (True,) for i in num_labels_list]
+        pool.map(main.run_main, num_labels_list)
+        #pool.map(launch_subprocess_args, num_labels_list)
+        pool.close()
+    else:
+        if use_multiprocessing_pool:
+            pool = multiprocessing_utility.LoggingPool(processes=pool_size)
+            pool.map(launch_subprocess_args, num_labels_list)
+        else:
+            for i in num_labels_list:
+                launch_subprocess_args(i)
     main.run_main()

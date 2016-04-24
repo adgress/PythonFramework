@@ -660,7 +660,8 @@ class RelativeRegressionMethod(Method):
             assert prob.is_dcp()
             timer.tic()
             try:
-                ret = prob.solve(cvx.ECOS, False, {'warm_start': warm_start})
+                #ret = prob.solve(cvx.ECOS, False, {'warm_start': warm_start})
+                ret = prob.solve(cvx.SCS, False, {'warm_start': warm_start})
                 w_value = w.value
                 b_value = b.value
                 #print prob.status

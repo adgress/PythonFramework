@@ -44,6 +44,7 @@ class Method(Saveable):
         self.quiet = True
         self.best_params = None
         self.transform = None
+        self.warm_start = False
 
     @property
     def params(self):
@@ -110,6 +111,7 @@ class Method(Saveable):
         for i in range(len(splits)):
             curr_split = data_and_splits.get_split(i)
             curr_split.remove_test_labels()
+            self.warm_start = False
             for param_idx, params in enumerate(param_grid):
                 self.set_params(**params)
                 results = self.run_method(curr_split)
@@ -123,7 +125,8 @@ class Method(Saveable):
 
                 #Make sure error can be computed
                 #param_results[param_idx].aggregate_error(self.configs.cv_loss_function)
-
+                self.warm_start = True
+        self.warm_start = False
         errors = np.empty(len(param_grid))
         errors_on_test_data = np.empty(len(param_grid))
         for i in range(len(param_grid)):
@@ -535,7 +538,7 @@ class RelativeRegressionMethod(Method):
         self.use_test_error_for_model_selection = False
         self.no_linear_term = True
         self.neg_log = False
-
+        self.prob = None
         self.method = RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG
 
         if not self.use_pairwise:
@@ -637,13 +640,26 @@ class RelativeRegressionMethod(Method):
             if self.no_linear_term:
                 pairwise_reg = 0
             '''
-            constraints = []
-            obj = cvx.Minimize(loss + self.C*reg + self.C2*pairwise_reg2)
-            prob = cvx.Problem(obj,constraints)
+            warm_start = self.prob is not None and self.warm_start
+            if warm_start:
+                prob = self.prob
+                self.C_param.value = self.C
+                self.C2_param.value = self.C2
+                w = self.w_var
+                b = self.b_var
+            else:
+                constraints = []
+                self.C_param = cvx.Parameter(sign='positive', value=self.C)
+                self.C2_param = cvx.Parameter(sign='positive', value=self.C2)
+                obj = cvx.Minimize(loss + self.C_param*reg + self.C2_param*pairwise_reg2)
+                prob = cvx.Problem(obj,constraints)
+                self.w_var = w
+                self.b_var = b
+
             assert prob.is_dcp()
             #timer.tic()
+            ret = prob.solve(cvx.SCS, False, {'warm_start': warm_start})
             try:
-                ret = prob.solve(verbose=False, solver = cvx.SCS)
                 w_value = w.value
                 b_value = b.value
                 #print prob.status
@@ -651,11 +667,14 @@ class RelativeRegressionMethod(Method):
                 #print a.value
                 #print b.value
             except Exception as e:
+                print e
                 #print 'cvx status: ' + str(prob.status)
                 k = 0
                 w_value = k*np.zeros((p,1))
                 b_value = 0
+            #print 'params: ' + str(self.C) + ',' + str(self.C2)
             #timer.toc()
+            self.prob = prob
             self.w = w_value
             self.b = b_value
             '''

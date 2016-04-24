@@ -4,3 +4,14 @@ mpiexec -n 2 python mpi_test.py
 
 #Note: This doesn't seem to work
 mpiexec -n 2 start cmd /k python mpi_test.py
+
+
+LINUX:
+
+#Note: you need the ./ before the file name
+mpiexec -n 2 ./mpi_text.py
+
+You might need to set up MPI.  Check out http://lsi.ugr.es/~jmantas/pdp/ayuda/datos/instalaciones/Install_OpenMPI_en.pdf.
+
+You might get some error messages if OpenMPI and MPICH2 are both installed.  Seems like simply
+removing one fixes this.

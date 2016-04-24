@@ -82,6 +82,7 @@ def mpi_pool_test():
     all_work = list(range(1))
     pool = mpipool.MPIPool(debug=True, loadbalance=False)
     pool.map(mpi_pool_work, all_work)
+    pool.close()
 
 if __name__ == '__main__':
     mpi_pool_test()

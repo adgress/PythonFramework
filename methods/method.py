@@ -556,7 +556,8 @@ class RelativeRegressionMethod(Method):
                 #data.pairwise_relationships.add(pair)
                 x1 = data.x[pair[0],:]
                 x2 = data.x[pair[1],:]
-                data.pairwise_relationships.add(PairwiseConstraint(x1,x2))
+                #data.pairwise_relationships.add(PairwiseConstraint(x1,x2))
+                data.pairwise_relationships.add(pair)
         is_labeled_train = data.is_train & data.is_labeled
         labeled_train = data.labeled_training_data()
         x = labeled_train.x
@@ -606,6 +607,7 @@ class RelativeRegressionMethod(Method):
             reg = cvx.norm(w)**2
             pairwise_reg2 = 0
             assert self.no_linear_term
+            '''
             for c in data.pairwise_relationships:
                 c.transform(self.transform)
                 pairwise_reg2 += c.to_cvx(w)
@@ -622,24 +624,23 @@ class RelativeRegressionMethod(Method):
                     if self.method == RelativeRegressionMethod.METHOD_CVX_LOGISTIC:
                         pairwise_reg += self.C2*a
                     elif self.method in RelativeRegressionMethod.CVX_METHODS_LOGISTIC_WITH_LOG:
-                        pairwise_reg += self.C2*a
+                        #pairwise_reg += self.C2*a
                         if self.C2 == 0:
                             continue
                         a2 = (x1 - x2)*w
-                        if self.method != RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG_SCALE:
+                        if self.method == RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG_SCALE:
                             a2 *= self.C2
                         if self.method == RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG_NEG or self.neg_log:
                             a2 = -a2
                         from utility import cvx_logistic
                         a3 = cvx_logistic.logistic(a2)
-                        if self.method == RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG_SCALE:
-                            a3 *= self.C2
+                        if self.method == RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG:
+                            pass
+                            #a3 *= self.C2
                         pairwise_reg2 += a3
                 else:
                     assert False, 'Unknown CVX Method'
-            if self.no_linear_term:
-                pairwise_reg = 0
-            '''
+
             warm_start = self.prob is not None and self.warm_start
             if warm_start:
                 prob = self.prob
@@ -657,9 +658,9 @@ class RelativeRegressionMethod(Method):
                 self.b_var = b
 
             assert prob.is_dcp()
-            #timer.tic()
-            ret = prob.solve(cvx.SCS, False, {'warm_start': warm_start})
+            timer.tic()
             try:
+                ret = prob.solve(cvx.ECOS, False, {'warm_start': warm_start})
                 w_value = w.value
                 b_value = b.value
                 #print prob.status
@@ -672,8 +673,8 @@ class RelativeRegressionMethod(Method):
                 k = 0
                 w_value = k*np.zeros((p,1))
                 b_value = 0
-            #print 'params: ' + str(self.C) + ',' + str(self.C2)
-            #timer.toc()
+            print 'params: ' + str(self.C) + ',' + str(self.C2)
+            timer.toc()
             self.prob = prob
             self.w = w_value
             self.b = b_value

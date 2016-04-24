@@ -1,0 +1,6 @@
+WINDOWS:
+
+mpiexec -n 2 python mpi_test.py
+
+#Note: This doesn't seem to work
+mpiexec -n 2 start cmd /k python mpi_test.py

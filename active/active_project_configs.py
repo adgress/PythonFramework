@@ -177,7 +177,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['RelReg-cvx-log-with-log-noPairwiseReg.pkl'] = 'RelReg, No Pairwise'
             self.files['RelReg-cvx-log-with-log-numRandPairs=10-noLinear.pkl'] = 'RelReg, 10 pairs'
             self.files['RelReg-cvx-log-with-log-numRandPairs=50-noLinear.pkl'] = 'RelReg, 50 pairs'
-            self.files['RelReg-cvx-log-with-log-numRandPairs=10-noLinear_constraints.pkl'] = 'RelReg, 10 pairs, new constraints'
+            self.files['RelReg-cvx-log-with-log-numRandPairs=10-noLinear-TEST,new_constraints.pkl'] = 'TEST: RelReg, 10 pairs, new constraints'
 
 
         self.figsize = (7,7)

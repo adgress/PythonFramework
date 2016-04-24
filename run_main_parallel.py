@@ -7,6 +7,7 @@ from utility import multiprocessing_utility
 from utility import helper_functions
 import main
 import multiprocessing
+from mpi4py import MPI
 
 if helper_functions.is_laptop():
     pool_size = 2

@@ -665,7 +665,9 @@ class RelativeRegressionMethod(Method):
                 self.b_var = b
 
             assert prob.is_dcp()
-            timer.tic()
+            print_messages = False
+            if print_messages:
+                timer.tic()
             try:
                 #ret = prob.solve(cvx.ECOS, False, {'warm_start': warm_start})
                 ret = prob.solve(self.solver, False, {'warm_start': warm_start})
@@ -681,8 +683,9 @@ class RelativeRegressionMethod(Method):
                 k = 0
                 w_value = k*np.zeros((p,1))
                 b_value = 0
-            print 'params: ' + str(self.C) + ',' + str(self.C2)
-            timer.toc()
+            if print_messages:
+                print 'params: ' + str(self.C) + ',' + str(self.C2)
+                timer.toc()
             self.prob = prob
             self.w = w_value
             self.b = b_value

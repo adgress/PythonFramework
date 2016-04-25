@@ -24,13 +24,12 @@ git clone https://github.com/adgress/PythonFramework.git
 #Install MPI: http://glennklockwood.blogspot.com/2013/04/quick-mpi-cluster-setup-on-amazon-ec2.html
 sudo apt-get -y install mpich-devel
 
-"Move private key to 'ubuntu/.ssh/', rename to 'id_rsa'"
+#Move private key to 'ubuntu/.ssh/', rename to 'id_rsa'
 
-'Add the following lines to .bashrc:'
-'''
+#Add the following lines to .bashrc:
 export PATH=/usr/lib64/openmpi/bin:$PATH'
 export LD_LIBRARY_PATH=/usr/lib64/openmpi/lib
-'''
+
 source .bashrc
 
 
@@ -39,17 +38,17 @@ source .bashrc
 #Set up MPI cluster: http://mpitutorial.com/tutorials/launching-an-amazon-ec2-mpi-cluster/
 sudo easy_install StarCluster
 starcluster help
-'Select '2' to create StarCluster config file'
-'Enter access key info into config file'
+    Select '2' to create StarCluster config file'
+
+#Enter access key info into config file
+
 starcluster createkey mykey -o ~/.ssh/mykey.rsa
-'Add following to config file:'
-'''
+
+#Add following to config file:
 [key mykey]
 KEY_LOCATION = ~/.ssh/mykey.rsa
-'''
 
-'Update the following as necessary:'
-'''
+#Update the following as necessary:
 [cluster smallcluster]
 KEYNAME = mykey
 CLUSTER_SIZE = 2
@@ -57,11 +56,44 @@ CLUSTER_USER = sgeadmin
 CLUSTER_SHELL = bash
 NODE_IMAGE_ID = ami-899d49e0
 NODE_INSTANCE_TYPE = m1.small
-'''
 
-'Set starcluster to use MPICH2 - http://star.mit.edu/cluster/docs/0.93.3/plugins/mpich2.html
+#Add EBS if desired
+[volume myvol]
+VOLUME_ID = vol-XXXXXXXXX
+mount_path = /home/ubunutu/PythonFramework
 
-#
+[cluster smallcluster]
+volumes=myvol
+
+
+#SWITCHING TO us-west-2
+
+#Create new key:
+starcluster -r us-west-2 createkey -o ~/.ssh/uswestkey.rsa myuswestkey
+
+#add to config
+AWS_REGION_NAME = us-west-2
+AWS_REGION_HOST = ec2.us-west-2.amazonaws.com
+
+[key myuswestkey]
+KEY_LOCATION = ~/.ssh/uswestkey.rsa
+
+[cluster uswest-cluster]
+KEYNAME = myuswestkey
+# The AMI must live in the target region!
+NODE_IMAGE_ID = ami-9999999
+VOLUMES = myuswestvol
+
+#find a public starcluster AMI
+starcluster -r us-west-2 listpublic
+
+#add to config
+NODE_IMAGE_ID = ami-80bedfb0
+
+#Set starcluster to use MPICH2 - http://star.mit.edu/cluster/docs/0.93.3/plugins/mpich2.html
+
+#RUNNING STARCLUSTER
+
 starcluster start mpicluster
 starcluster sshmaster mpicluster
 pip install cvxpy sklearn

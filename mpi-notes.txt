@@ -15,3 +15,6 @@ You might need to set up MPI.  Check out http://lsi.ugr.es/~jmantas/pdp/ayuda/da
 
 You might get some error messages if OpenMPI and MPICH2 are both installed.  Seems like simply
 removing one fixes this.
+
+You may need to install mpirun/mpiexec:
+sudo apt-get install openmpi-bin

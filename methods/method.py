@@ -502,7 +502,8 @@ class RelativeRegressionMethod(Method):
         METHOD_CVX_LOGISTIC,
         METHOD_CVX_LOGISTIC_WITH_LOG,
         METHOD_CVX_LOGISTIC_WITH_LOG_NEG,
-        METHOD_CVX_LOGISTIC_WITH_LOG_SCALE
+        METHOD_CVX_LOGISTIC_WITH_LOG_SCALE,
+        METHOD_CVX_NEW_CONSTRAINTS
     }
     CVX_METHODS_LOGISTIC = {
         METHOD_CVX_LOGISTIC,
@@ -544,6 +545,7 @@ class RelativeRegressionMethod(Method):
         self.solver = None
         self.solver = cvx.SCS
         self.method = RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG
+        self.method = RelativeRegressionMethod.METHOD_CVX_NEW_CONSTRAINTS
 
         if not self.use_pairwise:
             self.cv_params['C2'] = np.asarray([0])

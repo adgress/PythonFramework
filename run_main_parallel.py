@@ -8,6 +8,10 @@ from utility import helper_functions
 import main
 import multiprocessing
 
+use_mpi = False
+debug_mpi_pool = False
+use_multiprocessing_pool = True
+
 if helper_functions.is_laptop():
     pool_size = 2
 else:
@@ -29,10 +33,6 @@ def launch_subprocess(num_labels, split_idx):
                 '-split_idx', str(split_idx),
                 '-no_viz'
                 ])
-
-use_mpi = True
-debug_mpi_pool = False
-use_multiprocessing_pool = True
 
 if __name__ == '__main__':
 

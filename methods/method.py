@@ -618,12 +618,12 @@ class RelativeRegressionMethod(Method):
                     pairwise_reg2 += c.to_cvx(w)
             else:
                 #for i,j in data.pairwise_relationships:
-                for p in data.pairwise_relationships:
+                for pair in data.pairwise_relationships:
                     #x1 <= x2
                     #x1 = self.transform.transform(data.x[i,:])
                     #x2 = self.transform.transform(data.x[j,:])
-                    x1 = self.transform.transform(p.x[0])
-                    x2 = self.transform.transform(p.x[1])
+                    x1 = self.transform.transform(pair.x[0])
+                    x2 = self.transform.transform(pair.x[1])
                     if self.method == RelativeRegressionMethod.METHOD_CVX:
                         pairwise_reg += (x1 - x2)*w
                     elif self.method in RelativeRegressionMethod.CVX_METHODS_LOGISTIC:

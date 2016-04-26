@@ -406,8 +406,8 @@ def create_wine(data_to_create=WINE_RED):
             assert False
 
         ids = None
-        x = wine_data[:,:-2]
-        y = wine_data[:,-2]
+        x = wine_data[:,:-1]
+        y = wine_data[:,-1]
         used_field_names = field_names[:-1]
     data = data_class.Data()
     data.x = data.x = array_functions.standardize(x)

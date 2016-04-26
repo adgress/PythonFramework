@@ -1,6 +1,6 @@
 import cvxpy as cvx
 
-from methods.constrained_methods import PairwiseConstraint
+from methods.constrained_methods import PairwiseConstraint, BoundLowerConstraint, BoundUpperConstraint
 from timer import timer
 
 __author__ = 'Aubrey'
@@ -24,7 +24,7 @@ from results_class.results import FoldResults, Output
 from results_class.results import Output
 from saveable.saveable import Saveable
 from utility import array_functions
-
+from utility import helper_functions
 
 #from pyqt_fit import nonparam_regression
 #from pyqt_fit import npr_methods
@@ -532,23 +532,33 @@ class RelativeRegressionMethod(Method):
         self.can_use_test_error_for_model_selection = True
         self.cv_params['C'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         self.cv_params['C2'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
+        self.cv_params['C3'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         self.w = None
         self.b = None
         self.transform = StandardScaler()
         self.add_random_pairwise = True
+        self.add_random_bound = True
         self.use_pairwise = configs.use_pairwise
         self.num_pairwise = configs.num_pairwise
-        self.use_test_error_for_model_selection = True
+        self.use_bound = configs.use_bound
+        self.num_bound = configs.num_bound
+        self.use_test_error_for_model_selection = configs.use_test_error_for_model_selection
         self.no_linear_term = True
         self.neg_log = False
         self.prob = None
-        self.solver = None
-        self.solver = cvx.SCS
+
+        if helper_functions.is_laptop():
+            self.solver = cvx.SCS
+        else:
+            self.solver = None
+
         self.method = RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG
         self.method = RelativeRegressionMethod.METHOD_CVX_NEW_CONSTRAINTS
 
         if not self.use_pairwise:
             self.cv_params['C2'] = np.asarray([0])
+        if not self.use_bound:
+            self.cv_params['C3'] = np.asarray([0])
 
     def train(self, data):
         if self.add_random_pairwise:
@@ -564,6 +574,23 @@ class RelativeRegressionMethod(Method):
                 x2 = data.x[pair[1],:]
                 data.pairwise_relationships.add(PairwiseConstraint(x1,x2))
                 #data.pairwise_relationships.add(pair)
+        if self.add_random_bound:
+            I = (data.is_train & ~data.is_labeled).nonzero()[0]
+            sampled = array_functions.sample(I, self.num_bound)
+            y_median = np.percentile(data.true_y,50)
+            for i in sampled:
+                xi = data.x[i,:]
+                yi_true = data.true_y[i]
+                if yi_true > y_median:
+                    constraint = BoundLowerConstraint(xi, y_median)
+                    data.pairwise_relationships
+                elif yi_true < y_median:
+                    constraint = BoundUpperConstraint(xi, y_median)
+                else:
+                    continue
+                data.pairwise_relationships.add(constraint)
+
+
         is_labeled_train = data.is_train & data.is_labeled
         labeled_train = data.labeled_training_data()
         x = labeled_train.x
@@ -733,15 +760,21 @@ class RelativeRegressionMethod(Method):
         s = 'RelReg'
         if self.method != RelativeRegressionMethod.METHOD_CVX:
             s += '-' + RelativeRegressionMethod.METHOD_NAMES[self.method]
-        if not self.use_pairwise:
+        use_pairwise = self.use_pairwise
+        use_bound = getattr(self, 'use_bound', False)
+        if not use_pairwise and not use_bound:
             s += '-noPairwiseReg'
         else:
-            if self.num_pairwise > 0 and self.add_random_pairwise:
-                s += '-numRandPairs=' + str(int(self.num_pairwise))
-            if self.no_linear_term:
-                s += '-noLinear'
-            if self.neg_log:
-                s += '-negLog'
+            if use_pairwise:
+                if self.num_pairwise > 0 and self.add_random_pairwise:
+                    s += '-numRandPairs=' + str(int(self.num_pairwise))
+                if self.no_linear_term:
+                    s += '-noLinear'
+                if self.neg_log:
+                    s += '-negLog'
+            if use_bound:
+                if self.num_bound > 0 and self.add_random_bound:
+                    s += '-numRandBound=' + str(int(self.num_bound))
             if hasattr(self, 'solver'):
                 s += '-solver=' + str(self.solver)
         if self.use_test_error_for_model_selection:

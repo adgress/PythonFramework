@@ -360,6 +360,7 @@ class SplitData(object):
 class Constraint(object):
     def __init__(self):
         self.x = []
+        self.c = []
         pass
 
     @abc.abstractmethod

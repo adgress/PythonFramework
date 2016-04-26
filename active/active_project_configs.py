@@ -22,16 +22,19 @@ def create_project_configs():
 pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
-#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
 #data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
-data_set_to_use = bc.DATA_WINE_RED
+#data_set_to_use = bc.DATA_WINE_RED
 
 data_sets_for_exps = [data_set_to_use]
 
 active_iterations = 2
 active_items_per_iteration = 50
-use_pairwise = True
+use_pairwise = False
 num_pairwise = 10
+use_bound = False
+num_bound = 10
+use_test_error_for_model_selection = True
 
 run_active_experiments = False
 
@@ -138,6 +141,9 @@ class MainConfigs(bc.MainConfigs):
         method_configs.metric = 'euclidean'
         method_configs.use_pairwise = use_pairwise
         method_configs.num_pairwise = num_pairwise
+        method_configs.use_bound = use_bound
+        method_configs.num_bound = num_bound
+        method_configs.use_test_error_for_model_selection = use_test_error_for_model_selection
 
         #active = active_methods.ActiveMethod(method_configs)
         active = active_methods.RelativeActiveMethod(method_configs)
@@ -174,14 +180,24 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             #self.files['RelReg-cvx-log-with-log-numRandPairs=50-noLinear-TEST.pkl'] = 'TEST: RelReg, 50 pairs'
 
             #self.files['SKL-DumReg.pkl'] = 'Mean Regressione'
-            self.files['RelReg-cvx-log-with-log-noPairwiseReg.pkl'] = 'RelReg, No Pairwise'
+            #self.files['RelReg-cvx-log-with-log-noPairwiseReg.pkl'] = 'RelReg, No Pairwise'
 
-            self.files['RelReg-cvx-log-with-log-numRandPairs=10-noLinear.pkl'] = 'RelReg, 10 pairs'
-            self.files['RelReg-cvx-log-with-log-numRandPairs=10-noLinear,new_constraints.pkl'] = 'RelReg, 10 pairs, new constraints'
+            #self.files['RelReg-cvx-log-with-log-numRandPairs=10-noLinear.pkl'] = 'RelReg, 10 pairs'
+            #self.files['RelReg-cvx-log-with-log-numRandPairs=10-noLinear,new_constraints.pkl'] = 'RelReg, 10 pairs, new constraints'
             #self.files['RelReg-cvx-log-with-log-numRandPairs=10-noLinear-TEST,new_constraints.pkl'] = 'TEST: RelReg, 10 pairs, new constraints'
 
             #self.files['RelReg-cvx-log-with-log-numRandPairs=50-noLinear.pkl'] = 'RelReg, 50 pairs'
             #self.files['RelReg-cvx-log-with-log-numRandPairs=50-noLinear,new_constraints.pkl'] = 'RelReg, 50 pairs, new constraints'
+
+            self.files['RelReg-cvx-log-with-log-numRandPairs=10-noLinear-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 10 pairs, SCS'
+            self.files['RelReg-cvx-log-with-log-numRandPairs=10-noLinear-solver=None-TEST.pkl'] = 'TEST: RelReg, 10 pairs, None'
+
+            self.files['RelReg-cvx-log-with-log-numRandPairs=50-noLinear-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, SCS'
+            self.files['RelReg-cvx-log-with-log-numRandPairs=50-noLinear-solver=None-TEST.pkl'] = 'TEST: RelReg, 50 pairs, None'
+
+            self.files['RelReg-cvx-constraints-numRandPairs=50-noLinear-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, SCS, new Constraints'
+            self.files['RelReg-cvx-constraints-numRandPairs=50-noLinear-solver=None-TEST.pkl'] = 'TEST: RelReg, 50 pairs, None, new COnstraints'
+
 
 
         self.figsize = (7,7)

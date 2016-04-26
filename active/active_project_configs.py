@@ -32,7 +32,7 @@ active_iterations = 2
 active_items_per_iteration = 50
 use_pairwise = False
 num_pairwise = 10
-use_bound = False
+use_bound = True
 num_bound = 10
 use_test_error_for_model_selection = True
 
@@ -189,14 +189,22 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             #self.files['RelReg-cvx-log-with-log-numRandPairs=50-noLinear.pkl'] = 'RelReg, 50 pairs'
             #self.files['RelReg-cvx-log-with-log-numRandPairs=50-noLinear,new_constraints.pkl'] = 'RelReg, 50 pairs, new constraints'
 
-            self.files['RelReg-cvx-log-with-log-numRandPairs=10-noLinear-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 10 pairs, SCS'
-            self.files['RelReg-cvx-log-with-log-numRandPairs=10-noLinear-solver=None-TEST.pkl'] = 'TEST: RelReg, 10 pairs, None'
+            #self.files['RelReg-cvx-log-with-log-numRandPairs=10-noLinear-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 10 pairs, SCS'
+            #self.files['RelReg-cvx-log-with-log-numRandPairs=10-noLinear-solver=None-TEST.pkl'] = 'TEST: RelReg, 10 pairs, None'
 
-            self.files['RelReg-cvx-log-with-log-numRandPairs=50-noLinear-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, SCS'
-            self.files['RelReg-cvx-log-with-log-numRandPairs=50-noLinear-solver=None-TEST.pkl'] = 'TEST: RelReg, 50 pairs, None'
+            #self.files['RelReg-cvx-log-with-log-numRandPairs=50-noLinear-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, SCS'
+            #self.files['RelReg-cvx-log-with-log-numRandPairs=50-noLinear-solver=None-TEST.pkl'] = 'TEST: RelReg, 50 pairs, None'
 
-            self.files['RelReg-cvx-constraints-numRandPairs=50-noLinear-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, SCS, new Constraints'
-            self.files['RelReg-cvx-constraints-numRandPairs=50-noLinear-solver=None-TEST.pkl'] = 'TEST: RelReg, 50 pairs, None, new COnstraints'
+            #self.files['RelReg-cvx-constraints-numRandPairs=50-noLinear-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, SCS, new Constraints'
+            #self.files['RelReg-cvx-constraints-numRandPairs=50-noLinear-solver=None-TEST.pkl'] = 'TEST: RelReg, 50 pairs, None, new COnstraints'
+
+            self.files['RelReg-cvx-constraints-noPairwiseReg-TEST.pkl'] = 'TEST: RelReg, no pairwise'
+
+            self.files['RelReg-cvx-constraints-numRandBound=10-solver=None-TEST.pkl'] = 'TEST: RelReg, 10 bound'
+            self.files['RelReg-cvx-constraints-numRandBound=50-solver=None-TEST.pkl'] = 'TEST: RelReg, 50 bound'
+
+            #self.files['RelReg-cvx-constraints-numRandPairs=10-solver=None-TEST.pkl'] = 'TEST: RelReg, 10 pairs'
+            #self.files['RelReg-cvx-constraints-numRandPairs=50-solver=None-TEST.pkl'] = 'TEST: RelReg, 50 pairs'
 
 
 

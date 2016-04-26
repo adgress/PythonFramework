@@ -11,9 +11,11 @@ class CVXConstraint(Constraint):
     def __init__(self):
         super(CVXConstraint, self).__init__()
 
+    def is_pairwise(self):
+        return False
+
     def cvx_loss_logistic(self, d):
         return cvx_logistic.logistic(d)
-
     '''
     a: lower bound
     b: upper bound
@@ -40,6 +42,9 @@ class PairwiseConstraint(CVXConstraint):
         x2 = self.x[1]
         d = (x1 - x2)*w
         return self.cvx_loss_logistic(d)
+
+    def is_pairwise(self):
+        return True
 
 class BoundConstraint(CVXConstraint):
     BOUND_LOWER = 0

@@ -536,8 +536,8 @@ class RelativeRegressionMethod(Method):
         self.w = None
         self.b = None
         self.transform = StandardScaler()
-        self.add_random_pairwise = True
-        self.add_random_bound = True
+        self.add_random_pairwise = configs.use_pairwise
+        self.add_random_bound = configs.use_bound
         self.use_pairwise = configs.use_pairwise
         self.num_pairwise = configs.num_pairwise
         self.use_bound = configs.use_bound
@@ -561,6 +561,7 @@ class RelativeRegressionMethod(Method):
             self.cv_params['C3'] = np.asarray([0])
 
     def train(self, data):
+        assert not (self.add_random_pairwise and self.add_random_bound), 'Not implemented yet'
         if self.add_random_pairwise:
             data.pairwise_relationships = set()
             I = data.is_train & ~data.is_labeled
@@ -575,6 +576,7 @@ class RelativeRegressionMethod(Method):
                 data.pairwise_relationships.add(PairwiseConstraint(x1,x2))
                 #data.pairwise_relationships.add(pair)
         if self.add_random_bound:
+            data.pairwise_relationships = set()
             I = (data.is_train & ~data.is_labeled).nonzero()[0]
             sampled = array_functions.sample(I, self.num_bound)
             y_median = np.percentile(data.true_y,50)
@@ -583,7 +585,6 @@ class RelativeRegressionMethod(Method):
                 yi_true = data.true_y[i]
                 if yi_true > y_median:
                     constraint = BoundLowerConstraint(xi, y_median)
-                    data.pairwise_relationships
                 elif yi_true < y_median:
                     constraint = BoundUpperConstraint(xi, y_median)
                 else:
@@ -639,12 +640,16 @@ class RelativeRegressionMethod(Method):
             )
             reg = cvx.norm(w)**2
             pairwise_reg2 = 0
+            bound_reg3 = 0
             assert self.no_linear_term
 
             if self.method == RelativeRegressionMethod.METHOD_CVX_NEW_CONSTRAINTS:
                 for c in data.pairwise_relationships:
                     c.transform(self.transform)
-                    pairwise_reg2 += c.to_cvx(w)
+                    if c.is_pairwise():
+                        pairwise_reg2 += c.to_cvx(w)
+                    else:
+                        bound_reg3 += c.to_cvx(w)
             else:
                 #for i,j in data.pairwise_relationships:
                 for pair in data.pairwise_relationships:
@@ -682,13 +687,17 @@ class RelativeRegressionMethod(Method):
                 prob = self.prob
                 self.C_param.value = self.C
                 self.C2_param.value = self.C2
+                self.C3_param.value = self.C3
                 w = self.w_var
                 b = self.b_var
             else:
                 constraints = []
                 self.C_param = cvx.Parameter(sign='positive', value=self.C)
                 self.C2_param = cvx.Parameter(sign='positive', value=self.C2)
-                obj = cvx.Minimize(loss + self.C_param*reg + self.C2_param*pairwise_reg2)
+                self.C3_param = cvx.Parameter(sign='positive', value=self.C3)
+                obj = cvx.Minimize(loss + self.C_param*reg +
+                                   self.C2_param*pairwise_reg2 +
+                                   self.C3_param*bound_reg3)
                 prob = cvx.Problem(obj,constraints)
                 self.w_var = w
                 self.b_var = b
@@ -768,8 +777,8 @@ class RelativeRegressionMethod(Method):
             if use_pairwise:
                 if self.num_pairwise > 0 and self.add_random_pairwise:
                     s += '-numRandPairs=' + str(int(self.num_pairwise))
-                if self.no_linear_term:
-                    s += '-noLinear'
+                #if self.no_linear_term:
+                #    s += '-noLinear'
                 if self.neg_log:
                     s += '-negLog'
             if use_bound:

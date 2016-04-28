@@ -1,5 +1,5 @@
 import cvxpy as cvx
-
+from utility.capturing import Capturing
 from methods.constrained_methods import \
     PairwiseConstraint, BoundLowerConstraint, BoundUpperConstraint, NeighborConstraint
 from timer import timer
@@ -26,7 +26,8 @@ from results_class.results import Output
 from saveable.saveable import Saveable
 from utility import array_functions
 from utility import helper_functions
-from dccp.dccp_problem import is_dccp
+#from dccp.dccp_problem import is_dccp
+from dccp.problem import is_dccp
 #from pyqt_fit import nonparam_regression
 #from pyqt_fit import npr_methods
 
@@ -732,12 +733,15 @@ class RelativeRegressionMethod(Method):
             print_messages = False
             if print_messages:
                 timer.tic()
+            #ret = prob.solve(method = 'dccp',solver = 'MOSEK')
+            #ret = prob.solve(method = 'dccp')
             try:
-                #ret = prob.solve(cvx.ECOS, False, {'warm_start': warm_start})
-                if prob.is_dcp():
-                    ret = prob.solve(self.solver, False, {'warm_start': warm_start})
-                else:
-                    ret = prob.solve(method = 'dccp',solver = 'MOSEK')
+                with Capturing() as output:
+                    #ret = prob.solve(cvx.ECOS, False, {'warm_start': warm_start})
+                    if prob.is_dcp():
+                        ret = prob.solve(self.solver, False, {'warm_start': warm_start})
+                    else:
+                        ret = prob.solve(method = 'dccp')
                 w_value = w.value
                 b_value = b.value
                 #print prob.status

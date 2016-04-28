@@ -540,9 +540,10 @@ class RelativeRegressionMethod(Method):
         self.b = None
         self.transform = StandardScaler()
         self.add_random_pairwise = configs.use_pairwise
-        self.add_random_bound = configs.use_bound
         self.use_pairwise = configs.use_pairwise
         self.num_pairwise = configs.num_pairwise
+
+        self.add_random_bound = configs.use_bound
         self.use_bound = configs.use_bound
         self.num_bound = configs.num_bound
 

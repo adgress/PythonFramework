@@ -34,7 +34,7 @@ use_pairwise = False
 num_pairwise = 10
 use_bound = False
 num_bound = 10
-use_neighbor = True
+use_neighbor = False
 num_neighbor = 10
 use_test_error_for_model_selection = True
 
@@ -145,8 +145,8 @@ class MainConfigs(bc.MainConfigs):
         method_configs.num_pairwise = num_pairwise
         method_configs.use_bound = use_bound
         method_configs.num_bound = num_bound
-        method_configs.use_neighbor = True
-        method_configs.num_neighbor = 10
+        method_configs.use_neighbor = use_neighbor
+        method_configs.num_neighbor = num_neighbor
         method_configs.use_test_error_for_model_selection = use_test_error_for_model_selection
 
         #active = active_methods.ActiveMethod(method_configs)

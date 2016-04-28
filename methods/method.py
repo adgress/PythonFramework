@@ -557,7 +557,7 @@ class RelativeRegressionMethod(Method):
         if helper_functions.is_laptop():
             self.solver = cvx.SCS
         else:
-            self.solver = None
+            self.solver = cvx.SCS
 
         self.method = RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG
         self.method = RelativeRegressionMethod.METHOD_CVX_NEW_CONSTRAINTS
@@ -570,31 +570,6 @@ class RelativeRegressionMethod(Method):
             self.cv_params['C4'] = np.asarray([0])
 
     def train(self, data):
-        '''
-        x = cvx.Variable(1)
-        y = cvx.Variable(2)
-        t = cvx.Variable(2)
-        obj = cvx.max_elemwise(
-            cvx.abs(x) - t[0],
-            0
-        ) + cvx.max_elemwise(
-            cvx.abs(x) - t[1],
-            0
-        )
-        myprob = cvx.Problem(
-            cvx.Minimize(obj),
-            [
-                t[0] == cvx.abs(y[0]),
-                t[1] == cvx.abs(y[1])
-            ]
-        )
-        print "problem is DCP:", myprob.is_dcp()   # false
-        print "problem is DCCP:", is_dccp(myprob)  # true
-        result = myprob.solve(method = 'dccp')
-        print "x =", x.value
-        print "y =", y.value
-        print "cost value =", result[0]
-        '''
         num_random_types = int(self.add_random_pairwise) + int(self.add_random_bound) + int(self.add_random_neighbor)
         assert num_random_types <= 1, 'Not implemented yet'
         if self.add_random_pairwise:
@@ -733,6 +708,7 @@ class RelativeRegressionMethod(Method):
             print_messages = False
             if print_messages:
                 timer.tic()
+            params = [self.C_param.value, self.C2_param.value, self.C3_param.value, self.C4_param.value]
             #ret = prob.solve(method = 'dccp',solver = 'MOSEK')
             #ret = prob.solve(method = 'dccp')
             try:
@@ -741,7 +717,7 @@ class RelativeRegressionMethod(Method):
                     if prob.is_dcp():
                         ret = prob.solve(self.solver, False, {'warm_start': warm_start})
                     else:
-                        ret = prob.solve(method = 'dccp')
+                        ret = prob.solve(solver=self.solver, method='dccp')
                 w_value = w.value
                 b_value = b.value
                 #print prob.status
@@ -749,13 +725,13 @@ class RelativeRegressionMethod(Method):
                 #print a.value
                 #print b.value
             except Exception as e:
-                print e
+                print str(e) + ':' + str(params)
                 #print 'cvx status: ' + str(prob.status)
                 k = 0
                 w_value = k*np.zeros((p,1))
                 b_value = 0
             if print_messages:
-                print 'params: ' + str(self.C) + ',' + str(self.C2)
+                print 'params: ' + str(params)
                 timer.toc()
             self.prob = prob
             self.w = w_value

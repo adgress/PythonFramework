@@ -15,6 +15,30 @@ from timer.timer import tic
 from timer.timer import toc
 from sklearn import manifold
 import warnings
+import random
+
+def sample_n_tuples(n_or_vector, num_samples=1, tuple_size=2, shuffle_tuples=False):
+    if np.asarray(n_or_vector).size == 1:
+        n_or_vector = np.asarray(range(n_or_vector))
+    p = np.ones(n_or_vector.shape)
+    tuples = set()
+    draws = 0
+    while len(tuples) < num_samples:
+        if draws > 10*num_samples:
+            warnings.warn('Took too many draws to generate typles')
+            break
+        draws += 1
+        x = np.random.choice(n_or_vector, tuple_size, replace=False)
+        x.sort()
+        tuples.add(tuple(x))
+    if shuffle_tuples:
+        shuffled_items = set()
+        for x in tuples:
+            y = list(x)
+            random.shuffle(y)
+            shuffled_items.add(tuple(y))
+        tuples = shuffled_items
+    return tuples
 
 def sample_pairs(n_or_vector, num_samples=1):
     if np.asarray(n_or_vector).size == 1:

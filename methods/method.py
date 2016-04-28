@@ -1,6 +1,7 @@
 import cvxpy as cvx
 
-from methods.constrained_methods import PairwiseConstraint, BoundLowerConstraint, BoundUpperConstraint
+from methods.constrained_methods import \
+    PairwiseConstraint, BoundLowerConstraint, BoundUpperConstraint, NeighborConstraint
 from timer import timer
 
 __author__ = 'Aubrey'
@@ -25,7 +26,7 @@ from results_class.results import Output
 from saveable.saveable import Saveable
 from utility import array_functions
 from utility import helper_functions
-
+from dccp.dccp_problem import is_dccp
 #from pyqt_fit import nonparam_regression
 #from pyqt_fit import npr_methods
 
@@ -533,6 +534,7 @@ class RelativeRegressionMethod(Method):
         self.cv_params['C'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         self.cv_params['C2'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         self.cv_params['C3'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
+        self.cv_params['C4'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         self.w = None
         self.b = None
         self.transform = StandardScaler()
@@ -542,6 +544,10 @@ class RelativeRegressionMethod(Method):
         self.num_pairwise = configs.num_pairwise
         self.use_bound = configs.use_bound
         self.num_bound = configs.num_bound
+
+        self.add_random_neighbor = configs.use_neighbor
+        self.use_neighbor = configs.use_neighbor
+        self.num_neighbor = configs.num_neighbor
         self.use_test_error_for_model_selection = configs.use_test_error_for_model_selection
         self.no_linear_term = True
         self.neg_log = False
@@ -559,9 +565,37 @@ class RelativeRegressionMethod(Method):
             self.cv_params['C2'] = np.asarray([0])
         if not self.use_bound:
             self.cv_params['C3'] = np.asarray([0])
+        if not self.use_neighbor:
+            self.cv_params['C4'] = np.asarray([0])
 
     def train(self, data):
-        assert not (self.add_random_pairwise and self.add_random_bound), 'Not implemented yet'
+        '''
+        x = cvx.Variable(1)
+        y = cvx.Variable(2)
+        t = cvx.Variable(2)
+        obj = cvx.max_elemwise(
+            cvx.abs(x) - t[0],
+            0
+        ) + cvx.max_elemwise(
+            cvx.abs(x) - t[1],
+            0
+        )
+        myprob = cvx.Problem(
+            cvx.Minimize(obj),
+            [
+                t[0] == cvx.abs(y[0]),
+                t[1] == cvx.abs(y[1])
+            ]
+        )
+        print "problem is DCP:", myprob.is_dcp()   # false
+        print "problem is DCCP:", is_dccp(myprob)  # true
+        result = myprob.solve(method = 'dccp')
+        print "x =", x.value
+        print "y =", y.value
+        print "cost value =", result[0]
+        '''
+        num_random_types = int(self.add_random_pairwise) + int(self.add_random_bound) + int(self.add_random_neighbor)
+        assert num_random_types <= 1, 'Not implemented yet'
         if self.add_random_pairwise:
             data.pairwise_relationships = set()
             I = data.is_train & ~data.is_labeled
@@ -590,7 +624,20 @@ class RelativeRegressionMethod(Method):
                 else:
                     continue
                 data.pairwise_relationships.add(constraint)
-
+        if self.add_random_neighbor:
+            data.pairwise_relationships = set()
+            I = (data.is_train & ~data.is_labeled).nonzero()[0]
+            sampled = array_functions.sample_n_tuples(I, self.num_neighbor, 3, True)
+            for i in sampled:
+                i1,i2,i3 = i
+                y1,y2,y3 = data.true_y[[i1,i2,i3]]
+                if np.abs(y1-y2) < np.abs(y2-y3):
+                    triplet = i
+                else:
+                    triplet = (i1,i3,i2)
+                x1,x2,x3 = data.x[triplet,:]
+                constraint = NeighborConstraint(x1,x2,x3)
+                data.pairwise_relationships.add(constraint)
 
         is_labeled_train = data.is_train & data.is_labeled
         labeled_train = data.labeled_training_data()
@@ -641,53 +688,27 @@ class RelativeRegressionMethod(Method):
             reg = cvx.norm(w)**2
             pairwise_reg2 = 0
             bound_reg3 = 0
+            neighbor_reg4 = 0
             assert self.no_linear_term
 
-            if self.method == RelativeRegressionMethod.METHOD_CVX_NEW_CONSTRAINTS:
-                for c in data.pairwise_relationships:
-                    c.transform(self.transform)
-                    if c.is_pairwise():
-                        pairwise_reg2 += c.to_cvx(w)
-                    else:
-                        bound_reg3 += c.to_cvx(w)
-            else:
-                #for i,j in data.pairwise_relationships:
-                for pair in data.pairwise_relationships:
-                    #x1 <= x2
-                    #x1 = self.transform.transform(data.x[i,:])
-                    #x2 = self.transform.transform(data.x[j,:])
-                    x1 = self.transform.transform(pair.x[0])
-                    x2 = self.transform.transform(pair.x[1])
-                    if self.method == RelativeRegressionMethod.METHOD_CVX:
-                        pairwise_reg += (x1 - x2)*w
-                    elif self.method in RelativeRegressionMethod.CVX_METHODS_LOGISTIC:
-                        a = (x1 - x2)*w
-                        if self.method == RelativeRegressionMethod.METHOD_CVX_LOGISTIC:
-                            pairwise_reg += self.C2*a
-                        elif self.method in RelativeRegressionMethod.CVX_METHODS_LOGISTIC_WITH_LOG:
-                            #pairwise_reg += self.C2*a
-                            if self.C2 == 0:
-                                continue
-                            a2 = (x1 - x2)*w
-                            if self.method == RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG_SCALE:
-                                a2 *= self.C2
-                            if self.method == RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG_NEG or self.neg_log:
-                                a2 = -a2
-                            from utility import cvx_logistic
-                            a3 = cvx_logistic.logistic(a2)
-                            if self.method == RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG:
-                                pass
-                                #a3 *= self.C2
-                            pairwise_reg2 += a3
-                    else:
-                        assert False, 'Unknown CVX Method'
-
+            assert self.method == RelativeRegressionMethod.METHOD_CVX_NEW_CONSTRAINTS
+            for c in data.pairwise_relationships:
+                c.transform(self.transform)
+                if c.is_pairwise():
+                    pairwise_reg2 += c.to_cvx(w)
+                elif c.is_tertiary():
+                    pass
+                    #neighbor_reg4 += c.to_cvx(w)
+                else:
+                    bound_reg3 += c.to_cvx(w)
+            neighbor_reg4, t, t_constraints = NeighborConstraint.to_cvx_dccp(data.pairwise_relationships, w)
             warm_start = self.prob is not None and self.warm_start
             if warm_start:
                 prob = self.prob
                 self.C_param.value = self.C
                 self.C2_param.value = self.C2
                 self.C3_param.value = self.C3
+                self.C4_param.value = self.C4
                 w = self.w_var
                 b = self.b_var
             else:
@@ -695,20 +716,28 @@ class RelativeRegressionMethod(Method):
                 self.C_param = cvx.Parameter(sign='positive', value=self.C)
                 self.C2_param = cvx.Parameter(sign='positive', value=self.C2)
                 self.C3_param = cvx.Parameter(sign='positive', value=self.C3)
+                self.C4_param = cvx.Parameter(sign='positive', value=self.C4)
                 obj = cvx.Minimize(loss + self.C_param*reg +
                                    self.C2_param*pairwise_reg2 +
-                                   self.C3_param*bound_reg3)
-                prob = cvx.Problem(obj,constraints)
+                                   self.C3_param*bound_reg3 +
+                                   self.C4_param*neighbor_reg4)
+                prob = cvx.Problem(obj,constraints + t_constraints)
+                #prob = cvx.Problem(obj,constraints)
                 self.w_var = w
                 self.b_var = b
 
-            assert prob.is_dcp()
+            #assert prob.is_dcp()
+            if not prob.is_dcp():
+                assert is_dccp(prob)
             print_messages = False
             if print_messages:
                 timer.tic()
             try:
                 #ret = prob.solve(cvx.ECOS, False, {'warm_start': warm_start})
-                ret = prob.solve(self.solver, False, {'warm_start': warm_start})
+                if prob.is_dcp():
+                    ret = prob.solve(self.solver, False, {'warm_start': warm_start})
+                else:
+                    ret = prob.solve(method = 'dccp',solver = 'MOSEK')
                 w_value = w.value
                 b_value = b.value
                 #print prob.status
@@ -771,7 +800,8 @@ class RelativeRegressionMethod(Method):
             s += '-' + RelativeRegressionMethod.METHOD_NAMES[self.method]
         use_pairwise = self.use_pairwise
         use_bound = getattr(self, 'use_bound', False)
-        if not use_pairwise and not use_bound:
+        use_neighbor = getattr(self, 'use_neighbor', False)
+        if not use_pairwise and not use_bound and not use_neighbor:
             s += '-noPairwiseReg'
         else:
             if use_pairwise:
@@ -784,6 +814,8 @@ class RelativeRegressionMethod(Method):
             if use_bound:
                 if self.num_bound > 0 and self.add_random_bound:
                     s += '-numRandBound=' + str(int(self.num_bound))
+            if use_neighbor and self.num_neighbor > 0 and self.add_random_neighbor:
+                s += '-numRandNeighbor=' + str(int(self.num_neighbor))
             if hasattr(self, 'solver'):
                 s += '-solver=' + str(self.solver)
         if self.use_test_error_for_model_selection:

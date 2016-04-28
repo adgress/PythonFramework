@@ -14,6 +14,9 @@ class CVXConstraint(Constraint):
     def is_pairwise(self):
         return False
 
+    def is_tertiary(self):
+        return False
+
     def cvx_loss_logistic(self, d):
         return cvx_logistic.logistic(d)
     '''
@@ -30,6 +33,40 @@ class CVXConstraint(Constraint):
         elif not b_is_none:
             v = [0,d]
         return cvx.max_elemwise(*v)
+
+
+class NeighborConstraint(CVXConstraint):
+    def __init__(self, x, x_close, x_far):
+        super(NeighborConstraint, self).__init__()
+        self.x += [x, x_close, x_far]
+
+    def to_cvx(self, w):
+        d_close,d_far = self.get_convex_terms(w)
+        d = - (d_close - d_far)
+        e = cvx.max_elemwise(d,0)
+        return e
+
+    def get_convex_terms(self, w):
+        d_close = cvx.abs((self.x[0] - self.x[1])*w)
+        d_far = cvx.abs((self.x[0] - self.x[2])*w)
+        return d_close,d_far
+
+    def is_tertiary(self):
+        return True
+
+    @staticmethod
+    def to_cvx_dccp(constraints, w):
+        objective = 0
+        n = len(constraints)
+        t = cvx.Variable(n)
+        t_constraints = [0]*n
+        #d_far - d_close
+        for i,c in enumerate(constraints):
+            d_close,d_far = c.get_convex_terms(w)
+            t_constraints[i] = t[i] == d_close
+            objective += cvx.max_elemwise(d_far - t[i], 0)
+        return objective, t, t_constraints
+
 
 class PairwiseConstraint(CVXConstraint):
     def __init__(self, x1, x2):
@@ -68,6 +105,7 @@ class BoundConstraint(CVXConstraint):
             b = c
         else:
             assert False
+        d *= -1
         return self.cvx_loss_piecewise(d, a, b)
 
 class BoundLowerConstraint(BoundConstraint):

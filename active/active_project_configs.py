@@ -32,8 +32,10 @@ active_iterations = 2
 active_items_per_iteration = 50
 use_pairwise = False
 num_pairwise = 10
-use_bound = True
+use_bound = False
 num_bound = 10
+use_neighbor = True
+num_neighbor = 10
 use_test_error_for_model_selection = True
 
 run_active_experiments = False
@@ -143,6 +145,8 @@ class MainConfigs(bc.MainConfigs):
         method_configs.num_pairwise = num_pairwise
         method_configs.use_bound = use_bound
         method_configs.num_bound = num_bound
+        method_configs.use_neighbor = True
+        method_configs.num_neighbor = 10
         method_configs.use_test_error_for_model_selection = use_test_error_for_model_selection
 
         #active = active_methods.ActiveMethod(method_configs)
@@ -198,13 +202,15 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             #self.files['RelReg-cvx-constraints-numRandPairs=50-noLinear-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, SCS, new Constraints'
             #self.files['RelReg-cvx-constraints-numRandPairs=50-noLinear-solver=None-TEST.pkl'] = 'TEST: RelReg, 50 pairs, None, new COnstraints'
 
-            self.files['RelReg-cvx-constraints-noPairwiseReg-TEST.pkl'] = 'TEST: RelReg, no pairwise'
+            self.files['RelReg-cvx-constraints-noPairwiseReg-TEST.pkl'] = 'TEST: Ridge Regression'
 
-            self.files['RelReg-cvx-constraints-numRandBound=10-solver=None-TEST.pkl'] = 'TEST: RelReg, 10 bound'
-            self.files['RelReg-cvx-constraints-numRandBound=50-solver=None-TEST.pkl'] = 'TEST: RelReg, 50 bound'
+            #self.files['RelReg-cvx-constraints-numRandBound=10-solver=None-TEST.pkl'] = 'TEST: RelReg, 10 bound'
+            #self.files['RelReg-cvx-constraints-numRandBound=50-solver=None-TEST.pkl'] = 'TEST: RelReg, 50 bound'
+            self.files['RelReg-cvx-constraints-numRandBound=100-solver=None-TEST.pkl'] = 'TEST: RelReg, 100 median bound'
+            self.files['RelReg-cvx-constraints-numRandBound=250-solver=None-TEST.pkl'] = 'TEST: RelReg, 250 median bound'
 
-            #self.files['RelReg-cvx-constraints-numRandPairs=10-solver=None-TEST.pkl'] = 'TEST: RelReg, 10 pairs'
-            #self.files['RelReg-cvx-constraints-numRandPairs=50-solver=None-TEST.pkl'] = 'TEST: RelReg, 50 pairs'
+            self.files['RelReg-cvx-constraints-numRandPairs=10-solver=None-TEST.pkl'] = 'TEST: RelReg, 10 pairs'
+            self.files['RelReg-cvx-constraints-numRandPairs=50-solver=None-TEST.pkl'] = 'TEST: RelReg, 50 pairs'
 
 
 

@@ -669,6 +669,7 @@ class RelativeRegressionMethod(Method):
             assert self.no_linear_term
 
             assert self.method == RelativeRegressionMethod.METHOD_CVX_NEW_CONSTRAINTS
+            t_constraints = []
             for c in data.pairwise_relationships:
                 c.transform(self.transform)
                 if c.is_pairwise():
@@ -678,7 +679,8 @@ class RelativeRegressionMethod(Method):
                     #neighbor_reg4 += c.to_cvx(w)
                 else:
                     bound_reg3 += c.to_cvx(w)
-            neighbor_reg4, t, t_constraints = NeighborConstraint.to_cvx_dccp(data.pairwise_relationships, w)
+            if self.add_random_neighbor:
+                neighbor_reg4, t, t_constraints = NeighborConstraint.to_cvx_dccp(data.pairwise_relationships, w)
             warm_start = self.prob is not None and self.warm_start
             if warm_start:
                 prob = self.prob

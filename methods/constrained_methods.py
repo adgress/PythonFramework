@@ -18,7 +18,8 @@ class CVXConstraint(Constraint):
         return False
 
     def cvx_loss_logistic(self, d):
-        return cvx_logistic.logistic(d)
+        #return cvx_logistic.logistic(d)
+        return cvx.logistic(d)
     '''
     a: lower bound
     b: upper bound

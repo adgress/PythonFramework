@@ -55,4 +55,5 @@ if __name__ == '__main__':
         else:
             for i in num_labels_list:
                 launch_subprocess_args(i)
-    main.run_main()
+    if MPI.Get_rank() == 0:
+        main.run_main()

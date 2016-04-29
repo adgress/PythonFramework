@@ -15,6 +15,7 @@ from experiment import experiment_manager
 from utility import helper_functions
 from timer import timer
 import matplotlib.pyplot as plt
+import socket
 
 import numpy as np
 from data.data import Data
@@ -142,7 +143,12 @@ def run_main(num_labels=None, split_idx=None, no_viz=None):
     print 'Ignoring Deprecation Warnings'
     warnings.filterwarnings("ignore",category=DeprecationWarning)
 
-    print 'Starting experiments...'
+    from mpi4py import MPI
+    comm = MPI.COMM_WORLD
+    if comm.Get_size() > 1:
+        print '(' + socket.gethostname() + ')''Process ' + str(comm.Get_rank()) + ': Starting experiments...'
+    else:
+        print 'Starting experiments...'
     timer.tic()
     if configs_lib.run_experiments:
         run_experiments()

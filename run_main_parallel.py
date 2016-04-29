@@ -45,7 +45,7 @@ if __name__ == '__main__':
         from mpipool import core as mpipool
         pool = mpipool.MPIPool(debug=debug_mpi_pool, loadbalance=True)
         num_labels_list = [i + (True,) for i in num_labels_list]
-        pool.map(main.run_main, num_labels_list)
+        pool.map(main.run_main_args, num_labels_list)
         #pool.map(launch_subprocess_args, num_labels_list)
         pool.close()
     else:

@@ -55,5 +55,6 @@ if __name__ == '__main__':
         else:
             for i in num_labels_list:
                 launch_subprocess_args(i)
-    if MPI.Get_rank() == 0:
+    comm = MPI.COMM_WORLD
+    if comm.Get_rank() == 0:
         main.run_main()

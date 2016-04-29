@@ -7,8 +7,10 @@ from utility import multiprocessing_utility
 from utility import helper_functions
 import main
 import multiprocessing
+from mpi4py import MPI
 
-use_mpi = False
+comm = MPI.COMM_WORLD
+use_mpi = comm.Get_size() > 1
 debug_mpi_pool = False
 use_multiprocessing_pool = True
 
@@ -40,7 +42,6 @@ if __name__ == '__main__':
     num_labels_list = list(itertools.product(pc.num_labels, range(pc.num_splits)))
 
     if use_mpi:
-        from mpi4py import MPI
         from mpipool import core as mpipool
         pool = mpipool.MPIPool(debug=debug_mpi_pool, loadbalance=True)
         num_labels_list = [i + (True,) for i in num_labels_list]

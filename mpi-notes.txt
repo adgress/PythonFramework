@@ -9,7 +9,7 @@ mpiexec -n 2 start cmd /k python mpi_test.py
 LINUX:
 
 #Note: you need the ./ before the file name
-mpiexec -n 2 ./mpi_test.py
+mpiexec -n 2 python ./mpi_test.py
 
 You might need to set up MPI.  Check out http://lsi.ugr.es/~jmantas/pdp/ayuda/datos/instalaciones/Install_OpenMPI_en.pdf.
 

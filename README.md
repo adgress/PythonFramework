@@ -44,6 +44,10 @@ pip install cvxpy
 nosetests cvxpy
 git clone https://github.com/adgress/PythonFramework.git
 
+#You may need to do the following if you get an error message about libgfortran missing
+#From: https://github.com/ContinuumIO/anaconda-issues/issues/686
+export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libgfortran.so.3
+
 
 3) Copy (or generate) datasets
 

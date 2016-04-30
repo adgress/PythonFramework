@@ -7,7 +7,7 @@ import numpy as np
 import os
 import shutil
 import getpass
-
+import socket
 
 #TODO: Way to do this without needing to login?
 def send_email(address='agress@ucdavis.edu', subject=''):
@@ -25,6 +25,10 @@ def send_email(address='agress@ucdavis.edu', subject=''):
 
     s.sendmail(address, [address], msg.as_string())
     s.quit()
+
+
+def get_hostname():
+    return socket.gethostname()
 
 def flatten_list_of_lists(list_of_lists):
     return [item for sublist in list_of_lists for item in sublist]

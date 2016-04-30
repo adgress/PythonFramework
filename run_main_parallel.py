@@ -8,6 +8,7 @@ from utility import helper_functions
 import main
 import multiprocessing
 from mpi4py import MPI
+from timer import timer
 
 comm = MPI.COMM_WORLD
 use_mpi = comm.Get_size() > 1
@@ -17,7 +18,7 @@ use_multiprocessing_pool = True
 if helper_functions.is_laptop():
     pool_size = 2
 else:
-    pool_size = 13
+    pool_size = 12
 
 def launch_subprocess_args(args):
     #print args
@@ -36,12 +37,25 @@ def launch_subprocess(num_labels, split_idx):
                 '-no_viz'
                 ])
 
-if __name__ == '__main__':
+def mpi_rollcall():
+    comm = MPI.COMM_WORLD
+    s = comm.Get_size()
+    rank = comm.Get_rank()
+    for i in range(s):
+        if rank == i:
+            hostname = helper_functions.get_hostname()
+            print '(' + hostname + '): ' + str(rank) + ' of ' + str(s)
+        comm.Barrier()
 
+
+
+if __name__ == '__main__':
+    timer.tic()
     pc = configs_lib.create_project_configs()
     num_labels_list = list(itertools.product(pc.num_labels, range(pc.num_splits)))
 
     if use_mpi:
+        mpi_rollcall()
         from mpipool import core as mpipool
         pool = mpipool.MPIPool(debug=debug_mpi_pool, loadbalance=True)
         num_labels_list = [i + (True,) for i in num_labels_list]
@@ -55,6 +69,8 @@ if __name__ == '__main__':
         else:
             for i in num_labels_list:
                 launch_subprocess_args(i)
+    print 'TOTAL TIME:'
+    timer.toc()
     comm = MPI.COMM_WORLD
     if comm.Get_rank() == 0:
         main.run_main()

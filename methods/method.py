@@ -669,18 +669,19 @@ class RelativeRegressionMethod(Method):
             assert self.no_linear_term
 
             assert self.method == RelativeRegressionMethod.METHOD_CVX_NEW_CONSTRAINTS
+            func = lambda x:x*w + b
             t_constraints = []
             for c in data.pairwise_relationships:
                 c.transform(self.transform)
                 if c.is_pairwise():
-                    pairwise_reg2 += c.to_cvx(w)
+                    pairwise_reg2 += c.to_cvx(func)
                 elif c.is_tertiary():
                     pass
-                    #neighbor_reg4 += c.to_cvx(w)
+                    #neighbor_reg4 += c.to_cvx(func)
                 else:
-                    bound_reg3 += c.to_cvx(w)
+                    bound_reg3 += c.to_cvx(func)
             if self.add_random_neighbor:
-                neighbor_reg4, t, t_constraints = NeighborConstraint.to_cvx_dccp(data.pairwise_relationships, w)
+                neighbor_reg4, t, t_constraints = NeighborConstraint.to_cvx_dccp(data.pairwise_relationships, func)
             warm_start = self.prob is not None and self.warm_start
             if warm_start:
                 prob = self.prob
@@ -715,12 +716,20 @@ class RelativeRegressionMethod(Method):
             #ret = prob.solve(method = 'dccp',solver = 'MOSEK')
             #ret = prob.solve(method = 'dccp')
             try:
-                with Capturing() as output:
-                    #ret = prob.solve(cvx.ECOS, False, {'warm_start': warm_start})
-                    if prob.is_dcp():
-                        ret = prob.solve(self.solver, False, {'warm_start': warm_start})
-                    else:
-                        ret = prob.solve(solver=self.solver, method='dccp')
+                #with Capturing() as output:
+                #ret = prob.solve(cvx.ECOS, False, {'warm_start': warm_start})
+                if prob.is_dcp():
+                    ret = prob.solve(self.solver, False, {'warm_start': warm_start})
+                else:
+                    options = {
+                        'method': 'dccp',
+                        'max_iter': 20,
+                        'tau': .25,
+                        'mu': 2,
+                        'tau_max': 1e6
+                    }
+                    #ret = prob.solve(self.solver, False, method='dccp', options)
+                    ret = prob.solve(solver=self.solver, **options)
                 w_value = w.value
                 b_value = b.value
                 #print prob.status

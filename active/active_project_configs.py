@@ -32,10 +32,10 @@ active_iterations = 2
 active_items_per_iteration = 50
 use_pairwise = False
 num_pairwise = 10
-use_bound = False
+use_bound = True
 num_bound = 10
 use_neighbor = False
-num_neighbor = 10
+num_neighbor = 20
 use_test_error_for_model_selection = True
 
 run_active_experiments = False
@@ -206,11 +206,13 @@ class VisualizationConfigs(bc.VisualizationConfigs):
 
             #self.files['RelReg-cvx-constraints-numRandBound=10-solver=None-TEST.pkl'] = 'TEST: RelReg, 10 bound'
             #self.files['RelReg-cvx-constraints-numRandBound=50-solver=None-TEST.pkl'] = 'TEST: RelReg, 50 bound'
-            self.files['RelReg-cvx-constraints-numRandBound=100-solver=None-TEST.pkl'] = 'TEST: RelReg, 100 median bound'
-            self.files['RelReg-cvx-constraints-numRandBound=250-solver=None-TEST.pkl'] = 'TEST: RelReg, 250 median bound'
+            self.files['RelReg-cvx-constraints-numRandBound=100-solver=None-TEST.pkl'] = 'TEST: RelReg, 100 median bound, NO BIAS FIX'
+            self.files['RelReg-cvx-constraints-numRandBound=250-solver=None-TEST.pkl'] = 'TEST: RelReg, 250 median bound, NO BIAS FIX'
 
             self.files['RelReg-cvx-constraints-numRandPairs=10-solver=None-TEST.pkl'] = 'TEST: RelReg, 10 pairs'
             self.files['RelReg-cvx-constraints-numRandPairs=50-solver=None-TEST.pkl'] = 'TEST: RelReg, 50 pairs'
+
+            self.files['RelReg-cvx-constraints-numRandNeighbor=10-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 10 neighbors'
 
 
 

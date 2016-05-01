@@ -716,20 +716,20 @@ class RelativeRegressionMethod(Method):
             #ret = prob.solve(method = 'dccp',solver = 'MOSEK')
             #ret = prob.solve(method = 'dccp')
             try:
-                #with Capturing() as output:
-                #ret = prob.solve(cvx.ECOS, False, {'warm_start': warm_start})
-                if prob.is_dcp():
-                    ret = prob.solve(self.solver, False, {'warm_start': warm_start})
-                else:
-                    options = {
-                        'method': 'dccp',
-                        'max_iter': 20,
-                        'tau': .25,
-                        'mu': 2,
-                        'tau_max': 1e6
-                    }
-                    #ret = prob.solve(self.solver, False, method='dccp', options)
-                    ret = prob.solve(solver=self.solver, **options)
+                with Capturing() as output:
+                    #ret = prob.solve(cvx.ECOS, False, {'warm_start': warm_start})
+                    if prob.is_dcp():
+                        ret = prob.solve(self.solver, False, {'warm_start': warm_start})
+                    else:
+                        options = {
+                            'method': 'dccp',
+                            'max_iter': 20,
+                            'tau': .25,
+                            'mu': 2,
+                            'tau_max': 1e6
+                        }
+                        #ret = prob.solve(self.solver, False, method='dccp', options)
+                        ret = prob.solve(solver=self.solver, **options)
                 w_value = w.value
                 b_value = b.value
                 #print prob.status

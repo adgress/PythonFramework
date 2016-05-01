@@ -64,10 +64,13 @@ class NeighborConstraint(CVXConstraint):
         #d_far - d_close
         for i,c in enumerate(constraints):
             d_close,d_far = c.get_convex_terms(f)
+            '''
             t_constraints[i] = t[i] == d_close
-            #assert False, 'Is this correct?'
-            #objective += cvx.max_elemwise(d_far - t[i], 0)
-            objective += cvx.max_elemwise(t[i]-d_far, 0)
+            assert False, 'Is this correct?'
+            objective += cvx.max_elemwise(d_far - t[i], 0)
+            '''
+            t_constraints[i] = t[i] == d_far
+            objective += cvx.max_elemwise(d_close-t[i], 0)
         return objective, t, t_constraints
 
 

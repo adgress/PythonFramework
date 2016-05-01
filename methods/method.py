@@ -608,7 +608,7 @@ class RelativeRegressionMethod(Method):
             for i in sampled:
                 i1,i2,i3 = i
                 y1,y2,y3 = data.true_y[[i1,i2,i3]]
-                if np.abs(y1-y2) < np.abs(y2-y3):
+                if np.abs(y1-y2) < np.abs(y1-y3):
                     triplet = i
                 else:
                     triplet = (i1,i3,i2)

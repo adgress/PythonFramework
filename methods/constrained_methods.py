@@ -48,8 +48,8 @@ class NeighborConstraint(CVXConstraint):
         return e
 
     def get_convex_terms(self, f):
-        d_close = cvx.abs(f(self.x[0]) - f(self.x[1]))
-        d_far = cvx.abs(f(self.x[0]) - f(self.x[2]))
+        d_close = cvx.square(f(self.x[0]) - f(self.x[1]))
+        d_far = cvx.square(f(self.x[0]) - f(self.x[2]))
         return d_close,d_far
 
     def is_tertiary(self):

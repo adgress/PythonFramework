@@ -18,7 +18,7 @@ use_multiprocessing_pool = True
 if helper_functions.is_laptop():
     pool_size = 2
 else:
-    pool_size = 12
+    pool_size = 24
 
 def launch_subprocess_args(args):
     #print args

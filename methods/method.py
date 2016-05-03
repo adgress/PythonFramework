@@ -816,9 +816,9 @@ class RelativeRegressionMethod(Method):
                     s += '-numRandBound=' + str(int(self.num_bound))
             if use_neighbor and self.num_neighbor > 0 and self.add_random_neighbor:
                 if getattr(self, 'use_min_pair_neighbor', False):
-                    s += '-numRandNeighbor=' + str(int(self.num_neighbor))
-                else:
                     s += '-numMinNeighbor=' + str(int(self.num_neighbor))
+                else:
+                    s += '-numRandNeighbor=' + str(int(self.num_neighbor))
 
             if hasattr(self, 'solver'):
                 s += '-solver=' + str(self.solver)

@@ -536,6 +536,7 @@ class RelativeRegressionMethod(Method):
         self.cv_params['C2'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         self.cv_params['C3'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         self.cv_params['C4'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
+
         self.w = None
         self.b = None
         self.transform = StandardScaler()
@@ -550,6 +551,9 @@ class RelativeRegressionMethod(Method):
         self.add_random_neighbor = configs.use_neighbor
         self.use_neighbor = configs.use_neighbor
         self.num_neighbor = configs.num_neighbor
+        self.use_min_pair_neighbor = configs.use_min_pair_neighbor
+
+
         self.use_test_error_for_model_selection = configs.use_test_error_for_model_selection
         self.no_linear_term = True
         self.neg_log = False
@@ -608,10 +612,14 @@ class RelativeRegressionMethod(Method):
             for i in sampled:
                 i1,i2,i3 = i
                 y1,y2,y3 = data.true_y[[i1,i2,i3]]
-                if np.abs(y1-y2) < np.abs(y1-y3):
-                    triplet = i
+                if self.use_min_pair_neighbor:
+                    triplet = helper_functions.compute_min_pair(y1,y2,y3)
                 else:
-                    triplet = (i1,i3,i2)
+                    if np.abs(y1-y2) < np.abs(y1-y3):
+                        triplet = i
+                    else:
+                        triplet = (i1,i3,i2)
+
                 x1,x2,x3 = data.x[triplet,:]
                 constraint = NeighborConstraint(x1,x2,x3)
                 data.pairwise_relationships.add(constraint)
@@ -807,7 +815,11 @@ class RelativeRegressionMethod(Method):
                 if self.num_bound > 0 and self.add_random_bound:
                     s += '-numRandBound=' + str(int(self.num_bound))
             if use_neighbor and self.num_neighbor > 0 and self.add_random_neighbor:
-                s += '-numRandNeighbor=' + str(int(self.num_neighbor))
+                if getattr(self, 'use_min_pair_neighbor', False):
+                    s += '-numRandNeighbor=' + str(int(self.num_neighbor))
+                else:
+                    s += '-numMinNeighbor=' + str(int(self.num_neighbor))
+
             if hasattr(self, 'solver'):
                 s += '-solver=' + str(self.solver)
         if self.use_test_error_for_model_selection:

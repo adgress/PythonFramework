@@ -26,6 +26,20 @@ def send_email(address='agress@ucdavis.edu', subject=''):
     s.sendmail(address, [address], msg.as_string())
     s.quit()
 
+#ordering is [i_mid, i_close, i_far]
+def compute_min_pair(x0, x1, x2):
+    x = np.asarray([x0,x1,x2])
+    i_mid = (np.percentile(x,50) == x).nonzero()[0][0]
+    x_mid = x[i_mid]
+    di0 = abs(x0 - x_mid)
+    di1 = abs(x1 - x_mid)
+    di2 = abs(x2 - x_mid)
+    d = np.asarray([di0,di1,di2])
+    assert not (d==0).all()
+    i_close = (np.percentile(d,50) == d).nonzero()[0][0]
+    i_far = np.setdiff1d(np.asarray([0,1,2]), np.asarray([i_mid, i_close]))[0]
+    x_ordered = (x[i_mid], x[i_close], x[i_far])
+    return (i_mid, i_close, i_far)
 
 def get_hostname():
     return socket.gethostname()

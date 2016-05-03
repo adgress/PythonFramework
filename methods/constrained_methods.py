@@ -42,8 +42,9 @@ class NeighborConstraint(CVXConstraint):
         self.x += [x, x_close, x_far]
 
     def to_cvx(self, f):
+        assert False, 'Update this'
         d_close,d_far = self.get_convex_terms(f)
-        d = - (d_close - d_far)
+        d = d_close - d_far
         e = cvx.max_elemwise(d,0)
         return e
 

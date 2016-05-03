@@ -361,6 +361,7 @@ class Constraint(object):
     def __init__(self):
         self.x = []
         self.c = []
+        self.transform_applied = False
         pass
 
     @abc.abstractmethod
@@ -370,3 +371,4 @@ class Constraint(object):
     def transform(self, t):
         for i, xi in enumerate(self.x):
             self.x[i] = t.transform(xi)
+        self.transform_applied = True

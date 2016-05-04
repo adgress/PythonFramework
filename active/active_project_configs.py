@@ -221,8 +221,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['RelReg-cvx-constraints-numRandNeighbor=50-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 neighbors'
             '''
 
-            #self.files['RelReg-cvx-constraints-noPairwiseReg-TEST.pkl'] = 'TEST: Ridge Regression'
-
+            self.files['RelReg-cvx-constraints-noPairwiseReg-TEST.pkl'] = 'TEST: Ridge Regression'
+            '''
             self.files['RelReg-cvx-constraints-noPairwiseReg.pkl'] = 'Ridge Regression'
             self.files['RelReg-cvx-constraints-numRandPairs=10-solver=SCS.pkl'] = 'Ridge Regression, 10 pairs'
             self.files['RelReg-cvx-constraints-numRandPairs=50-solver=SCS.pkl'] = 'Ridge Regression, 50 pairs'
@@ -230,6 +230,9 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['RelReg-cvx-constraints-numRandBound=10-solver=SCS.pkl'] = 'Ridge Regression, 10 median bounds'
             self.files['RelReg-cvx-constraints-numRandBound=50-solver=SCS.pkl'] = 'Ridge Regression, 50 median bounds'
             self.files['RelReg-cvx-constraints-numRandBound=100-solver=SCS.pkl'] = 'Ridge Regression, 100 median bounds'
+            '''
+            self.files['RelReg-cvx-constraints-numMinNeighbor=10-solver=SCS-TEST.pkl'] = 'TEST: Ridge Regression, 10 min neighbors'
+            self.files['RelReg-cvx-constraints-numMinNeighbor=50-solver=SCS-TEST.pkl'] = 'TEST: Ridge Regression, 50 min neighbors'
 
         self.figsize = (7,7)
         self.borders = (.1,.9,.9,.1)

@@ -613,7 +613,8 @@ class RelativeRegressionMethod(Method):
                 i1,i2,i3 = i
                 y1,y2,y3 = data.true_y[[i1,i2,i3]]
                 if self.use_min_pair_neighbor:
-                    triplet = helper_functions.compute_min_pair(y1,y2,y3)
+                    ordering = helper_functions.compute_min_pair(y1,y2,y3)
+                    triplet = tuple(i[j] for j in ordering)
                 else:
                     if np.abs(y1-y2) < np.abs(y1-y3):
                         triplet = i
@@ -729,12 +730,17 @@ class RelativeRegressionMethod(Method):
                     if prob.is_dcp():
                         ret = prob.solve(self.solver, False, {'warm_start': warm_start})
                     else:
+                        '''
                         options = {
                             'method': 'dccp',
                             'max_iter': 20,
                             'tau': .25,
                             'mu': 2,
                             'tau_max': 1e6
+                        }
+                        '''
+                        options = {
+                            'method': 'dccp'
                         }
                         #ret = prob.solve(self.solver, False, method='dccp', options)
                         ret = prob.solve(solver=self.solver, **options)

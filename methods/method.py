@@ -30,6 +30,20 @@ from utility import helper_functions
 from dccp.problem import is_dccp
 #from pyqt_fit import nonparam_regression
 #from pyqt_fit import npr_methods
+from mpipool import core as mpipool
+from utility import mpi_utility
+
+def is_master():
+    comm = get_comm()
+    return comm is None or comm.Get_rank() == 0
+
+def get_comm():
+    import main
+    return main.configs_lib.comm
+
+def _run_cross_validation_iteration_args(self, args):
+    mpi_utility.mpi_print(str(self) + ':' + str(args))
+    return self._run_cross_validation_iteration(args)
 
 class Method(Saveable):
 
@@ -85,6 +99,18 @@ class Method(Saveable):
             splits = data_splitter.generate_splits(data.y,num_splits,perc_train,is_regression)
         return splits
 
+    def _run_cross_validation_iteration(self, params, curr_split, test_data):
+        self.set_params(**params)
+        results = self.run_method(curr_split)
+        fold_results = FoldResults()
+        fold_results.prediction = results
+        #param_results[param_idx].set(fold_results, i)
+        results_on_test_data = self.predict(test_data)
+        fold_results_on_test_data = FoldResults()
+        fold_results_on_test_data.prediction = results_on_test_data
+        #param_results_on_test[param_idx].set(fold_results_on_test_data, i)
+        return fold_results, fold_results_on_test_data
+
     def run_cross_validation(self,data):
         assert data.n_train_labeled > 0
         train_data = deepcopy(data)
@@ -105,30 +131,49 @@ class Method(Saveable):
         param_grid = list(grid_search.ParameterGrid(self.cv_params))
         if not self.cv_params:
             return param_grid[0], None
-        #Results when using cross validation
-        param_results = [self.experiment_results_class(len(splits)) for i in range(len(param_grid))]
-
-        #Results when using test data to do model selection
-        param_results_on_test = [self.experiment_results_class(len(splits)) for i in range(len(param_grid))]
-        for i in range(len(splits)):
-            curr_split = data_and_splits.get_split(i)
-            curr_split.remove_test_labels()
-            self.warm_start = False
-            for param_idx, params in enumerate(param_grid):
-                self.set_params(**params)
-                results = self.run_method(curr_split)
-                fold_results = FoldResults()
-                fold_results.prediction = results
-                param_results[param_idx].set(fold_results, i)
-                results_on_test_data = self.predict(test_data)
-                fold_results_on_test_data = FoldResults()
-                fold_results_on_test_data.prediction = results_on_test_data
-                param_results_on_test[param_idx].set(fold_results_on_test_data, i)
-
-                #Make sure error can be computed
-                #param_results[param_idx].aggregate_error(self.configs.cv_loss_function)
-                self.warm_start = True
         self.warm_start = False
+        my_comm = get_comm()
+        param_results_on_test = [self.experiment_results_class(len(splits)) for i in range(len(param_grid))]
+        param_results = [self.experiment_results_class(len(splits)) for i in range(len(param_grid))]
+        if my_comm is None or my_comm.Get_size() == 1:
+            #Results when using test data to do model selection
+
+            #Results when using cross validation
+            for i in range(len(splits)):
+                curr_split = data_and_splits.get_split(i)
+                curr_split.remove_test_labels()
+                self.warm_start = False
+                for param_idx, params in enumerate(param_grid):
+                    results, results_on_test = self._run_cross_validation_iteration(params, curr_split, test_data)
+                    param_results[param_idx].set(results, i)
+                    param_results_on_test[param_idx].set(results_on_test, i)
+                    self.warm_start = True
+            self.warm_start = False
+        else:
+            pool = mpipool.MPIPool(comm=my_comm, debug=False, loadbalance=True, object=self)
+            self.data_and_splits = pool.bcast(data_and_splits, root=0)
+            self.test_data = pool.bcast(test_data, root=0)
+            splits = pool.bcast(splits, root=0)
+            for i in range(len(splits)):
+                self.curr_split = data_and_splits.get_split(i)
+                self.curr_split.remove_test_labels()
+                all_split_results = pool.map(_run_cross_validation_iteration_args, param_grid)
+                mpi_utility.mpi_print(all_split_results)
+                if pool.is_master():
+                    param_idx = 0
+                    for split_results, split_results_on_test in all_split_results:
+                        param_results[param_idx].set(split_results, i)
+                        param_results_on_test[param_idx].set(split_results, i)
+                        param_idx = param_idx + 1
+
+                del self.curr_split
+            del self.data_and_splits
+            del self.test_data
+
+            param_results = pool.bcast(param_results, root=0)
+            param_results_on_test = pool.bcast(param_results_on_test, root=0)
+            pool.close()
+
         errors = np.empty(len(param_grid))
         errors_on_test_data = np.empty(len(param_grid))
         for i in range(len(param_grid)):
@@ -175,7 +220,12 @@ class Method(Saveable):
             best_params, min_error, error_on_test_data = self.run_cross_validation(data)
             self.set_params(**best_params)
         self.should_plot_g = True
-        output = self.run_method(data)
+        output = None
+        if is_master():
+            output = self.run_method(data)
+        comm = get_comm()
+        if comm is not None:
+            output = comm.bcast(output, root=0)
         f = FoldResults()
         f.prediction = output
         f.estimated_error = min_error

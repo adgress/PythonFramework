@@ -8,7 +8,8 @@ import importlib
 #import configs.base_configs as configs_lib
 #import base.project_configs as configs_lib
 #import base.transfer_project_configs as configs_lib
-import active.active_project_configs as configs_lib
+import active.active_project_configs as configs_library
+configs_lib = configs_library
 import boto
 import math
 from experiment import experiment_manager
@@ -116,10 +117,8 @@ def run_visualization():
 test_mpi = False
 
 def run_main_args(args):
-    mpi_utility.mpi_print(str(args))
+    #mpi_utility.mpi_print(str(args))
     run_main(*args)
-
-my_comm = None
 
 def run_main(num_labels=None, split_idx=None, no_viz=None, comm=None):
     import argparse
@@ -129,7 +128,6 @@ def run_main(num_labels=None, split_idx=None, no_viz=None, comm=None):
     parser.add_argument('-num_labels', type=int)
     parser.add_argument('-split_idx', type=int)
     parser.add_argument('-no_viz', action='store_true')
-    my_comm = comm
     arguments = parser.parse_args(sys.argv[1:])
     if num_labels is not None:
         arguments.num_labels = num_labels
@@ -138,6 +136,7 @@ def run_main(num_labels=None, split_idx=None, no_viz=None, comm=None):
     if no_viz is not None:
         arguments.no_viz = no_viz
 
+    configs_lib.comm = comm
     if test_mpi:
         from mpi4py import MPI
         print str(MPI.COMM_WORLD.Get_rank()) + '-' + str(arguments.num_labels) + '-' + str(arguments.split_idx)

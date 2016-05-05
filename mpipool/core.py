@@ -33,13 +33,14 @@ class MPIPool(object):
         one task to each cpu first and then sending out the rest
         as the cpus get done.
     """
-    def __init__(self, comm=None, debug=False, loadbalance=False):
+    def __init__(self, comm=None, debug=False, loadbalance=False, object=None):
         self.comm = MPI.COMM_WORLD if comm is None else comm
         self.rank = self.comm.Get_rank()
         self.size = self.comm.Get_size() - 1
         self.debug = debug
         self.function = _error_function
         self.loadbalance = loadbalance
+        self.object = object
         if self.size == 0:
             raise ValueError("Tried to create an MPI pool, but there "
                              "was only one MPI process available. "
@@ -93,7 +94,10 @@ class MPIPool(object):
             # If not a special message, just run the known function on
             # the input and return it asynchronously.
             try:
-                result = self.function(task)
+                if self.object is None:
+                    result = self.function(task)
+                else:
+                    result = self.function(self.object, task)
             except:
                 tb = traceback.format_exc()
                 self.comm.isend(MPIPoolException(tb), dest=0, tag=status.tag)

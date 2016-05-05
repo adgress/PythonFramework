@@ -116,10 +116,10 @@ def run_visualization():
 test_mpi = False
 
 def run_main_args(args):
-    assert False
     mpi_utility.mpi_print(str(args))
-    return
     run_main(*args)
+
+my_comm = None
 
 def run_main(num_labels=None, split_idx=None, no_viz=None, comm=None):
     import argparse
@@ -129,6 +129,7 @@ def run_main(num_labels=None, split_idx=None, no_viz=None, comm=None):
     parser.add_argument('-num_labels', type=int)
     parser.add_argument('-split_idx', type=int)
     parser.add_argument('-no_viz', action='store_true')
+    my_comm = comm
     arguments = parser.parse_args(sys.argv[1:])
     if num_labels is not None:
         arguments.num_labels = num_labels

@@ -62,9 +62,10 @@ def mpi_split_even_odd():
 
 mpi_comms = None
 def mpi_run_main_args(args):
-    return None
+    #return None
     my_comm = mpi_comms[helper_functions.get_hostname()]
-    args.append[my_comm]
+    args = list(args)
+    args.append(my_comm)
     main.run_main_args(args)
 
 
@@ -72,19 +73,19 @@ if __name__ == '__main__':
     timer.tic()
     pc = configs_lib.create_project_configs()
     num_labels_list = list(itertools.product(pc.num_labels, range(pc.num_splits)))
-    num_labels_list = num_labels_list[0:10]
+    #num_labels_list = num_labels_list[0:10]
     if use_mpi:
         mpi_rollcall()
+        num_labels_list = [i + (True,) for i in num_labels_list]
         '''
         from mpipool import core as mpipool
-        pool = mpipool.MPIPool(debug=debug_mpi_pool, loadbalance=True)
-        num_labels_list = [i + (True,) for i in num_labels_list]
+        pool = mpipool.MPIPool(debug=debug_mpi_pool, loadbalance=True)        
         pool.map(main.run_main_args, num_labels_list)
         #pool.map(launch_subprocess_args, num_labels_list)
         pool.close()
         '''
         mpi_comms = mpi_utility.mpi_comm_by_node(include_root=False)
-        pool = mpi_group_pool.MPIGroupPool(debug=True, loadbalance=True, comms=mpi_comms)
+        pool = mpi_group_pool.MPIGroupPool(debug=False, loadbalance=True, comms=mpi_comms)
         #assert False
         pool.map(mpi_run_main_args, num_labels_list)
         pool.close()

@@ -268,7 +268,11 @@ class MPIGroupPool(object):
                 if self.debug:
                     print("Master received from worker {0} with tag {1}"
                           .format(group_root_worker, i))
-
+                if isinstance(result, MPIPoolException):
+                    print("One of the MPIPool workers failed with the "
+                          "exception:")
+                    print(result.traceback)
+                    raise result
                 # Now send the next task to this idle worker (if there are any
                 # left).
                 if ntasks_dispatched < ntask:

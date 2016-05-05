@@ -84,7 +84,7 @@ if __name__ == '__main__':
         pool.close()
         '''
         mpi_comms = mpi_utility.mpi_comm_by_node(include_root=False)
-        pool = mpi_group_pool.MPIGroupPool(debug=True, loadbalance=False, comms=mpi_comms)
+        pool = mpi_group_pool.MPIGroupPool(debug=True, loadbalance=True, comms=mpi_comms)
         #assert False
         pool.map(mpi_run_main_args, num_labels_list)
         pool.close()
@@ -95,8 +95,8 @@ if __name__ == '__main__':
         else:
             for i in num_labels_list:
                 launch_subprocess_args(i)
-    print 'TOTAL TIME:'
-    timer.toc()
     comm = MPI.COMM_WORLD
     if comm.Get_rank() == 0:
+        print 'TOTAL TIME:'
+        timer.toc()
         main.run_main()

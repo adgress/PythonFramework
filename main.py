@@ -21,6 +21,7 @@ import numpy as np
 from data.data import Data
 from loss_functions.loss_function import MeanSquaredError
 from loss_functions import loss_function
+from utility import mpi_utility
 
 
 def run_experiments():
@@ -115,9 +116,12 @@ def run_visualization():
 test_mpi = False
 
 def run_main_args(args):
+    assert False
+    mpi_utility.mpi_print(str(args))
+    return
     run_main(*args)
 
-def run_main(num_labels=None, split_idx=None, no_viz=None):
+def run_main(num_labels=None, split_idx=None, no_viz=None, comm=None):
     import argparse
     import sys
     #print sys.argv

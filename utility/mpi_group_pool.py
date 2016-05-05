@@ -28,20 +28,20 @@ class MPIGroupPool(object):
         one task to each cpu first and then sending out the rest
         as the cpus get done.
     """
-    def __init__(self, comm=None, debug=False, loadbalance=False, groups=None):
+    def __init__(self, comm=None, debug=False, loadbalance=False, comms=None):
         self.comm = MPI.COMM_WORLD if comm is None else comm
         self.rank = self.comm.Get_rank()
         self.size = self.comm.Get_size() - 1
         self.debug = debug
         self.function = _error_function
         self.loadbalance = loadbalance
-        self.groups = groups
-        if not self.is_master() and (groups is None or len(self.groups) != 1):
-            raise RuntimeError("Invalid number of group:" + str(len(groups)))
+        self.comms = comms
+        if not self.is_master() and (comms is None or len(self.comms) != 1):
+            raise RuntimeError("Invalid number of group:" + str(len(comms)))
         self.node_name_to_tag = {}
 
         if self.is_master():
-            for i, s in enumerate(groups.keys()):
+            for i, s in enumerate(comms.keys()):
                 self.node_name_to_tag[s] = i
 
         self.node_name_to_tag = self.comm.bcast(self.node_name_to_tag, root=0)
@@ -78,9 +78,9 @@ class MPIGroupPool(object):
             raise RuntimeError("Master node doesn't have a tag.")
         return self.node_name_to_tag[helper_functions.get_hostname()]
 
-    def get_group_for_tag(self, group_id):
+    def get_comm_for_tag(self, group_id):
         hostname = self.tag_to_node_name[group_id]
-        return self.groups[hostname]
+        return self.comms[hostname]
 
     def get_group_members(self, group_id):
         hostname = self.tag_to_node_name[group_id]
@@ -116,7 +116,7 @@ class MPIGroupPool(object):
                 print("Worker {0} waiting for task.".format(self.rank))
 
             # Blocking receive to wait for instructions.
-            task = self.comm.recv(source=0, tag=self.get_tag(), status=status)
+            task = self.comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
             if self.debug:
                 print("Group {0}, Worker {1} got task {2} with tag {3}."
                       .format(self.get_tag(), self.rank, task, status.tag))
@@ -214,7 +214,6 @@ class MPIGroupPool(object):
                     r = self.comm.isend(task, dest=r, tag=i)
                 requests.append(r)
             MPI.Request.waitall(requests)
-            print('Hello')
             results = []
             for i in range(ntask):
                 group_id = i % self.num_groups
@@ -223,8 +222,6 @@ class MPIGroupPool(object):
                 group_members = self.get_group_members(group_id)
                 #result = self.comm.recv(source=min(group_members), tag=i)
                 result = self.comm.recv(source=MPI.ANY_SOURCE, tag=i)
-                print 'Master recieved item'
-                #assert False
                 if isinstance(result, MPIPoolException):
                     print("One of the MPIPool workers failed with the "
                           "exception:")

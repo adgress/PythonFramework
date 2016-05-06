@@ -1,6 +1,17 @@
 from mpi4py import MPI
 from utility import helper_functions
 
+def get_comm():
+    import main
+    comm = main.configs_lib.comm
+    if comm is None:
+        comm = MPI.COMM_WORLD
+    return comm
+
+def is_master():
+    comm = get_comm()
+    return comm.Get_rank() == 0
+
 def mpi_print(s, comm=MPI.COMM_WORLD):
     print '(' + str(comm.Get_rank()) + '): ' + str(s)
 

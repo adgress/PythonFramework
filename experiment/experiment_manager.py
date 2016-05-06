@@ -11,6 +11,7 @@ from utility import array_functions
 import multiprocessing
 import itertools
 import copy
+from utility import mpi_utility
 
 def _temp_split_file_name(final_file_name, num_labels, split):
     directory = helper_functions.remove_suffix(final_file_name, '.pkl')
@@ -24,14 +25,16 @@ def _load_temp_split_file(final_file_name, num_labels, split):
     split_temp_file = _temp_split_file_name(final_file_name, num_labels, split)
     if not os.path.isfile(split_temp_file):
         return None
-    print 'found ' + split_temp_file + ' - loading'
+    if mpi_utility.is_master():
+        print 'found ' + split_temp_file + ' - loading'
     return helper_functions.load_object(split_temp_file)
 
 def _load_temp_experiment_file(final_file_name, num_labels):
     experiment_temp_file = _temp_experiment_file_name(final_file_name, num_labels)
     if not os.path.isfile(experiment_temp_file):
         return None
-    print 'found ' + experiment_temp_file + ' - loading'
+    if mpi_utility.is_master():
+        print 'found ' + experiment_temp_file + ' - loading'
     return helper_functions.load_object(experiment_temp_file)
 
 def _delete_temp_split_files(file, num_labels, num_splits):
@@ -76,6 +79,8 @@ class MethodExperimentManager(ExperimentManager):
 
 
 
+
+
     def run_experiments(self):
         data_file = self.configs.data_file
         data_and_splits = helper_functions.load_object(data_file)
@@ -86,10 +91,12 @@ class MethodExperimentManager(ExperimentManager):
         data_and_splits.target_labels = self.configs.target_labels
         data_and_splits.data.repair_data()
         results_file = self.configs.results_file
+        comm = mpi_utility.get_comm()
         if os.path.isfile(results_file):
-            print results_file + ' already exists - skipping'
-            return
-        else:
+            if mpi_utility.is_master():
+                print results_file + ' already exists - skipping'
+            return            
+        if mpi_utility.is_master():
             print 'Running experiments: ' + results_file
         learner = self.configs.learner
 
@@ -142,8 +149,9 @@ def _run_experiment_args(self, results_file, data_and_splits, method_results, i_
     curr_learner = copy.deepcopy(learner)
     curr_results = curr_learner.train_and_test(curr_data)
     helper_functions.save_object(_temp_split_file_name(results_file,num_labels,split),curr_results)
-    if hasattr(curr_learner, 'best_params'):
-        print s + '-' + str(curr_learner.best_params) + ' Error: ' + str(curr_results.compute_error(self.configs.loss_function))
-    else:
-        print s + ' Done'
+    if mpi_utility.is_master():
+        if hasattr(curr_learner, 'best_params'):
+            print s + '-' + str(curr_learner.best_params) + ' Error: ' + str(curr_results.compute_error(self.configs.loss_function))
+        else:
+            print s + ' Done'
     return curr_results

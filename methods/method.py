@@ -32,14 +32,11 @@ from dccp.problem import is_dccp
 #from pyqt_fit import npr_methods
 from mpipool import core as mpipool
 from utility import mpi_utility
+from mpi4py import MPI
 
-def is_master():
-    comm = get_comm()
-    return comm is None or comm.Get_rank() == 0
 
-def get_comm():
-    import main
-    return main.configs_lib.comm
+
+
 
 def _run_cross_validation_iteration_args(self, args):
     return self._run_cross_validation_iteration(args, self.curr_split, self.test_data)
@@ -99,7 +96,6 @@ class Method(Saveable):
         return splits
 
     def _run_cross_validation_iteration(self, params, curr_split, test_data):   
-        print 'hello world'
         self.set_params(**params)
         results = self.run_method(curr_split)
         fold_results = FoldResults()
@@ -132,7 +128,7 @@ class Method(Saveable):
         if not self.cv_params:
             return param_grid[0], None
         self.warm_start = False
-        my_comm = get_comm()
+        my_comm = mpi_utility.get_comm()
         param_results_on_test = [self.experiment_results_class(len(splits)) for i in range(len(param_grid))]
         param_results = [self.experiment_results_class(len(splits)) for i in range(len(param_grid))]
         if my_comm is None or my_comm.Get_size() == 1:
@@ -184,7 +180,7 @@ class Method(Saveable):
 
         min_error = errors.min()
         best_params = param_grid[errors.argmin()]
-        if not self.quiet:
+        if not self.quiet and mpi_utility.is_master():
             print best_params
         self.best_params = best_params
         return [best_params, min_error, errors_on_test_data[errors.argmin()]]
@@ -218,11 +214,10 @@ class Method(Saveable):
             self.set_params(**best_params)
         self.should_plot_g = True
         output = None
-        if is_master():
+        if mpi_utility.is_master():
             output = self.run_method(data)
-        comm = get_comm()
-        if comm is not None:
-            output = comm.bcast(output, root=0)
+        comm = mpi_utility.get_comm()
+        output = comm.bcast(output, root=0)
         f = FoldResults()
         f.prediction = output
         f.estimated_error = min_error

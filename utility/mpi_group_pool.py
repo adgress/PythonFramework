@@ -36,8 +36,10 @@ class MPIGroupPool(object):
         self.function = _error_function
         self.loadbalance = loadbalance
         self.comms = comms
+        '''
         if not self.is_master() and (comms is None or len(self.comms) != 1):
             raise RuntimeError("Invalid number of group:" + str(len(comms)))
+        '''
         self.node_name_to_tag = {}
 
         if self.is_master():

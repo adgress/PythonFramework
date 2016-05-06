@@ -5,6 +5,7 @@ import abc
 import numpy as np
 import collections
 import copy
+from scipy.stats import mstats
 from utility import array_functions
 data_subset = collections.namedtuple('DataSubset',['x','y'])
 
@@ -153,6 +154,12 @@ class LabeledVector(object):
             new_y = np.random.choice(classes,p=p)
             self.y[i] = new_y
             self.true_y[i] = new_y
+
+    def get_quartiles(self):
+        return mstats.mquantiles(
+            self.true_y,
+            prob=[0, .25, .5, .75, 1],
+        )
 
 
 class LabeledData(LabeledVector):

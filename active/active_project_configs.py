@@ -32,11 +32,15 @@ active_iterations = 2
 active_items_per_iteration = 50
 use_pairwise = False
 num_pairwise = 100
-use_bound = False
+
+use_bound = True
 num_bound = 10
+use_quartiles = True
+
 use_neighbor = False
 num_neighbor = 10
 use_min_pair_neighbor = True
+
 use_test_error_for_model_selection = True
 
 run_active_experiments = False
@@ -149,6 +153,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.use_neighbor = use_neighbor
         method_configs.num_neighbor = num_neighbor
         method_configs.use_min_pair_neighbor = use_min_pair_neighbor
+        method_configs.use_quartiles = use_quartiles
         method_configs.use_test_error_for_model_selection = use_test_error_for_model_selection
 
         #active = active_methods.ActiveMethod(method_configs)
@@ -216,23 +221,26 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['RelReg-cvx-constraints-numRandNeighbor=10-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 10 neighbors'
             self.files['RelReg-cvx-constraints-numRandNeighbor=50-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 neighbors'
             '''
-            '''
-            self.files['RelReg-cvx-constraints-numRandNeighbor=10-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 10 neighbors'
-            self.files['RelReg-cvx-constraints-numRandNeighbor=50-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 neighbors'
-            '''
+
+            #self.files['RelReg-cvx-constraints-numRandNeighbor=10-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 10 neighbors'
+            #self.files['RelReg-cvx-constraints-numRandNeighbor=50-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 neighbors'
+
 
             self.files['RelReg-cvx-constraints-noPairwiseReg-TEST.pkl'] = 'TEST: Ridge Regression'
             '''
             self.files['RelReg-cvx-constraints-noPairwiseReg.pkl'] = 'Ridge Regression'
             self.files['RelReg-cvx-constraints-numRandPairs=10-solver=SCS.pkl'] = 'Ridge Regression, 10 pairs'
             self.files['RelReg-cvx-constraints-numRandPairs=50-solver=SCS.pkl'] = 'Ridge Regression, 50 pairs'
-
+            '''
+            self.files['RelReg-cvx-constraints-numRandPairs=50-solver=None-TEST.pkl'] = 'TEST: RelReg, 50 pairs'
+            self.files['RelReg-cvx-constraints-numRandPairs=101-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 101 pairs'
+            '''
             self.files['RelReg-cvx-constraints-numRandBound=10-solver=SCS.pkl'] = 'Ridge Regression, 10 median bounds'
             self.files['RelReg-cvx-constraints-numRandBound=50-solver=SCS.pkl'] = 'Ridge Regression, 50 median bounds'
             self.files['RelReg-cvx-constraints-numRandBound=100-solver=SCS.pkl'] = 'Ridge Regression, 100 median bounds'
             '''
-            self.files['RelReg-cvx-constraints-numMinNeighbor=10-solver=SCS-TEST.pkl'] = 'TEST: Ridge Regression, 10 min neighbors'
-            self.files['RelReg-cvx-constraints-numMinNeighbor=50-solver=SCS-TEST.pkl'] = 'TEST: Ridge Regression, 50 min neighbors'
+            #self.files['RelReg-cvx-constraints-numMinNeighbor=10-solver=SCS-TEST.pkl'] = 'TEST: Ridge Regression, 10 min neighbors'
+            #self.files['RelReg-cvx-constraints-numMinNeighbor=50-solver=SCS-TEST.pkl'] = 'TEST: Ridge Regression, 50 min neighbors'
 
         self.figsize = (7,7)
         self.borders = (.1,.9,.9,.1)

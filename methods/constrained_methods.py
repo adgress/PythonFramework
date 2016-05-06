@@ -115,6 +115,18 @@ class BoundConstraint(CVXConstraint):
         d *= -1
         return self.cvx_loss_piecewise(d, a, b)
 
+    @staticmethod
+    def create_quartile_constraints(data, instance_index):
+        quartiles = data.get_quartiles()
+        x = data.x[instance_index, :]
+        y = data.true_y[instance_index]
+        i = np.digitize(y, quartiles)
+        lower = BoundLowerConstraint(x,quartiles[i-1])
+        upper = BoundUpperConstraint(x,quartiles[i])
+        return (lower,upper)
+
+
+
 class BoundLowerConstraint(BoundConstraint):
     def __init__(self, x, c):
         super(BoundLowerConstraint, self).__init__(x,c,BoundConstraint.BOUND_LOWER)

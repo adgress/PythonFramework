@@ -1,7 +1,7 @@
 import cvxpy as cvx
 from utility.capturing import Capturing
 from methods.constrained_methods import \
-    PairwiseConstraint, BoundLowerConstraint, BoundUpperConstraint, NeighborConstraint
+    PairwiseConstraint, BoundLowerConstraint, BoundUpperConstraint, NeighborConstraint, BoundConstraint
 from timer import timer
 
 __author__ = 'Aubrey'
@@ -589,6 +589,7 @@ class RelativeRegressionMethod(Method):
         self.add_random_bound = configs.use_bound
         self.use_bound = configs.use_bound
         self.num_bound = configs.num_bound
+        self.use_quartiles = configs.use_quartiles
 
         self.add_random_neighbor = configs.use_neighbor
         self.use_neighbor = configs.use_neighbor
@@ -638,15 +639,20 @@ class RelativeRegressionMethod(Method):
             sampled = array_functions.sample(I, self.num_bound)
             y_median = np.percentile(data.true_y,50)
             for i in sampled:
-                xi = data.x[i,:]
-                yi_true = data.true_y[i]
-                if yi_true > y_median:
-                    constraint = BoundLowerConstraint(xi, y_median)
-                elif yi_true < y_median:
-                    constraint = BoundUpperConstraint(xi, y_median)
+                if self.use_quartiles:
+                    lower, upper = BoundConstraint.create_quartile_constraints(data, i)
+                    data.pairwise_relationships.add(lower)
+                    data.pairwise_relationships.add(upper)
                 else:
-                    continue
-                data.pairwise_relationships.add(constraint)
+                    xi = data.x[i,:]
+                    yi_true = data.true_y[i]
+                    if yi_true > y_median:
+                        constraint = BoundLowerConstraint(xi, y_median)
+                    elif yi_true < y_median:
+                        constraint = BoundUpperConstraint(xi, y_median)
+                    else:
+                        continue
+                    data.pairwise_relationships.add(constraint)
         if self.add_random_neighbor:
             data.pairwise_relationships = set()
             I = (data.is_train & ~data.is_labeled).nonzero()[0]
@@ -860,7 +866,10 @@ class RelativeRegressionMethod(Method):
                 if self.neg_log:
                     s += '-negLog'
             if use_bound:
-                if self.num_bound > 0 and self.add_random_bound:
+                hasRandBounds = self.num_bound > 0 and self.add_random_bound
+                if getattr(self, 'use_quartiles', False):
+                    s += '-numRandQuartiles=' + str(int(self.num_bound))
+                else:
                     s += '-numRandBound=' + str(int(self.num_bound))
             if use_neighbor and self.num_neighbor > 0 and self.add_random_neighbor:
                 if getattr(self, 'use_min_pair_neighbor', False):

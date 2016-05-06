@@ -8,7 +8,8 @@ import importlib
 #import configs.base_configs as configs_lib
 #import base.project_configs as configs_lib
 #import base.transfer_project_configs as configs_lib
-import active.active_project_configs as configs_lib
+import active.active_project_configs as configs_library
+configs_lib = configs_library
 import boto
 import math
 from experiment import experiment_manager
@@ -21,6 +22,7 @@ import numpy as np
 from data.data import Data
 from loss_functions.loss_function import MeanSquaredError
 from loss_functions import loss_function
+from utility import mpi_utility
 
 
 def run_experiments():
@@ -115,9 +117,10 @@ def run_visualization():
 test_mpi = False
 
 def run_main_args(args):
+    #mpi_utility.mpi_print(str(args))
     run_main(*args)
 
-def run_main(num_labels=None, split_idx=None, no_viz=None):
+def run_main(num_labels=None, split_idx=None, no_viz=None, comm=None):
     import argparse
     import sys
     #print sys.argv
@@ -133,6 +136,7 @@ def run_main(num_labels=None, split_idx=None, no_viz=None):
     if no_viz is not None:
         arguments.no_viz = no_viz
 
+    configs_lib.comm = comm
     if test_mpi:
         from mpi4py import MPI
         print str(MPI.COMM_WORLD.Get_rank()) + '-' + str(arguments.num_labels) + '-' + str(arguments.split_idx)

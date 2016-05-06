@@ -97,7 +97,8 @@ class MethodExperimentManager(ExperimentManager):
                 print results_file + ' already exists - skipping'
             return            
         if mpi_utility.is_master():
-            print 'Running experiments: ' + results_file
+	    hostname = helper_functions.get_hostname()
+            print '(' + hostname  + ') Running experiments: ' + results_file
         learner = self.configs.learner
 
         num_labels = len(self.configs.num_labels)

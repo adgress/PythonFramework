@@ -144,19 +144,22 @@ def run_main(num_labels=None, split_idx=None, no_viz=None, comm=None):
 
     configs_lib.arguments = arguments
     import warnings
-    print 'Ignoring Deprecation Warnings'
+    #print 'Ignoring Deprecation Warnings'
     warnings.filterwarnings("ignore",category=DeprecationWarning)
 
     from mpi4py import MPI
     comm = MPI.COMM_WORLD
-    if comm.Get_size() > 1:
-        print '(' + socket.gethostname() + ')''Process ' + str(comm.Get_rank()) + ': Starting experiments...'
+    if MPI.COMM_WORLD.Get_size() > 1:
+        if comm is None or comm.Get_rank() == 0:
+            print '(' + socket.gethostname() + ')''Process ' + str(comm.Get_rank()) + ': Starting experiments...'
     else:
         print 'Starting experiments...'
-    timer.tic()
+    if mpi_utility.is_master():
+        timer.tic()
     if configs_lib.run_experiments:
         run_experiments()
-    timer.toc()
+    if mpi_utility.is_master():
+        timer.toc()
     if helper_functions.is_laptop() and not arguments.no_viz:
         run_visualization()
 

@@ -42,8 +42,7 @@ def get_comm():
     return main.configs_lib.comm
 
 def _run_cross_validation_iteration_args(self, args):
-    mpi_utility.mpi_print(str(self) + ':' + str(args))
-    return self._run_cross_validation_iteration(args)
+    return self._run_cross_validation_iteration(args, self.curr_split, self.test_data)
 
 class Method(Saveable):
 
@@ -99,7 +98,8 @@ class Method(Saveable):
             splits = data_splitter.generate_splits(data.y,num_splits,perc_train,is_regression)
         return splits
 
-    def _run_cross_validation_iteration(self, params, curr_split, test_data):
+    def _run_cross_validation_iteration(self, params, curr_split, test_data):   
+        print 'hello world'
         self.set_params(**params)
         results = self.run_method(curr_split)
         fold_results = FoldResults()
@@ -156,23 +156,20 @@ class Method(Saveable):
             splits = pool.bcast(splits, root=0)
             for i in range(len(splits)):
                 self.curr_split = data_and_splits.get_split(i)
-                self.curr_split.remove_test_labels()
+                self.curr_split.remove_test_labels()                
                 all_split_results = pool.map(_run_cross_validation_iteration_args, param_grid)
-                mpi_utility.mpi_print(all_split_results)
+                pool.close()
                 if pool.is_master():
                     param_idx = 0
-                    for split_results, split_results_on_test in all_split_results:
+                    for split_results, split_results_on_test in all_split_results:                        
                         param_results[param_idx].set(split_results, i)
                         param_results_on_test[param_idx].set(split_results, i)
-                        param_idx = param_idx + 1
-
+                        param_idx = param_idx + 1                    
                 del self.curr_split
             del self.data_and_splits
-            del self.test_data
-
+            del self.test_data                        
             param_results = pool.bcast(param_results, root=0)
-            param_results_on_test = pool.bcast(param_results_on_test, root=0)
-            pool.close()
+            param_results_on_test = pool.bcast(param_results_on_test, root=0)            
 
         errors = np.empty(len(param_grid))
         errors_on_test_data = np.empty(len(param_grid))

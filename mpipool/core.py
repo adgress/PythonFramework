@@ -206,6 +206,11 @@ class MPIPool(object):
                 # Receive input from workers.
                 result = self.comm.recv(source=MPI.ANY_SOURCE,
                                         tag=MPI.ANY_TAG, status=status)
+		if isinstance(result, MPIPoolException):
+                    print("One of the MPIPool workers failed with the "
+                          "exception:")
+                    print(result.traceback)
+                    raise result
                 worker = status.source
                 i = status.tag
 

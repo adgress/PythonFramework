@@ -121,6 +121,8 @@ class BoundConstraint(CVXConstraint):
         x = data.x[instance_index, :]
         y = data.true_y[instance_index]
         i = np.digitize(y, quartiles)
+	if i >= quartiles.size:
+	    i = quartiles.size-1
         lower = BoundLowerConstraint(x,quartiles[i-1])
         upper = BoundUpperConstraint(x,quartiles[i])
         return (lower,upper)

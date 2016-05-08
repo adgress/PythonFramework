@@ -40,19 +40,21 @@ def sample_n_tuples(n_or_vector, num_samples=1, tuple_size=2, shuffle_tuples=Fal
         tuples = shuffled_items
     return tuples
 
-def sample_pairs(n_or_vector, num_samples=1):
+def sample_pairs(n_or_vector, num_samples=1, test_func=None):
     if np.asarray(n_or_vector).size == 1:
         n_or_vector = np.asarray(range(n_or_vector))
     p = np.ones(n_or_vector.shape)
     pairs = set()
     draws = 0
     while len(pairs) < num_samples:
-        if draws > 10*num_samples:
+        if draws > 30*num_samples:
             warnings.warn('Took too many draws to generate pairs')
             break
         draws += 1
         x = np.random.choice(n_or_vector, 2, replace=False)
         x.sort()
+        if test_func is not None and not test_func(x):
+            continue
         pairs.add((x[0], x[1]))
     return pairs
 

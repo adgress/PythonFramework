@@ -30,10 +30,11 @@ data_sets_for_exps = [data_set_to_use]
 
 active_iterations = 2
 active_items_per_iteration = 50
-use_pairwise = False
-num_pairwise = 100
+use_pairwise = True
+num_pairwise = 10
+pair_bound = .5
 
-use_bound = True
+use_bound = False
 num_bound = 10
 use_quartiles = True
 
@@ -146,14 +147,19 @@ class MainConfigs(bc.MainConfigs):
         method_configs.active_iterations = active_iterations
         method_configs.active_items_per_iteration = active_items_per_iteration
         method_configs.metric = 'euclidean'
+
         method_configs.use_pairwise = use_pairwise
         method_configs.num_pairwise = num_pairwise
+        method_configs.pair_bound = pair_bound
+
         method_configs.use_bound = use_bound
         method_configs.num_bound = num_bound
+        method_configs.use_quartiles = use_quartiles
+
         method_configs.use_neighbor = use_neighbor
         method_configs.num_neighbor = num_neighbor
         method_configs.use_min_pair_neighbor = use_min_pair_neighbor
-        method_configs.use_quartiles = use_quartiles
+
         method_configs.use_test_error_for_model_selection = use_test_error_for_model_selection
 
         #active = active_methods.ActiveMethod(method_configs)
@@ -185,62 +191,27 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['ActiveRandom+SKL-RidgeReg.pkl'] = 'Random, SKLRidge'
             self.files['RelActiveRandom+RelReg-cvx-log-with-log-noLinear-TEST.pkl'] = 'TEST: RandomPairwise, RelReg'
         else:
-            #self.files['SKL-RidgeReg.pkl'] = 'SKL Ridge'
-            #self.files['RelReg-cvx-log-with-log-noPairwiseReg-TEST.pkl'] = 'TEST: RelReg nopairwise '
-            #self.files['RelReg-cvx-log-with-log-numRandPairs=10-noLinear-TEST.pkl'] = 'TEST: RelReg, 10 pairs'
-            #self.files['RelReg-cvx-log-with-log-numRandPairs=50-noLinear-TEST.pkl'] = 'TEST: RelReg, 50 pairs'
-
-            #self.files['SKL-DumReg.pkl'] = 'Mean Regressione'
-            #self.files['RelReg-cvx-log-with-log-noPairwiseReg.pkl'] = 'RelReg, No Pairwise'
-
-            #self.files['RelReg-cvx-log-with-log-numRandPairs=10-noLinear.pkl'] = 'RelReg, 10 pairs'
-            #self.files['RelReg-cvx-log-with-log-numRandPairs=10-noLinear,new_constraints.pkl'] = 'RelReg, 10 pairs, new constraints'
-            #self.files['RelReg-cvx-log-with-log-numRandPairs=10-noLinear-TEST,new_constraints.pkl'] = 'TEST: RelReg, 10 pairs, new constraints'
-
-            #self.files['RelReg-cvx-log-with-log-numRandPairs=50-noLinear.pkl'] = 'RelReg, 50 pairs'
-            #self.files['RelReg-cvx-log-with-log-numRandPairs=50-noLinear,new_constraints.pkl'] = 'RelReg, 50 pairs, new constraints'
-
-            #self.files['RelReg-cvx-log-with-log-numRandPairs=10-noLinear-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 10 pairs, SCS'
-            #self.files['RelReg-cvx-log-with-log-numRandPairs=10-noLinear-solver=None-TEST.pkl'] = 'TEST: RelReg, 10 pairs, None'
-
-            #self.files['RelReg-cvx-log-with-log-numRandPairs=50-noLinear-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, SCS'
-            #self.files['RelReg-cvx-log-with-log-numRandPairs=50-noLinear-solver=None-TEST.pkl'] = 'TEST: RelReg, 50 pairs, None'
-
-            #self.files['RelReg-cvx-constraints-numRandPairs=50-noLinear-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, SCS, new Constraints'
-            #self.files['RelReg-cvx-constraints-numRandPairs=50-noLinear-solver=None-TEST.pkl'] = 'TEST: RelReg, 50 pairs, None, new COnstraints'
-
-            #self.files['RelReg-cvx-constraints-numRandBound=10-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 10 median bound'
-            #self.files['RelReg-cvx-constraints-numRandBound=50-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 median bound'
-            #self.files['RelReg-cvx-constraints-numRandBound=100-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 100 median bound'
-
-            '''
-            self.files['RelReg-cvx-constraints-numRandPairs=10-solver=None-TEST.pkl'] = 'TEST: RelReg, 10 pairs'
-            self.files['RelReg-cvx-constraints-numRandPairs=50-solver=None-TEST.pkl'] = 'TEST: RelReg, 50 pairs'
-            '''
-            '''
-            self.files['RelReg-cvx-constraints-numRandNeighbor=10-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 10 neighbors'
-            self.files['RelReg-cvx-constraints-numRandNeighbor=50-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 neighbors'
-            '''
-
-            #self.files['RelReg-cvx-constraints-numRandNeighbor=10-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 10 neighbors'
-            #self.files['RelReg-cvx-constraints-numRandNeighbor=50-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 neighbors'
-
-
-            self.files['RelReg-cvx-constraints-noPairwiseReg-TEST.pkl'] = 'TEST: Ridge Regression'
-            '''
             self.files['RelReg-cvx-constraints-noPairwiseReg.pkl'] = 'Ridge Regression'
-            self.files['RelReg-cvx-constraints-numRandPairs=10-solver=SCS.pkl'] = 'Ridge Regression, 10 pairs'
-            self.files['RelReg-cvx-constraints-numRandPairs=50-solver=SCS.pkl'] = 'Ridge Regression, 50 pairs'
-            '''
-            self.files['RelReg-cvx-constraints-numRandPairs=50-solver=None-TEST.pkl'] = 'TEST: RelReg, 50 pairs'
-            self.files['RelReg-cvx-constraints-numRandPairs=101-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 101 pairs'
-            '''
-            self.files['RelReg-cvx-constraints-numRandBound=10-solver=SCS.pkl'] = 'Ridge Regression, 10 median bounds'
-            self.files['RelReg-cvx-constraints-numRandBound=50-solver=SCS.pkl'] = 'Ridge Regression, 50 median bounds'
-            self.files['RelReg-cvx-constraints-numRandBound=100-solver=SCS.pkl'] = 'Ridge Regression, 100 median bounds'
-            '''
-            #self.files['RelReg-cvx-constraints-numMinNeighbor=10-solver=SCS-TEST.pkl'] = 'TEST: Ridge Regression, 10 min neighbors'
-            #self.files['RelReg-cvx-constraints-numMinNeighbor=50-solver=SCS-TEST.pkl'] = 'TEST: Ridge Regression, 50 min neighbors'
+            base_file_name = 'RelReg-cvx-constraints-%s=%s-solver=SCS'
+            use_test = False
+            sizes = []
+            #sizes.append(10)
+            sizes.append(50)
+            sizes.append(100)
+            methods = []
+            #methods.append(('numRandPairs','RelReg, %s pairs'))
+            methods.append(('numRandBound', 'RelReg, %s bounds'))
+            #methods.append(('numMinNeighbor', 'RelReg, %s min neighbors'))
+            methods.append(('numRandQuartiles', 'RelReg, %s quartiles'))
+            for file_suffix, legend_name in methods:
+                for size in sizes:
+                    key = base_file_name % (file_suffix, str(size))
+                    legend = legend_name % str(size)
+                    if use_test:
+                        key += '-TEST'
+                        legend = 'TEST: ' + legend
+                    key += '.pkl'
+                    self.files[key] = legend
 
         self.figsize = (7,7)
         self.borders = (.1,.9,.9,.1)

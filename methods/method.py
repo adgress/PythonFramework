@@ -585,6 +585,7 @@ class RelativeRegressionMethod(Method):
         self.add_random_pairwise = configs.use_pairwise
         self.use_pairwise = configs.use_pairwise
         self.num_pairwise = configs.num_pairwise
+        self.pair_bound = configs.pair_bound
 
         self.add_random_bound = configs.use_bound
         self.use_bound = configs.use_bound
@@ -623,7 +624,11 @@ class RelativeRegressionMethod(Method):
         if self.add_random_pairwise:
             data.pairwise_relationships = set()
             I = data.is_train & ~data.is_labeled
-            sampled_pairs = array_functions.sample_pairs(I.nonzero()[0], self.num_pairwise)
+            test_func = None
+            if self.pair_bound < 1:
+                diff = data.true_y.max() - data.true_y.min()
+                test_func = lambda ij: abs(data.true_y[ij[0]] - data.true_y[ij[1]]) / diff < self.pair_bound
+            sampled_pairs = array_functions.sample_pairs(I.nonzero()[0], self.num_pairwise, test_func)
             for i,j in sampled_pairs:
                 pair = (i,j)
                 if data.true_y[j] <= data.true_y[i]:
@@ -861,6 +866,8 @@ class RelativeRegressionMethod(Method):
             if use_pairwise:
                 if self.num_pairwise > 0 and self.add_random_pairwise:
                     s += '-numRandPairs=' + str(int(self.num_pairwise))
+                    if getattr(self, 'pair_bound', 1) < 1:
+                        s += '-pairBound=' + str(self.pair_bound)
                 #if self.no_linear_term:
                 #    s += '-noLinear'
                 if self.neg_log:

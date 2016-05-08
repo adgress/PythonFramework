@@ -90,6 +90,16 @@ class PairwiseConstraint(CVXConstraint):
     def is_pairwise(self):
         return True
 
+class HingePairwiseConstraint(PairwiseConstraint):
+    def __init__(self, x1, x2):
+        super(HingePairwiseConstraint, self).__init__(x1, x2)
+
+    def to_cvx(self, f):
+        x1 = self.x[0]
+        x2 = self.x[1]
+        d = f(x1) - f(x2)
+        return cvx.max_elemwise(d,0)
+
 class BoundConstraint(CVXConstraint):
     BOUND_LOWER = 0
     BOUND_UPPER = 1
@@ -121,8 +131,8 @@ class BoundConstraint(CVXConstraint):
         x = data.x[instance_index, :]
         y = data.true_y[instance_index]
         i = np.digitize(y, quartiles)
-	if i >= quartiles.size:
-	    i = quartiles.size-1
+        if i >= quartiles.size:
+            i = quartiles.size-1
         lower = BoundLowerConstraint(x,quartiles[i-1])
         upper = BoundUpperConstraint(x,quartiles[i])
         return (lower,upper)

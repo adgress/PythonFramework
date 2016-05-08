@@ -1,7 +1,8 @@
 import cvxpy as cvx
 from utility.capturing import Capturing
 from methods.constrained_methods import \
-    PairwiseConstraint, BoundLowerConstraint, BoundUpperConstraint, NeighborConstraint, BoundConstraint
+    PairwiseConstraint, BoundLowerConstraint, BoundUpperConstraint, \
+    NeighborConstraint, BoundConstraint, HingePairwiseConstraint
 from timer import timer
 
 __author__ = 'Aubrey'
@@ -582,10 +583,12 @@ class RelativeRegressionMethod(Method):
         self.w = None
         self.b = None
         self.transform = StandardScaler()
+
         self.add_random_pairwise = configs.use_pairwise
         self.use_pairwise = configs.use_pairwise
         self.num_pairwise = configs.num_pairwise
         self.pair_bound = configs.pair_bound
+        self.use_hinge = configs.use_hinge
 
         self.add_random_bound = configs.use_bound
         self.use_bound = configs.use_bound
@@ -627,7 +630,7 @@ class RelativeRegressionMethod(Method):
             test_func = None
             if self.pair_bound < 1:
                 diff = data.true_y.max() - data.true_y.min()
-                test_func = lambda ij: abs(data.true_y[ij[0]] - data.true_y[ij[1]]) / diff < self.pair_bound
+                test_func = lambda ij: abs(data.true_y[ij[0]] - data.true_y[ij[1]]) / diff <= self.pair_bound
             sampled_pairs = array_functions.sample_pairs(I.nonzero()[0], self.num_pairwise, test_func)
             for i,j in sampled_pairs:
                 pair = (i,j)
@@ -636,7 +639,10 @@ class RelativeRegressionMethod(Method):
                 #data.pairwise_relationships.add(pair)
                 x1 = data.x[pair[0],:]
                 x2 = data.x[pair[1],:]
-                data.pairwise_relationships.add(PairwiseConstraint(x1,x2))
+                if self.use_hinge:
+                    data.pairwise_relationships.add(HingePairwiseConstraint(x1,x2))
+                else:
+                    data.pairwise_relationships.add(PairwiseConstraint(x1,x2))
                 #data.pairwise_relationships.add(pair)
         if self.add_random_bound:
             data.pairwise_relationships = set()
@@ -865,7 +871,10 @@ class RelativeRegressionMethod(Method):
         else:
             if use_pairwise:
                 if self.num_pairwise > 0 and self.add_random_pairwise:
-                    s += '-numRandPairs=' + str(int(self.num_pairwise))
+                    if getattr(self, 'use_hinge', False):
+                        s += '-numRangPairsHinge=' + str(int(self.num_pairwise))
+                    else:
+                        s += '-numRandPairs=' + str(int(self.num_pairwise))
                     if getattr(self, 'pair_bound', 1) < 1:
                         s += '-pairBound=' + str(self.pair_bound)
                 #if self.no_linear_term:

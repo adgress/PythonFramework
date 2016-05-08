@@ -1,15 +1,11 @@
-import methods.constrained_methods
-import methods.local_transfer_methods
+#import methods.constrained_methods
+#import methods.local_transfer_methods
 import methods.method
 
 __author__ = 'Aubrey'
 from collections import OrderedDict
 from configs import base_configs as bc
-import numpy as np
-from data_sets import create_data_set
 from loss_functions import loss_function
-from data_sets import create_data_set
-from utility import array_functions
 from utility import helper_functions
 from results_class import results as results_lib
 
@@ -30,9 +26,11 @@ data_sets_for_exps = [data_set_to_use]
 
 active_iterations = 2
 active_items_per_iteration = 50
+
 use_pairwise = True
-num_pairwise = 10
-pair_bound = .5
+num_pairwise = 50
+pair_bound = 1
+use_hinge = True
 
 use_bound = False
 num_bound = 10
@@ -151,6 +149,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.use_pairwise = use_pairwise
         method_configs.num_pairwise = num_pairwise
         method_configs.pair_bound = pair_bound
+        method_configs.use_hinge = use_hinge
 
         method_configs.use_bound = use_bound
         method_configs.num_bound = num_bound
@@ -193,16 +192,16 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         else:
             self.files['RelReg-cvx-constraints-noPairwiseReg.pkl'] = 'Ridge Regression'
             base_file_name = 'RelReg-cvx-constraints-%s=%s-solver=SCS'
-            use_test = False
+            use_test = True
             sizes = []
             #sizes.append(10)
             sizes.append(50)
-            sizes.append(100)
+            #sizes.append(100)
             methods = []
-            #methods.append(('numRandPairs','RelReg, %s pairs'))
-            methods.append(('numRandBound', 'RelReg, %s bounds'))
+            methods.append(('numRandPairs','RelReg, %s pairs'))
+            #methods.append(('numRandBound', 'RelReg, %s bounds'))
             #methods.append(('numMinNeighbor', 'RelReg, %s min neighbors'))
-            methods.append(('numRandQuartiles', 'RelReg, %s quartiles'))
+            #methods.append(('numRandQuartiles', 'RelReg, %s quartiles'))
             for file_suffix, legend_name in methods:
                 for size in sizes:
                     key = base_file_name % (file_suffix, str(size))
@@ -213,6 +212,11 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                     key += '.pkl'
                     self.files[key] = legend
 
+            self.files['RelReg-cvx-constraints-numRandPairs=50-pairBound=0.99-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, .99 pair bound'
+            self.files['RelReg-cvx-constraints-numRandPairs=50-pairBound=0.75-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, .75 pair bound'
+            self.files['RelReg-cvx-constraints-numRandPairs=50-pairBound=0.5-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, .5 pair bound'
+            self.files['RelReg-cvx-constraints-numRandPairs=50-pairBound=0.25-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, .25 pair bound'
+            self.files['RelReg-cvx-constraints-numRandPairs=50-pairBound=0.1-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, .1 pair bound'
         self.figsize = (7,7)
         self.borders = (.1,.9,.9,.1)
         self.data_set_to_use = pc.data_set

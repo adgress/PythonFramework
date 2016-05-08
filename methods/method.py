@@ -628,9 +628,13 @@ class RelativeRegressionMethod(Method):
             data.pairwise_relationships = set()
             I = data.is_train & ~data.is_labeled
             test_func = None
-            if self.pair_bound < 1:
+            if len(self.pair_bound) > 0:
                 diff = data.true_y.max() - data.true_y.min()
-                test_func = lambda ij: abs(data.true_y[ij[0]] - data.true_y[ij[1]]) / diff <= self.pair_bound
+                diff_func = lambda ij: abs(data.true_y[ij[0]] - data.true_y[ij[1]]) / diff
+                if len(self.pair_bound) == 1:
+                    test_func = lambda ij: diff_func(ij) <= self.pair_bound[0]
+                else:
+                    test_func = lambda ij: self.pair_bound[0] <= diff_func(ij) <= self.pair_bound[1]
             sampled_pairs = array_functions.sample_pairs(I.nonzero()[0], self.num_pairwise, test_func)
             for i,j in sampled_pairs:
                 pair = (i,j)
@@ -875,8 +879,14 @@ class RelativeRegressionMethod(Method):
                         s += '-numRandPairsHinge=' + str(int(self.num_pairwise))
                     else:
                         s += '-numRandPairs=' + str(int(self.num_pairwise))
-                    if getattr(self, 'pair_bound', 1) < 1:
-                        s += '-pairBound=' + str(self.pair_bound)
+                    pair_bound = getattr(self, 'pair_bound', ())
+                    try:
+                        pair_bound = tuple(pair_bound)
+                    except:
+                        pair_bound = (pair_bound,)
+                    if len(pair_bound) > 0 and \
+                        not (len(pair_bound) == 1 and pair_bound[0] == 1):
+                        s += '-pairBound=' + str(pair_bound)
                 #if self.no_linear_term:
                 #    s += '-noLinear'
                 if self.neg_log:

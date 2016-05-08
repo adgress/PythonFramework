@@ -872,7 +872,7 @@ class RelativeRegressionMethod(Method):
             if use_pairwise:
                 if self.num_pairwise > 0 and self.add_random_pairwise:
                     if getattr(self, 'use_hinge', False):
-                        s += '-numRangPairsHinge=' + str(int(self.num_pairwise))
+                        s += '-numRandPairsHinge=' + str(int(self.num_pairwise))
                     else:
                         s += '-numRandPairs=' + str(int(self.num_pairwise))
                     if getattr(self, 'pair_bound', 1) < 1:

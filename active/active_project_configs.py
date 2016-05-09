@@ -27,21 +27,22 @@ data_sets_for_exps = [data_set_to_use]
 active_iterations = 2
 active_items_per_iteration = 50
 
-use_pairwise = True
+use_pairwise = False
 num_pairwise = 50
 #pair_bound = (.25,1)
 pair_bound = ()
 use_hinge = False
 noise_rate = .0
-logistic_noise = 1
+logistic_noise = 0
 
 use_bound = False
 num_bound = 10
 use_quartiles = True
 
-use_neighbor = False
-num_neighbor = 10
-use_min_pair_neighbor = True
+use_neighbor = True
+num_neighbor = 50
+use_min_pair_neighbor = False
+
 
 use_test_error_for_model_selection = True
 
@@ -227,7 +228,9 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['RelReg-cvx-constraints-numRandPairs=50-pairBound=(0.25, 1)-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, (.25, 1) pair bound'
             self.files['RelReg-cvx-constraints-numRandPairs=50-pairBound=(0.5, 1)-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, (.5, 1)  pair bound'
             '''
-            self.files['RelReg-cvx-constraints-numRandPairs=50-noise=0.1-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, .1 noise'
+            #self.files['RelReg-cvx-constraints-numRandPairs=50-noise=0.1-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, .1 noise'
+            self.files['RelReg-cvx-constraints-numRandPairs=50-logNoise=1-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, 1 logistic noise'
+            self.files['RelReg-cvx-constraints-numRandPairs=50-logNoise=2-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, 2 logistic noise'
             '''
             self.files['RelReg-cvx-constraints-numRandPairs=50-pairBound=0.99-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, .99 pair bound'
             self.files['RelReg-cvx-constraints-numRandPairs=50-pairBound=0.75-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, .75 pair bound'

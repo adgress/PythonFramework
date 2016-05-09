@@ -29,8 +29,10 @@ active_items_per_iteration = 50
 
 use_pairwise = True
 num_pairwise = 50
-pair_bound = (.25,1)
-use_hinge = True
+#pair_bound = (.25,1)
+pair_bound = ()
+use_hinge = False
+noise_rate = .1
 
 use_bound = False
 num_bound = 10
@@ -150,6 +152,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.num_pairwise = num_pairwise
         method_configs.pair_bound = pair_bound
         method_configs.use_hinge = use_hinge
+        method_configs.noise_rate = noise_rate
 
         method_configs.use_bound = use_bound
         method_configs.num_bound = num_bound
@@ -212,10 +215,14 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                         legend = 'TEST: ' + legend
                     key += '.pkl'
                     self.files[key] = legend
+            '''
             self.files['RelReg-cvx-constraints-numRandPairsHinge=50-pairBound=0.75-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs hinge, .75 pair bound'
             self.files['RelReg-cvx-constraints-numRandPairsHinge=50-pairBound=0.5-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs hinge, .5 pair bound'
             self.files['RelReg-cvx-constraints-numRandPairsHinge=50-pairBound=0.25-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs hinge, .25 pair bound'
             self.files['RelReg-cvx-constraints-numRandPairsHinge=50-pairBound=0.1-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs hinge, .1 pair bound'
+            '''
+            self.files['RelReg-cvx-constraints-numRandPairs=50-pairBound=(0.25, 1)-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, (.25, 1) pair bound'
+            self.files['RelReg-cvx-constraints-numRandPairs=50-pairBound=(0.5, 1)-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, (.5, 1)  pair bound'
             '''
             self.files['RelReg-cvx-constraints-numRandPairs=50-pairBound=0.99-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, .99 pair bound'
             self.files['RelReg-cvx-constraints-numRandPairs=50-pairBound=0.75-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, .75 pair bound'

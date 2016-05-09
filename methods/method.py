@@ -34,7 +34,7 @@ from dccp.problem import is_dccp
 from mpipool import core as mpipool
 from utility import mpi_utility
 from mpi4py import MPI
-
+import random
 
 
 
@@ -589,6 +589,7 @@ class RelativeRegressionMethod(Method):
         self.num_pairwise = configs.num_pairwise
         self.pair_bound = configs.pair_bound
         self.use_hinge = configs.use_hinge
+        self.noise_rate = configs.noise_rate
 
         self.add_random_bound = configs.use_bound
         self.use_bound = configs.use_bound
@@ -687,7 +688,9 @@ class RelativeRegressionMethod(Method):
                 x1,x2,x3 = data.x[triplet,:]
                 constraint = NeighborConstraint(x1,x2,x3)
                 data.pairwise_relationships.add(constraint)
-
+        for s in data.pairwise_relationships:
+            if random.random() <= self.noise_rate:
+                s.flip()
         is_labeled_train = data.is_train & data.is_labeled
         labeled_train = data.labeled_training_data()
         x = labeled_train.x
@@ -902,7 +905,8 @@ class RelativeRegressionMethod(Method):
                     s += '-numMinNeighbor=' + str(int(self.num_neighbor))
                 else:
                     s += '-numRandNeighbor=' + str(int(self.num_neighbor))
-
+            if getattr(self, 'noise_rate', 0) > 0:
+                s += '-noise=' + str(self.noise_rate)
             if hasattr(self, 'solver'):
                 s += '-solver=' + str(self.solver)
         if self.use_test_error_for_model_selection:

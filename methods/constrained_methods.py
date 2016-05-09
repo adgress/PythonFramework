@@ -1,7 +1,7 @@
 
 
 #from sets import Set
-
+import abc
 from data.data import Constraint
 from utility import cvx_logistic
 import cvxpy as cvx
@@ -20,6 +20,10 @@ class CVXConstraint(Constraint):
     def cvx_loss_logistic(self, d):
         #return cvx_logistic.logistic(d)
         return cvx.logistic(d)
+
+    @abc.abstractmethod
+    def flip(self):
+        pass
     '''
     a: lower bound
     b: upper bound
@@ -53,6 +57,11 @@ class NeighborConstraint(CVXConstraint):
         d_far = cvx.square(f(self.x[0]) - f(self.x[2]))
         return d_close,d_far
 
+    def flip(self):
+        x = self.x[1]
+        self.x[1] = self.x[2]
+        self.x[2] = x
+
     def is_tertiary(self):
         return True
 
@@ -81,6 +90,11 @@ class PairwiseConstraint(CVXConstraint):
         self.x.append(x1)
         self.x.append(x2)
 
+    def flip(self):
+        x = self.x[0]
+        self.x[0] = self.x[1]
+        self.x[1] = x
+
     def to_cvx(self, f):
         x1 = self.x[0]
         x2 = self.x[1]
@@ -108,6 +122,12 @@ class BoundConstraint(CVXConstraint):
         self.x.append(x)
         self.c.append(c)
         self.bound_type = bound_type
+
+    def flip(self):
+        if self.bound_type == BoundConstraint.BOUND_LOWER:
+            self.bound_type = BoundConstraint.BOUND_UPPER
+        else:
+            self.bound_type = BoundConstraint.BOUND_LOWER
 
     def to_cvx(self, f):
         x = self.x[0]

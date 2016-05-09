@@ -590,6 +590,7 @@ class RelativeRegressionMethod(Method):
         self.pair_bound = configs.pair_bound
         self.use_hinge = configs.use_hinge
         self.noise_rate = configs.noise_rate
+        self.logistic_noise = configs.logistic_noise
 
         self.add_random_bound = configs.use_bound
         self.use_bound = configs.use_bound
@@ -639,7 +640,10 @@ class RelativeRegressionMethod(Method):
             sampled_pairs = array_functions.sample_pairs(I.nonzero()[0], self.num_pairwise, test_func)
             for i,j in sampled_pairs:
                 pair = (i,j)
-                if data.true_y[j] <= data.true_y[i]:
+                diff = data.true_y[j] - data.true_y[i]
+                if self.logistic_noise > 0:
+                    diff += np.random.logistic(scale=self.logistic_noise)
+                if diff <= 0:
                     pair = (j,i)
                 #data.pairwise_relationships.add(pair)
                 x1 = data.x[pair[0],:]
@@ -907,6 +911,8 @@ class RelativeRegressionMethod(Method):
                     s += '-numRandNeighbor=' + str(int(self.num_neighbor))
             if getattr(self, 'noise_rate', 0) > 0:
                 s += '-noise=' + str(self.noise_rate)
+            if getattr(self, 'logistic_noise', 0) > 0:
+                s += '-logNoise=' + str(self.logistic_noise)
             if hasattr(self, 'solver'):
                 s += '-solver=' + str(self.solver)
         if self.use_test_error_for_model_selection:

@@ -42,6 +42,7 @@ use_quartiles = True
 use_neighbor = True
 num_neighbor = 50
 use_min_pair_neighbor = False
+fast_dccp = True
 
 
 use_test_error_for_model_selection = True
@@ -164,6 +165,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.use_neighbor = use_neighbor
         method_configs.num_neighbor = num_neighbor
         method_configs.use_min_pair_neighbor = use_min_pair_neighbor
+        method_configs.fast_dccp = fast_dccp
 
         method_configs.use_test_error_for_model_selection = use_test_error_for_model_selection
 
@@ -204,9 +206,10 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             sizes.append(50)
             #sizes.append(100)
             methods = []
-            methods.append(('numRandPairs','RelReg, %s pairs'))
+            #methods.append(('numRandPairs','RelReg, %s pairs'))
             #methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
             #methods.append(('numRandBound', 'RelReg, %s bounds'))
+            methods.append(('numRandNeighbor', 'RelReg, %s rand neighbors'))
             #methods.append(('numMinNeighbor', 'RelReg, %s min neighbors'))
             #methods.append(('numRandQuartiles', 'RelReg, %s quartiles'))
             for file_suffix, legend_name in methods:
@@ -229,8 +232,10 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['RelReg-cvx-constraints-numRandPairs=50-pairBound=(0.5, 1)-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, (.5, 1)  pair bound'
             '''
             #self.files['RelReg-cvx-constraints-numRandPairs=50-noise=0.1-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, .1 noise'
+            '''
             self.files['RelReg-cvx-constraints-numRandPairs=50-logNoise=1-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, 1 logistic noise'
             self.files['RelReg-cvx-constraints-numRandPairs=50-logNoise=2-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, 2 logistic noise'
+            '''
             '''
             self.files['RelReg-cvx-constraints-numRandPairs=50-pairBound=0.99-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, .99 pair bound'
             self.files['RelReg-cvx-constraints-numRandPairs=50-pairBound=0.75-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, .75 pair bound'

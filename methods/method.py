@@ -601,6 +601,7 @@ class RelativeRegressionMethod(Method):
         self.use_neighbor = configs.use_neighbor
         self.num_neighbor = configs.num_neighbor
         self.use_min_pair_neighbor = configs.use_min_pair_neighbor
+        self.fast_dccp = configs.fast_dccp
 
 
         self.use_test_error_for_model_selection = configs.use_test_error_for_model_selection
@@ -800,18 +801,17 @@ class RelativeRegressionMethod(Method):
                     if prob.is_dcp():
                         ret = prob.solve(self.solver, False, {'warm_start': warm_start})
                     else:
-                        '''
-                        options = {
-                            'method': 'dccp',
-                            'max_iter': 20,
-                            'tau': .25,
-                            'mu': 2,
-                            'tau_max': 1e6
-                        }
-                        '''
                         options = {
                             'method': 'dccp'
                         }
+                        if self.fast_dccp:
+                            options = {
+                                'method': 'dccp',
+                                'max_iter': 20,
+                                'tau': .25,
+                                'mu': 2,
+                                'tau_max': 1e6
+                            }
                         #ret = prob.solve(self.solver, False, method='dccp', options)
                         ret = prob.solve(solver=self.solver, **options)
                 w_value = w.value
@@ -909,6 +909,8 @@ class RelativeRegressionMethod(Method):
                     s += '-numMinNeighbor=' + str(int(self.num_neighbor))
                 else:
                     s += '-numRandNeighbor=' + str(int(self.num_neighbor))
+                if getattr(self, 'fast_dccp', False):
+                    s += '-fastDCCP'
             if getattr(self, 'noise_rate', 0) > 0:
                 s += '-noise=' + str(self.noise_rate)
             if getattr(self, 'logistic_noise', 0) > 0:

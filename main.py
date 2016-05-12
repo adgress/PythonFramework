@@ -150,7 +150,7 @@ def run_main(num_labels=None, split_idx=None, no_viz=None, comm=None):
     from mpi4py import MPI
     comm = MPI.COMM_WORLD
     if MPI.COMM_WORLD.Get_size() > 1:
-        if comm is None or comm.Get_rank() == 0:
+        if comm.Get_rank() == 0:
             print '(' + socket.gethostname() + ')''Process ' + str(comm.Get_rank()) + ': Starting experiments...'
     else:
         print 'Starting experiments...'

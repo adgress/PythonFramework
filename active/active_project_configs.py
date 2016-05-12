@@ -27,6 +27,8 @@ data_sets_for_exps = [data_set_to_use]
 active_iterations = 2
 active_items_per_iteration = 50
 
+use_mixed_cv = True
+
 use_pairwise = False
 num_pairwise = 50
 #pair_bound = (.25,1)
@@ -152,6 +154,8 @@ class MainConfigs(bc.MainConfigs):
         method_configs.active_items_per_iteration = active_items_per_iteration
         method_configs.metric = 'euclidean'
 
+        method_configs.use_mixed_cv = use_mixed_cv
+
         method_configs.use_pairwise = use_pairwise
         method_configs.num_pairwise = num_pairwise
         method_configs.pair_bound = pair_bound
@@ -223,6 +227,10 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                         legend = 'TEST: ' + legend
                     key += '.pkl'
                     self.files[key] = legend
+
+            self.files['RelReg-cvx-constraints-numRandNeighbor=50-fastDCCP-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 rand neighbors, fast dccp'
+            self.files['RelReg-cvx-constraints-numRandNeighbor=50-fastDCCP-initRidge-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 rand neighbors, fast dccp, init ridge'
+
             '''
             self.files['RelReg-cvx-constraints-numRandPairsHinge=50-pairBound=0.75-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs hinge, .75 pair bound'
             self.files['RelReg-cvx-constraints-numRandPairsHinge=50-pairBound=0.5-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs hinge, .5 pair bound'

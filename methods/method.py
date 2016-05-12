@@ -639,9 +639,10 @@ class RelativeRegressionMethod(Method):
             r = new_instance.train_and_test(data)
             self.w_initial = new_instance.w
             self.b_initial = new_instance.b
+        self.add_random_guidance(data)
         return super(RelativeRegressionMethod, self).train_and_test(data)
 
-    def train(self, data):
+    def add_random_guidance(self, data):
         num_random_types = int(self.add_random_pairwise) + int(self.add_random_bound) + int(self.add_random_neighbor)
         assert num_random_types <= 1, 'Not implemented yet'
         if self.add_random_pairwise:
@@ -713,6 +714,8 @@ class RelativeRegressionMethod(Method):
         for s in data.pairwise_relationships:
             if random.random() <= self.noise_rate:
                 s.flip()
+
+    def train(self, data):
         is_labeled_train = data.is_train & data.is_labeled
         labeled_train = data.labeled_training_data()
         x = labeled_train.x
@@ -935,6 +938,8 @@ class RelativeRegressionMethod(Method):
                     s += '-fastDCCP'
                 if getattr(self, 'init_ridge', False):
                     s += '-initRidge'
+            if getattr(self, 'use_mixed_cv', False):
+                s += '-mixedCV'
             if getattr(self, 'noise_rate', 0) > 0:
                 s += '-noise=' + str(self.noise_rate)
             if getattr(self, 'logistic_noise', 0) > 0:

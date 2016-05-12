@@ -13,6 +13,7 @@ from timer import timer
 import inspect
 from utility import mpi_utility
 from utility import mpi_group_pool
+from mpipool import core as mpipool
 
 comm = MPI.COMM_WORLD
 use_mpi = comm.Get_size() > 1
@@ -85,8 +86,11 @@ if __name__ == '__main__':
         pool.close()
         '''
         mpi_comms = mpi_utility.mpi_comm_by_node(include_root=False)
-        pool = mpi_group_pool.MPIGroupPool(debug=False, loadbalance=True, comms=mpi_comms)
+        if len(mpi_comms) > 1:
+            pool = mpi_group_pool.MPIGroupPool(debug=False, loadbalance=True, comms=mpi_comms)
         #assert False
+        else:
+            pool = mpipool.MPIPool(debug=False, loadbalance=True)
         pool.map(mpi_run_main_args, num_labels_list)
         pool.close()
     else:

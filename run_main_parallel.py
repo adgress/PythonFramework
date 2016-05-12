@@ -64,9 +64,10 @@ def mpi_split_even_odd():
 mpi_comms = None
 def mpi_run_main_args(args):
     #return None
-    my_comm = mpi_comms[helper_functions.get_hostname()]
     args = list(args)
-    args.append(my_comm)
+    if len(mpi_comms) > 1:
+        my_comm = mpi_comms[helper_functions.get_hostname()]
+        args.append(my_comm)
     main.run_main_args(args)
 
 

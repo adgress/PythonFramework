@@ -644,6 +644,14 @@ class RelativeRegressionMethod(Method):
         self.add_random_guidance(data)
         return super(RelativeRegressionMethod, self).train_and_test(data)
 
+    def _create_cv_splits(self,data):
+        splits = super(RelativeRegressionMethod, self)._create_cv_splits(data)
+        pairwise_splits = []
+        for i in range(len(splits)):
+            is_train_pairwise = array_functions.true(len(data.pairwise_relationships))
+            pass
+        return splits
+
     def add_random_guidance(self, data):
         num_random_types = int(self.add_random_pairwise) + int(self.add_random_bound) + int(self.add_random_neighbor)
         assert num_random_types <= 1, 'Not implemented yet'
@@ -774,14 +782,15 @@ class RelativeRegressionMethod(Method):
             func = lambda x:x*w + b
             t_constraints = []
             for c in data.pairwise_relationships:
-                c.transform(self.transform)
-                if c.is_pairwise():
-                    pairwise_reg2 += c.to_cvx(func)
-                elif c.is_tertiary():
+                c2 = deepcopy(c)
+                c2.transform(self.transform)
+                if c2.is_pairwise():
+                    pairwise_reg2 += c2.to_cvx(func)
+                elif c2.is_tertiary():
                     pass
                     #neighbor_reg4 += c.to_cvx(func)
                 else:
-                    bound_reg3 += c.to_cvx(func)
+                    bound_reg3 += c2.to_cvx(func)
             if self.add_random_neighbor:
                 neighbor_reg4, t, t_constraints = NeighborConstraint.to_cvx_dccp(data.pairwise_relationships, func)
             warm_start = self.prob is not None and self.warm_start

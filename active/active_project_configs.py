@@ -47,8 +47,9 @@ use_min_pair_neighbor = False
 fast_dccp = True
 init_ridge = True
 
-
 use_test_error_for_model_selection = True
+
+
 
 run_active_experiments = False
 
@@ -212,10 +213,10 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             sizes.append(50)
             #sizes.append(100)
             methods = []
-            #methods.append(('numRandPairs','RelReg, %s pairs'))
+            methods.append(('numRandPairs','RelReg, %s pairs'))
             #methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
             #methods.append(('numRandBound', 'RelReg, %s bounds'))
-            methods.append(('numRandNeighbor', 'RelReg, %s rand neighbors'))
+            #methods.append(('numRandNeighbor', 'RelReg, %s rand neighbors'))
             #methods.append(('numMinNeighbor', 'RelReg, %s min neighbors'))
             #methods.append(('numRandQuartiles', 'RelReg, %s quartiles'))
             for file_suffix, legend_name in methods:
@@ -228,8 +229,10 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                     key += '.pkl'
                     self.files[key] = legend
 
-            self.files['RelReg-cvx-constraints-numRandNeighbor=50-fastDCCP-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 rand neighbors, fast dccp'
-            self.files['RelReg-cvx-constraints-numRandNeighbor=50-fastDCCP-initRidge-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 rand neighbors, fast dccp, init ridge'
+            #self.files['RelReg-cvx-constraints-numRandNeighbor=50-fastDCCP-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 rand neighbors, fast dccp'
+            #self.files['RelReg-cvx-constraints-numRandNeighbor=50-fastDCCP-initRidge-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 rand neighbors, fast dccp, init ridge'
+
+            self.files['RelReg-cvx-constraints-numRandPairs=50-mixedCV-solver=SCS-TEST.pkl'] = 'moved constraints'
 
             '''
             self.files['RelReg-cvx-constraints-numRandPairsHinge=50-pairBound=0.75-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs hinge, .75 pair bound'

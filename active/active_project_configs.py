@@ -29,7 +29,7 @@ active_items_per_iteration = 50
 
 use_mixed_cv = True
 
-use_pairwise = False
+use_pairwise = True
 num_pairwise = 50
 #pair_bound = (.25,1)
 pair_bound = ()
@@ -41,7 +41,7 @@ use_bound = False
 num_bound = 10
 use_quartiles = True
 
-use_neighbor = True
+use_neighbor = False
 num_neighbor = 50
 use_min_pair_neighbor = False
 fast_dccp = True

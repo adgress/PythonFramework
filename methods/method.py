@@ -132,7 +132,7 @@ class Method(Saveable):
         my_comm = mpi_utility.get_comm()
         param_results_on_test = [self.experiment_results_class(len(splits)) for i in range(len(param_grid))]
         param_results = [self.experiment_results_class(len(splits)) for i in range(len(param_grid))]
-        if my_comm is None or my_comm.Get_size() == 1:
+        if my_comm is None or my_comm.Get_size() == 1 or my_comm == MPI.COMM_WORLD:
             #Results when using test data to do model selection
 
             #Results when using cross validation

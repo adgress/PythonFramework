@@ -43,6 +43,7 @@ use_neighbor = True
 num_neighbor = 50
 use_min_pair_neighbor = False
 fast_dccp = True
+init_ridge = True
 
 
 use_test_error_for_model_selection = True
@@ -166,6 +167,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.num_neighbor = num_neighbor
         method_configs.use_min_pair_neighbor = use_min_pair_neighbor
         method_configs.fast_dccp = fast_dccp
+        method_configs.init_ridge = init_ridge
 
         method_configs.use_test_error_for_model_selection = use_test_error_for_model_selection
 

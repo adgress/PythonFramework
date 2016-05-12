@@ -602,7 +602,7 @@ class RelativeRegressionMethod(Method):
         self.num_neighbor = configs.num_neighbor
         self.use_min_pair_neighbor = configs.use_min_pair_neighbor
         self.fast_dccp = configs.fast_dccp
-
+        self.init_ridge = configs.init_ridge
 
         self.use_test_error_for_model_selection = configs.use_test_error_for_model_selection
         self.no_linear_term = True
@@ -617,12 +617,29 @@ class RelativeRegressionMethod(Method):
         self.method = RelativeRegressionMethod.METHOD_CVX_LOGISTIC_WITH_LOG
         self.method = RelativeRegressionMethod.METHOD_CVX_NEW_CONSTRAINTS
 
+        self.w_initial = None
+        self.b_initial = None
         if not self.use_pairwise:
             self.cv_params['C2'] = np.asarray([0])
         if not self.use_bound:
             self.cv_params['C3'] = np.asarray([0])
         if not self.use_neighbor:
             self.cv_params['C4'] = np.asarray([0])
+
+    def train_and_test(self, data):
+        use_dccp = self.use_neighbor
+
+        #Solve for best w to initialize problem
+        if use_dccp and self.init_ridge:
+            new_configs = deepcopy(self.configs)
+            new_configs.use_neighbor = False
+            new_configs.add_random_neighbor = False
+            new_configs.num_neighbor = 0
+            new_instance = RelativeRegressionMethod(new_configs)
+            r = new_instance.train_and_test(data)
+            self.w_initial = new_instance.w
+            self.b_initial = new_instance.b
+        return super(RelativeRegressionMethod, self).train_and_test(data)
 
     def train(self, data):
         num_random_types = int(self.add_random_pairwise) + int(self.add_random_bound) + int(self.add_random_neighbor)
@@ -785,7 +802,12 @@ class RelativeRegressionMethod(Method):
                 #prob = cvx.Problem(obj,constraints)
                 self.w_var = w
                 self.b_var = b
-
+            if self.init_ridge:
+                w.value = self.w_initial
+                b.value = self.b_initial
+            else:
+                w.value = None
+                b.value = None
             #assert prob.is_dcp()
             if not prob.is_dcp():
                 assert is_dccp(prob)
@@ -911,6 +933,8 @@ class RelativeRegressionMethod(Method):
                     s += '-numRandNeighbor=' + str(int(self.num_neighbor))
                 if getattr(self, 'fast_dccp', False):
                     s += '-fastDCCP'
+                if getattr(self, 'init_ridge', False):
+                    s += '-initRidge'
             if getattr(self, 'noise_rate', 0) > 0:
                 s += '-noise=' + str(self.noise_rate)
             if getattr(self, 'logistic_noise', 0) > 0:

@@ -584,6 +584,8 @@ class RelativeRegressionMethod(Method):
         self.b = None
         self.transform = StandardScaler()
 
+        self.use_mixed_cv = configs.use_mixed_cv
+
         self.add_random_pairwise = configs.use_pairwise
         self.use_pairwise = configs.use_pairwise
         self.num_pairwise = configs.num_pairwise

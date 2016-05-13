@@ -135,10 +135,12 @@ class FoldResults(object):
     def compute_error(self,loss_function):
         #TODO: Check if we should use y or fu
         if self.prediction.fu.ndim > 1 and isinstance(loss_function, loss_function_lib.LogLoss):
-            fu = self.prediction.fu[~self.prediction.is_train,:]
-            true_fu = array_functions.make_label_matrix(output.true_y[~self.prediction.is_train]).toarray()
-            return loss_function.compute_score(fu,true_fu)
-        return loss_function.compute_score(self.prediction.y,self.prediction.true_y,~self.prediction.is_train)
+            assert False, 'Update this'
+            #fu = self.prediction.fu[~self.prediction.is_train,:]
+            #true_fu = array_functions.make_label_matrix(output.true_y[~self.prediction.is_train]).toarray()
+            #return loss_function.compute_score(fu,true_fu)
+        #return loss_function.compute_score(self.prediction.y,self.prediction.true_y,~self.prediction.is_train)
+        return self.prediction.compute_error(loss_function)
 
 class ActiveFoldResults(ResultsContainer):
     def __init__(self, num_iterations):
@@ -161,7 +163,7 @@ class ActiveIterationResults(object):
 
 class Output(data_lib.LabeledVector):
     def __init__(self,data=None,y=None):
-        super(data_lib.LabeledVector, self).__init__()
+        super(Output, self).__init__()
         if data is not None:
             self.y = data.y
             self.is_train = data.is_train
@@ -195,6 +197,30 @@ class Output(data_lib.LabeledVector):
         assert not array_functions.has_invalid(self.fu)
         assert not array_functions.has_invalid(self.y)
         assert not array_functions.has_invalid(self.true_y)
+
+class RelativeRegressionOutput(Output):
+    def __init__(self,data=None,y=None,pairwise_results=None):
+        super(RelativeRegressionOutput, self).__init__(data, y)
+        self.is_pairwise_correct = pairwise_results
+        self.is_train_pairwise = data.is_train_pairwise
+
+    def compute_error_train(self,loss_function):
+        loss = super(RelativeRegressionOutput, self).compute_error_train(loss_function)
+        num_train = self.is_train.sum()
+        num_pairwise = self.is_train_pairwise.sum()
+        avg_loss = loss / num_train
+        pairwise_loss = (~self.is_pairwise_correct[self.is_train_pairwise]).sum()*avg_loss / num_pairwise
+        return avg_loss + pairwise_loss
+
+    def compute_error(self,loss_function):
+        loss = super(RelativeRegressionOutput, self).compute_error(loss_function)
+        num_test = (~self.is_train).sum()
+        num_pairwise = (~self.is_train_pairwise).sum()
+        if num_pairwise == 0:
+            return loss
+        avg_loss = loss/num_test
+        pairwise_loss = (~self.is_pairwise_correct[~self.is_train_pairwise]).sum()*avg_loss / num_pairwise
+        return avg_loss + pairwise_loss
 
 class ClassificationOutput(Output):
     def __init__(self,data=None):

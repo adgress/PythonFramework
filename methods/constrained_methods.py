@@ -10,6 +10,7 @@ import numpy as np
 class CVXConstraint(Constraint):
     def __init__(self):
         super(CVXConstraint, self).__init__()
+        self.true_y = []
 
     def is_pairwise(self):
         return False
@@ -20,6 +21,13 @@ class CVXConstraint(Constraint):
     def cvx_loss_logistic(self, d):
         #return cvx_logistic.logistic(d)
         return cvx.logistic(d)
+
+    @abc.abstractmethod
+    def predict(self, f):
+        pass
+
+    def is_correct(self, f):
+        return self.predict(f)
 
     @abc.abstractmethod
     def flip(self):
@@ -43,7 +51,7 @@ class CVXConstraint(Constraint):
 class NeighborConstraint(CVXConstraint):
     def __init__(self, x, x_close, x_far):
         super(NeighborConstraint, self).__init__()
-        self.x += [x, x_close, x_far]
+        self.x = [x, x_close, x_far]
 
     def to_cvx(self, f):
         assert False, 'Update this'
@@ -56,6 +64,10 @@ class NeighborConstraint(CVXConstraint):
         d_close = cvx.square(f(self.x[0]) - f(self.x[1]))
         d_far = cvx.square(f(self.x[0]) - f(self.x[2]))
         return d_close,d_far
+
+    def predict(self, f):
+        y0 = f(self.x[0])
+        return abs(y0-f(self.x[1])) <= abs(y0 - f(self.x[2]))
 
     def flip(self):
         x = self.x[1]
@@ -83,12 +95,17 @@ class NeighborConstraint(CVXConstraint):
             objective += cvx.max_elemwise(d_close-t[i], 0)
         return objective, t, t_constraints
 
-
+#y1 <= y2
 class PairwiseConstraint(CVXConstraint):
     def __init__(self, x1, x2):
         super(PairwiseConstraint, self).__init__()
         self.x.append(x1)
         self.x.append(x2)
+
+    def predict(self, f):
+        y0 = f(self.x[0])
+        y1 = f(self.x[1])
+        return y0 < y1
 
     def flip(self):
         x = self.x[0]
@@ -122,6 +139,14 @@ class BoundConstraint(CVXConstraint):
         self.x.append(x)
         self.c.append(c)
         self.bound_type = bound_type
+
+    def predict(self, f):
+        y0 = f(self.x[0])
+        c0 = self.c[0]
+        if self.bound_type == BoundConstraint.BOUND_LOWER:
+            return y0 >= c0
+        else:
+            return y0 <= c0
 
     def flip(self):
         if self.bound_type == BoundConstraint.BOUND_LOWER:

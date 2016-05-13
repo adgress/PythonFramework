@@ -23,7 +23,7 @@ from data import data as data_lib
 from data_sets import create_data_split
 from results_class import results as results_lib
 from results_class.results import FoldResults, Output
-from results_class.results import Output
+from results_class.results import Output, RelativeRegressionOutput
 from saveable.saveable import Saveable
 from utility import array_functions
 from utility import helper_functions
@@ -34,6 +34,7 @@ from dccp.problem import is_dccp
 from mpipool import core as mpipool
 from utility import mpi_utility
 from mpi4py import MPI
+import math
 import random
 
 
@@ -58,6 +59,10 @@ class Method(Saveable):
         self.best_params = None
         self.transform = None
         self.warm_start = False
+
+
+    def create_cv_params(self, i_low, i_high):
+        return 10**np.asarray(list(reversed(range(i_low,i_high))),dtype='float64')
 
     @property
     def params(self):
@@ -111,7 +116,8 @@ class Method(Saveable):
     def run_cross_validation(self,data):
         assert data.n_train_labeled > 0
         train_data = deepcopy(data)
-        test_data = data.get_subset(data.is_test)
+        #test_data = data.get_subset(data.is_test)
+        test_data = data.get_test_data()
         if self.configs.use_validation:
             I = train_data.is_labeled
             train_data.reveal_labels()
@@ -121,6 +127,7 @@ class Method(Saveable):
             I = train_data.is_train
             ds = create_data_split.DataSplitter()
             splits = ds.generate_identity_split(I)
+            splits[0].is_train_pairwise = getattr(data, 'is_train_pairwise', None)
         else:
             train_data = data.get_subset(data.is_train)
             splits = self._create_cv_splits(train_data)
@@ -181,7 +188,7 @@ class Method(Saveable):
 
         min_error = errors.min()
         best_params = param_grid[errors.argmin()]
-        if not self.quiet and mpi_utility.is_master():
+        if not self.quiet and mpi_utility.is_group_master():
             print best_params
         self.best_params = best_params
         return [best_params, min_error, errors_on_test_data[errors.argmin()]]
@@ -215,7 +222,7 @@ class Method(Saveable):
             self.set_params(**best_params)
         self.should_plot_g = True
         output = None
-        if mpi_utility.is_master():
+        if mpi_utility.is_group_master():
             output = self.run_method(data)
         comm = mpi_utility.get_comm()
         output = comm.bcast(output, root=0)
@@ -575,8 +582,10 @@ class RelativeRegressionMethod(Method):
     def __init__(self,configs=MethodConfigs()):
         super(RelativeRegressionMethod, self).__init__(configs)
         self.can_use_test_error_for_model_selection = True
-        self.cv_params['C'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
-        self.cv_params['C2'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
+        #self.cv_params['C'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
+        #self.cv_params['C2'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
+        self.cv_params['C'] = self.create_cv_params(-1,1)
+        self.cv_params['C2'] = self.create_cv_params(-1,1)
         self.cv_params['C3'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         self.cv_params['C4'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
 
@@ -646,10 +655,13 @@ class RelativeRegressionMethod(Method):
 
     def _create_cv_splits(self,data):
         splits = super(RelativeRegressionMethod, self)._create_cv_splits(data)
-        pairwise_splits = []
+        perc_test = .2
+        n = len(data.pairwise_relationships)
+        num_test = math.floor(perc_test*n)
         for i in range(len(splits)):
-            is_train_pairwise = array_functions.true(len(data.pairwise_relationships))
-            pass
+            is_train_pairwise = array_functions.true(n)
+            is_train_pairwise[array_functions.sample(n, num_test)] = False
+            splits[i].is_train_pairwise = is_train_pairwise
         return splits
 
     def add_random_guidance(self, data):
@@ -678,9 +690,11 @@ class RelativeRegressionMethod(Method):
                 x1 = data.x[pair[0],:]
                 x2 = data.x[pair[1],:]
                 if self.use_hinge:
-                    data.pairwise_relationships.add(HingePairwiseConstraint(x1,x2))
+                    constraint = HingePairwiseConstraint(x1,x2)
                 else:
-                    data.pairwise_relationships.add(PairwiseConstraint(x1,x2))
+                    constraint = PairwiseConstraint(x1,x2)
+                constraint.true_y = [data.true_y[pair[0]], data.true_y[pair[1]]]
+                data.pairwise_relationships.add(constraint)
                 #data.pairwise_relationships.add(pair)
         if self.add_random_bound:
             data.pairwise_relationships = set()
@@ -690,6 +704,8 @@ class RelativeRegressionMethod(Method):
             for i in sampled:
                 if self.use_quartiles:
                     lower, upper = BoundConstraint.create_quartile_constraints(data, i)
+                    lower.true_y = [data.true_y[i]]
+                    upper.true_y = [data.true_y[i]]
                     data.pairwise_relationships.add(lower)
                     data.pairwise_relationships.add(upper)
                 else:
@@ -701,6 +717,7 @@ class RelativeRegressionMethod(Method):
                         constraint = BoundUpperConstraint(xi, y_median)
                     else:
                         continue
+                    constraint.true_y = [yi_true]
                     data.pairwise_relationships.add(constraint)
         if self.add_random_neighbor:
             data.pairwise_relationships = set()
@@ -720,10 +737,14 @@ class RelativeRegressionMethod(Method):
 
                 x1,x2,x3 = data.x[triplet,:]
                 constraint = NeighborConstraint(x1,x2,x3)
+                constraint.true_y = list(data.true_y[triplet])
+                assert False, 'Confirm this works!'
                 data.pairwise_relationships.add(constraint)
         for s in data.pairwise_relationships:
             if random.random() <= self.noise_rate:
                 s.flip()
+        data.pairwise_relationships = np.asarray(list(data.pairwise_relationships))
+        data.is_train_pairwise = array_functions.true(data.pairwise_relationships.size)
 
     def train(self, data):
         is_labeled_train = data.is_train & data.is_labeled
@@ -781,7 +802,8 @@ class RelativeRegressionMethod(Method):
             assert self.method == RelativeRegressionMethod.METHOD_CVX_NEW_CONSTRAINTS
             func = lambda x:x*w + b
             t_constraints = []
-            for c in data.pairwise_relationships:
+            train_pairwise = data.pairwise_relationships[data.is_train_pairwise]
+            for c in train_pairwise:
                 c2 = deepcopy(c)
                 c2.transform(self.transform)
                 if c2.is_pairwise():
@@ -792,7 +814,7 @@ class RelativeRegressionMethod(Method):
                 else:
                     bound_reg3 += c2.to_cvx(func)
             if self.add_random_neighbor:
-                neighbor_reg4, t, t_constraints = NeighborConstraint.to_cvx_dccp(data.pairwise_relationships, func)
+                neighbor_reg4, t, t_constraints = NeighborConstraint.to_cvx_dccp(train_pairwise, func)
             warm_start = self.prob is not None and self.warm_start
             if warm_start:
                 prob = self.prob
@@ -894,7 +916,7 @@ class RelativeRegressionMethod(Method):
         '''
 
     def predict(self, data):
-        o = Output(data)
+        o = RelativeRegressionOutput(data)
 
         if self.method == RelativeRegressionMethod.METHOD_RIDGE_SURROGATE:
             o = self.ridge_reg.predict(data)
@@ -903,6 +925,14 @@ class RelativeRegressionMethod(Method):
             y = x.dot(self.w) + self.b
             o.fu = y
             o.y = y
+            f = lambda x: x.dot(self.w)[0,0] + self.b
+            n = data.pairwise_relationships.size
+            is_pairwise_correct = array_functions.false(n)
+            for i, c in enumerate(data.pairwise_relationships):
+                c2 = deepcopy(c)
+                c2.transform(self.transform)
+                is_pairwise_correct[i] = c2.is_correct(f)
+            o.is_pairwise_correct = is_pairwise_correct
         return o
 
     @property

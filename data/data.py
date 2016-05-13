@@ -193,6 +193,15 @@ class LabeledData(LabeledVector):
                 setattr(new_data,key,value)
         return new_data
 
+    def get_test_data(self):
+        test_data = self.get_subset(self.is_test)
+        is_test_pairwise = getattr(self, 'is_test_pairwise',None)
+        if is_test_pairwise is not None:
+            c = np.asarray(self.pairwise_relationships)[~self.is_train_pairwise]
+            self.pairwise_relationships = c.tolist()
+            #self.is_train_pairwise
+        return test_data
+
     def get_transfer_inds(self,labels_or_ids):
         if self.is_regression:
             return array_functions.find_set(self.data_set_ids,labels_or_ids)
@@ -226,7 +235,7 @@ class LabeledData(LabeledVector):
     def permute(self,permutation):
         d = self.__dict__
         for key,value in d.items():
-            if array_functions.is_matrix(value):
+            if array_functions.is_matrix(value) and value.shape[0] == self.n:
                 if value.ndim == 1:
                     value = value[permutation]
                 elif value.ndim == 2:
@@ -239,6 +248,7 @@ class LabeledData(LabeledVector):
         self.is_train = split.is_train
         #self.type = split.type
         self.permute(split.permutation)
+        self.is_train_pairwise = getattr(split, 'is_train_pairwise', None)
 
     def set_defaults(self):
         assert False, 'This function is dangerous!'

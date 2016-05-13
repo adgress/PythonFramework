@@ -230,9 +230,11 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                     self.files[key] = legend
 
             #self.files['RelReg-cvx-constraints-numRandNeighbor=50-fastDCCP-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 rand neighbors, fast dccp'
-            #self.files['RelReg-cvx-constraints-numRandNeighbor=50-fastDCCP-initRidge-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 rand neighbors, fast dccp, init ridge'
+            self.files['RelReg-cvx-constraints-numRandNeighbor=50-fastDCCP-initRidge-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 rand neighbors, fast dccp, init ridge'
 
             self.files['RelReg-cvx-constraints-numRandPairs=50-mixedCV-solver=SCS-TEST.pkl'] = 'moved constraints'
+
+            self.files['RelReg-cvx-constraints-numRandNeighbor=50-initRidge-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 rand neighbors, init ridge'
 
             '''
             self.files['RelReg-cvx-constraints-numRandPairsHinge=50-pairBound=0.75-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs hinge, .75 pair bound'

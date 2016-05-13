@@ -8,9 +8,14 @@ def get_comm():
         comm = MPI.COMM_WORLD
     return comm
 
+def is_group_master():
+    comm = get_comm()
+    return comm == MPI.COMM_WORLD or comm.Get_rank() == 0
+
 def is_master():
     comm = get_comm()
-    return comm.Get_rank() == 0
+    rank = comm.Get_rank()
+    return rank == 0 or (comm == MPI.COMM_WORLD and rank == 1)
 
 def mpi_print(s, comm=MPI.COMM_WORLD):
     print '(' + str(comm.Get_rank()) + '): ' + str(s)

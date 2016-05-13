@@ -154,11 +154,11 @@ def run_main(num_labels=None, split_idx=None, no_viz=None, comm=None):
             print '(' + socket.gethostname() + ')''Process ' + str(comm.Get_rank()) + ': Starting experiments...'
     else:
         print 'Starting experiments...'
-    if mpi_utility.is_master():
+    if mpi_utility.is_group_master():
         timer.tic()
     if configs_lib.run_experiments:
         run_experiments()
-    if mpi_utility.is_master():
+    if mpi_utility.is_group_master():
         timer.toc()
     if helper_functions.is_laptop() and not arguments.no_viz:
         run_visualization()

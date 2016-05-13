@@ -93,10 +93,10 @@ class MethodExperimentManager(ExperimentManager):
         results_file = self.configs.results_file
         comm = mpi_utility.get_comm()
         if os.path.isfile(results_file):
-            if mpi_utility.is_master():
+            if mpi_utility.is_group_master():
                 print results_file + ' already exists - skipping'
             return            
-        if mpi_utility.is_master():
+        if mpi_utility.is_group_master():
             hostname = helper_functions.get_hostname()
             print '(' + hostname  + ') Running experiments: ' + results_file
         learner = self.configs.learner
@@ -150,7 +150,7 @@ def _run_experiment_args(self, results_file, data_and_splits, method_results, i_
     curr_learner = copy.deepcopy(learner)
     curr_results = curr_learner.train_and_test(curr_data)
     helper_functions.save_object(_temp_split_file_name(results_file,num_labels,split),curr_results)
-    if mpi_utility.is_master():
+    if mpi_utility.is_group_master():
         if hasattr(curr_learner, 'best_params'):
             print s + '-' + str(curr_learner.best_params) + ' Error: ' + str(curr_results.compute_error(self.configs.loss_function))
         else:

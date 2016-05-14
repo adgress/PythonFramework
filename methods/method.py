@@ -225,7 +225,8 @@ class Method(Saveable):
         if mpi_utility.is_group_master():
             output = self.run_method(data)
         comm = mpi_utility.get_comm()
-        output = comm.bcast(output, root=0)
+        if comm != MPI.COMM_WORLD:
+            output = comm.bcast(output, root=0)
         f = FoldResults()
         f.prediction = output
         f.estimated_error = min_error

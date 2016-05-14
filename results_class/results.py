@@ -219,7 +219,8 @@ class RelativeRegressionOutput(Output):
         if num_pairwise == 0:
             return loss
         avg_loss = loss/num_test
-        pairwise_loss = (~self.is_pairwise_correct[~self.is_train_pairwise]).sum()*avg_loss / num_pairwise
+        #pairwise_loss = (~self.is_pairwise_correct[~self.is_train_pairwise]).sum()*avg_loss / num_pairwise
+        pairwise_loss = (~self.is_pairwise_correct[~self.is_train_pairwise]).sum()*avg_loss
         return avg_loss + pairwise_loss
 
 class ClassificationOutput(Output):

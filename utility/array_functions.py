@@ -63,7 +63,9 @@ def sample(n_or_vector, num_samples=1, distribution=None):
         indices = np.random.choice(n_or_vector.shape[0], num_samples, replace=False, p=distribution)
         return n_or_vector[indices,:]
     except Exception as error:
-        return np.random.choice(n_or_vector, num_samples, replace=False, p=distribution)
+        assert n_or_vector == int(n_or_vector)
+        assert num_samples == int(num_samples)
+        return np.random.choice(int(n_or_vector), int(num_samples), replace=False, p=distribution)
 
 def clip(x, min, max):
     assert min <= max

@@ -583,10 +583,8 @@ class RelativeRegressionMethod(Method):
     def __init__(self,configs=MethodConfigs()):
         super(RelativeRegressionMethod, self).__init__(configs)
         self.can_use_test_error_for_model_selection = True
-        #self.cv_params['C'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
-        #self.cv_params['C2'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
-        self.cv_params['C'] = self.create_cv_params(-1,1)
-        self.cv_params['C2'] = self.create_cv_params(-1,1)
+        self.cv_params['C'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
+        self.cv_params['C2'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         self.cv_params['C3'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         self.cv_params['C4'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
 
@@ -631,6 +629,9 @@ class RelativeRegressionMethod(Method):
 
         self.w_initial = None
         self.b_initial = None
+        if self.use_neighbor:
+            self.cv_params['C'] = 10**np.asarray(list(reversed(range(-4,4))),dtype='float64')
+            self.cv_params['C4'] = 10**np.asarray(list(reversed(range(-4,4))),dtype='float64')
         if not self.use_pairwise:
             self.cv_params['C2'] = np.asarray([0])
         if not self.use_bound:

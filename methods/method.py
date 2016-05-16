@@ -657,11 +657,14 @@ class RelativeRegressionMethod(Method):
     def _create_cv_splits(self,data):
         splits = super(RelativeRegressionMethod, self)._create_cv_splits(data)
         perc_test = .2
+        if not self.use_mixed_cv:
+            perc_test = 0
         n = len(data.pairwise_relationships)
         num_test = math.floor(perc_test*n)
         for i in range(len(splits)):
             is_train_pairwise = array_functions.true(n)
-            is_train_pairwise[array_functions.sample(n, num_test)] = False
+            if n > 0 and num_test > 0:
+                is_train_pairwise[array_functions.sample(n, num_test)] = False
             splits[i].is_train_pairwise = is_train_pairwise
         return splits
 
@@ -738,8 +741,7 @@ class RelativeRegressionMethod(Method):
 
                 x1,x2,x3 = data.x[triplet,:]
                 constraint = NeighborConstraint(x1,x2,x3)
-                constraint.true_y = list(data.true_y[triplet])
-                assert False, 'Confirm this works!'
+                constraint.true_y = [data.true_y[a] for a in triplet]
                 data.pairwise_relationships.add(constraint)
         for s in data.pairwise_relationships:
             if random.random() <= self.noise_rate:

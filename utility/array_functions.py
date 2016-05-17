@@ -61,7 +61,10 @@ def sample_pairs(n_or_vector, num_samples=1, test_func=None):
 def sample(n_or_vector, num_samples=1, distribution=None):
     try:
         indices = np.random.choice(n_or_vector.shape[0], num_samples, replace=False, p=distribution)
-        return n_or_vector[indices,:]
+        if n_or_vector.ndim == 1:
+            return n_or_vector[indices]
+        else:
+            return n_or_vector[indices,:]
     except Exception as error:
         assert n_or_vector == int(n_or_vector)
         assert num_samples == int(num_samples)

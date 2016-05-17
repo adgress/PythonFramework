@@ -19,6 +19,7 @@ comm = MPI.COMM_WORLD
 use_mpi = comm.Get_size() > 1
 debug_mpi_pool = False
 use_multiprocessing_pool = True
+parallelize_cv = True
 
 if helper_functions.is_laptop():
     pool_size = 2
@@ -87,7 +88,7 @@ if __name__ == '__main__':
         pool.close()
         '''
         mpi_comms = mpi_utility.mpi_comm_by_node(include_root=False)
-        if len(mpi_comms) > 1:
+        if len(mpi_comms) > 1 or parallelize_cv:
             pool = mpi_group_pool.MPIGroupPool(debug=False, loadbalance=True, comms=mpi_comms)
         #assert False
         else:

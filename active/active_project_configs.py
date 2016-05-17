@@ -8,7 +8,7 @@ from configs import base_configs as bc
 from loss_functions import loss_function
 from utility import helper_functions
 from results_class import results as results_lib
-
+from sklearn import grid_search
 
 #Command line arguments for ProjectConfigs
 arguments = None
@@ -27,9 +27,9 @@ data_sets_for_exps = [data_set_to_use]
 active_iterations = 2
 active_items_per_iteration = 50
 
-use_mixed_cv = True
+use_mixed_cv = False
 
-use_pairwise = True
+use_pairwise = False
 num_pairwise = 50
 #pair_bound = (.25,1)
 pair_bound = ()
@@ -37,9 +37,9 @@ use_hinge = False
 noise_rate = .0
 logistic_noise = 0
 
-use_bound = False
-num_bound = 10
-use_quartiles = True
+use_bound = True
+num_bound = 51
+use_quartiles = False
 
 use_neighbor = False
 num_neighbor = 50
@@ -47,7 +47,7 @@ use_min_pair_neighbor = False
 fast_dccp = True
 init_ridge = True
 
-use_test_error_for_model_selection = True
+use_test_error_for_model_selection = False
 
 
 
@@ -205,13 +205,23 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['ActiveRandom+SKL-RidgeReg.pkl'] = 'Random, SKLRidge'
             self.files['RelActiveRandom+RelReg-cvx-log-with-log-noLinear-TEST.pkl'] = 'TEST: RandomPairwise, RelReg'
         else:
-            self.files['RelReg-cvx-constraints-noPairwiseReg.pkl'] = 'Ridge Regression'
+            #self.files['RelReg-cvx-constraints-noPairwiseReg.pkl'] = 'Ridge Regression'
             base_file_name = 'RelReg-cvx-constraints-%s=%s-solver=SCS'
-            use_test = True
+            use_test = False
             sizes = []
             #sizes.append(10)
             sizes.append(50)
             #sizes.append(100)
+
+            suffixes = OrderedDict()
+            #suffixes['fastDCCP'] = [None,'']
+            #suffixes['initRidge'] = [None,'']
+            #suffixes['pairBound'] = [.1,.25,.5,.75,.99]
+            #suffixes['mixedCV'] = [None,'']
+            suffixes['logNoise'] = [None,1,2]
+            ordered_keys = ['fastDCCP', 'initRidge', 'pairBound', 'mixedCV', 'logNoise']
+            all_params = list(grid_search.ParameterGrid(suffixes))
+
             methods = []
             methods.append(('numRandPairs','RelReg, %s pairs'))
             #methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
@@ -221,20 +231,42 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             #methods.append(('numRandQuartiles', 'RelReg, %s quartiles'))
             for file_suffix, legend_name in methods:
                 for size in sizes:
-                    key = base_file_name % (file_suffix, str(size))
-                    legend = legend_name % str(size)
-                    if use_test:
-                        key += '-TEST'
-                        legend = 'TEST: ' + legend
-                    key += '.pkl'
-                    self.files[key] = legend
+                    for params in all_params:
+                        file_name = base_file_name
+                        file_name = file_name % (file_suffix, str(size))
+                        legend = legend_name % str(size)
+                        for key in ordered_keys:
+                            if not params.has_key(key):
+                                continue
+                            value = params[key]
+                            if value is None:
+                                continue
+                            if value == '':
+                                file_name += '-' + key
+                                legend += key
+                            else:
+                                file_name += '-' + key + '=' + str(value)
+                                legend += ', ' + str(value) + ' ' + key
+                        if use_test:
+                            file_name += '-TEST'
+                            legend = 'TEST: ' + legend
+                        file_name += '.pkl'
+                        self.files[file_name] = legend
+
+
+
 
             #self.files['RelReg-cvx-constraints-numRandNeighbor=50-fastDCCP-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 rand neighbors, fast dccp'
-            self.files['RelReg-cvx-constraints-numRandNeighbor=50-fastDCCP-initRidge-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 rand neighbors, fast dccp, init ridge'
 
-            self.files['RelReg-cvx-constraints-numRandPairs=50-mixedCV-solver=SCS-TEST.pkl'] = 'moved constraints'
+            #self.files['RelReg-cvx-constraints-numRandPairs=150-mixedCV-solver=SCS.pkl'] = 'RelReg, 150 pairs, mixedCV'
 
-            self.files['RelReg-cvx-constraints-numRandNeighbor=50-initRidge-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 rand neighbors, init ridge'
+            #self.files['RelReg-cvx-constraints-numRandNeighbor=50-fastDCCP-initRidge-solver=SCS.pkl'] = 'RelReg, 50 rand neighbors, init ridge'
+
+            #self.files['RelReg-cvx-constraints-numRandNeighbor=50-initRidge-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 rand neighbors, init ridge'
+            #self.files['RelReg-cvx-constraints-numRandNeighbor=50-fastDCCP-initRidge-solver=SCS-TEST-lessParams.pkl'] = 'TEST: RelReg, 50 rand neighbors, init ridge, less params'
+
+            #self.files['RelReg-cvx-constraints-numRandNeighbor=250-fastDCCP-initRidge-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 250 rand neighbors, fast dccp, init ridge'
+            #self.files['RelReg-cvx-constraints-numRandNeighbor=250-fastDCCP-initRidge-solver=SCS-TEST-lessParams.pkl'] = 'TEST: RelReg, 250 rand neighbors, fast dccp, init ridge, less params'
 
             '''
             self.files['RelReg-cvx-constraints-numRandPairsHinge=50-pairBound=0.75-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs hinge, .75 pair bound'

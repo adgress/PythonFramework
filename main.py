@@ -81,7 +81,8 @@ def run_visualization():
         axis[0] = np.min(sizes) - .1*axis_range
         #show_x_label = num_rows == 1 or subplot_idx > (num_rows-1)*num_cols
         #show_x_label = num_rows == 1 or subplot_idx == 8
-        show_x_label = subplot_idx == 2
+        #show_x_label = subplot_idx == 2
+        show_x_label = True
         show_y_label = num_cols == 1 or subplot_idx % num_cols == 1
 
         if show_x_label:

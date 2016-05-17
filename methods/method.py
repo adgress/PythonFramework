@@ -41,7 +41,22 @@ import random
 
 
 def _run_cross_validation_iteration_args(self, args):
-    return self._run_cross_validation_iteration(args, self.curr_split, self.test_data)
+    num_runs = 0
+    while True:
+        num_runs += 1
+        mpi_utility.mpi_print('CV Itr(' + str(num_runs) + '): ' + str(args), mpi_utility.get_comm())
+        timer.tic()
+        try:
+            ret = self._run_cross_validation_iteration(args, self.curr_split, self.test_data)
+            timer.toc()
+            return ret
+        except MemoryError:
+            print 'Ran out of memory - restarting'
+            timer.toc()
+        else:
+            assert False, 'Some other error occured'
+
+
 
 class Method(Saveable):
 
@@ -90,7 +105,7 @@ class Method(Saveable):
 
     def _create_cv_splits(self,data):
         data_splitter = create_data_split.DataSplitter()
-        num_splits = 10
+        num_splits = 5
         if hasattr(self, 'num_splits'):
             num_splits = self.num_splits
         perc_train = .8
@@ -820,6 +835,7 @@ class RelativeRegressionMethod(Method):
             if self.add_random_neighbor:
                 neighbor_reg4, t, t_constraints = NeighborConstraint.to_cvx_dccp(train_pairwise, func)
             warm_start = self.prob is not None and self.warm_start
+            warm_start = False
             if warm_start:
                 prob = self.prob
                 self.C_param.value = self.C
@@ -851,7 +867,7 @@ class RelativeRegressionMethod(Method):
             #assert prob.is_dcp()
             if not prob.is_dcp():
                 assert is_dccp(prob)
-            print_messages = False
+            print_messages = True
             if print_messages:
                 timer.tic()
             params = [self.C_param.value, self.C2_param.value, self.C3_param.value, self.C4_param.value]
@@ -863,6 +879,7 @@ class RelativeRegressionMethod(Method):
                     if prob.is_dcp():
                         ret = prob.solve(self.solver, False, {'warm_start': warm_start})
                     else:
+                        print str(params)
                         options = {
                             'method': 'dccp'
                         }
@@ -874,8 +891,20 @@ class RelativeRegressionMethod(Method):
                                 'mu': 2,
                                 'tau_max': 1e6
                             }
-                        #ret = prob.solve(self.solver, False, method='dccp', options)
+                        '''
                         ret = prob.solve(solver=self.solver, **options)
+                        saved_w = w.value
+                        saved_b = b.value
+                        '''
+
+                        max_iter = options['max_iter']
+                        options['max_iter'] = 1
+                        w.value = self.w_initial
+                        b.value = self.b_initial
+                        for i in range(max_iter):
+                            options['tau'] *= options['mu']
+                            ret2 = prob.solve(solver=self.solver, **options)
+
                 w_value = w.value
                 b_value = b.value
                 #print prob.status
@@ -891,7 +920,8 @@ class RelativeRegressionMethod(Method):
             if print_messages:
                 print 'params: ' + str(params)
                 timer.toc()
-            self.prob = prob
+            if warm_start:
+                self.prob = prob
             self.w = w_value
             self.b = b_value
             '''

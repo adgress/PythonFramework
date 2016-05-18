@@ -146,7 +146,7 @@ def _run_experiment_args(self, results_file, data_and_splits, method_results, i_
     if curr_results:
         return curr_results
     #print 'num_labels-split: ' + s
-    temp_dir = helper_functions.remove_suffix(results_file, '.pkl')
+    temp_dir = helper_functions.remove_suffix(results_file, '.pkl') + '/CV-temp/'
     curr_data = data_and_splits.get_split(split, num_labels)
     learner = self.configs.learner
     curr_learner = copy.deepcopy(learner)

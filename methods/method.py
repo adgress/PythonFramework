@@ -681,6 +681,7 @@ class RelativeRegressionMethod(Method):
             new_configs.add_random_neighbor = False
             new_configs.num_neighbor = 0
             new_instance = RelativeRegressionMethod(new_configs)
+            new_instance.temp_dir = self.temp_dir
             r = new_instance.train_and_test(data)
             self.w_initial = new_instance.w
             self.b_initial = new_instance.b

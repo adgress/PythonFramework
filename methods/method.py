@@ -748,7 +748,7 @@ class RelativeRegressionMethod(Method):
             for i in sampled:
                 if self.use_quartiles:
                     if self.use_baseline:
-                        data.pairwise_relationships.add(EqualsConstraint.create_quantize_constraint(data, i, 2))
+                        data.pairwise_relationships.add(EqualsConstraint.create_quantize_constraint(data, i, 4))
                     else:
                         lower, upper = BoundConstraint.create_quartile_constraints(data, i)
                         lower.true_y = [data.true_y[i]]
@@ -757,7 +757,7 @@ class RelativeRegressionMethod(Method):
                         data.pairwise_relationships.add(upper)
                 else:
                     if self.use_baseline:
-                        data.pairwise_relationships.add(EqualsConstraint.create_quantize_constraint(data, i, 4))
+                        data.pairwise_relationships.add(EqualsConstraint.create_quantize_constraint(data, i, 2))
                     else:
                         xi = data.x[i,:]
                         yi_true = data.true_y[i]

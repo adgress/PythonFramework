@@ -152,6 +152,7 @@ class MainConfigs(bc.MainConfigs):
         self.copy_fields(pc,pc_fields_to_copy)
         from methods import method
         from methods import active_methods
+        from methods import semisupervised
         method_configs = MethodConfigs(pc)
         method_configs.active_iterations = active_iterations
         method_configs.active_items_per_iteration = active_items_per_iteration
@@ -185,10 +186,13 @@ class MainConfigs(bc.MainConfigs):
         relative_reg = methods.method.RelativeRegressionMethod(method_configs)
         ridge_reg = method.SKLRidgeRegression(method_configs)
         mean_reg = method.SKLMeanRegressor(method_configs)
+
+        lap_ridge = semisupervised.LaplacianRidgeMethod(method_configs)
         if run_active_experiments:
             self.learner = active
         else:
-            self.learner = relative_reg
+            self.learner = lap_ridge
+            #self.learner = relative_reg
             #self.learner = ridge_reg
             #self.learner = mean_reg
 
@@ -219,26 +223,27 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             #sizes.append(10)
             sizes.append(50)
             #sizes.append(100)
-            sizes.append(150)
+            #sizes.append(150)
             #sizes.append(250)
             suffixes = OrderedDict()
-            suffixes['fastDCCP'] = ['']
-            suffixes['initRidge'] = ['']
+            #suffixes['fastDCCP'] = ['']
+            #suffixes['initRidge'] = ['']
             #suffixes['pairBound'] = [.1,.25,.5,.75,.99]
             #suffixes['pairBound'] = [(.5,1), (.25,1)]
             #suffixes['mixedCV'] = [None,'']
             #suffixes['logNoise'] = [None,.25,.5]
+            suffixes['baseline'] = [None,'']
             suffixes['solver'] = ['SCS']
-            ordered_keys = ['fastDCCP', 'initRidge', 'pairBound', 'mixedCV', 'logNoise', 'solver']
+            ordered_keys = ['fastDCCP', 'initRidge', 'pairBound', 'mixedCV', 'logNoise', 'baseline', 'solver']
             all_params = list(grid_search.ParameterGrid(suffixes))
 
             methods = []
             #methods.append(('numRandPairs','RelReg, %s pairs'))
             #methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
-            #methods.append(('numRandBound', 'RelReg, %s bounds'))
-            methods.append(('numRandNeighbor', 'RelReg, %s rand neighbors'))
+            methods.append(('numRandBound', 'RelReg, %s bounds'))
+            methods.append(('numRandQuartiles', 'RelReg, %s quartiles'))
+            #methods.append(('numRandNeighbor', 'RelReg, %s rand neighbors'))
             #methods.append(('numMinNeighbor', 'RelReg, %s min neighbors'))
-            #methods.append(('numRandQuartiles', 'RelReg, %s quartiles'))
             for file_suffix, legend_name in methods:
                 for size in sizes:
                     for params in all_params:

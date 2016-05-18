@@ -146,8 +146,6 @@ def _run_experiment_args(self, results_file, data_and_splits, method_results, i_
     if curr_results:
         return curr_results
     #print 'num_labels-split: ' + s
-    if mpi_utility.is_group_master():
-        print 'Group Master!'
     temp_file_name = _temp_split_file_name(results_file, num_labels, split)
     temp_dir_root = helper_functions.remove_suffix(temp_file_name, '.pkl')
     temp_dir = temp_dir_root + '/CV-temp/'
@@ -157,7 +155,6 @@ def _run_experiment_args(self, results_file, data_and_splits, method_results, i_
     curr_learner.temp_dir = temp_dir
     curr_results = curr_learner.train_and_test(curr_data)
     if mpi_utility.is_group_master():
-        print 'Group Master!'
         helper_functions.save_object(_temp_split_file_name(results_file,num_labels,split),curr_results)
         helper_functions.delete_dir_if_exists(temp_dir_root)
     if mpi_utility.is_group_master():

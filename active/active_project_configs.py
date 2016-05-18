@@ -31,15 +31,15 @@ use_mixed_cv = False
 
 use_baseline = True
 
-use_pairwise = False
+use_pairwise = True
 num_pairwise = 50
 #pair_bound = (.25,1)
 pair_bound = ()
-use_hinge = False
+use_hinge = True
 noise_rate = .0
 logistic_noise = 0
 
-use_bound = True
+use_bound = False
 num_bound = 50
 use_quartiles = False
 
@@ -191,8 +191,8 @@ class MainConfigs(bc.MainConfigs):
         if run_active_experiments:
             self.learner = active
         else:
-            self.learner = lap_ridge
-            #self.learner = relative_reg
+            #self.learner = lap_ridge
+            self.learner = relative_reg
             #self.learner = ridge_reg
             #self.learner = mean_reg
 
@@ -213,6 +213,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['RelActiveRandom+RelReg-cvx-log-with-log-noLinear-TEST.pkl'] = 'TEST: RandomPairwise, RelReg'
         else:
             base_file_name = 'RelReg-cvx-constraints-%s=%s'
+            self.files['LapRidge.pkl'] = 'Laplacian Ridge Regression'
             use_test = False
             if use_test:
                 self.files['RelReg-cvx-constraints-noPairwiseReg-TEST.pkl'] = 'TEST: Ridge Regression'
@@ -238,10 +239,10 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             all_params = list(grid_search.ParameterGrid(suffixes))
 
             methods = []
-            #methods.append(('numRandPairs','RelReg, %s pairs'))
+            methods.append(('numRandPairs','RelReg, %s pairs'))
             #methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
-            methods.append(('numRandBound', 'RelReg, %s bounds'))
-            methods.append(('numRandQuartiles', 'RelReg, %s quartiles'))
+            #methods.append(('numRandBound', 'RelReg, %s bounds'))
+            #methods.append(('numRandQuartiles', 'RelReg, %s quartiles'))
             #methods.append(('numRandNeighbor', 'RelReg, %s rand neighbors'))
             #methods.append(('numMinNeighbor', 'RelReg, %s min neighbors'))
             for file_suffix, legend_name in methods:
@@ -311,6 +312,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.title = bc.data_name_dict.get(self.data_set_to_use, 'Unknown Data Set')
         self.show_legend_on_all = show_legend_on_all
         self.x_axis_string = 'Number of labeled instances'
+        self.ylims = [0,10]
 
 
 class BatchConfigs(bc.BatchConfigs):

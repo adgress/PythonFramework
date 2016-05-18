@@ -36,12 +36,19 @@ from utility import mpi_utility
 from mpi4py import MPI
 import math
 import random
+import os
 
 
 
 
 def _run_cross_validation_iteration_args(self, args):
     num_runs = 0
+    assert self.temp_dir is not None
+    temp_file = self.temp_dir + '/' + str(args) + '.pkl'
+    if os.path.isfile(temp_file):
+        ret = helper_functions.load_object(temp_file)
+        print 'Results already exist: ' + temp_file
+        return ret
     while True:
         num_runs += 1
         mpi_utility.mpi_print('CV Itr(' + str(num_runs) + '): ' + str(args), mpi_utility.get_comm())
@@ -49,6 +56,7 @@ def _run_cross_validation_iteration_args(self, args):
         try:
             ret = self._run_cross_validation_iteration(args, self.curr_split, self.test_data)
             timer.toc()
+            helper_functions.save_object(temp_file, ret)
             return ret
         except MemoryError:
             print 'Ran out of memory - restarting'
@@ -74,7 +82,7 @@ class Method(Saveable):
         self.best_params = None
         self.transform = None
         self.warm_start = False
-
+        self.temp_dir = None
 
     def create_cv_params(self, i_low, i_high):
         return 10**np.asarray(list(reversed(range(i_low,i_high))),dtype='float64')

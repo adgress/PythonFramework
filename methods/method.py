@@ -183,8 +183,12 @@ class Method(Saveable):
             splits = pool.bcast(splits, root=0)
             for i in range(len(splits)):
                 self.curr_split = data_and_splits.get_split(i)
-                self.curr_split.remove_test_labels()                
+                self.curr_split.remove_test_labels()
+                if pool.is_master():
+                    helper_functions.make_dir_for_file_name(self.temp_dir)
                 all_split_results = pool.map(_run_cross_validation_iteration_args, param_grid)
+                if pool.is_master():
+                    helper_functions.delete_dir_if_exists(self.temp_dir)
                 pool.close()
                 if pool.is_master():
                     param_idx = 0

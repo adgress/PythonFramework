@@ -151,9 +151,7 @@ def _run_experiment_args(self, results_file, data_and_splits, method_results, i_
     learner = self.configs.learner
     curr_learner = copy.deepcopy(learner)
     curr_learner.temp_dir = temp_dir
-    helper_functions.make_dir_for_file_name(temp_dir)
     curr_results = curr_learner.train_and_test(curr_data)
-    helper_functions.delete_dir_if_exists(temp_dir)
     helper_functions.save_object(_temp_split_file_name(results_file,num_labels,split),curr_results)
     if mpi_utility.is_group_master():
         if hasattr(curr_learner, 'best_params'):

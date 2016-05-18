@@ -188,6 +188,8 @@ class Method(Saveable):
                 self.curr_split = data_and_splits.get_split(i)
                 self.curr_split.remove_test_labels()
                 self.temp_dir += str(i) + '-'
+                if pool.is_master():
+                    helper_functions.make_dir_for_file_name(self.temp_dir)
                 all_split_results = pool.map(_run_cross_validation_iteration_args, param_grid)
                 self.temp_dir = old_temp_dir
                 pool.close()

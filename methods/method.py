@@ -39,6 +39,7 @@ import random
 import os
 
 
+print_messages = False
 
 
 def _run_cross_validation_iteration_args(self, args):
@@ -51,16 +52,19 @@ def _run_cross_validation_iteration_args(self, args):
         return ret
     while True:
         num_runs += 1
-        mpi_utility.mpi_print('CV Itr(' + str(num_runs) + '): ' + str(args), mpi_utility.get_comm())
-        timer.tic()
+        if print_messages:
+            mpi_utility.mpi_print('CV Itr(' + str(num_runs) + '): ' + str(args), mpi_utility.get_comm())
+            timer.tic()
         try:
             ret = self._run_cross_validation_iteration(args, self.curr_split, self.test_data)
-            timer.toc()
+            if print_messages:
+                timer.toc()
             helper_functions.save_object(temp_file, ret)
             return ret
         except MemoryError:
             print 'Ran out of memory - restarting'
-            timer.toc()
+            if print_messages:
+                timer.toc()
         else:
             assert False, 'Some other error occured'
 

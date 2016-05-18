@@ -66,7 +66,7 @@ mpi_comms = None
 def mpi_run_main_args(args):
     #return None
     args = list(args)
-    if len(mpi_comms) > 1:
+    if len(mpi_comms) > 1 or parallelize_cv:
         my_comm = mpi_comms[helper_functions.get_hostname()]
         args.append(my_comm)
     main.run_main_args(args)

@@ -47,6 +47,24 @@ class CVXConstraint(Constraint):
             v = [0,d]
         return cvx.max_elemwise(*v)
 
+class EqualsConstraint(CVXConstraint):
+    def __init__(self, x, y):
+        super(EqualsConstraint, self).__init__()
+        self.x = [x]
+        self.y = y
+
+    def to_cvx(self, f):
+        return cvx.square(f(self.x[0]) - self.y)
+
+    @staticmethod
+    def create_quantize_constraint(data, instance_index, num_quantiles):
+        quantiles = data.get_quantiles(num_quantiles)
+        x = data.x[instance_index, :]
+        y = data.true_y[instance_index]
+        #i = np.digitize(y, quantiles)
+        i = np.square(quantiles - y).argmin()
+        constraint = EqualsConstraint(x, quantiles[i])
+        return constraint
 
 class NeighborConstraint(CVXConstraint):
     def __init__(self, x, x_close, x_far):

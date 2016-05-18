@@ -2,7 +2,7 @@ import cvxpy as cvx
 from utility.capturing import Capturing
 from methods.constrained_methods import \
     PairwiseConstraint, BoundLowerConstraint, BoundUpperConstraint, \
-    NeighborConstraint, BoundConstraint, HingePairwiseConstraint
+    NeighborConstraint, BoundConstraint, HingePairwiseConstraint, EqualsConstraint
 from timer import timer
 
 __author__ = 'Aubrey'
@@ -629,6 +629,7 @@ class RelativeRegressionMethod(Method):
         self.transform = StandardScaler()
 
         self.use_mixed_cv = configs.use_mixed_cv
+        self.use_baseline = configs.use_baseline
 
         self.add_random_pairwise = configs.use_pairwise
         self.use_pairwise = configs.use_pairwise
@@ -710,6 +711,7 @@ class RelativeRegressionMethod(Method):
         num_random_types = int(self.add_random_pairwise) + int(self.add_random_bound) + int(self.add_random_neighbor)
         assert num_random_types <= 1, 'Not implemented yet'
         if self.add_random_pairwise:
+            assert not self.use_baseline
             data.pairwise_relationships = set()
             I = data.is_train & ~data.is_labeled
             test_func = None
@@ -745,22 +747,28 @@ class RelativeRegressionMethod(Method):
             y_median = np.percentile(data.true_y,50)
             for i in sampled:
                 if self.use_quartiles:
-                    lower, upper = BoundConstraint.create_quartile_constraints(data, i)
-                    lower.true_y = [data.true_y[i]]
-                    upper.true_y = [data.true_y[i]]
-                    data.pairwise_relationships.add(lower)
-                    data.pairwise_relationships.add(upper)
-                else:
-                    xi = data.x[i,:]
-                    yi_true = data.true_y[i]
-                    if yi_true > y_median:
-                        constraint = BoundLowerConstraint(xi, y_median)
-                    elif yi_true < y_median:
-                        constraint = BoundUpperConstraint(xi, y_median)
+                    if self.use_baseline:
+                        data.pairwise_relationships.add(EqualsConstraint.create_quantize_constraint(data, i, 2))
                     else:
-                        continue
-                    constraint.true_y = [yi_true]
-                    data.pairwise_relationships.add(constraint)
+                        lower, upper = BoundConstraint.create_quartile_constraints(data, i)
+                        lower.true_y = [data.true_y[i]]
+                        upper.true_y = [data.true_y[i]]
+                        data.pairwise_relationships.add(lower)
+                        data.pairwise_relationships.add(upper)
+                else:
+                    if self.use_baseline:
+                        data.pairwise_relationships.add(EqualsConstraint.create_quantize_constraint(data, i, 4))
+                    else:
+                        xi = data.x[i,:]
+                        yi_true = data.true_y[i]
+                        if yi_true > y_median:
+                            constraint = BoundLowerConstraint(xi, y_median)
+                        elif yi_true < y_median:
+                            constraint = BoundUpperConstraint(xi, y_median)
+                        else:
+                            continue
+                        constraint.true_y = [yi_true]
+                        data.pairwise_relationships.add(constraint)
         if self.add_random_neighbor:
             data.pairwise_relationships = set()
             I = (data.is_train & ~data.is_labeled).nonzero()[0]
@@ -999,6 +1007,7 @@ class RelativeRegressionMethod(Method):
         use_pairwise = self.use_pairwise
         use_bound = getattr(self, 'use_bound', False)
         use_neighbor = getattr(self, 'use_neighbor', False)
+        use_baseline = getattr(self, 'use_baseline', False)
         if not use_pairwise and not use_bound and not use_neighbor:
             s += '-noPairwiseReg'
         else:
@@ -1016,16 +1025,25 @@ class RelativeRegressionMethod(Method):
                     if len(pair_bound) > 0 and \
                         not (len(pair_bound) == 1 and pair_bound[0] == 1):
                         s += '-pairBound=' + str(pair_bound)
+                if use_baseline:
+                    s += '-baseline'
                 #if self.no_linear_term:
                 #    s += '-noLinear'
                 if self.neg_log:
                     s += '-negLog'
+                if not use_baseline:
+                    if getattr(self, 'noise_rate', 0) > 0:
+                        s += '-noise=' + str(self.noise_rate)
+                    if getattr(self, 'logistic_noise', 0) > 0:
+                        s += '-logNoise=' + str(self.logistic_noise)
             if use_bound:
                 hasRandBounds = self.num_bound > 0 and self.add_random_bound
                 if getattr(self, 'use_quartiles', False):
                     s += '-numRandQuartiles=' + str(int(self.num_bound))
                 else:
                     s += '-numRandBound=' + str(int(self.num_bound))
+                if use_baseline:
+                    s += '-baseline'
             if use_neighbor and self.num_neighbor > 0 and self.add_random_neighbor:
                 if getattr(self, 'use_min_pair_neighbor', False):
                     s += '-numMinNeighbor=' + str(int(self.num_neighbor))
@@ -1037,10 +1055,6 @@ class RelativeRegressionMethod(Method):
                     s += '-initRidge'
             if getattr(self, 'use_mixed_cv', False):
                 s += '-mixedCV'
-            if getattr(self, 'noise_rate', 0) > 0:
-                s += '-noise=' + str(self.noise_rate)
-            if getattr(self, 'logistic_noise', 0) > 0:
-                s += '-logNoise=' + str(self.logistic_noise)
             if hasattr(self, 'solver'):
                 s += '-solver=' + str(self.solver)
         if self.use_test_error_for_model_selection:

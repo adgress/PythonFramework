@@ -155,6 +155,13 @@ class LabeledVector(object):
             self.y[i] = new_y
             self.true_y[i] = new_y
 
+    #n is the number of quantiles (not including 0)
+    def get_quantiles(self, n):
+        return mstats.mquantiles(
+            self.true_y,
+            prob = np.linspace(0,1,n+1)
+        )
+
     def get_quartiles(self):
         return mstats.mquantiles(
             self.true_y,

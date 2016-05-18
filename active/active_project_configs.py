@@ -29,6 +29,8 @@ active_items_per_iteration = 50
 
 use_mixed_cv = False
 
+use_baseline = True
+
 use_pairwise = False
 num_pairwise = 50
 #pair_bound = (.25,1)
@@ -38,7 +40,7 @@ noise_rate = .0
 logistic_noise = 0
 
 use_bound = True
-num_bound = 51
+num_bound = 50
 use_quartiles = False
 
 use_neighbor = False
@@ -156,6 +158,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.metric = 'euclidean'
 
         method_configs.use_mixed_cv = use_mixed_cv
+        method_configs.use_baseline = use_baseline
 
         method_configs.use_pairwise = use_pairwise
         method_configs.num_pairwise = num_pairwise
@@ -205,28 +208,35 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['ActiveRandom+SKL-RidgeReg.pkl'] = 'Random, SKLRidge'
             self.files['RelActiveRandom+RelReg-cvx-log-with-log-noLinear-TEST.pkl'] = 'TEST: RandomPairwise, RelReg'
         else:
-            #self.files['RelReg-cvx-constraints-noPairwiseReg.pkl'] = 'Ridge Regression'
-            base_file_name = 'RelReg-cvx-constraints-%s=%s-solver=SCS'
+            base_file_name = 'RelReg-cvx-constraints-%s=%s'
             use_test = False
+            if use_test:
+                self.files['RelReg-cvx-constraints-noPairwiseReg-TEST.pkl'] = 'TEST: Ridge Regression'
+            else:
+                self.files['RelReg-cvx-constraints-noPairwiseReg.pkl'] = 'Ridge Regression'
+
             sizes = []
             #sizes.append(10)
             sizes.append(50)
             #sizes.append(100)
-
+            sizes.append(150)
+            #sizes.append(250)
             suffixes = OrderedDict()
-            #suffixes['fastDCCP'] = [None,'']
-            #suffixes['initRidge'] = [None,'']
+            suffixes['fastDCCP'] = ['']
+            suffixes['initRidge'] = ['']
             #suffixes['pairBound'] = [.1,.25,.5,.75,.99]
+            #suffixes['pairBound'] = [(.5,1), (.25,1)]
             #suffixes['mixedCV'] = [None,'']
-            suffixes['logNoise'] = [None,1,2]
-            ordered_keys = ['fastDCCP', 'initRidge', 'pairBound', 'mixedCV', 'logNoise']
+            #suffixes['logNoise'] = [None,.25,.5]
+            suffixes['solver'] = ['SCS']
+            ordered_keys = ['fastDCCP', 'initRidge', 'pairBound', 'mixedCV', 'logNoise', 'solver']
             all_params = list(grid_search.ParameterGrid(suffixes))
 
             methods = []
-            methods.append(('numRandPairs','RelReg, %s pairs'))
+            #methods.append(('numRandPairs','RelReg, %s pairs'))
             #methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
             #methods.append(('numRandBound', 'RelReg, %s bounds'))
-            #methods.append(('numRandNeighbor', 'RelReg, %s rand neighbors'))
+            methods.append(('numRandNeighbor', 'RelReg, %s rand neighbors'))
             #methods.append(('numMinNeighbor', 'RelReg, %s min neighbors'))
             #methods.append(('numRandQuartiles', 'RelReg, %s quartiles'))
             for file_suffix, legend_name in methods:
@@ -243,7 +253,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                                 continue
                             if value == '':
                                 file_name += '-' + key
-                                legend += key
+                                legend += ', ' + key
                             else:
                                 file_name += '-' + key + '=' + str(value)
                                 legend += ', ' + str(value) + ' ' + key

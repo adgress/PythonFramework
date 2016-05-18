@@ -39,7 +39,7 @@ import random
 import os
 
 
-print_messages = False
+print_messages_cv = False
 
 
 def _run_cross_validation_iteration_args(self, args):
@@ -52,18 +52,18 @@ def _run_cross_validation_iteration_args(self, args):
         return ret
     while True:
         num_runs += 1
-        if print_messages:
+        if print_messages_cv:
             mpi_utility.mpi_print('CV Itr(' + str(num_runs) + '): ' + str(args), mpi_utility.get_comm())
             timer.tic()
         try:
             ret = self._run_cross_validation_iteration(args, self.curr_split, self.test_data)
-            if print_messages:
+            if print_messages_cv:
                 timer.toc()
             helper_functions.save_object(temp_file, ret)
             return ret
         except MemoryError:
             print 'Ran out of memory - restarting'
-            if print_messages:
+            if print_messages_cv:
                 timer.toc()
         else:
             assert False, 'Some other error occured'
@@ -889,7 +889,7 @@ class RelativeRegressionMethod(Method):
             #assert prob.is_dcp()
             if not prob.is_dcp():
                 assert is_dccp(prob)
-            print_messages = True
+            print_messages = False
             if print_messages:
                 timer.tic()
             params = [self.C_param.value, self.C2_param.value, self.C3_param.value, self.C4_param.value]

@@ -56,6 +56,8 @@ class MeanSquaredError(LossFunction):
         self.short_name = 'MSE'
 
     def _compute_score(self, y1, y2):
+        if y1.size == 0:
+            return np.inf
         return metrics.mean_squared_error(y1, y2)
 
 class RootMeanSquaredError(LossFunction):

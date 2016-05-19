@@ -31,7 +31,7 @@ use_mixed_cv = False
 
 use_baseline = True
 
-use_pairwise = True
+use_pairwise = False
 num_pairwise = 50
 #pair_bound = (.25,1)
 pair_bound = ()
@@ -43,11 +43,12 @@ use_bound = False
 num_bound = 50
 use_quartiles = False
 
-use_neighbor = False
+use_neighbor = True
 num_neighbor = 50
 use_min_pair_neighbor = False
 fast_dccp = True
-init_ridge = True
+init_ridge = False
+init_ideal = True
 
 use_test_error_for_model_selection = False
 
@@ -177,6 +178,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.use_min_pair_neighbor = use_min_pair_neighbor
         method_configs.fast_dccp = fast_dccp
         method_configs.init_ridge = init_ridge
+        method_configs.init_ideal = init_ideal
 
         method_configs.use_test_error_for_model_selection = use_test_error_for_model_selection
 

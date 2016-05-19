@@ -650,6 +650,7 @@ class RelativeRegressionMethod(Method):
         self.use_min_pair_neighbor = configs.use_min_pair_neighbor
         self.fast_dccp = configs.fast_dccp
         self.init_ridge = configs.init_ridge
+        self.init_ideal = configs.init_ideal
 
         self.use_test_error_for_model_selection = configs.use_test_error_for_model_selection
         self.no_linear_term = True
@@ -680,14 +681,19 @@ class RelativeRegressionMethod(Method):
         use_dccp = self.use_neighbor
 
         #Solve for best w to initialize problem
-        if use_dccp and self.init_ridge:
+        if use_dccp and (self.init_ridge or self.init_ideal):
             new_configs = deepcopy(self.configs)
             new_configs.use_neighbor = False
             new_configs.add_random_neighbor = False
             new_configs.num_neighbor = 0
             new_instance = RelativeRegressionMethod(new_configs)
             new_instance.temp_dir = self.temp_dir
-            r = new_instance.train_and_test(data)
+            init_data = data
+            if self.init_ideal:
+                init_data = deepcopy(data)
+                init_data.set_train()
+                init_data.set_true_y()
+            r = new_instance.train_and_test(init_data)
             self.w_initial = new_instance.w
             self.b_initial = new_instance.b
         self.add_random_guidance(data)
@@ -981,7 +987,8 @@ class RelativeRegressionMethod(Method):
 
     def predict(self, data):
         o = RelativeRegressionOutput(data)
-
+        if data.n == 0:
+            return o
         if self.method == RelativeRegressionMethod.METHOD_RIDGE_SURROGATE:
             o = self.ridge_reg.predict(data)
         else:
@@ -1051,6 +1058,8 @@ class RelativeRegressionMethod(Method):
                     s += '-numRandNeighbor=' + str(int(self.num_neighbor))
                 if getattr(self, 'fast_dccp', False):
                     s += '-fastDCCP'
+                if getattr(self, 'init_ideal', False):
+                    s += '-init_ideal'
                 if getattr(self, 'init_ridge', False):
                     s += '-initRidge'
             if getattr(self, 'use_mixed_cv', False):

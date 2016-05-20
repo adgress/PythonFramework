@@ -927,19 +927,23 @@ class RelativeRegressionMethod(Method):
                                 'mu': 2,
                                 'tau_max': 1e6
                             }
-                        '''
+
+                        w.value = self.w_initial
+                        b.value = self.b_initial
                         ret = prob.solve(solver=self.solver, **options)
                         saved_w = w.value
                         saved_b = b.value
-                        '''
 
-                        max_iter = options['max_iter']
-                        options['max_iter'] = 1
+                        '''
                         w.value = self.w_initial
                         b.value = self.b_initial
+                        max_iter = options['max_iter']
+                        options['max_iter'] = 1
                         for i in range(max_iter):
                             options['tau'] *= options['mu']
                             ret2 = prob.solve(solver=self.solver, **options)
+                        '''
+
 
                 w_value = w.value
                 b_value = b.value

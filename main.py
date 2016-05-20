@@ -150,8 +150,9 @@ def run_main(num_labels=None, split_idx=None, no_viz=None, comm=None):
 
     from mpi4py import MPI
     comm = MPI.COMM_WORLD
-    if MPI.COMM_WORLD.Get_size() > 1 and mpi_utility.is_group_master():
-        print '(' + socket.gethostname() + ')''Process ' + str(comm.Get_rank()) + ': Starting experiments...'
+    if MPI.COMM_WORLD.Get_size() > 1:
+        if mpi_utility.is_group_master():
+            print '(' + socket.gethostname() + ')''Process ' + str(comm.Get_rank()) + ': Starting experiments...'
     else:
         print 'Starting experiments...'
     if mpi_utility.is_group_master():

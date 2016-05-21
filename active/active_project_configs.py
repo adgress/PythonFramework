@@ -17,8 +17,8 @@ def create_project_configs():
 
 pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
-#data_set_to_use = bc.DATA_BOSTON_HOUSING
-data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+data_set_to_use = bc.DATA_BOSTON_HOUSING
+#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
 #data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 #data_set_to_use = bc.DATA_WINE_RED
 
@@ -29,13 +29,13 @@ active_items_per_iteration = 50
 
 use_mixed_cv = False
 
-use_baseline = True
+use_baseline = False
 
 use_pairwise = False
 num_pairwise = 50
 #pair_bound = (.25,1)
 pair_bound = ()
-use_hinge = True
+use_hinge = False
 noise_rate = .0
 logistic_noise = 0
 
@@ -43,10 +43,10 @@ use_bound = False
 num_bound = 50
 use_quartiles = False
 
-use_neighbor = True
+use_neighbor = False
 num_neighbor = 50
 use_min_pair_neighbor = False
-fast_dccp = True
+fast_dccp = False
 init_ridge = True
 init_ideal = False
 use_neighbor_logistic = True
@@ -88,6 +88,32 @@ class ProjectConfigs(bc.ProjectConfigs):
             if arguments.split_idx is not None:
                 self.split_idx = arguments.split_idx
             pass
+
+
+        self.use_mixed_cv = use_mixed_cv
+
+        self.use_baseline = use_baseline
+
+        self.use_pairwise = use_pairwise
+        self.num_pairwise = num_pairwise
+        self.pair_bound = pair_bound
+        self.use_hinge = use_hinge
+        self.noise_rate = noise_rate
+        self.logistic_noise = logistic_noise
+
+        self.use_bound = use_bound
+        self.num_bound = num_bound
+        self.use_quartiles = use_quartiles
+
+        self.use_neighbor = use_neighbor
+        self.num_neighbor = num_neighbor
+        self.use_min_pair_neighbor = use_min_pair_neighbor
+        self.fast_dccp = fast_dccp
+        self.init_ridge = init_ridge
+        self.init_ideal = init_ideal
+        self.use_neighbor_logistic = use_neighbor_logistic
+
+        self.use_test_error_for_model_selection = use_test_error_for_model_selection
 
     def set_data_set(self, data_set):
         self.data_set = data_set
@@ -160,29 +186,29 @@ class MainConfigs(bc.MainConfigs):
         method_configs.active_items_per_iteration = active_items_per_iteration
         method_configs.metric = 'euclidean'
 
-        method_configs.use_mixed_cv = use_mixed_cv
-        method_configs.use_baseline = use_baseline
+        method_configs.use_mixed_cv = pc.use_mixed_cv
+        method_configs.use_baseline = pc.use_baseline
 
-        method_configs.use_pairwise = use_pairwise
-        method_configs.num_pairwise = num_pairwise
-        method_configs.pair_bound = pair_bound
-        method_configs.use_hinge = use_hinge
-        method_configs.noise_rate = noise_rate
-        method_configs.logistic_noise = logistic_noise
+        method_configs.use_pairwise = pc.use_pairwise
+        method_configs.num_pairwise = pc.num_pairwise
+        method_configs.pair_bound = pc.pair_bound
+        method_configs.use_hinge = pc.use_hinge
+        method_configs.noise_rate = pc.noise_rate
+        method_configs.logistic_noise = pc.logistic_noise
 
-        method_configs.use_bound = use_bound
-        method_configs.num_bound = num_bound
-        method_configs.use_quartiles = use_quartiles
+        method_configs.use_bound = pc.use_bound
+        method_configs.num_bound = pc.num_bound
+        method_configs.use_quartiles = pc.use_quartiles
 
-        method_configs.use_neighbor = use_neighbor
-        method_configs.num_neighbor = num_neighbor
-        method_configs.use_min_pair_neighbor = use_min_pair_neighbor
-        method_configs.fast_dccp = fast_dccp
-        method_configs.init_ridge = init_ridge
-        method_configs.init_ideal = init_ideal
-        method_configs.use_neighbor_logistic = use_neighbor_logistic
+        method_configs.use_neighbor = pc.use_neighbor
+        method_configs.num_neighbor = pc.num_neighbor
+        method_configs.use_min_pair_neighbor = pc.use_min_pair_neighbor
+        method_configs.fast_dccp = pc.fast_dccp
+        method_configs.init_ridge = pc.init_ridge
+        method_configs.init_ideal = pc.init_ideal
+        method_configs.use_neighbor_logistic = pc.use_neighbor_logistic
 
-        method_configs.use_test_error_for_model_selection = use_test_error_for_model_selection
+        method_configs.use_test_error_for_model_selection = pc.use_test_error_for_model_selection
 
         #active = active_methods.ActiveMethod(method_configs)
         active = active_methods.RelativeActiveMethod(method_configs)
@@ -217,7 +243,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['RelActiveRandom+RelReg-cvx-log-with-log-noLinear-TEST.pkl'] = 'TEST: RandomPairwise, RelReg'
         else:
             base_file_name = 'RelReg-cvx-constraints-%s=%s'
-            self.files['LapRidge.pkl'] = 'Laplacian Ridge Regression'
+            #self.files['LapRidge.pkl'] = 'Laplacian Ridge Regression'
             use_test = False
             if use_test:
                 self.files['RelReg-cvx-constraints-noPairwiseReg-TEST.pkl'] = 'TEST: Ridge Regression'
@@ -226,22 +252,23 @@ class VisualizationConfigs(bc.VisualizationConfigs):
 
             sizes = []
             #sizes.append(10)
-            sizes.append(150)
+            sizes.append(50)
             #sizes.append(100)
             #sizes.append(150)
             #sizes.append(250)
             suffixes = OrderedDict()
-            #suffixes['fastDCCP'] = ['']
+            #suffixes['fastDCCP'] = [None, '']
             #suffixes['init_ideal'] = [None, '']
             suffixes['initRidge'] = ['']
-            #suffixes['pairBound'] = [.1,.25,.5,.75,.99]
-            #suffixes['pairBound'] = [(.5,1), (.25,1)]
+            suffixes['logistic'] = ['']
+            #suffixes['pairBound'] = [(0,.1),(0,.25),(0,.5),(0,.75),None]
+            #suffixes['pairBound'] = [(.5,1), (.25,1), None]
             #suffixes['mixedCV'] = [None,'']
             #suffixes['logNoise'] = [None,.25,.5]
             #suffixes['baseline'] = [None,'']
             suffixes['solver'] = ['SCS']
             ordered_keys = [
-                'fastDCCP', 'initRidge', 'init_ideal',
+                'fastDCCP', 'initRidge', 'init_ideal', 'logistic',
                 'pairBound', 'mixedCV', 'logNoise',
                 'baseline', 'solver'
             ]
@@ -327,6 +354,63 @@ class VisualizationConfigs(bc.VisualizationConfigs):
 class BatchConfigs(bc.BatchConfigs):
     def __init__(self, pc):
         super(BatchConfigs, self).__init__()
-        self.config_list = [MainConfigs(pc)]
         from experiment.experiment_manager import MethodExperimentManager
         self.method_experiment_manager_class = MethodExperimentManager
+        run_batch = True
+        if not run_batch:
+            self.config_list = [MainConfigs(pc)]
+            return
+
+        c = pc.copy()
+        c.use_pairwise = False
+        c.use_neighbor = False
+        c.use_bound = False
+        c.use_hinge = False
+        c.use_quartile = False
+        c.use_test_error_for_model_selection = False
+        self.config_list = [MainConfigs(c)]
+        pairwise_params = {
+            'use_pairwise': [True],
+            'num_pairwise': [10, 50, 100]
+        }
+        self.config_list += [MainConfigs(configs) for configs in pc.generate_copies(pairwise_params)]
+
+        bound_params = {
+            'use_bound': [True],
+            'num_bound': [10, 50, 100]
+        }
+        self.config_list += [MainConfigs(configs) for configs in pc.generate_copies(bound_params)]
+
+        hinge_params = {
+            'use_pairwise': [True],
+            'use_hinge': [True],
+            'num_pairwise': [10, 50, 100]
+        }
+        self.config_list += [MainConfigs(configs) for configs in pc.generate_copies(hinge_params)]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -717,6 +717,8 @@ class RelativeRegressionMethod(Method):
     def add_random_guidance(self, data):
         num_random_types = int(self.add_random_pairwise) + int(self.add_random_bound) + int(self.add_random_neighbor)
         assert num_random_types <= 1, 'Not implemented yet'
+        if getattr(data,'pairwise_relationships',None) is None:
+            data.pairwise_relationships = set()
         if self.add_random_pairwise:
             assert not self.use_baseline
             data.pairwise_relationships = set()

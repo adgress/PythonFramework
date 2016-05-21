@@ -1,5 +1,7 @@
 from loss_functions import loss_function
 from results_class import results as results_lib
+from copy import deepcopy
+from sklearn import grid_search
 
 DATA_NG = 1
 DATA_BOSTON_HOUSING = 2
@@ -55,6 +57,25 @@ class Configs(object):
         self.overwrite_num_labels = None
         self.split_idx = None
         pass
+
+    def copy(self, key=None, value=None):
+        c2 = deepcopy(self)
+        if key is not None:
+            setattr(c2, key, value)
+        return c2
+
+    def generate_copies(self, dict):
+        copies = []
+        param_grid = list(grid_search.ParameterGrid(dict))
+        for params in param_grid:
+            c2 = deepcopy(self)
+            c2.set(**params)
+            copies.append(c2)
+        return copies
+
+    def set(self, **kwargs):
+        for key, value in kwargs.iteritems():
+            setattr(self, key, value)
 
     def has(self,key):
         return hasattr(self,key)

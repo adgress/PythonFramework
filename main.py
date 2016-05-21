@@ -121,7 +121,7 @@ def run_main_args(args):
     #mpi_utility.mpi_print(str(args))
     run_main(*args)
 
-def run_main(num_labels=None, split_idx=None, no_viz=None, comm=None, configs=None):
+def run_main(num_labels=None, split_idx=None, no_viz=None, configs=None, comm=None):
     import argparse
     import sys
     #print sys.argv

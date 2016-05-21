@@ -651,6 +651,7 @@ class RelativeRegressionMethod(Method):
         self.fast_dccp = configs.fast_dccp
         self.init_ridge = configs.init_ridge
         self.init_ideal = configs.init_ideal
+        self.use_neighbor_logistic = configs.use_neighbor_logistic
 
         self.use_test_error_for_model_selection = configs.use_test_error_for_model_selection
         self.no_linear_term = True
@@ -869,7 +870,11 @@ class RelativeRegressionMethod(Method):
                 else:
                     bound_reg3 += c2.to_cvx(func)
             if self.add_random_neighbor:
-                neighbor_reg4, t, t_constraints = NeighborConstraint.to_cvx_dccp(train_pairwise, func)
+                neighbor_reg4, t, t_constraints = NeighborConstraint.to_cvx_dccp(
+                    train_pairwise,
+                    func,
+                    self.use_neighbor_logistic
+                )
             warm_start = self.prob is not None and self.warm_start
             warm_start = False
             if warm_start:
@@ -1066,6 +1071,8 @@ class RelativeRegressionMethod(Method):
                     s += '-init_ideal'
                 if getattr(self, 'init_ridge', False):
                     s += '-initRidge'
+                if getattr(self, 'use_neighbor_logistic', False):
+                    s += '-logistic'
             if getattr(self, 'use_mixed_cv', False):
                 s += '-mixedCV'
             if hasattr(self, 'solver'):

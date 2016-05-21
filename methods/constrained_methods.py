@@ -96,7 +96,7 @@ class NeighborConstraint(CVXConstraint):
         return True
 
     @staticmethod
-    def to_cvx_dccp(constraints, f):
+    def to_cvx_dccp(constraints, f, logistic=False):
         objective = 0
         n = len(constraints)
         t = cvx.Variable(n)
@@ -110,7 +110,10 @@ class NeighborConstraint(CVXConstraint):
             objective += cvx.max_elemwise(d_far - t[i], 0)
             '''
             t_constraints[i] = t[i] == d_far
-            objective += cvx.max_elemwise(d_close-t[i], 0)
+            if logistic:
+                objective += cvx.logistic(d_close-t[i])
+            else:
+                objective += cvx.max_elemwise(d_close-t[i], 0)
         return objective, t, t_constraints
 
 #y1 <= y2

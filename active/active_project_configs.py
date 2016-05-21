@@ -47,8 +47,9 @@ use_neighbor = True
 num_neighbor = 50
 use_min_pair_neighbor = False
 fast_dccp = True
-init_ridge = False
-init_ideal = True
+init_ridge = True
+init_ideal = False
+use_neighbor_logistic = True
 
 use_test_error_for_model_selection = False
 
@@ -179,6 +180,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.fast_dccp = fast_dccp
         method_configs.init_ridge = init_ridge
         method_configs.init_ideal = init_ideal
+        method_configs.use_neighbor_logistic = use_neighbor_logistic
 
         method_configs.use_test_error_for_model_selection = use_test_error_for_model_selection
 
@@ -224,28 +226,33 @@ class VisualizationConfigs(bc.VisualizationConfigs):
 
             sizes = []
             #sizes.append(10)
-            sizes.append(50)
+            sizes.append(150)
             #sizes.append(100)
             #sizes.append(150)
             #sizes.append(250)
             suffixes = OrderedDict()
             #suffixes['fastDCCP'] = ['']
-            #suffixes['initRidge'] = ['']
+            #suffixes['init_ideal'] = [None, '']
+            suffixes['initRidge'] = ['']
             #suffixes['pairBound'] = [.1,.25,.5,.75,.99]
             #suffixes['pairBound'] = [(.5,1), (.25,1)]
             #suffixes['mixedCV'] = [None,'']
             #suffixes['logNoise'] = [None,.25,.5]
-            suffixes['baseline'] = [None,'']
+            #suffixes['baseline'] = [None,'']
             suffixes['solver'] = ['SCS']
-            ordered_keys = ['fastDCCP', 'initRidge', 'pairBound', 'mixedCV', 'logNoise', 'baseline', 'solver']
+            ordered_keys = [
+                'fastDCCP', 'initRidge', 'init_ideal',
+                'pairBound', 'mixedCV', 'logNoise',
+                'baseline', 'solver'
+            ]
             all_params = list(grid_search.ParameterGrid(suffixes))
 
             methods = []
-            methods.append(('numRandPairs','RelReg, %s pairs'))
+            #methods.append(('numRandPairs','RelReg, %s pairs'))
             #methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
             #methods.append(('numRandBound', 'RelReg, %s bounds'))
             #methods.append(('numRandQuartiles', 'RelReg, %s quartiles'))
-            #methods.append(('numRandNeighbor', 'RelReg, %s rand neighbors'))
+            methods.append(('numRandNeighbor', 'RelReg, %s rand neighbors'))
             #methods.append(('numMinNeighbor', 'RelReg, %s min neighbors'))
             for file_suffix, legend_name in methods:
                 for size in sizes:

@@ -93,8 +93,10 @@ if __name__ == '__main__':
         #assert False
         else:
             pool = mpipool.MPIPool(debug=False, loadbalance=True)
-        pool.map(mpi_run_main_args, num_labels_list)
-        pool.close()
+        batch_configs = configs_lib.BatchConfigs(configs_lib.ProjectConfigs())
+        for c in batch_configs.config_list:
+            pool.map(mpi_run_main_args, [n + (c,) for n in num_labels_list])
+            pool.close()
     else:
         if use_multiprocessing_pool:
             pool = multiprocessing_utility.LoggingPool(processes=pool_size)

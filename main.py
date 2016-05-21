@@ -25,13 +25,13 @@ from loss_functions import loss_function
 from utility import mpi_utility
 
 
-def run_experiments():
+def run_experiments(configs=None):
     pc = configs_lib.ProjectConfigs()
     bc = configs_lib.BatchConfigs(pc)
+    if configs is not None:
+        bc.config_list = [configs]
     batch_exp_manager = experiment_manager.BatchExperimentManager(bc)
     batch_exp_manager.run_experiments()
-    #exp_manager = ExperimentManager(configs)
-    #exp_exec.run_experiments()
 
 def run_visualization():
     vis_configs = configs_lib.VisualizationConfigs()
@@ -121,7 +121,7 @@ def run_main_args(args):
     #mpi_utility.mpi_print(str(args))
     run_main(*args)
 
-def run_main(num_labels=None, split_idx=None, no_viz=None, comm=None):
+def run_main(num_labels=None, split_idx=None, no_viz=None, comm=None, configs=None):
     import argparse
     import sys
     #print sys.argv
@@ -158,7 +158,7 @@ def run_main(num_labels=None, split_idx=None, no_viz=None, comm=None):
     if mpi_utility.is_group_master():
         timer.tic()
     if configs_lib.run_experiments:
-        run_experiments()
+        run_experiments(configs)
     if mpi_utility.is_group_master():
         timer.toc()
     if helper_functions.is_laptop() and not arguments.no_viz:

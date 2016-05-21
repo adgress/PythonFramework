@@ -29,6 +29,7 @@ def run_experiments(configs=None):
     pc = configs_lib.ProjectConfigs()
     bc = configs_lib.BatchConfigs(pc)
     if configs is not None:
+        configs_lib.apply_arguments(configs)
         bc.config_list = [configs]
     batch_exp_manager = experiment_manager.BatchExperimentManager(bc)
     batch_exp_manager.run_experiments()

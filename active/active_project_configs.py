@@ -70,6 +70,12 @@ else:
     use_pool = False
     pool_size = 1
 
+def apply_arguments(configs):
+    if arguments.num_labels is not None:
+        configs.overwrite_num_labels = arguments.num_labels
+    if arguments.split_idx is not None:
+        configs.split_idx = arguments.split_idx
+
 class ProjectConfigs(bc.ProjectConfigs):
     def __init__(self, data_set=None, use_arguments=True):
         super(ProjectConfigs, self).__init__()
@@ -83,11 +89,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.set_data_set(data_set)
         self.num_splits = 30
         if use_arguments and arguments is not None:
-            if arguments.num_labels is not None:
-                self.overwrite_num_labels = arguments.num_labels
-            if arguments.split_idx is not None:
-                self.split_idx = arguments.split_idx
-            pass
+            apply_arguments(self)
 
 
         self.use_mixed_cv = use_mixed_cv

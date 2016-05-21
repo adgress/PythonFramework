@@ -97,6 +97,11 @@ if __name__ == '__main__':
         for c in batch_configs.config_list:
             pool.map(mpi_run_main_args, [n + (c,) for n in num_labels_list])
             pool.close()
+            comm = MPI.COMM_WORLD
+            if comm.Get_rank() == 0:
+                print 'TOTAL TIME:'
+                timer.toc()
+                main.run_main()
     else:
         if use_multiprocessing_pool:
             pool = multiprocessing_utility.LoggingPool(processes=pool_size)
@@ -104,8 +109,9 @@ if __name__ == '__main__':
         else:
             for i in num_labels_list:
                 launch_subprocess_args(i)
-    comm = MPI.COMM_WORLD
-    if comm.Get_rank() == 0:
-        print 'TOTAL TIME:'
-        timer.toc()
-        main.run_main()
+        comm = MPI.COMM_WORLD
+        if comm.Get_rank() == 0:
+            print 'TOTAL TIME:'
+            timer.toc()
+            main.run_main()
+

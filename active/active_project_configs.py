@@ -46,11 +46,11 @@ use_quartiles = False
 use_neighbor = True
 num_neighbor = 50
 use_min_pair_neighbor = False
-fast_dccp = False
+fast_dccp = True
 init_ridge = False
 init_ideal = False
 init_ridge_train = True
-use_neighbor_logistic = True
+use_neighbor_logistic = False
 
 use_test_error_for_model_selection = False
 

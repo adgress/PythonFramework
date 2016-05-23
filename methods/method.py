@@ -59,7 +59,8 @@ def _run_cross_validation_iteration_args(self, args):
             ret = self._run_cross_validation_iteration(args, self.curr_split, self.test_data)
             if print_messages_cv:
                 timer.toc()
-            helper_functions.save_object(temp_file, ret)
+            if self.save_cv_temp:
+                helper_functions.save_object(temp_file, ret)
             return ret
         except MemoryError:
             print 'Ran out of memory - restarting'
@@ -87,6 +88,8 @@ class Method(Saveable):
         self.transform = None
         self.warm_start = False
         self.temp_dir = None
+        self.save_cv_temp = True
+        self.use_mpi = True
 
     def create_cv_params(self, i_low, i_high):
         return 10**np.asarray(list(reversed(range(i_low,i_high))),dtype='float64')
@@ -166,16 +169,17 @@ class Method(Saveable):
         my_comm = mpi_utility.get_comm()
         param_results_on_test = [self.experiment_results_class(len(splits)) for i in range(len(param_grid))]
         param_results = [self.experiment_results_class(len(splits)) for i in range(len(param_grid))]
-        if my_comm is None or my_comm.Get_size() == 1 or my_comm == MPI.COMM_WORLD:
-            #Results when using test data to do model selection
-
-            #Results when using cross validation
+        if (my_comm is None or my_comm.Get_size() == 1 or my_comm == MPI.COMM_WORLD) \
+                or not self.use_mpi:
             for i in range(len(splits)):
                 curr_split = data_and_splits.get_split(i)
                 curr_split.remove_test_labels()
                 self.warm_start = False
                 for param_idx, params in enumerate(param_grid):
-                    results, results_on_test = self._run_cross_validation_iteration(params, curr_split, test_data)
+                    #results, results_on_test = self._run_cross_validation_iteration(params, curr_split, test_data)
+                    self.curr_split = curr_split
+                    self.test_data = test_data
+                    results, results_on_test = _run_cross_validation_iteration_args(self, params)
                     param_results[param_idx].set(results, i)
                     param_results_on_test[param_idx].set(results_on_test, i)
                     self.warm_start = True
@@ -913,6 +917,8 @@ class RelativeRegressionMethod(Method):
                 new_configs.init_ridge_train = False
                 new_instance = RelativeRegressionMethod(new_configs)
                 new_instance.temp_dir = self.temp_dir
+                new_instance.save_cv_temp = False
+                new_instance.use_mpi = False
                 r = new_instance.train_and_test(data)
                 w.value = new_instance.w
                 b.value = new_instance.b

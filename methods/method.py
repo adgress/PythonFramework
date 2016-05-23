@@ -262,10 +262,10 @@ class Method(Saveable):
             self.set_params(**best_params)
         self.should_plot_g = True
         output = None
-        if mpi_utility.is_group_master():
+        if mpi_utility.is_group_master() or not self.use_mpi:
             output = self.run_method(data)
         comm = mpi_utility.get_comm()
-        if comm != MPI.COMM_WORLD:
+        if comm != MPI.COMM_WORLD and self.use_mpi:
             output = comm.bcast(output, root=0)
         f = FoldResults()
         f.prediction = output

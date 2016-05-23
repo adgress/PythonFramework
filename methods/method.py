@@ -1085,6 +1085,8 @@ class RelativeRegressionMethod(Method):
                     s += '-init_ideal'
                 if getattr(self, 'init_ridge', False):
                     s += '-initRidge'
+                if getattr(self, 'init_ridge_train', False):
+                    s += '-initRidgeTrain'
                 if getattr(self, 'use_neighbor_logistic', False):
                     s += '-logistic'
             if getattr(self, 'use_mixed_cv', False):

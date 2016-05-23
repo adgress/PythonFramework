@@ -651,6 +651,7 @@ class RelativeRegressionMethod(Method):
         self.fast_dccp = configs.fast_dccp
         self.init_ridge = configs.init_ridge
         self.init_ideal = configs.init_ideal
+        self.init_ridge_train = configs.init_ridge_train
         self.use_neighbor_logistic = configs.use_neighbor_logistic
 
         self.use_test_error_for_model_selection = configs.use_test_error_for_model_selection
@@ -904,6 +905,17 @@ class RelativeRegressionMethod(Method):
             if self.init_ridge:
                 w.value = self.w_initial
                 b.value = self.b_initial
+            elif self.init_ridge_train:
+                new_configs = deepcopy(self.configs)
+                new_configs.use_neighbor = False
+                new_configs.add_random_neighbor = False
+                new_configs.num_neighbor = 0
+                new_configs.init_ridge_train = False
+                new_instance = RelativeRegressionMethod(new_configs)
+                new_instance.temp_dir = self.temp_dir
+                r = new_instance.train_and_test(data)
+                w.value = new_instance.w
+                b.value = new_instance.b
             else:
                 w.value = None
                 b.value = None

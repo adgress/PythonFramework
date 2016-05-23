@@ -17,8 +17,8 @@ def create_project_configs():
 
 pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
-data_set_to_use = bc.DATA_BOSTON_HOUSING
-#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+#data_set_to_use = bc.DATA_BOSTON_HOUSING
+data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
 #data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 #data_set_to_use = bc.DATA_WINE_RED
 
@@ -43,12 +43,13 @@ use_bound = False
 num_bound = 50
 use_quartiles = False
 
-use_neighbor = False
+use_neighbor = True
 num_neighbor = 50
 use_min_pair_neighbor = False
 fast_dccp = False
-init_ridge = True
+init_ridge = False
 init_ideal = False
+init_ridge_train = True
 use_neighbor_logistic = True
 
 use_test_error_for_model_selection = False
@@ -113,6 +114,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.fast_dccp = fast_dccp
         self.init_ridge = init_ridge
         self.init_ideal = init_ideal
+        self.init_ridge_train = init_ridge_train
         self.use_neighbor_logistic = use_neighbor_logistic
 
         self.use_test_error_for_model_selection = use_test_error_for_model_selection
@@ -208,6 +210,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.fast_dccp = pc.fast_dccp
         method_configs.init_ridge = pc.init_ridge
         method_configs.init_ideal = pc.init_ideal
+        method_configs.init_ridge_train = pc.init_ridge_train
         method_configs.use_neighbor_logistic = pc.use_neighbor_logistic
 
         method_configs.use_test_error_for_model_selection = pc.use_test_error_for_model_selection
@@ -253,16 +256,16 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                 self.files['RelReg-cvx-constraints-noPairwiseReg.pkl'] = 'Ridge Regression'
 
             sizes = []
-            #sizes.append(10)
+            sizes.append(10)
             sizes.append(50)
-            #sizes.append(100)
+            sizes.append(100)
             #sizes.append(150)
             #sizes.append(250)
             suffixes = OrderedDict()
             #suffixes['fastDCCP'] = [None, '']
             #suffixes['init_ideal'] = [None, '']
-            suffixes['initRidge'] = ['']
-            suffixes['logistic'] = ['']
+            #suffixes['initRidge'] = ['']
+            #suffixes['logistic'] = ['']
             #suffixes['pairBound'] = [(0,.1),(0,.25),(0,.5),(0,.75),None]
             #suffixes['pairBound'] = [(.5,1), (.25,1), None]
             #suffixes['mixedCV'] = [None,'']
@@ -281,7 +284,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             #methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
             #methods.append(('numRandBound', 'RelReg, %s bounds'))
             #methods.append(('numRandQuartiles', 'RelReg, %s quartiles'))
-            methods.append(('numRandNeighbor', 'RelReg, %s rand neighbors'))
+            #methods.append(('numRandNeighbor', 'RelReg, %s rand neighbors'))
             #methods.append(('numMinNeighbor', 'RelReg, %s min neighbors'))
             for file_suffix, legend_name in methods:
                 for size in sizes:
@@ -350,7 +353,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.title = bc.data_name_dict.get(self.data_set_to_use, 'Unknown Data Set')
         self.show_legend_on_all = show_legend_on_all
         self.x_axis_string = 'Number of labeled instances'
-        self.ylims = [0,10]
+        #self.ylims = [0,10]
+        self.ylims = [0,600]
 
 
 class BatchConfigs(bc.BatchConfigs):
@@ -358,7 +362,7 @@ class BatchConfigs(bc.BatchConfigs):
         super(BatchConfigs, self).__init__()
         from experiment.experiment_manager import MethodExperimentManager
         self.method_experiment_manager_class = MethodExperimentManager
-        run_batch = True
+        run_batch = False
         if not run_batch:
             self.config_list = [MainConfigs(pc)]
             return

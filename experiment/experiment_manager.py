@@ -101,7 +101,7 @@ class MethodExperimentManager(ExperimentManager):
             hostname = helper_functions.get_hostname()
             print '(' + hostname  + ') Running experiments: ' + results_file
         learner = self.configs.learner
-
+        learner.run_pre_experiment_setup(data_and_splits)
         num_labels = len(self.configs.num_labels)
         num_splits = self.configs.num_splits
         #method_results = results.MethodResults(n_exp=num_labels, n_splits=num_splits)

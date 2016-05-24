@@ -31,7 +31,7 @@ use_mixed_cv = False
 
 use_baseline = False
 
-use_pairwise = False
+use_pairwise = True
 num_pairwise = 50
 #pair_bound = (.25,1)
 pair_bound = ()
@@ -43,13 +43,13 @@ use_bound = False
 num_bound = 50
 use_quartiles = False
 
-use_neighbor = True
+use_neighbor = False
 num_neighbor = 50
 use_min_pair_neighbor = False
 fast_dccp = True
 init_ridge = False
 init_ideal = False
-init_ridge_train = True
+init_ridge_train = False
 use_neighbor_logistic = False
 
 use_test_error_for_model_selection = False
@@ -256,32 +256,35 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                 self.files['RelReg-cvx-constraints-noPairwiseReg.pkl'] = 'Ridge Regression'
 
             sizes = []
-            sizes.append(10)
+            #sizes.append(10)
             sizes.append(50)
-            sizes.append(100)
+            #sizes.append(100)
             #sizes.append(150)
             #sizes.append(250)
             suffixes = OrderedDict()
             #suffixes['fastDCCP'] = [None, '']
             #suffixes['init_ideal'] = [None, '']
+            #suffixes['initRidgeTrain'] = ['']
             #suffixes['initRidge'] = ['']
             #suffixes['logistic'] = ['']
             #suffixes['pairBound'] = [(0,.1),(0,.25),(0,.5),(0,.75),None]
             #suffixes['pairBound'] = [(.5,1), (.25,1), None]
             #suffixes['mixedCV'] = [None,'']
-            #suffixes['logNoise'] = [None,.25,.5]
+            suffixes['logNoise'] = [None,.25,.5]
+            #suffixes['logNoise'] = [.5]
+            #suffixes['logNoise'] = [None,25,50,100]
             #suffixes['baseline'] = [None,'']
             suffixes['solver'] = ['SCS']
             ordered_keys = [
-                'fastDCCP', 'initRidge', 'init_ideal', 'logistic',
+                'fastDCCP', 'initRidge', 'init_ideal', 'initRidgeTrain','logistic',
                 'pairBound', 'mixedCV', 'logNoise',
                 'baseline', 'solver'
             ]
             all_params = list(grid_search.ParameterGrid(suffixes))
 
             methods = []
-            #methods.append(('numRandPairs','RelReg, %s pairs'))
-            #methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
+            methods.append(('numRandPairs','RelReg, %s pairs'))
+            methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
             #methods.append(('numRandBound', 'RelReg, %s bounds'))
             #methods.append(('numRandQuartiles', 'RelReg, %s quartiles'))
             #methods.append(('numRandNeighbor', 'RelReg, %s rand neighbors'))
@@ -353,8 +356,10 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.title = bc.data_name_dict.get(self.data_set_to_use, 'Unknown Data Set')
         self.show_legend_on_all = show_legend_on_all
         self.x_axis_string = 'Number of labeled instances'
-        #self.ylims = [0,10]
-        self.ylims = [0,600]
+        if pc.data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
+            self.ylims = [0,10]
+        elif pc.data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
+            self.ylims = [0,600]
 
 
 class BatchConfigs(bc.BatchConfigs):

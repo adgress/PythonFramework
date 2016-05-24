@@ -37,6 +37,7 @@ from mpi4py import MPI
 import math
 import random
 import os
+import itertools
 
 
 print_messages_cv = False
@@ -59,7 +60,7 @@ def _run_cross_validation_iteration_args(self, args):
             ret = self._run_cross_validation_iteration(args, self.curr_split, self.test_data)
             if print_messages_cv:
                 timer.toc()
-            if self.save_cv_temp:
+            if self.save_cv_temp and not helper_functions.is_laptop():
                 helper_functions.save_object(temp_file, ret)
             return ret
         except MemoryError:
@@ -93,6 +94,9 @@ class Method(Saveable):
 
     def create_cv_params(self, i_low, i_high):
         return 10**np.asarray(list(reversed(range(i_low,i_high))),dtype='float64')
+
+    def run_pre_experiment_setup(self, data_and_splits):
+        pass
 
     @property
     def params(self):
@@ -702,8 +706,12 @@ class RelativeRegressionMethod(Method):
             r = new_instance.train_and_test(init_data)
             self.w_initial = new_instance.w
             self.b_initial = new_instance.b
-        self.add_random_guidance(data)
-        return super(RelativeRegressionMethod, self).train_and_test(data)
+        d = deepcopy(data)
+        self.add_random_guidance(d)
+        d.pairwise_ordering = None
+        d.neighbor_ordering = None
+        d.bound_ordering = None
+        return super(RelativeRegressionMethod, self).train_and_test(d)
 
     def _create_cv_splits(self,data):
         splits = super(RelativeRegressionMethod, self)._create_cv_splits(data)
@@ -719,6 +727,35 @@ class RelativeRegressionMethod(Method):
             splits[i].is_train_pairwise = is_train_pairwise
         return splits
 
+    def run_pre_experiment_setup(self, data_and_splits):
+        super(RelativeRegressionMethod, self).run_pre_experiment_setup(data_and_splits)
+        #self.add_random_guidance(data_and_splits.data)
+        self.set_guidance_ordering(data_and_splits)
+
+    def set_guidance_ordering(self, data_and_splits):
+        data = data_and_splits.data
+        I = data.is_train
+        I = np.asarray(I.nonzero()[0])
+        np.random.seed(0)
+        max_items = 2000
+        if self.add_random_pairwise:
+            n = I.size
+            all_pairs = [(I[i],I[j]) for i in range(n) for j in range(i+1,n)]
+            all_pairs = np.asarray(all_pairs)
+            rand_perm = np.random.permutation(all_pairs)
+            n = min(rand_perm.size, max_items)
+            data.pairwise_ordering = rand_perm[0:n]
+        elif self.add_random_bound:
+            I = np.random.permutation(I)
+            data.bound_ordering = I
+        elif self.add_random_neighbor:
+            neighbors = list(itertools.combinations(I,3))
+            rand_perm = np.random.permutation(neighbors)
+            n = min(rand_perm.size, max_items)
+            data.neighbor_ordering = rand_perm[0:n]
+
+
+
     def add_random_guidance(self, data):
         num_random_types = int(self.add_random_pairwise) + int(self.add_random_bound) + int(self.add_random_neighbor)
         assert num_random_types <= 1, 'Not implemented yet'
@@ -727,8 +764,9 @@ class RelativeRegressionMethod(Method):
         if self.add_random_pairwise:
             assert not self.use_baseline
             data.pairwise_relationships = set()
-            I = data.is_train & ~data.is_labeled
-            test_func = None
+            #I = data.is_train & ~data.is_labeled
+            I = data.is_train
+            test_func = lambda ij: True
             if len(self.pair_bound) > 0:
                 diff = data.true_y.max() - data.true_y.min()
                 diff_func = lambda ij: abs(data.true_y[ij[0]] - data.true_y[ij[1]]) / diff
@@ -736,7 +774,13 @@ class RelativeRegressionMethod(Method):
                     test_func = lambda ij: diff_func(ij) <= self.pair_bound[0]
                 else:
                     test_func = lambda ij: self.pair_bound[0] <= diff_func(ij) <= self.pair_bound[1]
-            sampled_pairs = array_functions.sample_pairs(I.nonzero()[0], self.num_pairwise, test_func)
+            pairwise_ordering = getattr(data, 'pairwise_ordering', None)
+            if pairwise_ordering is None:
+                sampled_pairs = array_functions.sample_pairs(I.nonzero()[0], self.num_pairwise, test_func)
+            else:
+                test_func2 = lambda ij: test_func(ij) and I[ij[0]] and I[ij[1]]
+                sampled_pairs = [tuple(s.tolist()) for s in pairwise_ordering if test_func2(s)]
+                sampled_pairs = set(sampled_pairs[0:self.num_pairwise])
             for i,j in sampled_pairs:
                 pair = (i,j)
                 diff = data.true_y[j] - data.true_y[i]
@@ -755,8 +799,10 @@ class RelativeRegressionMethod(Method):
                 data.pairwise_relationships.add(constraint)
                 #data.pairwise_relationships.add(pair)
         if self.add_random_bound:
+            assert False, 'Use Ordering'
             data.pairwise_relationships = set()
-            I = (data.is_train & ~data.is_labeled).nonzero()[0]
+            #I = (data.is_train & ~data.is_labeled).nonzero()[0]
+            I = (data.is_train).nonzero()[0]
             sampled = array_functions.sample(I, self.num_bound)
             y_median = np.percentile(data.true_y,50)
             for i in sampled:
@@ -784,8 +830,10 @@ class RelativeRegressionMethod(Method):
                         constraint.true_y = [yi_true]
                         data.pairwise_relationships.add(constraint)
         if self.add_random_neighbor:
+            assert False, 'Use Ordering'
             data.pairwise_relationships = set()
-            I = (data.is_train & ~data.is_labeled).nonzero()[0]
+            #I = (data.is_train & ~data.is_labeled).nonzero()[0]
+            I = (data.is_train).nonzero()[0]
             sampled = array_functions.sample_n_tuples(I, self.num_neighbor, 3, True)
             for i in sampled:
                 i1,i2,i3 = i

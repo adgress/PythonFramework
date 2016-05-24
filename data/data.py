@@ -255,6 +255,24 @@ class LabeledData(LabeledVector):
         self.is_train = split.is_train
         #self.type = split.type
         self.permute(split.permutation)
+        others_to_permute = {
+            'pairwise_ordering',
+            'neighbor_ordering',
+            'bound_ordering'
+        }
+        split_mapping = dict((old,new) for new, old in enumerate(split.permutation))
+        for key in others_to_permute:
+            v = getattr(self, key, None)
+            if v is None:
+                continue
+            new_v = copy.deepcopy(v)
+            for i_idx, i in enumerate(v):
+                new_i = np.zeros(i.shape)
+                for j_idx, j in enumerate(i):
+                    new_j = split_mapping[j]
+                    new_i[j_idx] = new_j
+                v[i_idx] = new_i
+
         self.is_train_pairwise = getattr(split, 'is_train_pairwise', None)
 
     def set_defaults(self):

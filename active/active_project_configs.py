@@ -18,8 +18,8 @@ def create_project_configs():
 pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
-data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-#data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
+#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 #data_set_to_use = bc.DATA_WINE_RED
 
 data_sets_for_exps = [data_set_to_use]
@@ -38,6 +38,7 @@ pair_bound = ()
 use_hinge = False
 noise_rate = .0
 logistic_noise = 0
+use_logistic_fix = True
 
 use_bound = False
 num_bound = 50
@@ -52,7 +53,8 @@ init_ideal = False
 init_ridge_train = False
 use_neighbor_logistic = False
 
-use_test_error_for_model_selection = False
+use_aic = True
+use_test_error_for_model_selection = True
 
 
 
@@ -116,8 +118,10 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.init_ideal = init_ideal
         self.init_ridge_train = init_ridge_train
         self.use_neighbor_logistic = use_neighbor_logistic
+        self.use_logistic_fix = use_logistic_fix
 
         self.use_test_error_for_model_selection = use_test_error_for_model_selection
+        self.use_aic = use_aic
 
     def set_data_set(self, data_set):
         self.data_set = data_set
@@ -212,8 +216,10 @@ class MainConfigs(bc.MainConfigs):
         method_configs.init_ideal = pc.init_ideal
         method_configs.init_ridge_train = pc.init_ridge_train
         method_configs.use_neighbor_logistic = pc.use_neighbor_logistic
+        method_configs.use_logistic_fix = pc.use_logistic_fix
 
         method_configs.use_test_error_for_model_selection = pc.use_test_error_for_model_selection
+        method_configs.use_aic = pc.use_aic
 
         #active = active_methods.ActiveMethod(method_configs)
         active = active_methods.RelativeActiveMethod(method_configs)
@@ -270,7 +276,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             #suffixes['pairBound'] = [(0,.1),(0,.25),(0,.5),(0,.75),None]
             #suffixes['pairBound'] = [(.5,1), (.25,1), None]
             #suffixes['mixedCV'] = [None,'']
-            suffixes['logNoise'] = [None,.25,.5]
+            #suffixes['logNoise'] = [None, .1, .5, 1, 2]
             #suffixes['logNoise'] = [.5]
             #suffixes['logNoise'] = [None,25,50,100]
             #suffixes['baseline'] = [None,'']

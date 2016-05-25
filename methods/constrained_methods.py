@@ -133,11 +133,11 @@ class PairwiseConstraint(CVXConstraint):
         self.x[0] = self.x[1]
         self.x[1] = x
 
-    def to_cvx(self, f):
+    def to_cvx(self, f, scale=1.0):
         x1 = self.x[0]
         x2 = self.x[1]
         d = f(x1) - f(x2)
-        return self.cvx_loss_logistic(d)
+        return self.cvx_loss_logistic(d/scale)
 
     def is_pairwise(self):
         return True

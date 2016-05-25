@@ -91,6 +91,9 @@ class Method(Saveable):
         self.temp_dir = None
         self.save_cv_temp = True
         self.use_mpi = True
+        self.use_aic = getattr(configs, 'use_aic', False)
+        self.num_params = None
+        self.likelihood = None
 
     def create_cv_params(self, i_low, i_high):
         return 10**np.asarray(list(reversed(range(i_low,i_high))),dtype='float64')
@@ -134,6 +137,11 @@ class Method(Saveable):
         else:
             splits = data_splitter.generate_splits(data.y,num_splits,perc_train,is_regression)
         return splits
+
+    def _run_aic_iteration(self, params, curr_split, test_data):
+        import math
+        fold_results, fold_results_on_test_data = self._run_cross_validation_iteration(params, curr_split, test_data)
+        fold_results.aic = 2*self.num_params - 2*math.log(self.likelihood)
 
     def _run_cross_validation_iteration(self, params, curr_split, test_data):   
         self.set_params(**params)
@@ -631,6 +639,7 @@ class RelativeRegressionMethod(Method):
         self.cv_params['C2'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         self.cv_params['C3'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         self.cv_params['C4'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
+        self.cv_params['s'] = 10**np.asarray(list(reversed(range(-3,3))),dtype='float64')
 
         self.w = None
         self.b = None
@@ -646,6 +655,7 @@ class RelativeRegressionMethod(Method):
         self.use_hinge = configs.use_hinge
         self.noise_rate = configs.noise_rate
         self.logistic_noise = configs.logistic_noise
+        self.use_logistic_fix = configs.use_logistic_fix
 
         self.add_random_bound = configs.use_bound
         self.use_bound = configs.use_bound
@@ -686,6 +696,11 @@ class RelativeRegressionMethod(Method):
             self.cv_params['C3'] = np.asarray([0])
         if not self.use_neighbor:
             self.cv_params['C4'] = np.asarray([0])
+        if not self.use_pairwise or not self.use_logistic_fix:
+            self.cv_params['s'] = np.asarray([1])
+        if self.use_pairwise and self.use_logistic_fix:
+            self.cv_params['C'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
+            self.cv_params['C2'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
 
     def train_and_test(self, data):
         use_dccp = self.use_neighbor
@@ -918,7 +933,7 @@ class RelativeRegressionMethod(Method):
                 c2 = deepcopy(c)
                 c2.transform(self.transform)
                 if c2.is_pairwise():
-                    pairwise_reg2 += c2.to_cvx(func)
+                    pairwise_reg2 += c2.to_cvx(func, scale=self.s)
                 elif c2.is_tertiary():
                     pass
                     #neighbor_reg4 += c.to_cvx(func)
@@ -1120,6 +1135,8 @@ class RelativeRegressionMethod(Method):
                         s += '-noise=' + str(self.noise_rate)
                     if getattr(self, 'logistic_noise', 0) > 0:
                         s += '-logNoise=' + str(self.logistic_noise)
+                if getattr(self, 'use_logistic_fix', False):
+                    s += '-logFix'
             if use_bound:
                 hasRandBounds = self.num_bound > 0 and self.add_random_bound
                 if getattr(self, 'use_quartiles', False):

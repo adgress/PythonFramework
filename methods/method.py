@@ -2,7 +2,8 @@ import cvxpy as cvx
 from utility.capturing import Capturing
 from methods.constrained_methods import \
     PairwiseConstraint, BoundLowerConstraint, BoundUpperConstraint, \
-    NeighborConstraint, BoundConstraint, HingePairwiseConstraint, EqualsConstraint
+    NeighborConstraint, BoundConstraint, HingePairwiseConstraint, EqualsConstraint, \
+    SimilarConstraint
 from timer import timer
 
 __author__ = 'Aubrey'
@@ -672,6 +673,11 @@ class RelativeRegressionMethod(Method):
         self.init_ridge_train = configs.init_ridge_train
         self.use_neighbor_logistic = configs.use_neighbor_logistic
 
+        self.add_random_similar = configs.use_similar
+        self.use_similar = configs.use_similar
+        self.num_similar = configs.num_similar
+
+
         self.use_test_error_for_model_selection = configs.use_test_error_for_model_selection
         self.no_linear_term = True
         self.neg_log = False
@@ -700,6 +706,9 @@ class RelativeRegressionMethod(Method):
             self.cv_params['s'] = np.asarray([1])
         if self.use_pairwise and self.use_logistic_fix:
             self.cv_params['C'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
+            self.cv_params['C2'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
+        if self.use_similar:
+            self.cv_params['s'] = np.asarray([.05, .1, .2, .3],dtype='float64')
             self.cv_params['C2'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
 
     def train_and_test(self, data):
@@ -753,7 +762,7 @@ class RelativeRegressionMethod(Method):
         I = np.asarray(I.nonzero()[0])
         np.random.seed(0)
         max_items = 2000
-        if self.add_random_pairwise:
+        if self.add_random_pairwise or self.add_random_similar:
             n = I.size
             all_pairs = [(I[i],I[j]) for i in range(n) for j in range(i+1,n)]
             all_pairs = np.asarray(all_pairs)
@@ -772,11 +781,12 @@ class RelativeRegressionMethod(Method):
 
 
     def add_random_guidance(self, data):
-        num_random_types = int(self.add_random_pairwise) + int(self.add_random_bound) + int(self.add_random_neighbor)
+        num_random_types = int(self.add_random_pairwise) + int(self.add_random_bound) + \
+                           int(self.add_random_neighbor) + int(self.add_random_similar)
         assert num_random_types <= 1, 'Not implemented yet'
         if getattr(data,'pairwise_relationships',None) is None:
             data.pairwise_relationships = set()
-        if self.add_random_pairwise:
+        if self.add_random_pairwise or self.add_random_similar:
             assert not self.use_baseline
             data.pairwise_relationships = set()
             #I = data.is_train & ~data.is_labeled
@@ -785,17 +795,23 @@ class RelativeRegressionMethod(Method):
             if len(self.pair_bound) > 0:
                 diff = data.true_y.max() - data.true_y.min()
                 diff_func = lambda ij: abs(data.true_y[ij[0]] - data.true_y[ij[1]]) / diff
-                if len(self.pair_bound) == 1:
-                    test_func = lambda ij: diff_func(ij) <= self.pair_bound[0]
+                if self.add_random_pairwise:
+                    if len(self.pair_bound) == 1:
+                        test_func = lambda ij: diff_func(ij) <= self.pair_bound[0]
+                    else:
+                        test_func = lambda ij: self.pair_bound[0] <= diff_func(ij) <= self.pair_bound[1]
                 else:
-                    test_func = lambda ij: self.pair_bound[0] <= diff_func(ij) <= self.pair_bound[1]
+                    test_func = lambda ij: diff_func(ij) <= .1
             pairwise_ordering = getattr(data, 'pairwise_ordering', None)
+            num_pairs = self.num_pairwise
+            if self.add_random_similar:
+                num_pairs = self.num_similar
             if pairwise_ordering is None:
-                sampled_pairs = array_functions.sample_pairs(I.nonzero()[0], self.num_pairwise, test_func)
+                sampled_pairs = array_functions.sample_pairs(I.nonzero()[0], num_pairs, test_func)
             else:
                 test_func2 = lambda ij: test_func(ij) and I[ij[0]] and I[ij[1]]
                 sampled_pairs = [tuple(s.tolist()) for s in pairwise_ordering if test_func2(s)]
-                sampled_pairs = set(sampled_pairs[0:self.num_pairwise])
+                sampled_pairs = set(sampled_pairs[0:num_pairs])
             for i,j in sampled_pairs:
                 pair = (i,j)
                 diff = data.true_y[j] - data.true_y[i]
@@ -806,13 +822,17 @@ class RelativeRegressionMethod(Method):
                 #data.pairwise_relationships.add(pair)
                 x1 = data.x[pair[0],:]
                 x2 = data.x[pair[1],:]
-                if self.use_hinge:
-                    constraint = HingePairwiseConstraint(x1,x2)
+                if self.add_random_pairwise:
+                    if self.use_hinge:
+                        constraint = HingePairwiseConstraint(x1,x2)
+                    else:
+                        constraint = PairwiseConstraint(x1,x2)
                 else:
-                    constraint = PairwiseConstraint(x1,x2)
+                    constraint = SimilarConstraint(x1,x2)
                 constraint.true_y = [data.true_y[pair[0]], data.true_y[pair[1]]]
                 data.pairwise_relationships.add(constraint)
                 #data.pairwise_relationships.add(pair)
+
         if self.add_random_bound:
             assert False, 'Use Ordering'
             data.pairwise_relationships = set()
@@ -1107,7 +1127,8 @@ class RelativeRegressionMethod(Method):
         use_bound = getattr(self, 'use_bound', False)
         use_neighbor = getattr(self, 'use_neighbor', False)
         use_baseline = getattr(self, 'use_baseline', False)
-        if not use_pairwise and not use_bound and not use_neighbor:
+        use_similar = getattr(self, 'use_similar', False)
+        if not use_pairwise and not use_bound and not use_neighbor and not use_similar:
             s += '-noPairwiseReg'
         else:
             if use_pairwise:
@@ -1160,6 +1181,8 @@ class RelativeRegressionMethod(Method):
                     s += '-initRidgeTrain'
                 if getattr(self, 'use_neighbor_logistic', False):
                     s += '-logistic'
+            if use_similar and self.num_similar > 0 and self.add_random_similar:
+                s += '-numSimilar=' + str(int(self.num_similar))
             if getattr(self, 'use_mixed_cv', False):
                 s += '-mixedCV'
             if hasattr(self, 'solver'):

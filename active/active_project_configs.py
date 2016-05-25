@@ -18,8 +18,8 @@ def create_project_configs():
 pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
-#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
+data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+#data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 #data_set_to_use = bc.DATA_WINE_RED
 
 data_sets_for_exps = [data_set_to_use]
@@ -31,7 +31,7 @@ use_mixed_cv = False
 
 use_baseline = False
 
-use_pairwise = True
+use_pairwise = False
 num_pairwise = 50
 #pair_bound = (.25,1)
 pair_bound = ()
@@ -52,6 +52,9 @@ init_ridge = False
 init_ideal = False
 init_ridge_train = False
 use_neighbor_logistic = False
+
+use_similar = True
+num_similar = 50
 
 use_aic = True
 use_test_error_for_model_selection = True
@@ -119,6 +122,9 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.init_ridge_train = init_ridge_train
         self.use_neighbor_logistic = use_neighbor_logistic
         self.use_logistic_fix = use_logistic_fix
+
+        self.use_similar = use_similar
+        self.num_similar = num_similar
 
         self.use_test_error_for_model_selection = use_test_error_for_model_selection
         self.use_aic = use_aic
@@ -218,6 +224,9 @@ class MainConfigs(bc.MainConfigs):
         method_configs.use_neighbor_logistic = pc.use_neighbor_logistic
         method_configs.use_logistic_fix = pc.use_logistic_fix
 
+        method_configs.use_similar = pc.use_similar
+        method_configs.num_similar = pc.num_similar
+
         method_configs.use_test_error_for_model_selection = pc.use_test_error_for_model_selection
         method_configs.use_aic = pc.use_aic
 
@@ -277,14 +286,15 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             #suffixes['pairBound'] = [(.5,1), (.25,1), None]
             #suffixes['mixedCV'] = [None,'']
             #suffixes['logNoise'] = [None, .1, .5, 1, 2]
-            #suffixes['logNoise'] = [.5]
+            suffixes['logNoise'] = [.5]
             #suffixes['logNoise'] = [None,25,50,100]
             #suffixes['baseline'] = [None,'']
+            #suffixes['logFix'] = [None, '']
             suffixes['solver'] = ['SCS']
             ordered_keys = [
                 'fastDCCP', 'initRidge', 'init_ideal', 'initRidgeTrain','logistic',
                 'pairBound', 'mixedCV', 'logNoise',
-                'baseline', 'solver'
+                'baseline', 'logFix', 'solver'
             ]
             all_params = list(grid_search.ParameterGrid(suffixes))
 

@@ -153,8 +153,9 @@ class HingePairwiseConstraint(PairwiseConstraint):
         return cvx.max_elemwise(d,0)
 
 class SimilarConstraint(PairwiseConstraint):
-    def __init__(self, x1, x2):
+    def __init__(self, x1, x2, max_diff):
         super(SimilarConstraint, self).__init__(x1,x2)
+        self.max_diff = max_diff
 
     def predict(self, f):
         return False
@@ -170,7 +171,7 @@ class SimilarConstraint(PairwiseConstraint):
         x1 = self.x[1]
         d = f(x0) - f(x1)
         self.scale = scale
-        return cvx_logistic.logistic_similar(d, scale)
+        return cvx_logistic.logistic_similar(d, self.max_diff*scale)
 
 class BoundConstraint(CVXConstraint):
     BOUND_LOWER = 0

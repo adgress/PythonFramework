@@ -47,7 +47,7 @@ class logistic_similar(cvx.logistic):
         a = self.s
         b = values[0]
         t = np.exp(a-b) + np.exp(-a-b) + np.exp(-2*b)
-        return np.logaddexp(0, t)
+        return np.log(1 + t)
 
     def _grad(self, values):
         """Gives the (sub/super)gradient of the atom w.r.t. each argument.

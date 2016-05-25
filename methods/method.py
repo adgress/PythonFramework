@@ -792,9 +792,9 @@ class RelativeRegressionMethod(Method):
             #I = data.is_train & ~data.is_labeled
             I = data.is_train
             test_func = lambda ij: True
+            max_diff = data.true_y.max() - data.true_y.min()
             if len(self.pair_bound) > 0:
-                diff = data.true_y.max() - data.true_y.min()
-                diff_func = lambda ij: abs(data.true_y[ij[0]] - data.true_y[ij[1]]) / diff
+                diff_func = lambda ij: abs(data.true_y[ij[0]] - data.true_y[ij[1]]) / max_diff
                 if self.add_random_pairwise:
                     if len(self.pair_bound) == 1:
                         test_func = lambda ij: diff_func(ij) <= self.pair_bound[0]
@@ -828,7 +828,7 @@ class RelativeRegressionMethod(Method):
                     else:
                         constraint = PairwiseConstraint(x1,x2)
                 else:
-                    constraint = SimilarConstraint(x1,x2)
+                    constraint = SimilarConstraint(x1,x2,max_diff)
                 constraint.true_y = [data.true_y[pair[0]], data.true_y[pair[1]]]
                 data.pairwise_relationships.add(constraint)
                 #data.pairwise_relationships.add(pair)

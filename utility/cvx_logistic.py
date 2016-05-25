@@ -60,6 +60,7 @@ class logistic_similar(cvx.logistic):
         Returns:
             A list of SciPy CSC sparse matrices or None.
         """
+        assert False, 'Not Implemented'
         rows = self.args[0].size[0]*self.args[0].size[1]
         cols = self.size[0]*self.size[1]
         exp_val = np.exp(values[0])

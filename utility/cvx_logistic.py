@@ -106,7 +106,7 @@ class logistic_similar(cvx.logistic):
         obj0, constr0 = exp.graph_implementation([lu.neg_expr(t)], size)
         obj1, constr1 = exp.graph_implementation([lu.sub_expr(s, lu.sum_expr([t, x]))], size)
         obj2, constr2 = exp.graph_implementation([lu.sub_expr(lu.neg_expr(s), lu.sum_expr([t, x]))], size)
-        obj3, constr3 = exp.graph_implementation([lu.sub_expr(lu.neg_expr(s), lu.mul_expr(2, x, size))], size)
+        obj3, constr3 = exp.graph_implementation([lu.sub_expr(lu.neg_expr(t), lu.mul_expr(2, x, size))], size)
 
         lhs = lu.sum_expr([obj0, obj1, obj2, obj3])
         ones = lu.create_const(np.mat(np.ones(size)), size)

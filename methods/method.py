@@ -799,19 +799,17 @@ class RelativeRegressionMethod(Method):
             I = data.is_train
             test_func = lambda ij: True
             max_diff = data.true_y.max() - data.true_y.min()
+            diff_func = lambda ij: abs(data.true_y[ij[0]] - data.true_y[ij[1]]) / max_diff
             if len(self.pair_bound) > 0:
-                diff_func = lambda ij: abs(data.true_y[ij[0]] - data.true_y[ij[1]]) / max_diff
-                if self.add_random_pairwise:
-                    if len(self.pair_bound) == 1:
-                        test_func = lambda ij: diff_func(ij) <= self.pair_bound[0]
-                    else:
-                        test_func = lambda ij: self.pair_bound[0] <= diff_func(ij) <= self.pair_bound[1]
+                if len(self.pair_bound) == 1:
+                    test_func = lambda ij: diff_func(ij) <= self.pair_bound[0]
                 else:
-                    test_func = lambda ij: diff_func(ij) <= .1
+                    test_func = lambda ij: self.pair_bound[0] <= diff_func(ij) <= self.pair_bound[1]
             pairwise_ordering = getattr(data, 'pairwise_ordering', None)
             num_pairs = self.num_pairwise
             if self.add_random_similar:
                 num_pairs = self.num_similar
+                test_func = lambda ij: diff_func(ij) <= .1
             if pairwise_ordering is None:
                 sampled_pairs = array_functions.sample_pairs(I.nonzero()[0], num_pairs, test_func)
             else:

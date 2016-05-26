@@ -55,6 +55,7 @@ use_neighbor_logistic = False
 
 use_similar = True
 num_similar = 50
+use_similar_hinge = True
 
 use_aic = True
 use_test_error_for_model_selection = True
@@ -125,6 +126,7 @@ class ProjectConfigs(bc.ProjectConfigs):
 
         self.use_similar = use_similar
         self.num_similar = num_similar
+        self.use_similar_hinge = use_similar_hinge
 
         self.use_test_error_for_model_selection = use_test_error_for_model_selection
         self.use_aic = use_aic
@@ -226,6 +228,7 @@ class MainConfigs(bc.MainConfigs):
 
         method_configs.use_similar = pc.use_similar
         method_configs.num_similar = pc.num_similar
+        method_configs.use_similar_hinge = pc.use_similar_hinge
 
         method_configs.use_test_error_for_model_selection = pc.use_test_error_for_model_selection
         method_configs.use_aic = pc.use_aic

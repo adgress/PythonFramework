@@ -3,7 +3,7 @@ from utility.capturing import Capturing
 from methods.constrained_methods import \
     PairwiseConstraint, BoundLowerConstraint, BoundUpperConstraint, \
     NeighborConstraint, BoundConstraint, HingePairwiseConstraint, EqualsConstraint, \
-    SimilarConstraint
+    SimilarConstraint, SimilarConstraintHinge
 from timer import timer
 
 __author__ = 'Aubrey'
@@ -676,6 +676,7 @@ class RelativeRegressionMethod(Method):
         self.add_random_similar = configs.use_similar
         self.use_similar = configs.use_similar
         self.num_similar = configs.num_similar
+        self.use_similar_hinge = configs.use_similar_hinge
 
 
         self.use_test_error_for_model_selection = configs.use_test_error_for_model_selection
@@ -828,7 +829,10 @@ class RelativeRegressionMethod(Method):
                     else:
                         constraint = PairwiseConstraint(x1,x2)
                 else:
-                    constraint = SimilarConstraint(x1,x2,max_diff)
+                    if self.use_similar_hinge:
+                        constraint = SimilarConstraintHinge(x1,x2,max_diff)
+                    else:
+                        constraint = SimilarConstraint(x1,x2,max_diff)
                 constraint.true_y = [data.true_y[pair[0]], data.true_y[pair[1]]]
                 data.pairwise_relationships.add(constraint)
                 #data.pairwise_relationships.add(pair)
@@ -1182,7 +1186,10 @@ class RelativeRegressionMethod(Method):
                 if getattr(self, 'use_neighbor_logistic', False):
                     s += '-logistic'
             if use_similar and self.num_similar > 0 and self.add_random_similar:
-                s += '-numSimilar=' + str(int(self.num_similar))
+                if self.use_similar_hinge:
+                    s += '-numSimilarHinge=' + str(int(self.num_similar))
+                else:
+                    s += '-numSimilar=' + str(int(self.num_similar))
             if getattr(self, 'use_mixed_cv', False):
                 s += '-mixedCV'
             if hasattr(self, 'solver'):

@@ -711,6 +711,11 @@ class RelativeRegressionMethod(Method):
         if self.use_similar:
             self.cv_params['s'] = np.asarray([.05, .1, .2, .3],dtype='float64')
             self.cv_params['C2'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
+        for key, values in self.cv_params.iteritems():
+            if key == 's' or values.size <= 1:
+                continue
+            self.cv_params[key] = np.append(values, 0)
+
 
     def train_and_test(self, data):
         use_dccp = self.use_neighbor

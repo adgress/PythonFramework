@@ -54,7 +54,7 @@ init_ridge_train = False
 use_neighbor_logistic = False
 
 use_similar = True
-num_similar = 50
+num_similar = 100
 use_similar_hinge = True
 
 use_aic = True
@@ -267,7 +267,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         else:
             base_file_name = 'RelReg-cvx-constraints-%s=%s'
             #self.files['LapRidge.pkl'] = 'Laplacian Ridge Regression'
-            use_test = False
+            use_test = True
             if use_test:
                 self.files['RelReg-cvx-constraints-noPairwiseReg-TEST.pkl'] = 'TEST: Ridge Regression'
             else:
@@ -289,7 +289,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             #suffixes['pairBound'] = [(.5,1), (.25,1), None]
             #suffixes['mixedCV'] = [None,'']
             #suffixes['logNoise'] = [None, .1, .5, 1, 2]
-            suffixes['logNoise'] = [.5]
+            #suffixes['logNoise'] = [.5]
             #suffixes['logNoise'] = [None,25,50,100]
             #suffixes['baseline'] = [None,'']
             #suffixes['logFix'] = [None, '']
@@ -302,12 +302,18 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             all_params = list(grid_search.ParameterGrid(suffixes))
 
             methods = []
-            methods.append(('numRandPairs','RelReg, %s pairs'))
-            methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
+            #methods.append(('numRandPairs','RelReg, %s pairs'))
+            #methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
+
             #methods.append(('numRandBound', 'RelReg, %s bounds'))
             #methods.append(('numRandQuartiles', 'RelReg, %s quartiles'))
+
             #methods.append(('numRandNeighbor', 'RelReg, %s rand neighbors'))
             #methods.append(('numMinNeighbor', 'RelReg, %s min neighbors'))
+
+            methods.append(('numSimilar','RelReg, %s pairs'))
+            methods.append(('numSimilarHinge','RelReg, %s pairs hinge'))
+
             for file_suffix, legend_name in methods:
                 for size in sizes:
                     for params in all_params:

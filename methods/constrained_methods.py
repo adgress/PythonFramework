@@ -171,7 +171,7 @@ class SimilarConstraint(PairwiseConstraint):
         x1 = self.x[1]
         d = f(x0) - f(x1)
         self.scale = scale
-        return cvx_logistic.logistic_similar(d, self.max_diff*scale)
+        return d + cvx_logistic.logistic_similar(d, self.max_diff*scale)
 
 class BoundConstraint(CVXConstraint):
     BOUND_LOWER = 0

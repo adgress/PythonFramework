@@ -49,6 +49,16 @@ class logistic_similar(cvx.logistic):
         t = np.exp(a-b) + np.exp(-a-b) + np.exp(-2*b)
         return np.log(1 + t)
 
+    def is_incr(self, idx):
+        """Is the composition non-decreasing in argument idx?
+        """
+        return False
+
+    def is_decr(self, idx):
+        """Is the composition non-increasing in argument idx?
+        """
+        return True
+
     def _grad(self, values):
         """Gives the (sub/super)gradient of the atom w.r.t. each argument.
 

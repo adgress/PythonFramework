@@ -1060,7 +1060,7 @@ class RelativeRegressionMethod(Method):
                 #print a.value
                 #print b.value
             except Exception as e:
-                print str(e) + ':' + str(params)
+                print str(e) + ': ' + str(params)
                 #print 'cvx status: ' + str(prob.status)
                 k = 0
                 w_value = k*np.zeros((p,1))

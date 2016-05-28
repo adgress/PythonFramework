@@ -665,7 +665,6 @@ class RelativeRegressionMethod(Method):
         self.num_bound = configs.num_bound
         self.use_quartiles = configs.use_quartiles
         self.bound_logistic = configs.bound_logistic
-        self.bound_just_constraints = configs.bound_just_constraints
 
         self.add_random_neighbor = configs.use_neighbor
         self.use_neighbor = configs.use_neighbor
@@ -716,8 +715,6 @@ class RelativeRegressionMethod(Method):
         if self.use_similar:
             self.cv_params['s'] = np.asarray([.05, .1, .2, .3],dtype='float64')
             self.cv_params['C2'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
-        if self.use_bound and self.bound_logistic and self.bound_just_constraints:
-            self.cv_params['C3'] = np.asarray([0])
         for key, values in self.cv_params.iteritems():
             if key == 's' or values.size <= 1:
                 continue
@@ -1000,10 +997,6 @@ class RelativeRegressionMethod(Method):
                 options = {
                     'disp': False
                 }
-                constraints = [{
-                    'type': 'ineq',
-                    'fun': logistic_difference_optimize.create_constraint_bound(x_bound, bounds[:,1])
-                }]
                 w0 = np.zeros(data.p+1)
                 C3 = self.C3
                 eval = logistic_difference_optimize.create_eval_linear_loss_bound_logistic(
@@ -1012,6 +1005,7 @@ class RelativeRegressionMethod(Method):
                 grad = logistic_difference_optimize.create_grad_linear_loss_bound_logistic(
                     x, y, x_bound, bounds, self.C, C3
                 )
+                constraints = []
                 with Capturing() as output:
                     results = optimize.minimize(eval,w0,method=method,jac=grad,options=options,constraints=constraints)
                 w1 = results.x
@@ -1274,8 +1268,6 @@ class RelativeRegressionMethod(Method):
                 hasRandBounds = self.num_bound > 0 and self.add_random_bound
                 if getattr(self, 'bound_logistic', False):
                     s += '-numRandLogBounds=' + str(int(self.num_bound))
-                    if getattr(self, 'bound_just_constraints', False):
-                        s += '-justConstraints'
                 elif getattr(self, 'use_quartiles', False):
                     s += '-numRandQuartiles=' + str(int(self.num_bound))
                 else:

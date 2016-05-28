@@ -41,10 +41,9 @@ logistic_noise = 0
 use_logistic_fix = True
 
 use_bound = True
-num_bound = 50
+num_bound = 51
 use_quartiles = True
-bound_logistic = False
-bound_just_constraints = True
+bound_logistic = True
 
 use_neighbor = False
 num_neighbor = 50
@@ -117,7 +116,6 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.num_bound = num_bound
         self.use_quartiles = use_quartiles
         self.bound_logistic = bound_logistic
-        self.bound_just_constraints = bound_just_constraints
 
         self.use_neighbor = use_neighbor
         self.num_neighbor = num_neighbor
@@ -222,7 +220,6 @@ class MainConfigs(bc.MainConfigs):
         method_configs.num_bound = pc.num_bound
         method_configs.use_quartiles = pc.use_quartiles
         method_configs.bound_logistic = pc.bound_logistic
-        method_configs.bound_just_constraints = pc.bound_just_constraints
 
         method_configs.use_neighbor = pc.use_neighbor
         method_configs.num_neighbor = pc.num_neighbor
@@ -311,17 +308,18 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             all_params = list(grid_search.ParameterGrid(suffixes))
 
             methods = []
-            #methods.append(('numRandPairs','RelReg, %s pairs'))
+            methods.append(('numRandPairs','RelReg, %s pairs'))
             #methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
 
             #methods.append(('numRandBound', 'RelReg, %s bounds'))
             #methods.append(('numRandQuartiles', 'RelReg, %s quartiles'))
+            methods.append(('numRandLogBounds', '%s log bounds'))
 
             #methods.append(('numRandNeighbor', 'RelReg, %s rand neighbors'))
             #methods.append(('numMinNeighbor', 'RelReg, %s min neighbors'))
 
-            methods.append(('numSimilar','RelReg, %s pairs'))
-            methods.append(('numSimilarHinge','RelReg, %s pairs hinge'))
+            #methods.append(('numSimilar','RelReg, %s pairs'))
+            #methods.append(('numSimilarHinge','RelReg, %s pairs hinge'))
 
             for file_suffix, legend_name in methods:
                 for size in sizes:

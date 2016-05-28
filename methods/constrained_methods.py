@@ -201,7 +201,7 @@ class HingePairwiseConstraint(PairwiseConstraint):
     def __init__(self, x1, x2):
         super(HingePairwiseConstraint, self).__init__(x1, x2)
 
-    def to_cvx(self, f):
+    def to_cvx(self, f, scale=1.0):
         x1 = self.x[0]
         x2 = self.x[1]
         d = f(x1) - f(x2)

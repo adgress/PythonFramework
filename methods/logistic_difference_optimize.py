@@ -78,11 +78,11 @@ def grad_linear_bound_logistic(x, bounds, v):
         num2, x2 = _grad_num(x[i,:], c1[i], w, b)
         val[0:-1] += (num1*x1 - num2*x2) / denom[i]
         val[-1] += (num1 - num2) / denom[i]
-    assert not np.isnan(val).any()
+    #assert not np.isnan(val).any()
     #Why isn't this necessary?
     #val *= -1
     if np.isnan(val).any():
-        print 'nan!'
+        print 'grad_linear_bound_logistic: nan!'
         val[np.isnan(val)] = 0
 
     return val

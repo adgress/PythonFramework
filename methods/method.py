@@ -1012,7 +1012,8 @@ class RelativeRegressionMethod(Method):
                 grad = logistic_difference_optimize.create_grad_linear_loss_bound_logistic(
                     x, y, x_bound, bounds, self.C, C3
                 )
-                results = optimize.minimize(eval,w0,method=method,jac=grad,options=options,constraints=constraints)
+                with Capturing() as output:
+                    results = optimize.minimize(eval,w0,method=method,jac=grad,options=options,constraints=constraints)
                 w1 = results.x
                 '''
                 results2 = optimize.minimize(eval,w0,method=method,jac=None,options=options,constraints=constraints)

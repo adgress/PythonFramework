@@ -40,12 +40,12 @@ noise_rate = .0
 logistic_noise = 0
 use_logistic_fix = True
 
-use_bound = True
-num_bound = 51
+use_bound = False
+num_bound = 50
 use_quartiles = True
 bound_logistic = True
 
-use_neighbor = False
+use_neighbor = True
 num_neighbor = 50
 use_min_pair_neighbor = False
 fast_dccp = True

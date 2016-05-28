@@ -34,6 +34,47 @@ def eval_linear_loss_l2(x, y, v):
     w, b = unpack_linear(v)
     return loss_l2(apply_linear(x, w, b), y)
 
+def eval_linear_neighbor_logistic(x, x_low, x_high, v):
+    w, b = unpack_linear(v)
+    y = apply_linear(x, w, b)
+    y_low = apply_linear(x_low, w, b)
+    y_high = apply_linear(x_high, w, b)
+
+    sig1 = sigmoid(y_high-y_low)
+    sig2 = sigmoid(2*y - y_high - y_low)
+    diff = sig1 - sig2
+    vals2 = -np.log(sig1-sig2)
+    I = np.isinf(vals2) | np.isnan(vals2)
+    if I.any():
+        print 'eval_linear_neighbor_logistic: inf = ' + str(I.mean())
+        vals2[I] = 1e6
+    val2 = vals2.sum()
+    #assert norm(val - val2)/norm(val) < 1e-6
+    return val2
+
+def grad_linear_neighbor_logistic(x, x_low, x_high, v):
+    w, b = unpack_linear(v)
+    y = apply_linear(x, w, b)
+    y_low = apply_linear(x_low, w, b)
+    y_high = apply_linear(x_high, w, b)
+
+    sig1 = sigmoid(y_high-y_low)
+    sig2 = sigmoid(2*y - y_high - y_low)
+    denom = sig1 - sig2
+    val = np.zeros(v.shape)
+    for i in range(x.shape[0]):
+        num1, x1, num2, x2 = _grad_num_neighbor(x[i, :], x_low[i,:], x_high[i,:], w, b)
+        val[0:-1] += (num1*x1 - num2*x2) / denom[i]
+        val[-1] += (num1 - num2) / denom[i]
+    #assert not np.isnan(val).any()
+    #Why isn't this necessary?
+    #val *= -1
+    I = np.isnan(val) | np.isinf(val)
+    if I.any():
+        print 'grad_linear_neighbor_logistic: nan!'
+        val[I] = 0
+    return val
+
 def eval_linear_bound_logistic(x, bounds, v):
     w, b = unpack_linear(v)
     y = apply_linear(x, w, b)
@@ -53,7 +94,27 @@ def eval_linear_bound_logistic(x, bounds, v):
     #assert norm(val - val2)/norm(val) < 1e-6
     return val2
 
-def _grad_num(x, c, w, b=None):
+def _grad_num_neighbor(x, x_low, x_high, w, b=None):
+    if b is None:
+        w,b = unpack_linear(w)
+
+
+    y = apply_linear(x, w, b)
+    y_low = apply_linear(x_low, w, b)
+    y_high = apply_linear(x_high, w, b)
+
+    a1 = y_high - y_low
+    a2 = 2*y-y_low-y_high
+
+    t1 = np.exp(-a1)*((1 + np.exp(-a1))**-2)
+    t2 = np.exp(-a2)*((1 + np.exp(-a2))**-2)
+
+    x1 = x_low - x_high
+    x2 = x_high + x_low - 2*x
+
+    return t1,x2,t2,x2
+
+def _grad_num_bound(x, c, w, b=None):
     if b is None:
         w,b = unpack_linear(w)
     a = c - apply_linear(x, w, b)
@@ -74,8 +135,8 @@ def grad_linear_bound_logistic(x, bounds, v):
     denom = sig1 - sig2
     val = np.zeros(v.shape)
     for i in range(x.shape[0]):
-        num1, x1 = _grad_num(x[i,:], c2[i], w, b)
-        num2, x2 = _grad_num(x[i,:], c1[i], w, b)
+        num1, x1 = _grad_num_bound(x[i, :], c2[i], w, b)
+        num2, x2 = _grad_num_bound(x[i, :], c1[i], w, b)
         val[0:-1] += (num1*x1 - num2*x2) / denom[i]
         val[-1] += (num1 - num2) / denom[i]
     #assert not np.isnan(val).any()
@@ -84,14 +145,45 @@ def grad_linear_bound_logistic(x, bounds, v):
     if np.isnan(val).any():
         print 'grad_linear_bound_logistic: nan!'
         val[np.isnan(val)] = 0
-
     return val
 
-def eval_linear_loss_bound_logistic(x, y, x_bound, bounds, reg_w, reg_neighbor, v):
+
+def eval_linear_loss_bound_logistic(x, y, x_bound, bounds, reg_w, reg_bound, v):
     w, b = unpack_linear(v)
     y_pred = apply_linear(x, w, b)
     loss = eval_linear_loss_l2(x, y, v)
-    loss_neighbor = eval_linear_bound_logistic(x_bound, bounds, v)
+    loss_bound = eval_linear_bound_logistic(x_bound, bounds, v)
+    loss_reg = eval_reg_l2(w)
+
+    val = loss + reg_w*loss_reg
+    if reg_bound != 0:
+        val += reg_bound * loss_bound
+    return val
+
+def grad_linear_loss_bound_logistic(x, y, x_bound, bounds, reg_w, reg_bound, v):
+    w, b = unpack_linear(v)
+    grad_loss = grad_linear_loss_l2(x, y, v)
+    grad_bound = grad_linear_bound_logistic(x_bound, bounds, v)
+    grad_reg = grad_reg_l2(w)
+    grad_reg *= reg_w
+    grad_reg = np.append(grad_reg, 0)
+
+    val = grad_loss + grad_reg
+    if reg_bound != 0:
+        val += reg_bound * grad_bound
+    return val
+
+def create_eval_linear_loss_bound_logistic(x, y, x_bound, bounds, reg_w, reg_bound):
+    return lambda v: eval_linear_loss_bound_logistic(x, y, x_bound, bounds, reg_w, reg_bound, v)
+
+def create_grad_linear_loss_bound_logistic(x, y, x_bound, bounds, reg_w, reg_bound):
+    return lambda v: grad_linear_loss_bound_logistic(x, y, x_bound, bounds, reg_w, reg_bound, v)
+
+def eval_linear_loss_neighbor_logistic(x, y, x_neighbor, x_low, x_high, reg_w, reg_neighbor, v):
+    w, b = unpack_linear(v)
+    y_pred = apply_linear(x, w, b)
+    loss = eval_linear_loss_l2(x, y, v)
+    loss_neighbor = eval_linear_neighbor_logistic(x_neighbor, x_low, x_high, v)
     loss_reg = eval_reg_l2(w)
 
     val = loss + reg_w*loss_reg
@@ -99,24 +191,24 @@ def eval_linear_loss_bound_logistic(x, y, x_bound, bounds, reg_w, reg_neighbor, 
         val += reg_neighbor*loss_neighbor
     return val
 
-def grad_linear_loss_bound_logistic(x, y, x_bound, bounds, reg_w, reg_neighbor, v):
+def grad_linear_loss_neighbor_logistic(x, y, x_neighbor, x_low, x_high, reg_w, reg_neighbor, v):
     w, b = unpack_linear(v)
     grad_loss = grad_linear_loss_l2(x, y, v)
-    grad_neighbor = grad_linear_bound_logistic(x_bound, bounds, v)
+    grad_neighbor = grad_linear_neighbor_logistic(x_neighbor, x_low, x_high, v)
     grad_reg = grad_reg_l2(w)
     grad_reg *= reg_w
     grad_reg = np.append(grad_reg, 0)
 
     val = grad_loss + grad_reg
     if reg_neighbor != 0:
-        val += reg_neighbor*grad_neighbor
+        val += reg_neighbor * grad_neighbor
     return val
 
-def create_eval_linear_loss_bound_logistic(x, y, x_bound, bounds, reg_w, reg_neighbor):
-    return lambda v: eval_linear_loss_bound_logistic(x, y, x_bound, bounds, reg_w, reg_neighbor, v)
+def create_eval_linear_loss_neighbor_logistic(x, y, x_neighbor, x_low, x_high, reg_w, reg_neighbor):
+    return lambda v: eval_linear_loss_neighbor_logistic(x, y, x_neighbor, x_low, x_high, reg_w, reg_neighbor, v)
 
-def create_grad_linear_loss_bound_logistic(x, y, x_bound, bounds, reg_w, reg_neighbor):
-    return lambda v: grad_linear_loss_bound_logistic(x, y, x_bound, bounds, reg_w, reg_neighbor, v)
+def create_grad_linear_loss_neighbor_logistic(x, y, x_neighbor, x_low, x_high, reg_w, reg_neighbor):
+    return lambda v: grad_linear_loss_neighbor_logistic(x, y, x_neighbor, x_low, x_high, reg_w, reg_neighbor, v)
 
 def constraint_bound(v, x, upper_bound):
     w,b = unpack_linear(v)
@@ -125,3 +217,12 @@ def constraint_bound(v, x, upper_bound):
 
 def create_constraint_bound(x, upper_bound):
     return lambda v: constraint_bound(v, x, upper_bound)
+
+def constraint_neighbor(v, x_low, x_high):
+    w,b = unpack_linear(v)
+    y_low = apply_linear(x_low,w,b)
+    y_high = apply_linear(x_high,w,b)
+    return y_high - y_low
+
+def create_constraint_neighbor(x_low, x_high):
+    return lambda v: constraint_neighbor(v, x_low, x_high)

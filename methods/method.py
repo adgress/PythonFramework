@@ -985,19 +985,16 @@ class RelativeRegressionMethod(Method):
             self.w = w_anal
             self.b = b_anal
         elif self.method in RelativeRegressionMethod.CVX_METHODS:
+            method = 'SLSQP'
+            options = {
+                'disp': True
+            }
+            w0 = np.zeros(data.p+1)
             if self.use_bound and self.bound_logistic:
                 x_bound, bounds = LogisticBoundConstraint.generate_bounds_for_scipy_optimize(
                     data.pairwise_relationships,
                     self.transform
                 )
-                #self.C = 1
-                #self.C3 = 100
-
-                method = 'SLSQP'
-                options = {
-                    'disp': False
-                }
-                w0 = np.zeros(data.p+1)
                 C3 = self.C3
                 eval = logistic_difference_optimize.create_eval_linear_loss_bound_logistic(
                     x, y, x_bound, bounds, self.C, C3
@@ -1026,6 +1023,54 @@ class RelativeRegressionMethod(Method):
                 if (np.isnan(w1) | np.isinf(w1)).any():
                     w1[:] = 0
                 self.w, self.b = logistic_difference_optimize.unpack_linear(w1)
+            elif self.use_neighbor and self.neighbor_convex:
+                x_neighbor,x_low,x_high = ConvexNeighborConstraint.generate_neighbors_for_scipy_optimize(
+                    data.pairwise_relationships,
+                    self.transform
+                )
+                constraints = [{
+                    'type': 'ineq',
+                    'fun': logistic_difference_optimize.create_constraint_neighbor(x_low, x_high)
+                }]
+                C = self.C
+                C4 = self.C4
+                #C = 1
+                #C4 = .001
+                eval = logistic_difference_optimize.create_eval_linear_loss_neighbor_logistic(
+                    x, y, x_neighbor, x_low, x_high, C, C4
+                )
+                #grad = None
+
+                grad = logistic_difference_optimize.create_grad_linear_loss_neighbor_logistic(
+                    x, y, x_neighbor, x_low, x_high, C, C4
+                )
+
+
+                eval_feasible = logistic_difference_optimize.create_eval_linear_loss_neighbor_logistic(
+                    x, y, x_neighbor, x_low, x_high, C, 0
+                )
+                with Capturing() as output:
+                    feasible_results = optimize.minimize(eval_feasible,w0,method=method,jac=grad,options=options,constraints=constraints)
+                w0_feasible = feasible_results.x
+                #print 'Have feasible point'
+                with Capturing() as output:
+                    results = optimize.minimize(eval,w0_feasible,method=method,jac=grad,options=options,constraints=constraints)
+                '''
+                results2 = optimize.minimize(eval,w0_feasible,method=method,jac=None,options=options,constraints=constraints)
+                from numpy.linalg import norm
+                print 'Error: ' + str(norm(results.x-results2.x)/norm(results.x))
+                '''
+                '''
+                w1 = results.x
+                y_pred = logistic_difference_optimize.apply_linear(x, w1)
+                y_low = logistic_difference_optimize.apply_linear(x_low, w1)
+                y_high = logistic_difference_optimize.apply_linear(x_high, w1)
+                '''
+                w1 = results.x
+                if (np.isnan(w1) | np.isinf(w1)).any():
+                    w1[:] = 0
+                self.w, self.b = logistic_difference_optimize.unpack_linear(w1)
+                pass
             else:
                 self.solve_cvx(x, y, data)
             '''
@@ -1275,22 +1320,24 @@ class RelativeRegressionMethod(Method):
                 if use_baseline:
                     s += '-baseline'
             if use_neighbor and self.num_neighbor > 0 and self.add_random_neighbor:
+                use_convex = getattr(self, 'neighbor_convex', False)
                 if getattr(self, 'use_min_pair_neighbor', False):
                     s += '-numMinNeighbor=' + str(int(self.num_neighbor))
-                elif getattr(self, 'neighbor_convex', False):
-                    s += 'numRandNeighborConvex=' + str(int(self.num_neighbor))
+                elif use_convex:
+                    s += '-numRandNeighborConvex=' + str(int(self.num_neighbor))
                 else:
                     s += '-numRandNeighbor=' + str(int(self.num_neighbor))
-                if getattr(self, 'fast_dccp', False):
-                    s += '-fastDCCP'
-                if getattr(self, 'init_ideal', False):
-                    s += '-init_ideal'
-                if getattr(self, 'init_ridge', False):
-                    s += '-initRidge'
-                if getattr(self, 'init_ridge_train', False):
-                    s += '-initRidgeTrain'
-                if getattr(self, 'use_neighbor_logistic', False):
-                    s += '-logistic'
+                if not use_convex:
+                    if getattr(self, 'fast_dccp', False):
+                        s += '-fastDCCP'
+                    if getattr(self, 'init_ideal', False):
+                        s += '-init_ideal'
+                    if getattr(self, 'init_ridge', False):
+                        s += '-initRidge'
+                    if getattr(self, 'init_ridge_train', False):
+                        s += '-initRidgeTrain'
+                    if getattr(self, 'use_neighbor_logistic', False):
+                        s += '-logistic'
             if use_similar and self.num_similar > 0 and self.add_random_similar:
                 if self.use_similar_hinge:
                     s += '-numSimilarHinge=' + str(int(self.num_similar))

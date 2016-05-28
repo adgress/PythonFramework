@@ -100,6 +100,24 @@ class ConvexNeighborConstraint(CVXConstraint):
     def use_dccp(self):
         return False
 
+
+    @staticmethod
+    def generate_neighbors_for_scipy_optimize(constraints, transform = None):
+        p = constraints[0].x[0].size
+        x = np.zeros((len(constraints),p))
+        x_low = np.zeros((len(constraints),p))
+        x_high = np.zeros((len(constraints),p))
+        for idx, c in enumerate(constraints):
+            assert len(c.x) == 3
+            x_curr = np.vstack(c.x)
+            if transform is not None:
+                for i in range(x_curr.shape[0]):
+                    x_curr[i,:] = transform.transform(x_curr[i,:])
+            x[idx,:] = x_curr[0,:]
+            x_low[idx,:] = x_curr[1,:]
+            x_high[idx,:] = x_curr[2,:]
+        return x, x_low, x_high
+
 class NeighborConstraint(CVXConstraint):
     def __init__(self, x, x_close, x_far):
         super(NeighborConstraint, self).__init__()

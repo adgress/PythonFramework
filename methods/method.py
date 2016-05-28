@@ -996,10 +996,10 @@ class RelativeRegressionMethod(Method):
                     self.transform
                 )
                 C3 = self.C3
-                eval = logistic_difference_optimize.create_eval_linear_loss_bound_logistic(
+                eval = logistic_difference_optimize.logistic_bound.create_eval(
                     x, y, x_bound, bounds, self.C, C3
                 )
-                grad = logistic_difference_optimize.create_grad_linear_loss_bound_logistic(
+                grad = logistic_difference_optimize.logistic_bound.create_grad(
                     x, y, x_bound, bounds, self.C, C3
                 )
                 constraints = []
@@ -1030,23 +1030,23 @@ class RelativeRegressionMethod(Method):
                 )
                 constraints = [{
                     'type': 'ineq',
-                    'fun': logistic_difference_optimize.create_constraint_neighbor(x_low, x_high)
+                    'fun': logistic_difference_optimize.logistic_neighbor.create_constraint_neighbor(x_low, x_high)
                 }]
                 C = self.C
                 C4 = self.C4
                 #C = 1
                 #C4 = .001
-                eval = logistic_difference_optimize.create_eval_linear_loss_neighbor_logistic(
+                eval = logistic_difference_optimize.logistic_neighbor.create_eval(
                     x, y, x_neighbor, x_low, x_high, C, C4
                 )
                 #grad = None
 
-                grad = logistic_difference_optimize.create_grad_linear_loss_neighbor_logistic(
+                grad = logistic_difference_optimize.logistic_neighbor.create_grad(
                     x, y, x_neighbor, x_low, x_high, C, C4
                 )
 
 
-                eval_feasible = logistic_difference_optimize.create_eval_linear_loss_neighbor_logistic(
+                eval_feasible = logistic_difference_optimize.logistic_neighbor.create_eval(
                     x, y, x_neighbor, x_low, x_high, C, 0
                 )
                 with Capturing() as output:

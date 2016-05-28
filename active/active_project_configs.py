@@ -38,14 +38,14 @@ pair_bound = ()
 use_hinge = False
 noise_rate = .0
 logistic_noise = 0
-use_logistic_fix = True
+use_logistic_fix = False
 
 use_bound = False
 num_bound = 50
 use_quartiles = True
 bound_logistic = True
 
-use_neighbor = True
+use_neighbor = False
 num_neighbor = 50
 use_min_pair_neighbor = False
 fast_dccp = True
@@ -56,11 +56,12 @@ use_neighbor_logistic = False
 neighbor_convex = True
 
 use_similar = False
-num_similar = 100
-use_similar_hinge = True
+num_similar = 50
+use_similar_hinge = False
 
 use_aic = True
 use_test_error_for_model_selection = True
+run_batch = True
 
 
 
@@ -139,22 +140,22 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.data_set = data_set
         if data_set == bc.DATA_BOSTON_HOUSING:
             self.set_boston_housing()
-            self.num_labels = [5, 10, 20]
+            self.num_labels = [5, 10, 20, 40]
             if run_active_experiments:
                 self.num_labels = [5]
         elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
             self.set_synthetic_linear_reg()
-            self.num_labels = [10, 20, 40]
+            self.num_labels = [10, 20, 40, 80]
             if run_active_experiments:
                 self.num_labels = [20]
         elif data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
             self.set_adience_aligned_cnn_1()
-            self.num_labels = [10, 20, 40]
+            self.num_labels = [10, 20, 40, 80]
             if run_active_experiments:
                 self.num_labels = [20]
         elif data_set == bc.DATA_WINE_RED:
             self.set_wine_red()
-            self.num_labels = [10, 20, 40]
+            self.num_labels = [10, 20, 40, 80]
             if run_active_experiments:
                 self.num_labels = [20]
 
@@ -313,10 +314,11 @@ class VisualizationConfigs(bc.VisualizationConfigs):
 
             #methods.append(('numRandBound', 'RelReg, %s bounds'))
             #methods.append(('numRandQuartiles', 'RelReg, %s quartiles'))
-            methods.append(('numRandLogBounds', '%s log bounds'))
+            #methods.append(('numRandLogBounds', '%s log bounds'))
 
             #methods.append(('numRandNeighbor', 'RelReg, %s rand neighbors'))
             #methods.append(('numMinNeighbor', 'RelReg, %s min neighbors'))
+            #methods.append(('numRandNeighborConvex', 'RelReg, %s rand neighbors convex'))
 
             #methods.append(('numSimilar','RelReg, %s pairs'))
             #methods.append(('numSimilarHinge','RelReg, %s pairs hinge'))
@@ -399,7 +401,6 @@ class BatchConfigs(bc.BatchConfigs):
         super(BatchConfigs, self).__init__()
         from experiment.experiment_manager import MethodExperimentManager
         self.method_experiment_manager_class = MethodExperimentManager
-        run_batch = False
         if not run_batch:
             self.config_list = [MainConfigs(pc)]
             return
@@ -410,26 +411,62 @@ class BatchConfigs(bc.BatchConfigs):
         c.use_bound = False
         c.use_hinge = False
         c.use_quartile = False
+        c.use_similar = False
+        c.use_similar_hinge = False
         c.use_test_error_for_model_selection = False
         self.config_list = [MainConfigs(c)]
         pairwise_params = {
             'use_pairwise': [True],
             'num_pairwise': [10, 50, 100]
         }
-        self.config_list += [MainConfigs(configs) for configs in pc.generate_copies(pairwise_params)]
+        self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
+
+        pairwise_hinge_params = {
+            'use_pairwise': [True],
+            'use_hinge': [True],
+            'num_pairwise': [10, 50, 100]
+        }
+        self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_hinge_params)]
 
         bound_params = {
             'use_bound': [True],
             'num_bound': [10, 50, 100]
         }
-        self.config_list += [MainConfigs(configs) for configs in pc.generate_copies(bound_params)]
+        self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bound_params)]
+
+        bound_baseline_params = {
+            'use_bound': [True],
+            'num_bound': [10, 50, 100],
+            'use_baseline': [True],
+            'bound_logistic': [False]
+        }
+        self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bound_baseline_params)]
 
         hinge_params = {
             'use_pairwise': [True],
             'use_hinge': [True],
             'num_pairwise': [10, 50, 100]
         }
-        self.config_list += [MainConfigs(configs) for configs in pc.generate_copies(hinge_params)]
+        self.config_list += [MainConfigs(configs) for configs in c.generate_copies(hinge_params)]
+
+        neighbor_params = {
+            'use_neighbor': [True],
+            'num_neighbor': [10, 50, 100]
+        }
+        self.config_list += [MainConfigs(configs) for configs in c.generate_copies(neighbor_params)]
+
+        similar_params = {
+            'use_similar': [True],
+            'num_neighbor': [10, 50, 100]
+        }
+        self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_params)]
+
+        similar_hinge_params = {
+            'use_similar': [True],
+            'num_neighbor': [10, 50, 100],
+            'use_similar_hinge': [True]
+        }
+        self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_hinge_params)]
 
 
 

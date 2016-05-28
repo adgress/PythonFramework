@@ -998,7 +998,7 @@ class RelativeRegressionMethod(Method):
 
                 method = 'SLSQP'
                 options = {
-                    'disp': True
+                    'disp': False
                 }
                 constraints = [{
                     'type': 'ineq',

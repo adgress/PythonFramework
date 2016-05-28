@@ -3,7 +3,7 @@ from utility.capturing import Capturing
 from methods.constrained_methods import \
     PairwiseConstraint, BoundLowerConstraint, BoundUpperConstraint, \
     NeighborConstraint, BoundConstraint, HingePairwiseConstraint, EqualsConstraint, \
-    SimilarConstraint, SimilarConstraintHinge
+    SimilarConstraint, SimilarConstraintHinge, ConvexNeighborConstraint, LogisticBoundConstraint
 from timer import timer
 
 __author__ = 'Aubrey'
@@ -39,7 +39,9 @@ import math
 import random
 import os
 import itertools
-
+import random
+from methods import logistic_difference_optimize
+from scipy import optimize
 
 print_messages_cv = False
 
@@ -662,6 +664,8 @@ class RelativeRegressionMethod(Method):
         self.use_bound = configs.use_bound
         self.num_bound = configs.num_bound
         self.use_quartiles = configs.use_quartiles
+        self.bound_logistic = configs.bound_logistic
+        self.bound_just_constraints = configs.bound_just_constraints
 
         self.add_random_neighbor = configs.use_neighbor
         self.use_neighbor = configs.use_neighbor
@@ -672,6 +676,7 @@ class RelativeRegressionMethod(Method):
         self.init_ideal = configs.init_ideal
         self.init_ridge_train = configs.init_ridge_train
         self.use_neighbor_logistic = configs.use_neighbor_logistic
+        self.neighbor_convex = configs.neighbor_convex
 
         self.add_random_similar = configs.use_similar
         self.use_similar = configs.use_similar
@@ -711,6 +716,8 @@ class RelativeRegressionMethod(Method):
         if self.use_similar:
             self.cv_params['s'] = np.asarray([.05, .1, .2, .3],dtype='float64')
             self.cv_params['C2'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
+        if self.use_bound and self.bound_logistic and self.bound_just_constraints:
+            self.cv_params['C3'] = np.asarray([0])
         for key, values in self.cv_params.iteritems():
             if key == 's' or values.size <= 1:
                 continue
@@ -718,7 +725,7 @@ class RelativeRegressionMethod(Method):
 
 
     def train_and_test(self, data):
-        use_dccp = self.use_neighbor
+        use_dccp = self.use_neighbor and not self.neighbor_convex
 
         #Solve for best w to initialize problem
         if use_dccp and (self.init_ridge or self.init_ideal):
@@ -767,22 +774,33 @@ class RelativeRegressionMethod(Method):
         I = data.is_train
         I = np.asarray(I.nonzero()[0])
         np.random.seed(0)
+        random.seed(0)
         max_items = 2000
         if self.add_random_pairwise or self.add_random_similar:
             n = I.size
             all_pairs = [(I[i],I[j]) for i in range(n) for j in range(i+1,n)]
             all_pairs = np.asarray(all_pairs)
             rand_perm = np.random.permutation(all_pairs)
-            n = min(rand_perm.size, max_items)
+            n = min(rand_perm.shape[0], max_items)
             data.pairwise_ordering = rand_perm[0:n]
         elif self.add_random_bound:
             I = np.random.permutation(I)
             data.bound_ordering = I
         elif self.add_random_neighbor:
-            neighbors = list(itertools.combinations(I,3))
+            triplets = set()
+            values = xrange(I.shape[0])
+            for i in range(max_items):
+                triplet = tuple(sorted(random.sample(values,3)))
+                triplets.add(triplet)
+            triplets = np.asarray(list(triplets))
+            data.neighbor_ordering = np.random.permutation(triplets)
+            '''
+            triplets = list(itertools.combinations(I,3))
+            n = min(len(triplets), max_items)
+            neighbors = np.asarray(random.sample(triplets, n))
             rand_perm = np.random.permutation(neighbors)
-            n = min(rand_perm.size, max_items)
             data.neighbor_ordering = rand_perm[0:n]
+            '''
 
 
 
@@ -841,23 +859,33 @@ class RelativeRegressionMethod(Method):
                 #data.pairwise_relationships.add(pair)
 
         if self.add_random_bound:
-            assert False, 'Use Ordering'
+            #assert False, 'Use Ordering'
             data.pairwise_relationships = set()
-            #I = (data.is_train & ~data.is_labeled).nonzero()[0]
-            I = (data.is_train).nonzero()[0]
-            sampled = array_functions.sample(I, self.num_bound)
+            bound_ordering = getattr(data, 'bound_ordering', None)
+            if bound_ordering is not None:
+                test_func = lambda i: data.is_train[i]
+                sampled = [b for b in bound_ordering if test_func(b)]
+                sampled = set(sampled[0:self.num_bound])
+            else:
+                I = (data.is_train).nonzero()[0]
+                sampled = array_functions.sample(I, self.num_bound)
             y_median = np.percentile(data.true_y,50)
             for i in sampled:
                 if self.use_quartiles:
                     if self.use_baseline:
                         data.pairwise_relationships.add(EqualsConstraint.create_quantize_constraint(data, i, 4))
                     else:
-                        lower, upper = BoundConstraint.create_quartile_constraints(data, i)
-                        lower.true_y = [data.true_y[i]]
-                        upper.true_y = [data.true_y[i]]
-                        data.pairwise_relationships.add(lower)
-                        data.pairwise_relationships.add(upper)
+                        if self.bound_logistic:
+                            cons = LogisticBoundConstraint.create_quartile_constraints(data, i)
+                            data.pairwise_relationships.add(*cons)
+                        else:
+                            lower, upper = BoundConstraint.create_quartile_constraints(data, i)
+                            lower.true_y = [data.true_y[i]]
+                            upper.true_y = [data.true_y[i]]
+                            data.pairwise_relationships.add(lower)
+                            data.pairwise_relationships.add(upper)
                 else:
+                    assert not self.bound_logistic
                     if self.use_baseline:
                         data.pairwise_relationships.add(EqualsConstraint.create_quantize_constraint(data, i, 2))
                     else:
@@ -872,17 +900,35 @@ class RelativeRegressionMethod(Method):
                         constraint.true_y = [yi_true]
                         data.pairwise_relationships.add(constraint)
         if self.add_random_neighbor:
-            assert False, 'Use Ordering'
+            #assert False, 'Use Ordering'
             data.pairwise_relationships = set()
             #I = (data.is_train & ~data.is_labeled).nonzero()[0]
-            I = (data.is_train).nonzero()[0]
-            sampled = array_functions.sample_n_tuples(I, self.num_neighbor, 3, True)
+            I = data.is_train
+            pairwise_ordering = getattr(data, 'pairwise_ordering', None)
+            if pairwise_ordering is not None:
+                test_func = lambda ijk: I[ijk[0]] and I[ijk[1]] and I[ijk[2]]
+                sampled = [tuple(s.tolist()) for s in pairwise_ordering if test_func2(s)]
+                sampled = set(sampled[0:num_pairs])
+            else:
+                I = (data.is_train).nonzero()[0]
+                sampled = array_functions.sample_n_tuples(I, self.num_neighbor, 3, True)
             for i in sampled:
                 i1,i2,i3 = i
                 y1,y2,y3 = data.true_y[[i1,i2,i3]]
                 if self.use_min_pair_neighbor:
                     ordering = helper_functions.compute_min_pair(y1,y2,y3)
                     triplet = tuple(i[j] for j in ordering)
+                elif self.neighbor_convex:
+                    #ordering = helper_functions.compute_min_pair(y1,y2,y3)
+                    #triplet = tuple(i[j] for j in ordering)
+                    values = data.true_y[list(i)]
+                    sorted_idx = np.argsort(values)
+                    y1,y2,y3 = data.true_y[[i[k] for k in sorted_idx]]
+                    if np.abs(y2-y1) < np.abs(y2-y3):
+                        idx = (sorted_idx[1], sorted_idx[0], sorted_idx[2])
+                        triplet = tuple(i[j] for j in idx)
+                    else:
+                        triplet = tuple(i[j] for j in sorted_idx)
                 else:
                     if np.abs(y1-y2) < np.abs(y1-y3):
                         triplet = i
@@ -890,7 +936,11 @@ class RelativeRegressionMethod(Method):
                         triplet = (i1,i3,i2)
 
                 x1,x2,x3 = data.x[triplet,:]
-                constraint = NeighborConstraint(x1,x2,x3)
+                y1,y2,y3 = data.true_y[list(triplet)]
+                if self.neighbor_convex:
+                    constraint = ConvexNeighborConstraint(x1,x2,x3)
+                else:
+                    constraint = NeighborConstraint(x1,x2,x3)
                 constraint.true_y = [data.true_y[a] for a in triplet]
                 data.pairwise_relationships.add(constraint)
         for s in data.pairwise_relationships:
@@ -938,147 +988,51 @@ class RelativeRegressionMethod(Method):
             self.w = w_anal
             self.b = b_anal
         elif self.method in RelativeRegressionMethod.CVX_METHODS:
-            w = cvx.Variable(p)
-            b = cvx.Variable(1)
-            loss = cvx.sum_entries(
-                cvx.power(
-                    x*w + b - y,
-                    2
+            if self.use_bound and self.bound_logistic:
+                x_bound, bounds = LogisticBoundConstraint.generate_bounds_for_scipy_optimize(
+                    data.pairwise_relationships,
+                    self.transform
                 )
-            )
-            reg = cvx.norm(w)**2
-            pairwise_reg2 = 0
-            bound_reg3 = 0
-            neighbor_reg4 = 0
-            assert self.no_linear_term
+                #self.C = 1
+                #self.C3 = 100
 
-            assert self.method == RelativeRegressionMethod.METHOD_CVX_NEW_CONSTRAINTS
-            func = lambda x:x*w + b
-            t_constraints = []
-            train_pairwise = data.pairwise_relationships[data.is_train_pairwise]
-            for c in train_pairwise:
-                c2 = deepcopy(c)
-                c2.transform(self.transform)
-                if c2.is_pairwise():
-                    pairwise_reg2 += c2.to_cvx(func, scale=self.s)
-                elif c2.is_tertiary():
-                    pass
-                    #neighbor_reg4 += c.to_cvx(func)
-                else:
-                    bound_reg3 += c2.to_cvx(func)
-            if self.add_random_neighbor:
-                neighbor_reg4, t, t_constraints = NeighborConstraint.to_cvx_dccp(
-                    train_pairwise,
-                    func,
-                    self.use_neighbor_logistic
+                method = 'SLSQP'
+                options = {
+                    'disp': True
+                }
+                constraints = [{
+                    'type': 'ineq',
+                    'fun': logistic_difference_optimize.create_constraint_bound(x_bound, bounds[:,1])
+                }]
+                w0 = np.zeros(data.p+1)
+                C3 = self.C3
+                eval = logistic_difference_optimize.create_eval_linear_loss_bound_logistic(
+                    x, y, x_bound, bounds, self.C, C3
                 )
-            warm_start = self.prob is not None and self.warm_start
-            warm_start = False
-            if warm_start:
-                prob = self.prob
-                self.C_param.value = self.C
-                self.C2_param.value = self.C2
-                self.C3_param.value = self.C3
-                self.C4_param.value = self.C4
-                w = self.w_var
-                b = self.b_var
+                grad = logistic_difference_optimize.create_grad_linear_loss_bound_logistic(
+                    x, y, x_bound, bounds, self.C, C3
+                )
+                results = optimize.minimize(eval,w0,method=method,jac=grad,options=options,constraints=constraints)
+                w1 = results.x
+                '''
+                results2 = optimize.minimize(eval,w0,method=method,jac=None,options=options,constraints=constraints)
+                w2 = results2.x
+                from numpy.linalg import norm
+                print 'Error: ' + str(norm(w1-w2)/norm(w1))
+                pass
+                '''
+                '''
+                eval2 = logistic_difference_optimize.create_eval_linear_loss_bound_logistic(
+                    x, y, x_bound, bounds, self.C, 0
+                )
+                results2 = optimize.minimize(eval2,w0,method=method,jac=grad,options=options,constraints=constraints)
+                w2 = results2.x
+                '''
+                if (np.isnan(w1) | np.isinf(w1)).any():
+                    w1[:] = 0
+                self.w, self.b = logistic_difference_optimize.unpack_linear(w1)
             else:
-                constraints = []
-                self.C_param = cvx.Parameter(sign='positive', value=self.C)
-                self.C2_param = cvx.Parameter(sign='positive', value=self.C2)
-                self.C3_param = cvx.Parameter(sign='positive', value=self.C3)
-                self.C4_param = cvx.Parameter(sign='positive', value=self.C4)
-                obj = cvx.Minimize(loss + self.C_param*reg +
-                                   self.C2_param*pairwise_reg2 +
-                                   self.C3_param*bound_reg3 +
-                                   self.C4_param*neighbor_reg4)
-                prob = cvx.Problem(obj,constraints + t_constraints)
-                #prob = cvx.Problem(obj,constraints)
-                self.w_var = w
-                self.b_var = b
-            if self.init_ridge:
-                w.value = self.w_initial
-                b.value = self.b_initial
-            elif self.init_ridge_train:
-                new_configs = deepcopy(self.configs)
-                new_configs.use_neighbor = False
-                new_configs.add_random_neighbor = False
-                new_configs.num_neighbor = 0
-                new_configs.init_ridge_train = False
-                new_instance = RelativeRegressionMethod(new_configs)
-                new_instance.temp_dir = self.temp_dir
-                new_instance.save_cv_temp = False
-                new_instance.use_mpi = False
-                r = new_instance.train_and_test(data)
-                w.value = new_instance.w
-                b.value = new_instance.b
-            else:
-                w.value = None
-                b.value = None
-            #assert prob.is_dcp()
-            if not prob.is_dcp():
-                assert is_dccp(prob)
-            print_messages = False
-            if print_messages:
-                timer.tic()
-            params = [self.C_param.value, self.C2_param.value, self.C3_param.value, self.C4_param.value]
-            #ret = prob.solve(method = 'dccp',solver = 'MOSEK')
-            #ret = prob.solve(method = 'dccp')
-            try:
-                with Capturing() as output:
-                    #ret = prob.solve(cvx.ECOS, False, {'warm_start': warm_start})
-                    if prob.is_dcp():
-                        ret = prob.solve(self.solver, False, {'warm_start': warm_start})
-                    else:
-                        print str(params)
-                        options = {
-                            'method': 'dccp'
-                        }
-                        if self.fast_dccp:
-                            options = {
-                                'method': 'dccp',
-                                'max_iter': 20,
-                                'tau': .25,
-                                'mu': 2,
-                                'tau_max': 1e6
-                            }
-
-                        w.value = self.w_initial
-                        b.value = self.b_initial
-                        ret = prob.solve(solver=self.solver, **options)
-                        saved_w = w.value
-                        saved_b = b.value
-
-                        '''
-                        w.value = self.w_initial
-                        b.value = self.b_initial
-                        max_iter = options['max_iter']
-                        options['max_iter'] = 1
-                        for i in range(max_iter):
-                            options['tau'] *= options['mu']
-                            ret2 = prob.solve(solver=self.solver, **options)
-                        '''
-
-
-                w_value = w.value
-                b_value = b.value
-                #print prob.status
-                assert w_value is not None and b_value is not None
-                #print a.value
-                #print b.value
-            except Exception as e:
-                print str(e) + ': ' + str(params)
-                #print 'cvx status: ' + str(prob.status)
-                k = 0
-                w_value = k*np.zeros((p,1))
-                b_value = 0
-            if print_messages:
-                print 'params: ' + str(params)
-                timer.toc()
-            if warm_start:
-                self.prob = prob
-            self.w = w_value
-            self.b = b_value
+                self.solve_cvx(x, y, data)
             '''
             obj2 = cvx.Minimize(loss + self.C*reg)
             try:
@@ -1104,6 +1058,155 @@ class RelativeRegressionMethod(Method):
         assert self.b is not None
         '''
 
+    def solve_cvx(self, x, y, data):
+        p = x.shape[1]
+        w = cvx.Variable(p)
+        b = cvx.Variable(1)
+        loss = cvx.sum_entries(
+            cvx.power(
+                x*w + b - y,
+                2
+            )
+        )
+        reg = cvx.norm(w)**2
+        pairwise_reg2 = 0
+        bound_reg3 = 0
+        neighbor_reg4 = 0
+        assert self.no_linear_term
+
+        assert self.method == RelativeRegressionMethod.METHOD_CVX_NEW_CONSTRAINTS
+        func = lambda x:x*w + b
+        t_constraints = []
+        train_pairwise = data.pairwise_relationships[data.is_train_pairwise]
+        constraints = []
+        for c in train_pairwise:
+            cons = []
+            c2 = deepcopy(c)
+            c2.transform(self.transform)
+            if c2.is_pairwise():
+                val, cons = c2.to_cvx(func, scale=self.s)
+                pairwise_reg2 += val
+            elif c2.is_tertiary():
+                if not c2.use_dccp():
+                    val, cons = c2.to_cvx(func)
+                    neighbor_reg4 += val
+            else:
+                val, cons = c2.to_cvx(func)
+                bound_reg3 += val
+            constraints += cons
+        if self.add_random_neighbor and not self.neighbor_convex:
+            neighbor_reg4, t, t_constraints = NeighborConstraint.to_cvx_dccp(
+                train_pairwise,
+                func,
+                self.use_neighbor_logistic
+            )
+        warm_start = self.prob is not None and self.warm_start
+        warm_start = False
+        if warm_start:
+            prob = self.prob
+            self.C_param.value = self.C
+            self.C2_param.value = self.C2
+            self.C3_param.value = self.C3
+            self.C4_param.value = self.C4
+            w = self.w_var
+            b = self.b_var
+        else:
+            self.C_param = cvx.Parameter(sign='positive', value=self.C)
+            self.C2_param = cvx.Parameter(sign='positive', value=self.C2)
+            self.C3_param = cvx.Parameter(sign='positive', value=self.C3)
+            self.C4_param = cvx.Parameter(sign='positive', value=self.C4)
+            obj = cvx.Minimize(loss + self.C_param*reg +
+                               self.C2_param*pairwise_reg2 +
+                               self.C3_param*bound_reg3 +
+                               self.C4_param*neighbor_reg4)
+            prob = cvx.Problem(obj,constraints + t_constraints)
+            #prob = cvx.Problem(obj,constraints)
+            self.w_var = w
+            self.b_var = b
+        if self.init_ridge:
+            w.value = self.w_initial
+            b.value = self.b_initial
+        elif self.init_ridge_train:
+            new_configs = deepcopy(self.configs)
+            new_configs.use_neighbor = False
+            new_configs.add_random_neighbor = False
+            new_configs.num_neighbor = 0
+            new_configs.init_ridge_train = False
+            new_instance = RelativeRegressionMethod(new_configs)
+            new_instance.temp_dir = self.temp_dir
+            new_instance.save_cv_temp = False
+            new_instance.use_mpi = False
+            r = new_instance.train_and_test(data)
+            w.value = new_instance.w
+            b.value = new_instance.b
+        else:
+            w.value = None
+            b.value = None
+        #assert prob.is_dcp()
+        if not prob.is_dcp():
+            assert is_dccp(prob)
+        print_messages = False
+        if print_messages:
+            timer.tic()
+        params = [self.C_param.value, self.C2_param.value, self.C3_param.value, self.C4_param.value]
+        #ret = prob.solve(method = 'dccp',solver = 'MOSEK')
+        #ret = prob.solve(method = 'dccp')
+        try:
+            with Capturing() as output:
+                #ret = prob.solve(cvx.ECOS, False, {'warm_start': warm_start})
+                if prob.is_dcp():
+                    ret = prob.solve(self.solver, False, {'warm_start': warm_start})
+                else:
+                    print str(params)
+                    options = {
+                        'method': 'dccp'
+                    }
+                    if self.fast_dccp:
+                        options = {
+                            'method': 'dccp',
+                            'max_iter': 20,
+                            'tau': .25,
+                            'mu': 2,
+                            'tau_max': 1e6
+                        }
+
+                    w.value = self.w_initial
+                    b.value = self.b_initial
+                    ret = prob.solve(solver=self.solver, **options)
+                    saved_w = w.value
+                    saved_b = b.value
+
+                    '''
+                    w.value = self.w_initial
+                    b.value = self.b_initial
+                    max_iter = options['max_iter']
+                    options['max_iter'] = 1
+                    for i in range(max_iter):
+                        options['tau'] *= options['mu']
+                        ret2 = prob.solve(solver=self.solver, **options)
+                    '''
+
+
+            w_value = w.value
+            b_value = b.value
+            #print prob.status
+            assert w_value is not None and b_value is not None
+            #print a.value
+            #print b.value
+        except Exception as e:
+            print str(e) + ': ' + str(params)
+            #print 'cvx status: ' + str(prob.status)
+            k = 0
+            w_value = k*np.zeros((p,1))
+            b_value = 0
+        if print_messages:
+            print 'params: ' + str(params)
+            timer.toc()
+        if warm_start:
+            self.prob = prob
+        self.w = w_value
+        self.b = b_value
+
     def predict(self, data):
         o = RelativeRegressionOutput(data)
         if data.n == 0:
@@ -1115,7 +1218,8 @@ class RelativeRegressionMethod(Method):
             y = x.dot(self.w) + self.b
             o.fu = y
             o.y = y
-            f = lambda x: x.dot(self.w)[0,0] + self.b
+            #f = lambda x: x.dot(self.w)[0,0] + self.b
+            f = lambda x: x.dot(self.w)+ self.b
             n = data.pairwise_relationships.size
             is_pairwise_correct = array_functions.false(n)
             for i, c in enumerate(data.pairwise_relationships):
@@ -1167,7 +1271,11 @@ class RelativeRegressionMethod(Method):
                     s += '-logFix'
             if use_bound:
                 hasRandBounds = self.num_bound > 0 and self.add_random_bound
-                if getattr(self, 'use_quartiles', False):
+                if getattr(self, 'bound_logistic', False):
+                    s += '-numRandLogBounds=' + str(int(self.num_bound))
+                    if getattr(self, 'bound_just_constraints', False):
+                        s += '-justConstraints'
+                elif getattr(self, 'use_quartiles', False):
                     s += '-numRandQuartiles=' + str(int(self.num_bound))
                 else:
                     s += '-numRandBound=' + str(int(self.num_bound))
@@ -1176,6 +1284,8 @@ class RelativeRegressionMethod(Method):
             if use_neighbor and self.num_neighbor > 0 and self.add_random_neighbor:
                 if getattr(self, 'use_min_pair_neighbor', False):
                     s += '-numMinNeighbor=' + str(int(self.num_neighbor))
+                elif getattr(self, 'neighbor_convex', False):
+                    s += 'numRandNeighborConvex=' + str(int(self.num_neighbor))
                 else:
                     s += '-numRandNeighbor=' + str(int(self.num_neighbor))
                 if getattr(self, 'fast_dccp', False):

@@ -54,7 +54,7 @@ class EqualsConstraint(CVXConstraint):
         self.y = y
 
     def to_cvx(self, f):
-        return cvx.square(f(self.x[0]) - self.y)
+        return cvx.square(f(self.x[0]) - self.y), []
 
     @staticmethod
     def create_quantize_constraint(data, instance_index, num_quantiles):
@@ -65,6 +65,40 @@ class EqualsConstraint(CVXConstraint):
         i = np.square(quantiles - y).argmin()
         constraint = EqualsConstraint(x, quantiles[i])
         return constraint
+
+class ConvexNeighborConstraint(CVXConstraint):
+    def __init__(self, x, x_close, x_far):
+        super(ConvexNeighborConstraint, self).__init__()
+        self.x = [x, x_close, x_far]
+
+    def to_cvx(self, f):
+        yi = f(self.x[0])
+        yj = f(self.x[1])
+        yk = f(self.x[2])
+        #assert False, 'Update this'
+        #d_close,d_far = self.get_convex_terms(f)
+        #d = d_close - d_far
+        #e = cvx.max_elemwise(d,0)
+        values = [yk-yj, -yj-yk+2*yi]
+        #values = np.asarray(values)
+        #values = np.expand_dims(values, 1)
+        #cvx.logistic(values)
+        return cvx_logistic.logistic_difference(values), [yk > yj, yk > yi, 0 > -yj-yk+2*yi]
+
+    def predict(self, f):
+        y0 = f(self.x[0])
+        return abs(y0-f(self.x[1])) <= abs(y0 - f(self.x[2]))
+
+    def flip(self):
+        x = self.x[1]
+        self.x[1] = self.x[2]
+        self.x[2] = x
+
+    def is_tertiary(self):
+        return True
+
+    def use_dccp(self):
+        return False
 
 class NeighborConstraint(CVXConstraint):
     def __init__(self, x, x_close, x_far):
@@ -93,6 +127,9 @@ class NeighborConstraint(CVXConstraint):
         self.x[2] = x
 
     def is_tertiary(self):
+        return True
+
+    def use_dccp(self):
         return True
 
     @staticmethod
@@ -137,7 +174,7 @@ class PairwiseConstraint(CVXConstraint):
         x1 = self.x[0]
         x2 = self.x[1]
         d = f(x1) - f(x2)
-        return self.cvx_loss_logistic(d/scale)
+        return self.cvx_loss_logistic(d/scale), []
 
     def is_pairwise(self):
         return True
@@ -150,7 +187,7 @@ class HingePairwiseConstraint(PairwiseConstraint):
         x1 = self.x[0]
         x2 = self.x[1]
         d = f(x1) - f(x2)
-        return cvx.max_elemwise(d,0)
+        return cvx.max_elemwise(d,0), []
 
 class SimilarConstraint(PairwiseConstraint):
     def __init__(self, x1, x2, max_diff):
@@ -171,7 +208,7 @@ class SimilarConstraint(PairwiseConstraint):
         x1 = self.x[1]
         d = f(x0) - f(x1)
         self.scale = scale
-        return d + cvx_logistic.logistic_similar(d, self.max_diff*scale)
+        return d + cvx_logistic.logistic_similar(d, self.max_diff*scale), []
 
 class SimilarConstraintHinge(SimilarConstraint):
     def __init__(self, x1, x2, max_diff):
@@ -191,7 +228,49 @@ class SimilarConstraintHinge(SimilarConstraint):
         x1 = self.x[1]
         d = cvx.abs(f(x0) - f(x1))
         self.scale = scale
-        return cvx.max_elemwise(d - self.max_diff*scale,0)
+        return cvx.max_elemwise(d - self.max_diff*scale,0), []
+
+class LogisticBoundConstraint(CVXConstraint):
+    def __init__(self, x, c1, c2):
+        super(LogisticBoundConstraint, self).__init__()
+        self.x.append(x)
+        self.c += [c1, c2]
+
+    def predict(self, f):
+        y = f(self.x[0])
+        return y >= self.c[0] and y <= self.c[1]
+
+    def flip(self):
+        assert False
+
+    def to_cvx(self, f):
+        y = f(self.x[0])
+        c1 = self.c[0]
+        c2 = self.c[1]
+        return cvx_logistic.logistic_difference([c2-y, c1-y]), []
+
+    @staticmethod
+    def create_quartile_constraints(data, instance_index):
+        quartiles = data.get_quartiles()
+        x = data.x[instance_index, :]
+        y = data.true_y[instance_index]
+        i = np.digitize(y, quartiles)
+        if i >= quartiles.size:
+            i = quartiles.size-1
+        return [LogisticBoundConstraint(x, quartiles[i-1], quartiles[i])]
+
+    @staticmethod
+    def generate_bounds_for_scipy_optimize(constraints, transform = None):
+        bounds = np.zeros((len(constraints),2))
+        x = np.zeros((len(constraints), constraints[0].x[0].size))
+        for i, c in enumerate(constraints):
+            assert len(c.c) == 2
+            assert len(c.x) == 1
+            bounds[i,:] = np.asarray(c.c)
+            x[i,:] = c.x[0]
+            if transform is not None:
+                x[i,:] = transform.transform(x[i,:])
+        return x, bounds
 
 class BoundConstraint(CVXConstraint):
     BOUND_LOWER = 0
@@ -230,7 +309,7 @@ class BoundConstraint(CVXConstraint):
         else:
             assert False
         d *= -1
-        return self.cvx_loss_piecewise(d, a, b)
+        return self.cvx_loss_piecewise(d, a, b), []
 
     @staticmethod
     def create_quartile_constraints(data, instance_index):

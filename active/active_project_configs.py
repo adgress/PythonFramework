@@ -40,9 +40,11 @@ noise_rate = .0
 logistic_noise = 0
 use_logistic_fix = True
 
-use_bound = False
+use_bound = True
 num_bound = 50
-use_quartiles = False
+use_quartiles = True
+bound_logistic = False
+bound_just_constraints = True
 
 use_neighbor = False
 num_neighbor = 50
@@ -52,8 +54,9 @@ init_ridge = False
 init_ideal = False
 init_ridge_train = False
 use_neighbor_logistic = False
+neighbor_convex = True
 
-use_similar = True
+use_similar = False
 num_similar = 100
 use_similar_hinge = True
 
@@ -113,6 +116,8 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.use_bound = use_bound
         self.num_bound = num_bound
         self.use_quartiles = use_quartiles
+        self.bound_logistic = bound_logistic
+        self.bound_just_constraints = bound_just_constraints
 
         self.use_neighbor = use_neighbor
         self.num_neighbor = num_neighbor
@@ -123,6 +128,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.init_ridge_train = init_ridge_train
         self.use_neighbor_logistic = use_neighbor_logistic
         self.use_logistic_fix = use_logistic_fix
+        self.neighbor_convex = neighbor_convex
 
         self.use_similar = use_similar
         self.num_similar = num_similar
@@ -215,6 +221,8 @@ class MainConfigs(bc.MainConfigs):
         method_configs.use_bound = pc.use_bound
         method_configs.num_bound = pc.num_bound
         method_configs.use_quartiles = pc.use_quartiles
+        method_configs.bound_logistic = pc.bound_logistic
+        method_configs.bound_just_constraints = pc.bound_just_constraints
 
         method_configs.use_neighbor = pc.use_neighbor
         method_configs.num_neighbor = pc.num_neighbor
@@ -225,6 +233,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.init_ridge_train = pc.init_ridge_train
         method_configs.use_neighbor_logistic = pc.use_neighbor_logistic
         method_configs.use_logistic_fix = pc.use_logistic_fix
+        method_configs.neighbor_convex = pc.neighbor_convex
 
         method_configs.use_similar = pc.use_similar
         method_configs.num_similar = pc.num_similar
@@ -267,7 +276,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         else:
             base_file_name = 'RelReg-cvx-constraints-%s=%s'
             #self.files['LapRidge.pkl'] = 'Laplacian Ridge Regression'
-            use_test = True
+            use_test = False
             if use_test:
                 self.files['RelReg-cvx-constraints-noPairwiseReg-TEST.pkl'] = 'TEST: Ridge Regression'
             else:

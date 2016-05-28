@@ -257,8 +257,7 @@ class LabeledData(LabeledVector):
         self.permute(split.permutation)
         others_to_permute = {
             'pairwise_ordering',
-            'neighbor_ordering',
-            'bound_ordering'
+            'neighbor_ordering'
         }
         split_mapping = dict((old,new) for new, old in enumerate(split.permutation))
         for key in others_to_permute:
@@ -271,7 +270,8 @@ class LabeledData(LabeledVector):
                 for j_idx, j in enumerate(i):
                     new_j = split_mapping[j]
                     new_i[j_idx] = new_j
-                v[i_idx] = new_i
+                new_v[i_idx] = new_i
+            setattr(self, key, new_v)
 
         self.is_train_pairwise = getattr(split, 'is_train_pairwise', None)
 
@@ -414,3 +414,6 @@ class Constraint(object):
         for i, xi in enumerate(self.x):
             self.x[i] = t.transform(xi)
         self.transform_applied = True
+
+    def use_dccp(self):
+        return False

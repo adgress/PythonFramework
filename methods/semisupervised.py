@@ -33,9 +33,9 @@ class SemisupervisedMethod(method.Method):
 class LaplacianRidgeMethod(SemisupervisedMethod):
     def __init__(self, configs=None):
         super(LaplacianRidgeMethod, self).__init__(configs)
-        self.cv_params['C'] = self.create_cv_params(-8,8)
-        self.cv_params['C2'] = self.create_cv_params(-8,8)
-        self.cv_params['sigma'] = self.create_cv_params(-8,8)
+        self.cv_params['C'] = self.create_cv_params(-6,6)
+        self.cv_params['C2'] = self.create_cv_params(-6,6)
+        self.cv_params['sigma'] = self.create_cv_params(-6,6)
         self.transform = StandardScaler()
         self.b = None
         self.w = None

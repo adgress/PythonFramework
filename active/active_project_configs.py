@@ -28,7 +28,7 @@ active_iterations = 2
 active_items_per_iteration = 50
 
 use_mixed_cv = False
-
+use_ssl = False
 use_baseline = False
 
 use_pairwise = False
@@ -39,6 +39,7 @@ use_hinge = False
 noise_rate = .0
 logistic_noise = 0
 use_logistic_fix = False
+pairwise_use_scipy = True
 
 use_bound = False
 num_bound = 50
@@ -58,6 +59,7 @@ neighbor_convex = True
 use_similar = False
 num_similar = 50
 use_similar_hinge = False
+similar_use_scipy = True
 
 use_aic = True
 use_test_error_for_model_selection = True
@@ -103,7 +105,7 @@ class ProjectConfigs(bc.ProjectConfigs):
 
 
         self.use_mixed_cv = use_mixed_cv
-
+        self.use_ssl = use_ssl
         self.use_baseline = use_baseline
 
         self.use_pairwise = use_pairwise
@@ -112,6 +114,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.use_hinge = use_hinge
         self.noise_rate = noise_rate
         self.logistic_noise = logistic_noise
+        self.pairwise_use_scipy = pairwise_use_scipy
 
         self.use_bound = use_bound
         self.num_bound = num_bound
@@ -132,6 +135,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.use_similar = use_similar
         self.num_similar = num_similar
         self.use_similar_hinge = use_similar_hinge
+        self.similar_use_scipy = similar_use_scipy
 
         self.use_test_error_for_model_selection = use_test_error_for_model_selection
         self.use_aic = use_aic
@@ -216,6 +220,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.use_hinge = pc.use_hinge
         method_configs.noise_rate = pc.noise_rate
         method_configs.logistic_noise = pc.logistic_noise
+        method_configs.pairwise_use_scipy = pc.pairwise_use_scipy
 
         method_configs.use_bound = pc.use_bound
         method_configs.num_bound = pc.num_bound
@@ -236,6 +241,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.use_similar = pc.use_similar
         method_configs.num_similar = pc.num_similar
         method_configs.use_similar_hinge = pc.use_similar_hinge
+        method_configs.similar_use_scipy = pc.similar_use_scipy
 
         method_configs.use_test_error_for_model_selection = pc.use_test_error_for_model_selection
         method_configs.use_aic = pc.use_aic
@@ -251,8 +257,10 @@ class MainConfigs(bc.MainConfigs):
         if run_active_experiments:
             self.learner = active
         else:
-            #self.learner = lap_ridge
-            self.learner = relative_reg
+            if pc.use_ssl:
+                self.learner = lap_ridge
+            else:
+                self.learner = relative_reg
             #self.learner = ridge_reg
             #self.learner = mean_reg
 
@@ -415,6 +423,12 @@ class BatchConfigs(bc.BatchConfigs):
         c.use_similar_hinge = False
         c.use_test_error_for_model_selection = False
         self.config_list = [MainConfigs(c)]
+
+        ssl_params = {
+            'use_ssl': [True]
+        }
+        self.config_list += [MainConfigs(configs) for configs in c.generate_copies(ssl_params)]
+
         pairwise_params = {
             'use_pairwise': [True],
             'num_pairwise': [10, 50, 100]
@@ -457,14 +471,14 @@ class BatchConfigs(bc.BatchConfigs):
 
         similar_params = {
             'use_similar': [True],
-            'num_neighbor': [10, 50, 100]
+            'num_similar': [10, 50, 100]
         }
         self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_params)]
 
         similar_hinge_params = {
             'use_similar': [True],
             'num_neighbor': [10, 50, 100],
-            'use_similar_hinge': [True]
+            'num_similar': [True]
         }
         self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_hinge_params)]
 

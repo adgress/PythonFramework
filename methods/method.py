@@ -659,6 +659,7 @@ class RelativeRegressionMethod(Method):
         self.noise_rate = configs.noise_rate
         self.logistic_noise = configs.logistic_noise
         self.use_logistic_fix = configs.use_logistic_fix
+        self.pairwise_use_scipy = configs.pairwise_use_scipy
 
         self.add_random_bound = configs.use_bound
         self.use_bound = configs.use_bound
@@ -681,6 +682,7 @@ class RelativeRegressionMethod(Method):
         self.use_similar = configs.use_similar
         self.num_similar = configs.num_similar
         self.use_similar_hinge = configs.use_similar_hinge
+        self.similar_use_scipy = configs.similar_use_scipy
 
 
         self.use_test_error_for_model_selection = configs.use_test_error_for_model_selection
@@ -1071,6 +1073,71 @@ class RelativeRegressionMethod(Method):
                     w1[:] = 0
                 self.w, self.b = logistic_difference_optimize.unpack_linear(w1)
                 pass
+            elif self.use_pairwise and self.pairwise_use_scipy:
+                method = 'BFGS'
+                x_low,x_high = PairwiseConstraint.generate_pairs_for_scipy_optimize(
+                    data.pairwise_relationships,
+                    self.transform
+                )
+                C = self.C
+                C2 = self.C2
+                #C = 1
+                #C2 = 10
+                opt_data = logistic_difference_optimize.optimize_data(
+                    x, y, C, C2
+                )
+                opt_data.x_low = x_low
+                opt_data.x_high = x_high
+                eval = logistic_difference_optimize.logistic_pairwise.create_eval(opt_data)
+                grad = logistic_difference_optimize.logistic_pairwise.create_grad(opt_data)
+                constraints = []
+                with Capturing() as output:
+                    results = optimize.minimize(eval,w0,method=method,jac=grad,options=options,constraints=constraints)
+                '''
+                results2 = optimize.minimize(eval,w0,method=method,jac=None,options=options,constraints=constraints)
+                from numpy.linalg import norm
+                print 'Error: ' + str(norm(results.x-results2.x)/norm(results.x))
+                w2 = results2.x
+                '''
+                w1 = results.x
+                if (np.isnan(w1) | np.isinf(w1)).any():
+                    w1[:] = 0
+                self.w, self.b = logistic_difference_optimize.unpack_linear(w1)
+            elif self.use_similar and self.similar_use_scipy:
+                #method = 'CG'
+                x1,x2 = PairwiseConstraint.generate_pairs_for_scipy_optimize(
+                    data.pairwise_relationships,
+                    self.transform
+                )
+                C = self.C
+                C2 = self.C2
+                #C = 1
+                #C2 = 1
+                s = self.s
+                opt_data = logistic_difference_optimize.optimize_data(
+                    x, y, C, C2
+                )
+                opt_data.s = s
+                opt_data.x1 = x1
+                opt_data.x2 = x2
+
+                eval = logistic_difference_optimize.logistic_similar.create_eval(opt_data)
+                grad = logistic_difference_optimize.logistic_similar.create_grad(opt_data)
+                constraints = []
+                with Capturing() as output:
+                    results = optimize.minimize(eval,w0,method=method,jac=grad,options=options,constraints=constraints)
+                '''
+                results2 = optimize.minimize(eval,w0,method=method,jac=None,options=options,constraints=constraints)
+                from numpy.linalg import norm
+                print 'Error: ' + str(norm(results.x-results2.x)/norm(results.x))
+                w2 = results2.x
+                '''
+
+                w1 = results.x
+                if (np.isnan(w1) | np.isinf(w1)).any():
+                    w1[:] = 0
+                self.w, self.b = logistic_difference_optimize.unpack_linear(w1)
+
             else:
                 self.solve_cvx(x, y, data)
             '''
@@ -1288,6 +1355,8 @@ class RelativeRegressionMethod(Method):
                         s += '-numRandPairsHinge=' + str(int(self.num_pairwise))
                     else:
                         s += '-numRandPairs=' + str(int(self.num_pairwise))
+                        if getattr(self, 'pairwise_use_scipy', False):
+                            s += '-scipy'
                     pair_bound = getattr(self, 'pair_bound', ())
                     try:
                         pair_bound = tuple(pair_bound)
@@ -1343,6 +1412,8 @@ class RelativeRegressionMethod(Method):
                     s += '-numSimilarHinge=' + str(int(self.num_similar))
                 else:
                     s += '-numSimilar=' + str(int(self.num_similar))
+                    if getattr(self, 'similar_use_scipy', False):
+                        s += '-scipy'
             if getattr(self, 'use_mixed_cv', False):
                 s += '-mixedCV'
             if hasattr(self, 'solver'):

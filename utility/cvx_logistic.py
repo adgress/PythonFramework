@@ -155,6 +155,7 @@ class logistic_similar(cvx.logistic):
         assert values.size == 1
         a = self.s
         b = values[0]
+        #Are the signs wrong?
         t = np.exp(a-b) + np.exp(-a-b) + np.exp(-2*b)
         return np.log(1 + t)
 
@@ -223,6 +224,7 @@ class logistic_similar(cvx.logistic):
         else: # M is constant.
             s = lu.create_const(s, (1, 1))
 
+        #Wrong sign?
         obj0, constr0 = exp.graph_implementation([lu.neg_expr(t)], size)
         obj1, constr1 = exp.graph_implementation([lu.sub_expr(s, lu.sum_expr([t, x]))], size)
         obj2, constr2 = exp.graph_implementation([lu.sub_expr(lu.neg_expr(s), lu.sum_expr([t, x]))], size)

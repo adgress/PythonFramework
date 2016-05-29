@@ -197,6 +197,21 @@ class PairwiseConstraint(CVXConstraint):
     def is_pairwise(self):
         return True
 
+    @staticmethod
+    def generate_pairs_for_scipy_optimize(constraints, transform = None):
+        p = constraints[0].x[0].size
+        x_low = np.zeros((len(constraints),p))
+        x_high = np.zeros((len(constraints),p))
+        for idx, c in enumerate(constraints):
+            assert len(c.x) == 2
+            x_curr = np.vstack(c.x)
+            if transform is not None:
+                for i in range(x_curr.shape[0]):
+                    x_curr[i,:] = transform.transform(x_curr[i,:])
+            x_low[idx,:] = x_curr[0,:]
+            x_high[idx,:] = x_curr[1,:]
+        return x_low, x_high
+
 class HingePairwiseConstraint(PairwiseConstraint):
     def __init__(self, x1, x2):
         super(HingePairwiseConstraint, self).__init__(x1, x2)

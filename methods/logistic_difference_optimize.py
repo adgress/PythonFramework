@@ -80,6 +80,7 @@ class logistic_optimize(object):
         v = eval_loss + reg*eval_reg
         if reg_mixed > 0:
             v += eval_mixed*reg_mixed
+        return v
 
     @staticmethod
     def eval_loss(data, v):
@@ -132,18 +133,90 @@ class logistic_optimize(object):
 class logistic_similar(logistic_optimize):
     @staticmethod
     def eval_mixed_guidance(data, v):
-        p1, p2 = data.pairs
-        yi = apply_linear(p1, v)
-        yj = apply_linear(p2, v)
-        return sigmoid(yi-yj).sum()
+        x1 = data.x1
+        x2 = data.x2
+        s = data.s
+        y1 = apply_linear(x1, v)
+        y2 = apply_linear(x2, v)
+        d = y2 - y1
+        denom = np.log(1 + np.exp(s+d) + np.exp(d-s) + np.exp(2*d))
+
+        vals = d - denom + np.log(np.exp(s) - np.exp(-s))
+        return -vals.sum()
+
 
     @staticmethod
     def grad_mixed_guidance(data, v):
-        pass
+        x1 = data.x1
+        x2 = data.x2
+        s = data.s
+        y1 = apply_linear(x1, v)
+        y2 = apply_linear(x2, v)
+        d = y2 - y1
+        a = np.exp(s+d) + np.exp(d-s) + np.exp(2*d)
+        a2 = np.exp(s+d) + np.exp(d-s) + 2*np.exp(2*d)
+        n = x1.shape[0]
+        g = np.zeros(v.size)
+
+        sig1 = sigmoid(s - d)
+        sig2 = sigmoid(-s - d)
+
+        for i in range(n):
+            dx = x2[i,:] - x1[i,:]
+
+            ai = a[i]
+            a2i = a2[i]
+            v = a2i/(1+ai)
+            if np.isinf(ai):
+                v = 1
+            t = 1 - v
+
+            g[0:-1] += t*dx
+            g[-1] += t
+        g[-1] = 0
+        return -g
+        #return g
+
+class logistic_pairwise(logistic_optimize):
+    @staticmethod
+    def eval_mixed_guidance(data, v):
+        x_low = data.x_low
+        x_high = data.x_high
+        yj = apply_linear(x_low, v)
+        yi = apply_linear(x_high, v)
+        d = yi - yj
+        '''
+        v = sigmoid(yi-yj)
+        v_log = -np.log(v)
+        return v_log.sum()
+        '''
+        vals = np.log(1 + np.exp(-d))
+        I = np.isinf(vals)
+        if I.any():
+            #print 'logistic_pairwise eval: inf! ' + str(I.mean())
+            #vals[np.isinf(vals)] = 1e16
+            pass
+        return vals.sum()
 
     @staticmethod
-    def _grad_num_mixed_guidance(data, v):
-        pass
+    def grad_mixed_guidance(data, v):
+        x_low = data.x_low
+        x_high = data.x_high
+        n = x_low.shape[0]
+        d = apply_linear(x_high, v) - apply_linear(x_low, v)
+        a = np.exp(-d)
+        sig = sigmoid(d)
+        g = np.zeros(v.size)
+        for i in range(n):
+            dx = x_high[i,:] - x_low[i,:]
+            #t = a[i]
+            #t *= ((1+a[i])**-2)
+            #t *= ((1+a[i])**-1)
+            t = 1-sig[i]
+            g[0:-1] += t*dx
+            g[-1] += t
+        g *= -1
+        return g
 
 class logistic_neighbor(object):
 
@@ -158,7 +231,7 @@ class logistic_neighbor(object):
         sig2 = sigmoid(2*y - y_high - y_low)
         diff = sig1 - sig2
         vals2 = -np.log(sig1-sig2)
-        I = np.isinf(vals2) | np.isnan(vals2)
+        I = np.isnan(vals2)
         if I.any():
             print 'eval_linear_neighbor_logistic: inf = ' + str(I.mean())
             vals2[I] = 1e6

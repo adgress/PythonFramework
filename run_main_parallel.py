@@ -14,6 +14,7 @@ import inspect
 from utility import mpi_utility
 from utility import mpi_group_pool
 from mpipool import core as mpipool
+import os
 
 comm = MPI.COMM_WORLD
 use_mpi = comm.Get_size() > 1
@@ -72,6 +73,10 @@ def mpi_run_main_args(args):
     main.run_main_args(args)
 
 
+def results_exist(configs):
+    results_file = configs.results_file
+    return os.path.isfile(results_file)
+
 if __name__ == '__main__':
     timer.tic()
     pc = configs_lib.create_project_configs()
@@ -96,6 +101,10 @@ if __name__ == '__main__':
         batch_configs = configs_lib.BatchConfigs(configs_lib.ProjectConfigs())
         comm = MPI.COMM_WORLD
         for c in batch_configs.config_list:
+            if results_exist(c):
+                if comm.Get_rank() == 0:
+                    print 'Skipping: ' + c.results_file
+                continue
             if comm.Get_rank() == 0:
                 timer.tic()
             pool.map(mpi_run_main_args, [n + (c,) for n in num_labels_list])

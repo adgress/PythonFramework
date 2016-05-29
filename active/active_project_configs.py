@@ -477,6 +477,7 @@ class BatchConfigs(bc.BatchConfigs):
 
         similar_hinge_params = {
             'use_similar': [True],
+            'use_similar_hinge': [True],
             'num_similar': [10, 50, 100],
         }
         self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_hinge_params)]

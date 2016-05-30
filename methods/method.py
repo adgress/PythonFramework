@@ -5,6 +5,7 @@ from methods.constrained_methods import \
     NeighborConstraint, BoundConstraint, HingePairwiseConstraint, EqualsConstraint, \
     SimilarConstraint, SimilarConstraintHinge, ConvexNeighborConstraint, LogisticBoundConstraint
 from timer import timer
+from timer.timer import tic, toc
 
 __author__ = 'Aubrey'
 
@@ -701,7 +702,7 @@ class RelativeRegressionMethod(Method):
         self.no_linear_term = True
         self.neg_log = False
         self.prob = None
-        self.use_grad = False
+        self.use_grad = True
         if helper_functions.is_laptop():
             self.solver = cvx.SCS
         else:
@@ -1093,12 +1094,13 @@ class RelativeRegressionMethod(Method):
                     data.pairwise_relationships,
                     self.transform
                 )
+                self.C = 10
+                self.C2 = 10
                 C = self.C
                 C2 = self.C2
                 #C2 = 0
                 #C = 0
-                #C = 1
-                #C2 = 10
+
                 opt_data = logistic_difference_optimize.optimize_data(
                     x, y, C, C2
                 )
@@ -1112,14 +1114,29 @@ class RelativeRegressionMethod(Method):
                 with Capturing() as output:
                     results = optimize.minimize(eval,w0,method=method,jac=grad,options=options,constraints=constraints)
                 '''
+                tic()
+                results = optimize.minimize(eval,w0,method=method,jac=grad,options=options,constraints=constraints)
+                toc()
+
+                tic()
                 results2 = optimize.minimize(eval,w0,method=method,jac=None,options=options,constraints=constraints)
+                toc()
+
+                tic()
+                self.solve_cvx(x, y, data)
+                toc()
                 from numpy.linalg import norm
                 print 'Error: ' + str(norm(results.x-results2.x)/norm(results.x))
                 w2 = results2.x
+
+                w_cvx = self.w
+                b_cvx = self.b
+                print 'Error cvx: ' + str(norm(results2.x[0:-1] - w_cvx.T)/norm(w_cvx))
                 '''
                 w1 = results.x
                 if (np.isnan(w1) | np.isinf(w1)).any():
                     w1[:] = 0
+
                 self.w, self.b = logistic_difference_optimize.unpack_linear(w1)
                 y_train_pred = x.dot(self.w) + self.b
                 pass
@@ -1206,21 +1223,26 @@ class RelativeRegressionMethod(Method):
         t_constraints = []
         train_pairwise = data.pairwise_relationships[data.is_train_pairwise]
         constraints = []
-        for c in train_pairwise:
-            cons = []
-            c2 = deepcopy(c)
-            c2.transform(self.transform)
-            if c2.is_pairwise():
-                val, cons = c2.to_cvx(func, scale=self.s)
-                pairwise_reg2 += val
-            elif c2.is_tertiary():
-                if not c2.use_dccp():
+        if self.use_pairwise:
+            pairwise_reg2 = PairwiseConstraint.generate_cvx(train_pairwise, func, transform=self.transform, scale=self.s)
+        else:
+            #pairwise_reg2_batch = PairwiseConstraint.generate_cvx(train_pairwise, func, transform=self.transform, scale=self.s)
+            for c in train_pairwise:
+                cons = []
+                c2 = deepcopy(c)
+                c2.transform(self.transform)
+                if c2.is_pairwise():
+                    val, cons = c2.to_cvx(func, scale=self.s)
+                    pairwise_reg2 += val
+                    assert False
+                elif c2.is_tertiary():
+                    if not c2.use_dccp():
+                        val, cons = c2.to_cvx(func)
+                        neighbor_reg4 += val
+                else:
                     val, cons = c2.to_cvx(func)
-                    neighbor_reg4 += val
-            else:
-                val, cons = c2.to_cvx(func)
-                bound_reg3 += val
-            constraints += cons
+                    bound_reg3 += val
+                constraints += cons
         if self.add_random_neighbor and not self.neighbor_convex:
             neighbor_reg4, t, t_constraints = NeighborConstraint.to_cvx_dccp(
                 train_pairwise,
@@ -1283,6 +1305,7 @@ class RelativeRegressionMethod(Method):
                 #ret = prob.solve(cvx.ECOS, False, {'warm_start': warm_start})
                 if prob.is_dcp():
                     ret = prob.solve(self.solver, False, {'warm_start': warm_start})
+                    #ret = prob.solve(cvx.CVXOPT, False, {'warm_start': warm_start})
                 else:
                     print str(params)
                     options = {

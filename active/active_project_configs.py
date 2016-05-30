@@ -17,15 +17,15 @@ def create_project_configs():
 
 pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
+data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
-#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 #data_set_to_use = bc.DATA_WINE_RED
+#data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 
 data_sets_for_exps = [data_set_to_use]
 
 
-num_features = 20
+num_features = -1
 active_iterations = 2
 active_items_per_iteration = 50
 
@@ -294,6 +294,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             num_feat = 20
             #self.files['RelReg-cvx-constraints-noPairwiseReg-pca=20.pkl'] = 'Ridge Regression, K=20'
             self.files['RelReg-cvx-constraints-noPairwiseReg-numFeats=20.pkl'] = 'Ridge Regression, 20 feats'
+            self.files['RelReg-cvx-constraints-noPairwiseReg-numFeats=20-TEST.pkl'] = 'TEST: Ridge Regression, 20 feats'
             use_test = True
             if use_test:
                 self.files['RelReg-cvx-constraints-noPairwiseReg-TEST.pkl'] = 'TEST: Ridge Regression'
@@ -314,13 +315,14 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             #suffixes['logNoise'] = [.5]
             #suffixes['logNoise'] = [None,25,50,100]
             #suffixes['baseline'] = [None,'']
+            suffixes['noGrad'] = ['']
             suffixes['scipy'] = [None, '']
             suffixes['solver'] = ['SCS']
             suffixes['numFeats'] = ['20']
 
             ordered_keys = [
                 'fastDCCP', 'initRidge', 'init_ideal', 'initRidgeTrain','logistic',
-                'pairBound', 'mixedCV', 'logNoise', 'scipy',
+                'pairBound', 'mixedCV', 'logNoise', 'scipy', 'noGrad',
                 'baseline', 'logFix', 'solver', 'numFeats'
             ]
             all_params = list(grid_search.ParameterGrid(suffixes))
@@ -433,6 +435,7 @@ class BatchConfigs(bc.BatchConfigs):
         c.use_test_error_for_model_selection = False
         self.config_list = [MainConfigs(c)]
 
+        just_pairwise = True
         '''
         ssl_params = {
             'use_ssl': [True]
@@ -444,6 +447,9 @@ class BatchConfigs(bc.BatchConfigs):
             'num_pairwise': [10, 50, 100]
         }
         self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
+
+        if just_pairwise:
+            return
 
         pairwise_hinge_params = {
             'use_pairwise': [True],

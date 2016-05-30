@@ -30,7 +30,7 @@ def loss_l2(y1, y2):
 def grad_linear_loss_l2(x, y, v):
     w,b = unpack_linear(v)
     n = y.size
-    grad_w = 2*(x.T.dot(x).dot(w) - x.T.dot(y) + 2*x.T.sum()*b)
+    grad_w = 2*(x.T.dot(x).dot(w) - x.T.dot(y) + 2*x.T.sum(1)*b)
     grad_b = 2*(x.dot(w).sum() - 2*y.sum() + 2*n*b)
     return pack_linear(grad_w, grad_b)
 
@@ -216,6 +216,7 @@ class logistic_pairwise(logistic_optimize):
             g[0:-1] += t*dx
             g[-1] += t
         g *= -1
+        g[-1] *= 0
         return g
 
 class logistic_neighbor(object):

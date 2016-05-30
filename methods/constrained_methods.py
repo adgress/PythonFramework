@@ -200,6 +200,12 @@ class PairwiseConstraint(CVXConstraint):
     def is_pairwise(self):
         return True
 
+    @classmethod
+    def generate_cvx(cls, constraints, f, transform=None, scale=1.0):
+        x1,x2 = cls.generate_pairs_for_scipy_optimize(constraints, transform)
+        d = f(x1) - f(x2)
+        return cvx.sum_entries(cvx.logistic(d/scale))
+
     @staticmethod
     def generate_pairs_for_scipy_optimize(constraints, transform = None):
         p = constraints[0].x[0].size
@@ -209,6 +215,7 @@ class PairwiseConstraint(CVXConstraint):
             assert len(c.x) == 2
             x_curr = np.vstack(c.x)
             if transform is not None:
+                assert not c.transform_applied
                 x_curr = transform.transform(x_curr)
             if x_low is None:
                 p = x_curr.shape[1]

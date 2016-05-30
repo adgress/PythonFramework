@@ -103,16 +103,19 @@ class ConvexNeighborConstraint(CVXConstraint):
 
     @staticmethod
     def generate_neighbors_for_scipy_optimize(constraints, transform = None):
-        p = constraints[0].x[0].size
-        x = np.zeros((len(constraints),p))
-        x_low = np.zeros((len(constraints),p))
-        x_high = np.zeros((len(constraints),p))
+        x = None
+        x_low = None
+        x_high = None
         for idx, c in enumerate(constraints):
             assert len(c.x) == 3
             x_curr = np.vstack(c.x)
             if transform is not None:
-                for i in range(x_curr.shape[0]):
-                    x_curr[i,:] = transform.transform(x_curr[i,:])
+                x_curr = transform.transform(x_curr)
+            if x is None:
+                p = x_curr.shape[1]
+                x = np.zeros((len(constraints),p))
+                x_low = np.zeros((len(constraints),p))
+                x_high = np.zeros((len(constraints),p))
             x[idx,:] = x_curr[0,:]
             x_low[idx,:] = x_curr[1,:]
             x_high[idx,:] = x_curr[2,:]
@@ -200,14 +203,17 @@ class PairwiseConstraint(CVXConstraint):
     @staticmethod
     def generate_pairs_for_scipy_optimize(constraints, transform = None):
         p = constraints[0].x[0].size
-        x_low = np.zeros((len(constraints),p))
-        x_high = np.zeros((len(constraints),p))
+        x_low = None
+        x_high = None
         for idx, c in enumerate(constraints):
             assert len(c.x) == 2
             x_curr = np.vstack(c.x)
             if transform is not None:
-                for i in range(x_curr.shape[0]):
-                    x_curr[i,:] = transform.transform(x_curr[i,:])
+                x_curr = transform.transform(x_curr)
+            if x_low is None:
+                p = x_curr.shape[1]
+                x_low = np.zeros((len(constraints),p))
+                x_high = np.zeros((len(constraints),p))
             x_low[idx,:] = x_curr[0,:]
             x_high[idx,:] = x_curr[1,:]
         return x_low, x_high
@@ -295,14 +301,18 @@ class LogisticBoundConstraint(CVXConstraint):
     @staticmethod
     def generate_bounds_for_scipy_optimize(constraints, transform = None):
         bounds = np.zeros((len(constraints),2))
-        x = np.zeros((len(constraints), constraints[0].x[0].size))
+        x = None
         for i, c in enumerate(constraints):
             assert len(c.c) == 2
             assert len(c.x) == 1
             bounds[i,:] = np.asarray(c.c)
-            x[i,:] = c.x[0]
+
+            x_c = c.x[0]
             if transform is not None:
-                x[i,:] = transform.transform(x[i,:])
+                x_c = transform.transform(x_c)
+            if x is None:
+                x = np.zeros((len(constraints), x_c.shape[1]))
+            x[i,:] = x_c
         return x, bounds
 
 class BoundConstraint(CVXConstraint):

@@ -1005,7 +1005,7 @@ class RelativeRegressionMethod(Method):
             options = {
                 'disp': True
             }
-            w0 = np.zeros(data.p+1)
+            w0 = np.zeros(x.shape[1]+1)
             if self.use_bound and self.bound_logistic:
                 x_bound, bounds = LogisticBoundConstraint.generate_bounds_for_scipy_optimize(
                     data.pairwise_relationships,

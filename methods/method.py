@@ -1095,8 +1095,8 @@ class RelativeRegressionMethod(Method):
                 )
                 C = self.C
                 C2 = self.C2
-                C2 = 0
-                C = 0
+                #C2 = 0
+                #C = 0
                 #C = 1
                 #C2 = 10
                 opt_data = logistic_difference_optimize.optimize_data(

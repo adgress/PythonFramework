@@ -18,12 +18,14 @@ def create_project_configs():
 pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
-data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-#data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
+#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 #data_set_to_use = bc.DATA_WINE_RED
 
 data_sets_for_exps = [data_set_to_use]
 
+
+num_features = 20
 active_iterations = 2
 active_items_per_iteration = 50
 
@@ -62,7 +64,7 @@ use_similar_hinge = False
 similar_use_scipy = True
 
 use_aic = True
-use_test_error_for_model_selection = True
+use_test_error_for_model_selection = False
 run_batch = True
 
 
@@ -131,6 +133,9 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.use_neighbor_logistic = use_neighbor_logistic
         self.use_logistic_fix = use_logistic_fix
         self.neighbor_convex = neighbor_convex
+        self.num_features = -1
+        if self.data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
+            self.num_features = num_features
 
         self.use_similar = use_similar
         self.num_similar = num_similar
@@ -154,7 +159,8 @@ class ProjectConfigs(bc.ProjectConfigs):
                 self.num_labels = [20]
         elif data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
             self.set_adience_aligned_cnn_1()
-            self.num_labels = [10, 20, 40, 80]
+            #self.num_labels = [10, 20, 40, 80]
+            self.num_labels = [10, 20, 40]
             if run_active_experiments:
                 self.num_labels = [20]
         elif data_set == bc.DATA_WINE_RED:
@@ -245,7 +251,7 @@ class MainConfigs(bc.MainConfigs):
 
         method_configs.use_test_error_for_model_selection = pc.use_test_error_for_model_selection
         method_configs.use_aic = pc.use_aic
-
+        method_configs.num_features = pc.num_features
         #active = active_methods.ActiveMethod(method_configs)
         active = active_methods.RelativeActiveMethod(method_configs)
         active.base_learner = methods.method.RelativeRegressionMethod(method_configs)
@@ -282,6 +288,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         else:
             base_file_name = 'RelReg-cvx-constraints-%s=%s'
             #self.files['LapRidge.pkl'] = 'Laplacian Ridge Regression'
+            self.files['RelReg-cvx-constraints-noPairwiseReg-pca=8.pkl'] = 'Ridge Regression, K=8'
+            self.files['RelReg-cvx-constraints-noPairwiseReg-pca=20.pkl'] = 'Ridge Regression, K=20'
             use_test = False
             if use_test:
                 self.files['RelReg-cvx-constraints-noPairwiseReg-TEST.pkl'] = 'TEST: Ridge Regression'
@@ -289,17 +297,12 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                 self.files['RelReg-cvx-constraints-noPairwiseReg.pkl'] = 'Ridge Regression'
 
             sizes = []
-            #sizes.append(10)
+            sizes.append(10)
             sizes.append(50)
-            #sizes.append(100)
+            sizes.append(100)
             #sizes.append(150)
             #sizes.append(250)
             suffixes = OrderedDict()
-            #suffixes['fastDCCP'] = [None, '']
-            #suffixes['init_ideal'] = [None, '']
-            #suffixes['initRidgeTrain'] = ['']
-            #suffixes['initRidge'] = ['']
-            #suffixes['logistic'] = ['']
             #suffixes['pairBound'] = [(0,.1),(0,.25),(0,.5),(0,.75),None]
             #suffixes['pairBound'] = [(.5,1), (.25,1), None]
             #suffixes['mixedCV'] = [None,'']
@@ -307,25 +310,23 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             #suffixes['logNoise'] = [.5]
             #suffixes['logNoise'] = [None,25,50,100]
             #suffixes['baseline'] = [None,'']
-            #suffixes['logFix'] = [None, '']
+            suffixes['scipy'] = [None, '']
             suffixes['solver'] = ['SCS']
             ordered_keys = [
                 'fastDCCP', 'initRidge', 'init_ideal', 'initRidgeTrain','logistic',
-                'pairBound', 'mixedCV', 'logNoise',
+                'pairBound', 'mixedCV', 'logNoise', 'scipy',
                 'baseline', 'logFix', 'solver'
             ]
             all_params = list(grid_search.ParameterGrid(suffixes))
 
             methods = []
-            methods.append(('numRandPairs','RelReg, %s pairs'))
+            #methods.append(('numRandPairs','RelReg, %s pairs'))
             #methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
 
             #methods.append(('numRandBound', 'RelReg, %s bounds'))
             #methods.append(('numRandQuartiles', 'RelReg, %s quartiles'))
             #methods.append(('numRandLogBounds', '%s log bounds'))
 
-            #methods.append(('numRandNeighbor', 'RelReg, %s rand neighbors'))
-            #methods.append(('numMinNeighbor', 'RelReg, %s min neighbors'))
             #methods.append(('numRandNeighborConvex', 'RelReg, %s rand neighbors convex'))
 
             #methods.append(('numSimilar','RelReg, %s pairs'))
@@ -402,6 +403,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.ylims = [0,10]
         elif pc.data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
             self.ylims = [0,600]
+        elif pc.data_set == bc.DATA_BOSTON_HOUSING:
+            self.ylims = [0,100]
 
 
 class BatchConfigs(bc.BatchConfigs):
@@ -424,11 +427,12 @@ class BatchConfigs(bc.BatchConfigs):
         c.use_test_error_for_model_selection = False
         self.config_list = [MainConfigs(c)]
 
+        '''
         ssl_params = {
             'use_ssl': [True]
         }
         self.config_list += [MainConfigs(configs) for configs in c.generate_copies(ssl_params)]
-
+        '''
         pairwise_params = {
             'use_pairwise': [True],
             'num_pairwise': [10, 50, 100]
@@ -455,14 +459,14 @@ class BatchConfigs(bc.BatchConfigs):
             'bound_logistic': [False]
         }
         self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bound_baseline_params)]
-
+        '''
         hinge_params = {
             'use_pairwise': [True],
             'use_hinge': [True],
             'num_pairwise': [10, 50, 100]
         }
         self.config_list += [MainConfigs(configs) for configs in c.generate_copies(hinge_params)]
-
+        '''
         neighbor_params = {
             'use_neighbor': [True],
             'num_neighbor': [10, 50, 100]
@@ -474,14 +478,14 @@ class BatchConfigs(bc.BatchConfigs):
             'num_similar': [10, 50, 100]
         }
         self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_params)]
-
+        '''
         similar_hinge_params = {
             'use_similar': [True],
             'use_similar_hinge': [True],
             'num_similar': [10, 50, 100],
         }
         self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_hinge_params)]
-
+        '''
 
 
 

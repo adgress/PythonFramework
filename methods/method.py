@@ -18,6 +18,10 @@ from sklearn import linear_model
 from sklearn import neighbors
 from sklearn.metrics import pairwise
 from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.pipeline import Pipeline
+from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import f_regression
 
 from configs.base_configs import MethodConfigs
 from data import data as data_lib
@@ -644,10 +648,18 @@ class RelativeRegressionMethod(Method):
         self.cv_params['C4'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         self.cv_params['s'] = 10**np.asarray(list(reversed(range(-3,3))),dtype='float64')
 
+        self.num_features = configs.num_features
         self.w = None
         self.b = None
         self.transform = StandardScaler()
-
+        '''
+        if self.pca_dim > 0:
+            pca = PCA(self.pca_dim,whiten=True)
+            self.transform = Pipeline([('pca', pca), ('z-score', self.transform)])
+        '''
+        if self.num_features > 0:
+            self.transform = SelectKBest(f_regression, self.num_features)
+            #self.transform = PCA(self.pca_dim,whiten=True)
         self.use_mixed_cv = configs.use_mixed_cv
         self.use_baseline = configs.use_baseline
 
@@ -955,6 +967,8 @@ class RelativeRegressionMethod(Method):
         y = labeled_train.y
         x_orig = x
         x = self.transform.fit_transform(x, y)
+        if self.num_features > 0:
+            dim_to_use = min(self.num_features, x.shape[0] - 1)
 
         use_ridge = self.method in {
             RelativeRegressionMethod.METHOD_RIDGE,
@@ -1334,6 +1348,9 @@ class RelativeRegressionMethod(Method):
                 c2.transform(self.transform)
                 is_pairwise_correct[i] = c2.is_correct(f)
             o.is_pairwise_correct = is_pairwise_correct
+
+        #p = self.transform.named_steps['pca']
+        #z = self.transform.named_steps['z-score']
         return o
 
     @property
@@ -1418,6 +1435,9 @@ class RelativeRegressionMethod(Method):
                 s += '-mixedCV'
             if hasattr(self, 'solver'):
                 s += '-solver=' + str(self.solver)
+        num_features = getattr(self,'num_features', -1)
+        if num_features  > 0:
+            s += '-numFeats=' + str(num_features)
         if self.use_test_error_for_model_selection:
             s += '-TEST'
         return s

@@ -66,6 +66,8 @@ similar_use_scipy = True
 use_aic = True
 use_test_error_for_model_selection = False
 run_batch = True
+if helper_functions.is_laptop():
+    run_batch = False
 
 
 
@@ -287,10 +289,12 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['RelActiveRandom+RelReg-cvx-log-with-log-noLinear-TEST.pkl'] = 'TEST: RandomPairwise, RelReg'
         else:
             base_file_name = 'RelReg-cvx-constraints-%s=%s'
-            #self.files['LapRidge.pkl'] = 'Laplacian Ridge Regression'
-            self.files['RelReg-cvx-constraints-noPairwiseReg-pca=8.pkl'] = 'Ridge Regression, K=8'
-            self.files['RelReg-cvx-constraints-noPairwiseReg-pca=20.pkl'] = 'Ridge Regression, K=20'
-            use_test = False
+            self.files['LapRidge.pkl'] = 'Laplacian Ridge Regression'
+            ridge_file = 'RelReg-cvx-constraints-noPairwiseReg%s.pkl'
+            num_feat = 20
+            #self.files['RelReg-cvx-constraints-noPairwiseReg-pca=20.pkl'] = 'Ridge Regression, K=20'
+            self.files['RelReg-cvx-constraints-noPairwiseReg-numFeats=20.pkl'] = 'Ridge Regression, 20 feats'
+            use_test = True
             if use_test:
                 self.files['RelReg-cvx-constraints-noPairwiseReg-TEST.pkl'] = 'TEST: Ridge Regression'
             else:
@@ -312,15 +316,17 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             #suffixes['baseline'] = [None,'']
             suffixes['scipy'] = [None, '']
             suffixes['solver'] = ['SCS']
+            suffixes['numFeats'] = ['20']
+
             ordered_keys = [
                 'fastDCCP', 'initRidge', 'init_ideal', 'initRidgeTrain','logistic',
                 'pairBound', 'mixedCV', 'logNoise', 'scipy',
-                'baseline', 'logFix', 'solver'
+                'baseline', 'logFix', 'solver', 'numFeats'
             ]
             all_params = list(grid_search.ParameterGrid(suffixes))
 
             methods = []
-            #methods.append(('numRandPairs','RelReg, %s pairs'))
+            methods.append(('numRandPairs','RelReg, %s pairs'))
             #methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
 
             #methods.append(('numRandBound', 'RelReg, %s bounds'))

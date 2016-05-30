@@ -701,7 +701,7 @@ class RelativeRegressionMethod(Method):
         self.no_linear_term = True
         self.neg_log = False
         self.prob = None
-
+        self.use_grad = False
         if helper_functions.is_laptop():
             self.solver = cvx.SCS
         else:
@@ -1088,13 +1088,15 @@ class RelativeRegressionMethod(Method):
                 self.w, self.b = logistic_difference_optimize.unpack_linear(w1)
                 pass
             elif self.use_pairwise and self.pairwise_use_scipy:
-                method = 'BFGS'
+                method = 'CG'
                 x_low,x_high = PairwiseConstraint.generate_pairs_for_scipy_optimize(
                     data.pairwise_relationships,
                     self.transform
                 )
                 C = self.C
                 C2 = self.C2
+                C2 = 0
+                C = 0
                 #C = 1
                 #C2 = 10
                 opt_data = logistic_difference_optimize.optimize_data(
@@ -1105,6 +1107,8 @@ class RelativeRegressionMethod(Method):
                 eval = logistic_difference_optimize.logistic_pairwise.create_eval(opt_data)
                 grad = logistic_difference_optimize.logistic_pairwise.create_grad(opt_data)
                 constraints = []
+                if not self.use_grad:
+                    grad = None
                 with Capturing() as output:
                     results = optimize.minimize(eval,w0,method=method,jac=grad,options=options,constraints=constraints)
                 '''
@@ -1117,6 +1121,8 @@ class RelativeRegressionMethod(Method):
                 if (np.isnan(w1) | np.isinf(w1)).any():
                     w1[:] = 0
                 self.w, self.b = logistic_difference_optimize.unpack_linear(w1)
+                y_train_pred = x.dot(self.w) + self.b
+                pass
             elif self.use_similar and self.similar_use_scipy:
                 #method = 'CG'
                 x1,x2 = PairwiseConstraint.generate_pairs_for_scipy_optimize(
@@ -1374,6 +1380,8 @@ class RelativeRegressionMethod(Method):
                         s += '-numRandPairs=' + str(int(self.num_pairwise))
                         if getattr(self, 'pairwise_use_scipy', False):
                             s += '-scipy'
+                            if not getattr(self, 'use_grad', True):
+                                s += '-noGrad'
                     pair_bound = getattr(self, 'pair_bound', ())
                     try:
                         pair_bound = tuple(pair_bound)

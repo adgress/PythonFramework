@@ -331,10 +331,14 @@ class logistic_neighbor(object):
     def create_constraint_neighbor(x_low, x_high):
         return lambda v: logistic_neighbor.constraint_neighbor(v, x_low, x_high)
 
-class logistic_bound:
+eps = 1e-2
+
+class logistic_bound(logistic_optimize):
     @staticmethod
-    def eval_mixed_guidance(x, bounds, v):
+    def eval_mixed_guidance(data, v):
         w, b = unpack_linear(v)
+        x = data.x_bound
+        bounds = data.bounds
         y = apply_linear(x, w, b)
         assert y.size == bounds.shape[0]
         c1 = bounds[:, 0]
@@ -347,8 +351,11 @@ class logistic_bound:
         sig1 = sigmoid(c2-y)
         sig2 = sigmoid(c1-y)
         diff = sig1 - sig2
-        vals2 = -np.log(sig1-sig2)
+        vals2 = -np.log(sig1-sig2 + eps)
         val2 = vals2.sum()
+        I = np.isnan(vals2)
+        if I.any():
+            assert False
         #assert norm(val - val2)/norm(val) < 1e-6
         return val2
 
@@ -363,7 +370,9 @@ class logistic_bound:
         return t*t2, x
 
     @staticmethod
-    def grad_mixed_guidance(x, bounds, v):
+    def grad_mixed_guidance(data, v):
+        bounds = data.bounds
+        x = data.x_bound
         w, b = unpack_linear(v)
         y = apply_linear(x, w, b)
         assert y.size == bounds.shape[0]
@@ -372,63 +381,31 @@ class logistic_bound:
 
         sig1 = sigmoid(c2-y)
         sig2 = sigmoid(c1-y)
-        denom = sig1 - sig2
+        denom = sig1 - sig2 + eps
         val = np.zeros(v.shape)
+        assert (denom > -1).all()
         for i in range(x.shape[0]):
+            num1 = sig1[i]*(1-sig1[i])
+            num2 = sig2[i]*(1-sig2[i])
+            val[0:-1] += (num1-num2)*(1/denom[i])*x[i,:]
+            val[-1] += (num1-num2)*(1/denom[i])
+            '''
             num1, x1 = logistic_bound._grad_num_mixed_guidance(x[i, :], c2[i], w, b)
             num2, x2 = logistic_bound._grad_num_mixed_guidance(x[i, :], c1[i], w, b)
+            t1 = num1*x1 - num2*x2
+            t2 = num1 - num2
             val[0:-1] += (num1*x1 - num2*x2) / denom[i]
             val[-1] += (num1 - num2) / denom[i]
+            '''
         #assert not np.isnan(val).any()
         #Why isn't this necessary?
         #val *= -1
         if np.isnan(val).any():
             print 'grad_linear_bound_logistic: nan!'
             val[np.isnan(val)] = 0
+        if np.isinf(val).any():
+            print 'grad_linear_bound_logistic: inf!'
+            val[np.isinf(val)] = 0
         return val
 
-    @staticmethod
-    def eval(x, y, x_bound, bounds, reg_w, reg_bound, v):
-        w, b = unpack_linear(v)
-        y_pred = apply_linear(x, w, b)
-        loss = eval_linear_loss_l2(x, y, v)
-        loss_bound = logistic_bound.eval_mixed_guidance(x_bound, bounds, v)
-        loss_reg = eval_reg_l2(w)
-
-        val = loss + reg_w*loss_reg
-        if reg_bound != 0:
-            val += reg_bound * loss_bound
-        return val
-
-    @staticmethod
-    def grad(x, y, x_bound, bounds, reg_w, reg_bound, v):
-        w, b = unpack_linear(v)
-        grad_loss = grad_linear_loss_l2(x, y, v)
-        grad_bound = logistic_bound.grad_mixed_guidance(x_bound, bounds, v)
-        grad_reg = grad_reg_l2(w)
-        grad_reg *= reg_w
-        grad_reg = np.append(grad_reg, 0)
-
-        val = grad_loss + grad_reg
-        if reg_bound != 0:
-            val += reg_bound * grad_bound
-        return val
-
-    @staticmethod
-    def create_eval(x, y, x_bound, bounds, reg_w, reg_bound):
-        return lambda v: logistic_bound.eval(x, y, x_bound, bounds, reg_w, reg_bound, v)
-
-    @staticmethod
-    def create_grad(x, y, x_bound, bounds, reg_w, reg_bound):
-        return lambda v: logistic_bound.grad(x, y, x_bound, bounds, reg_w, reg_bound, v)
-
-    @staticmethod
-    def constraint_bound(v, x, upper_bound):
-        w,b = unpack_linear(v)
-        y = apply_linear(x, w, b)
-        return upper_bound - y
-
-    @staticmethod
-    def create_constraint_bound(x, upper_bound):
-        return lambda v: logistic_bound.constraint_bound(v, x, upper_bound)
 

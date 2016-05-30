@@ -1002,45 +1002,26 @@ class RelativeRegressionMethod(Method):
             self.w = w_anal
             self.b = b_anal
         elif self.method in RelativeRegressionMethod.CVX_METHODS:
-            method = 'SLSQP'
+            method = 'CG'
             options = {
                 'disp': True
             }
             w0 = np.zeros(x.shape[1]+1)
+            constraints = []
             if self.use_bound and self.bound_logistic:
                 x_bound, bounds = LogisticBoundConstraint.generate_bounds_for_scipy_optimize(
                     data.pairwise_relationships,
                     self.transform
                 )
-                C3 = self.C3
-                eval = logistic_difference_optimize.logistic_bound.create_eval(
-                    x, y, x_bound, bounds, self.C, C3
+                opt_data = logistic_difference_optimize.optimize_data(
+                    x, y, self.C, self.C3
                 )
-                grad = logistic_difference_optimize.logistic_bound.create_grad(
-                    x, y, x_bound, bounds, self.C, C3
-                )
-                constraints = []
-                with Capturing() as output:
-                    results = optimize.minimize(eval,w0,method=method,jac=grad,options=options,constraints=constraints)
-                w1 = results.x
-                '''
-                results2 = optimize.minimize(eval,w0,method=method,jac=None,options=options,constraints=constraints)
-                w2 = results2.x
-                from numpy.linalg import norm
-                print 'Error: ' + str(norm(w1-w2)/norm(w1))
-                pass
-                '''
-                '''
-                eval2 = logistic_difference_optimize.create_eval_linear_loss_bound_logistic(
-                    x, y, x_bound, bounds, self.C, 0
-                )
-                results2 = optimize.minimize(eval2,w0,method=method,jac=grad,options=options,constraints=constraints)
-                w2 = results2.x
-                '''
-                if (np.isnan(w1) | np.isinf(w1)).any():
-                    w1[:] = 0
-                self.w, self.b = logistic_difference_optimize.unpack_linear(w1)
+                opt_data.x_bound = x_bound
+                opt_data.bounds = bounds
+                eval = logistic_difference_optimize.logistic_bound.create_eval(opt_data)
+                grad = logistic_difference_optimize.logistic_bound.create_grad(opt_data)
             elif self.use_neighbor and self.neighbor_convex:
+                method = 'SLSQP'
                 x_neighbor,x_low,x_high = ConvexNeighborConstraint.generate_neighbors_for_scipy_optimize(
                     data.pairwise_relationships,
                     self.transform
@@ -1051,51 +1032,31 @@ class RelativeRegressionMethod(Method):
                 }]
                 C = self.C
                 C4 = self.C4
-                #C = 1
-                #C4 = .001
                 eval = logistic_difference_optimize.logistic_neighbor.create_eval(
                     x, y, x_neighbor, x_low, x_high, C, C4
                 )
-                #grad = None
-
                 grad = logistic_difference_optimize.logistic_neighbor.create_grad(
                     x, y, x_neighbor, x_low, x_high, C, C4
                 )
-
-
                 eval_feasible = logistic_difference_optimize.logistic_neighbor.create_eval(
                     x, y, x_neighbor, x_low, x_high, C, 0
                 )
+                grad_feasible = logistic_difference_optimize.logistic_neighbor.create_grad(
+                    x, y, x_neighbor, x_low, x_high, C, C4
+                )
+                if not self.use_grad:
+                    grad_feasible = None
                 with Capturing() as output:
-                    feasible_results = optimize.minimize(eval_feasible,w0,method=method,jac=grad,options=options,constraints=constraints)
+                    feasible_results = optimize.minimize(eval_feasible,w0,method=method,jac=grad_feasible,options=options,constraints=constraints)
                 w0_feasible = feasible_results.x
-                #print 'Have feasible point'
-                with Capturing() as output:
-                    results = optimize.minimize(eval,w0_feasible,method=method,jac=grad,options=options,constraints=constraints)
-                '''
-                results2 = optimize.minimize(eval,w0_feasible,method=method,jac=None,options=options,constraints=constraints)
-                from numpy.linalg import norm
-                print 'Error: ' + str(norm(results.x-results2.x)/norm(results.x))
-                '''
-                '''
-                w1 = results.x
-                y_pred = logistic_difference_optimize.apply_linear(x, w1)
-                y_low = logistic_difference_optimize.apply_linear(x_low, w1)
-                y_high = logistic_difference_optimize.apply_linear(x_high, w1)
-                '''
-                w1 = results.x
-                if (np.isnan(w1) | np.isinf(w1)).any():
-                    w1[:] = 0
-                self.w, self.b = logistic_difference_optimize.unpack_linear(w1)
-                pass
+                w0 = w0_feasible
             elif self.use_pairwise and self.pairwise_use_scipy:
-                method = 'CG'
                 x_low,x_high = PairwiseConstraint.generate_pairs_for_scipy_optimize(
                     data.pairwise_relationships,
                     self.transform
                 )
-                self.C = 10
-                self.C2 = 10
+                #self.C = 10
+                #self.C2 = 10
                 C = self.C
                 C2 = self.C2
                 #C2 = 0
@@ -1108,40 +1069,7 @@ class RelativeRegressionMethod(Method):
                 opt_data.x_high = x_high
                 eval = logistic_difference_optimize.logistic_pairwise.create_eval(opt_data)
                 grad = logistic_difference_optimize.logistic_pairwise.create_grad(opt_data)
-                constraints = []
-                if not self.use_grad:
-                    grad = None
-                with Capturing() as output:
-                    results = optimize.minimize(eval,w0,method=method,jac=grad,options=options,constraints=constraints)
-                '''
-                tic()
-                results = optimize.minimize(eval,w0,method=method,jac=grad,options=options,constraints=constraints)
-                toc()
-
-                tic()
-                results2 = optimize.minimize(eval,w0,method=method,jac=None,options=options,constraints=constraints)
-                toc()
-
-                tic()
-                self.solve_cvx(x, y, data)
-                toc()
-                from numpy.linalg import norm
-                print 'Error: ' + str(norm(results.x-results2.x)/norm(results.x))
-                w2 = results2.x
-
-                w_cvx = self.w
-                b_cvx = self.b
-                print 'Error cvx: ' + str(norm(results2.x[0:-1] - w_cvx.T)/norm(w_cvx))
-                '''
-                w1 = results.x
-                if (np.isnan(w1) | np.isinf(w1)).any():
-                    w1[:] = 0
-
-                self.w, self.b = logistic_difference_optimize.unpack_linear(w1)
-                y_train_pred = x.dot(self.w) + self.b
-                pass
             elif self.use_similar and self.similar_use_scipy:
-                #method = 'CG'
                 x1,x2 = PairwiseConstraint.generate_pairs_for_scipy_optimize(
                     data.pairwise_relationships,
                     self.transform
@@ -1160,47 +1088,43 @@ class RelativeRegressionMethod(Method):
 
                 eval = logistic_difference_optimize.logistic_similar.create_eval(opt_data)
                 grad = logistic_difference_optimize.logistic_similar.create_grad(opt_data)
-                constraints = []
-                with Capturing() as output:
-                    results = optimize.minimize(eval,w0,method=method,jac=grad,options=options,constraints=constraints)
-                '''
-                results2 = optimize.minimize(eval,w0,method=method,jac=None,options=options,constraints=constraints)
-                from numpy.linalg import norm
-                print 'Error: ' + str(norm(results.x-results2.x)/norm(results.x))
-                w2 = results2.x
-                '''
-
-                w1 = results.x
-                if (np.isnan(w1) | np.isinf(w1)).any():
-                    w1[:] = 0
-                self.w, self.b = logistic_difference_optimize.unpack_linear(w1)
-
             else:
                 self.solve_cvx(x, y, data)
-            '''
-            obj2 = cvx.Minimize(loss + self.C*reg)
-            try:
-                prob2 = cvx.Problem(obj2, constraints)
-                prob2.solve()
-                w2 = w.value
-                b2 = b.value
-                print 'b error: ' + str(array_functions.relative_error(b_value,b2))
-                print 'w error: ' + str(array_functions.relative_error(w_value,w2))
-                print 'pairwise_reg value: ' + str(pairwise_reg.value)
-            except:
-                pass
-            '''
-        '''
-        print 'w rel error: ' + str(array_functions.relative_error(w_value,w_ridge))
-        #print 'b rel error: ' + str(array_functions.relative_error(b_value,b_ridge))
+                return
 
-        print 'w analytic rel error: ' + str(array_functions.relative_error(w_value,w_anal))
-        #print 'b analytic rel error: ' + str(array_functions.relative_error(b_value,b_anal))
-        print 'w norm: ' + str(norm(w_value))
-        print 'w analytic norm: ' + str(norm(w_anal))
-        print 'w ridge norm: ' + str(norm(w_ridge))
-        assert self.b is not None
-        '''
+            if not self.use_grad:
+                grad = None
+            '''
+            with Capturing() as output:
+                results = optimize.minimize(eval,w0,method=method,jac=grad,options=options,constraints=constraints)
+            '''
+            tic()
+            results = optimize.minimize(eval,w0,method=method,jac=grad,options=options,constraints=constraints)
+            toc()
+
+            tic()
+            results2 = optimize.minimize(eval,w0,method=method,jac=None,options=options,constraints=constraints)
+            toc()
+
+
+            from numpy.linalg import norm
+            print 'Error: ' + str(norm(results.x-results2.x)/norm(results.x))
+            w2 = results2.x
+            '''
+            tic()
+            self.solve_cvx(x, y, data)
+            toc()
+            w_cvx = self.w
+            b_cvx = self.b
+            print 'Error cvx: ' + str(norm(results2.x[0:-1] - w_cvx.T)/norm(w_cvx))
+            '''
+            w1 = results.x
+            if (np.isnan(w1) | np.isinf(w1)).any():
+                w1[:] = 0
+
+            self.w, self.b = logistic_difference_optimize.unpack_linear(w1)
+            y_train_pred = x.dot(self.w) + self.b
+            pass
 
     def solve_cvx(self, x, y, data):
         p = x.shape[1]

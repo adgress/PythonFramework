@@ -75,12 +75,12 @@ class logistic_optimize(object):
     def eval(cls, data, v):
         eval_loss = cls.eval_loss(data, v)
         eval_reg = cls.eval_reg(data, v)
-        eval_mixed = cls.eval_mixed_guidance(data, v)
         reg, reg_mixed = data.get_reg()
-        v = eval_loss + reg*eval_reg
+        val = eval_loss + reg*eval_reg
         if reg_mixed > 0:
-            v += eval_mixed*reg_mixed
-        return v
+            eval_mixed = cls.eval_mixed_guidance(data, v)
+            val += eval_mixed*reg_mixed
+        return val
 
     @staticmethod
     def eval_loss(data, v):
@@ -106,7 +106,6 @@ class logistic_optimize(object):
     @classmethod
     def grad(cls, data, v):
         grad_loss = cls.grad_loss(data, v)
-        grad_mixed = cls.grad_mixed_guidance(data, v)
         reg, reg_mixed = data.get_reg()
         grad_reg = cls.grad_reg(data, v)
         grad_reg *= reg
@@ -118,6 +117,7 @@ class logistic_optimize(object):
 
         val = grad_loss + grad_reg
         if reg_mixed != 0:
+            grad_mixed = cls.grad_mixed_guidance(data, v)
             val += reg_mixed * grad_mixed
 
         return val
@@ -219,29 +219,41 @@ class logistic_pairwise(logistic_optimize):
         g[-1] *= 0
         return g
 
-class logistic_neighbor(object):
+eps = 1e-2
+
+class logistic_neighbor(logistic_optimize):
 
     @staticmethod
-    def eval_mixed_guidance(x, x_low, x_high, v):
+    def eval_mixed_guidance(data, v):
+        x = data.x_neighbor
+        x_low = data.x_low
+        x_high = data.x_high
         w, b = unpack_linear(v)
         y = apply_linear(x, w, b)
         y_low = apply_linear(x_low, w, b)
         y_high = apply_linear(x_high, w, b)
-
+        '''
+        if (y_low + eps >= y_high).any() or (y + eps >= y_high).any():
+            return np.inf
+        '''
         sig1 = sigmoid(y_high-y_low)
         sig2 = sigmoid(2*y - y_high - y_low)
         diff = sig1 - sig2
-        vals2 = -np.log(sig1-sig2)
+        #assert (np.sign(diff) > 0).all()
+        vals2 = -np.log(sig1-sig2 + eps)
         I = np.isnan(vals2)
         if I.any():
-            print 'eval_linear_neighbor_logistic: inf = ' + str(I.mean())
-            vals2[I] = 1e6
+            #print 'eval_linear_neighbor_logistic: inf = ' + str(I.mean())
+            return np.inf
         val2 = vals2.sum()
         #assert norm(val - val2)/norm(val) < 1e-6
         return val2
 
     @staticmethod
-    def grad_mixed_guidance(x, x_low, x_high, v):
+    def grad_mixed_guidance(data, v):
+        x = data.x_neighbor
+        x_low = data.x_low
+        x_high = data.x_high
         w, b = unpack_linear(v)
         y = apply_linear(x, w, b)
         y_low = apply_linear(x_low, w, b)
@@ -249,18 +261,28 @@ class logistic_neighbor(object):
 
         sig1 = sigmoid(y_high-y_low)
         sig2 = sigmoid(2*y - y_high - y_low)
-        denom = sig1 - sig2
+        denom = sig1 - sig2 + eps
         val = np.zeros(v.shape)
         for i in range(x.shape[0]):
-            num1, x1, num2, x2 = logistic_neighbor._grad_num_mixed_guidance(x[i, :], x_low[i, :], x_high[i, :], w, b)
-            val[0:-1] += (num1*x1 - num2*x2) / denom[i]
-            val[-1] += (num1 - num2) / denom[i]
+            #num1, x1, num2, x2 = logistic_neighbor._grad_num_mixed_guidance(x[i, :], x_low[i, :], x_high[i, :], w, b)
+            #val[0:-1] += (num1*x1 - num2*x2) / denom[i]
+            #val[-1] += (num1 - num2) / denom[i]
+
+            x1 = x_high[i,:] - x_low[i,:]
+            x2 = 2*x[i,:] - x_low[i,:] - x_high[i,:]
+            num1 = sig1[i]*(1-sig1[i])*x1
+            num2 = sig2[i]*(1-sig2[i])*x2
+            val[0:-1] += (num1-num2)*(1/denom[i])
+            #val[-1] += (num1-num2)*(1/denom[i])
+
         #assert not np.isnan(val).any()
         #Why isn't this necessary?
         #val *= -1
+        val[-1] = 0
+        val *= -1
         I = np.isnan(val) | np.isinf(val)
         if I.any():
-            print 'grad_linear_neighbor_logistic: nan!'
+            #print 'grad_linear_neighbor_logistic: nan!'
             val[I] = 0
         return val
 
@@ -286,52 +308,28 @@ class logistic_neighbor(object):
         return t1,x2,t2,x2
 
     @staticmethod
-    def eval(x, y, x_neighbor, x_low, x_high, reg_w, reg_neighbor, v):
-        w, b = unpack_linear(v)
-        y_pred = apply_linear(x, w, b)
-        loss = eval_linear_loss_l2(x, y, v)
-        loss_neighbor = logistic_neighbor.eval_mixed_guidance(x_neighbor, x_low, x_high, v)
-        loss_reg = eval_reg_l2(w)
-
-        val = loss + reg_w*loss_reg
-        if reg_neighbor != 0:
-            val += reg_neighbor*loss_neighbor
-        return val
-
-    @staticmethod
-    def grad(x, y, x_neighbor, x_low, x_high, reg_w, reg_neighbor, v):
-        w, b = unpack_linear(v)
-        grad_loss = grad_linear_loss_l2(x, y, v)
-        grad_neighbor = logistic_neighbor.grad_mixed_guidance(x_neighbor, x_low, x_high, v)
-        grad_reg = grad_reg_l2(w)
-        grad_reg *= reg_w
-        grad_reg = np.append(grad_reg, 0)
-
-        val = grad_loss + grad_reg
-        if reg_neighbor != 0:
-            val += reg_neighbor * grad_neighbor
-        return val
-
-    @staticmethod
-    def create_eval(x, y, x_neighbor, x_low, x_high, reg_w, reg_neighbor):
-        return lambda v: logistic_neighbor.eval(x, y, x_neighbor, x_low, x_high, reg_w, reg_neighbor, v)
-
-    @staticmethod
-    def create_grad(x, y, x_neighbor, x_low, x_high, reg_w, reg_neighbor):
-        return lambda v: logistic_neighbor.grad(x, y, x_neighbor, x_low, x_high, reg_w, reg_neighbor, v)
-
-    @staticmethod
     def constraint_neighbor(v, x_low, x_high):
         w,b = unpack_linear(v)
         y_low = apply_linear(x_low,w,b)
         y_high = apply_linear(x_high,w,b)
-        return y_high - y_low
+        return y_high - y_low - eps
+
+    @staticmethod
+    def constraint_neighbor2(v, x, x_low, x_high):
+        w,b = unpack_linear(v)
+        y = apply_linear(x, w, b)
+        y_low = apply_linear(x_low,w,b)
+        y_high = apply_linear(x_high,w,b)
+        return y_high - y - eps
 
     @staticmethod
     def create_constraint_neighbor(x_low, x_high):
         return lambda v: logistic_neighbor.constraint_neighbor(v, x_low, x_high)
 
-eps = 1e-2
+    @staticmethod
+    def create_constraint_neighbor2(x, x_low, x_high):
+        return lambda v: logistic_neighbor.constraint_neighbor2(v, x, x_low, x_high)
+
 
 class logistic_bound(logistic_optimize):
     @staticmethod

@@ -318,7 +318,7 @@ class LogisticBoundConstraint(CVXConstraint):
             if transform is not None:
                 x_c = transform.transform(x_c)
             if x is None:
-                x = np.zeros((len(constraints), x_c.shape[1]))
+                x = np.zeros((len(constraints), x_c.size))
             x[i,:] = x_c
         return x, bounds
 

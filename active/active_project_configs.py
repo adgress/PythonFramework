@@ -17,15 +17,15 @@ def create_project_configs():
 
 pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
-data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_WINE_RED
-#data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
+data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 
 data_sets_for_exps = [data_set_to_use]
 
 
-num_features = -1
+num_features = 20
 active_iterations = 2
 active_items_per_iteration = 50
 
@@ -33,8 +33,8 @@ use_mixed_cv = False
 use_ssl = False
 use_baseline = False
 
-use_pairwise = False
-num_pairwise = 50
+use_pairwise = True
+num_pairwise = 51
 #pair_bound = (.25,1)
 pair_bound = ()
 use_hinge = False
@@ -73,7 +73,7 @@ if helper_functions.is_laptop():
 
 run_active_experiments = False
 
-run_experiments = True
+run_experiments = False
 show_legend_on_all = True
 
 max_rows = 3
@@ -167,7 +167,7 @@ class ProjectConfigs(bc.ProjectConfigs):
                 self.num_labels = [20]
         elif data_set == bc.DATA_WINE_RED:
             self.set_wine_red()
-            self.num_labels = [10, 20, 40, 80]
+            self.num_labels = [40, 10, 20, 40, 80]
             if run_active_experiments:
                 self.num_labels = [20]
 
@@ -289,20 +289,22 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['RelActiveRandom+RelReg-cvx-log-with-log-noLinear-TEST.pkl'] = 'TEST: RandomPairwise, RelReg'
         else:
             base_file_name = 'RelReg-cvx-constraints-%s=%s'
-            self.files['LapRidge.pkl'] = 'Laplacian Ridge Regression'
-            ridge_file = 'RelReg-cvx-constraints-noPairwiseReg%s.pkl'
-            num_feat = 20
-            #self.files['RelReg-cvx-constraints-noPairwiseReg-pca=20.pkl'] = 'Ridge Regression, K=20'
-            self.files['RelReg-cvx-constraints-noPairwiseReg-numFeats=20.pkl'] = 'Ridge Regression, 20 feats'
-            self.files['RelReg-cvx-constraints-noPairwiseReg-numFeats=20-TEST.pkl'] = 'TEST: Ridge Regression, 20 feats'
-            use_test = True
-            if use_test:
-                self.files['RelReg-cvx-constraints-noPairwiseReg-TEST.pkl'] = 'TEST: Ridge Regression'
+            #self.files['LapRidge.pkl'] = 'Laplacian Ridge Regression'
+            #ridge_file = 'RelReg-cvx-constraints-noPairwiseReg%s.pkl'
+            use_test = False
+            if pc.num_features > 0:
+                if use_test:
+                    self.files['RelReg-cvx-constraints-noPairwiseReg-numFeats=' + str(pc.num_features) + '-TEST.pkl'] = 'TEST: Ridge Regression'
+                else:
+                    self.files['RelReg-cvx-constraints-noPairwiseReg-numFeats=' + str(pc.num_features) + '.pkl'] = 'Ridge Regression'
             else:
-                self.files['RelReg-cvx-constraints-noPairwiseReg.pkl'] = 'Ridge Regression'
+                if use_test:
+                    self.files['RelReg-cvx-constraints-noPairwiseReg-TEST.pkl'] = 'TEST: Ridge Regression'
+                else:
+                    self.files['RelReg-cvx-constraints-noPairwiseReg.pkl'] = 'Ridge Regression'
 
             sizes = []
-            sizes.append(10)
+            #sizes.append(10)
             sizes.append(50)
             sizes.append(100)
             #sizes.append(150)
@@ -315,10 +317,11 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             #suffixes['logNoise'] = [.5]
             #suffixes['logNoise'] = [None,25,50,100]
             #suffixes['baseline'] = [None,'']
-            suffixes['noGrad'] = ['']
+            #suffixes['noGrad'] = ['']
+            suffixes['numFeats'] = [str(pc.num_features)]
             suffixes['scipy'] = [None, '']
             suffixes['solver'] = ['SCS']
-            suffixes['numFeats'] = ['20']
+            #suffixes['numFeats'] = [str(num_feat)]
 
             ordered_keys = [
                 'fastDCCP', 'initRidge', 'init_ideal', 'initRidgeTrain','logistic',
@@ -328,8 +331,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             all_params = list(grid_search.ParameterGrid(suffixes))
 
             methods = []
-            methods.append(('numRandPairs','RelReg, %s pairs'))
-            #methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
+            #methods.append(('numRandPairs','RelReg, %s pairs'))
+            methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
 
             #methods.append(('numRandBound', 'RelReg, %s bounds'))
             #methods.append(('numRandQuartiles', 'RelReg, %s quartiles'))
@@ -444,29 +447,31 @@ class BatchConfigs(bc.BatchConfigs):
         '''
         pairwise_params = {
             'use_pairwise': [True],
-            'num_pairwise': [10, 50, 100]
+            'num_pairwise': [50, 100]
         }
         self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
-
-        if just_pairwise:
-            return
 
         pairwise_hinge_params = {
             'use_pairwise': [True],
             'use_hinge': [True],
-            'num_pairwise': [10, 50, 100]
+            'num_pairwise': [50, 100]
         }
         self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_hinge_params)]
 
+        if just_pairwise:
+            return
+
+
+
         bound_params = {
             'use_bound': [True],
-            'num_bound': [10, 50, 100]
+            'num_bound': [50, 100]
         }
         self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bound_params)]
 
         bound_baseline_params = {
             'use_bound': [True],
-            'num_bound': [10, 50, 100],
+            'num_bound': [50, 100],
             'use_baseline': [True],
             'bound_logistic': [False]
         }
@@ -481,13 +486,13 @@ class BatchConfigs(bc.BatchConfigs):
         '''
         neighbor_params = {
             'use_neighbor': [True],
-            'num_neighbor': [10, 50, 100]
+            'num_neighbor': [50, 100]
         }
         self.config_list += [MainConfigs(configs) for configs in c.generate_copies(neighbor_params)]
 
         similar_params = {
             'use_similar': [True],
-            'num_similar': [10, 50, 100]
+            'num_similar': [50, 100]
         }
         self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_params)]
         '''

@@ -1071,7 +1071,7 @@ class RelativeRegressionMethod(Method):
                 w0_feasible = feasible_results.x
                 w0 = w0_feasible
                 '''
-            elif self.use_pairwise and self.pairwise_use_scipy:
+            elif self.use_pairwise and self.pairwise_use_scipy and not self.use_hinge:
                 x_low,x_high = PairwiseConstraint.generate_pairs_for_scipy_optimize(
                     data.pairwise_relationships,
                     self.transform
@@ -1090,7 +1090,7 @@ class RelativeRegressionMethod(Method):
                 opt_data.x_high = x_high
                 eval = logistic_difference_optimize.logistic_pairwise.create_eval(opt_data)
                 grad = logistic_difference_optimize.logistic_pairwise.create_grad(opt_data)
-            elif self.use_similar and self.similar_use_scipy:
+            elif self.use_similar and self.similar_use_scipy and not self.use_similar_hinge:
                 x1,x2 = PairwiseConstraint.generate_pairs_for_scipy_optimize(
                     data.pairwise_relationships,
                     self.transform

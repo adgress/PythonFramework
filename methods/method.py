@@ -1166,7 +1166,7 @@ class RelativeRegressionMethod(Method):
         t_constraints = []
         train_pairwise = data.pairwise_relationships[data.is_train_pairwise]
         constraints = []
-        if self.use_pairwise:
+        if self.use_pairwise and not self.use_hinge:
             pairwise_reg2 = PairwiseConstraint.generate_cvx(train_pairwise, func, transform=self.transform, scale=self.s)
         else:
             #pairwise_reg2_batch = PairwiseConstraint.generate_cvx(train_pairwise, func, transform=self.transform, scale=self.s)
@@ -1177,7 +1177,7 @@ class RelativeRegressionMethod(Method):
                 if c2.is_pairwise():
                     val, cons = c2.to_cvx(func, scale=self.s)
                     pairwise_reg2 += val
-                    assert False
+                    #assert False
                 elif c2.is_tertiary():
                     if not c2.use_dccp():
                         val, cons = c2.to_cvx(func)

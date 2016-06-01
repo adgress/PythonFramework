@@ -278,8 +278,10 @@ class Method(Saveable):
             min_error = None
             error_on_test_data = None
         else:
+            self.running_cv = True
             best_params, min_error, error_on_test_data = self.run_cross_validation(data)
             self.set_params(**best_params)
+        self.running_cv = False
         self.should_plot_g = True
         output = None
         if mpi_utility.is_group_master() or not self.use_mpi:
@@ -659,7 +661,11 @@ class RelativeRegressionMethod(Method):
             self.transform = Pipeline([('pca', pca), ('z-score', self.transform)])
         '''
         if self.num_features > 0:
-            self.transform = SelectKBest(f_regression, self.num_features)
+            select_k_best = SelectKBest(f_regression, self.num_features)
+            self.transform = Pipeline([
+                ('selectK', select_k_best),
+                ('z-score', self.transform),
+            ])
             #self.transform = PCA(self.pca_dim,whiten=True)
         self.use_mixed_cv = configs.use_mixed_cv
         self.use_baseline = configs.use_baseline
@@ -1010,7 +1016,7 @@ class RelativeRegressionMethod(Method):
             self.w = w_anal
             self.b = b_anal
         elif self.method in RelativeRegressionMethod.CVX_METHODS:
-            method = 'CG'
+            method = 'BFGS'
             options = {
                 'disp': True
             }
@@ -1116,30 +1122,39 @@ class RelativeRegressionMethod(Method):
             with Capturing() as output:
                 results = optimize.minimize(eval,w0,method=method,jac=grad,options=options,constraints=constraints)
 
+            #options['gtol'] = 1e-3
             compare_results = False
             if compare_results:
-                tic()
+                #tic()
                 results2 = optimize.minimize(eval,w0,method=method,jac=None,options=options,constraints=constraints)
-                toc()
-                tic()
+                #toc()
+                #tic()
                 results = optimize.minimize(eval,w0,method=method,jac=grad,options=options,constraints=constraints)
-                toc()
+                #toc()
 
                 w2 = results2.x
 
-                tic()
+                #tic()
                 self.solve_cvx(x, y, data)
-                toc()
+                #toc()
                 w_cvx = self.w
                 b_cvx = self.b
 
                 from numpy.linalg import norm
-                print 'Error: ' + str(norm(results.x-results2.x)/norm(results.x))
+                if norm(results.x) == 0:
+                    print 'Error: Norm is 0'
+                else:
+                    print 'Error: ' + str(norm(results.x-results2.x)/norm(results.x))
                 print 'Error cvx: ' + str(norm(results2.x[0:-1] - w_cvx.T)/norm(w_cvx))
-
+                if results2.success:
+                    print 'Results2 Success'
+                    pass
             w1 = results.x
-            if (np.isnan(w1) | np.isinf(w1)).any():
+            if (np.isnan(w1) | np.isinf(w1)).any() or not results.success:
                 w1[:] = 0
+                if not self.running_cv:
+                    import warnings
+                    warnings.warn('Optimization failed!')
 
             self.w, self.b = logistic_difference_optimize.unpack_linear(w1)
             y_train_pred = x.dot(self.w) + self.b

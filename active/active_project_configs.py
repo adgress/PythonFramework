@@ -17,15 +17,20 @@ def create_project_configs():
 
 pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
-#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_WINE_RED
-data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
+#data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 
 data_sets_for_exps = [data_set_to_use]
 
+batch_pairwise = True
+batch_neighbor = False
+batch_similar = False
+batch_bound = False
+batch_ssl = False
 
-num_features = 20
+num_features = 10
 active_iterations = 2
 active_items_per_iteration = 50
 
@@ -33,8 +38,8 @@ use_mixed_cv = False
 use_ssl = False
 use_baseline = False
 
-use_pairwise = True
-num_pairwise = 51
+use_pairwise = False
+num_pairwise = 50
 #pair_bound = (.25,1)
 pair_bound = ()
 use_hinge = False
@@ -73,7 +78,7 @@ if helper_functions.is_laptop():
 
 run_active_experiments = False
 
-run_experiments = False
+run_experiments = True
 show_legend_on_all = True
 
 max_rows = 3
@@ -135,9 +140,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.use_neighbor_logistic = use_neighbor_logistic
         self.use_logistic_fix = use_logistic_fix
         self.neighbor_convex = neighbor_convex
-        self.num_features = -1
-        if self.data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
-            self.num_features = num_features
+        self.num_features = num_features
 
         self.use_similar = use_similar
         self.num_similar = num_similar
@@ -156,7 +159,7 @@ class ProjectConfigs(bc.ProjectConfigs):
                 self.num_labels = [5]
         elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
             self.set_synthetic_linear_reg()
-            self.num_labels = [10, 20, 40, 80]
+            self.num_labels = [10, 20, 40]
             if run_active_experiments:
                 self.num_labels = [20]
         elif data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
@@ -167,7 +170,7 @@ class ProjectConfigs(bc.ProjectConfigs):
                 self.num_labels = [20]
         elif data_set == bc.DATA_WINE_RED:
             self.set_wine_red()
-            self.num_labels = [40, 10, 20, 40, 80]
+            self.num_labels = [10, 20, 40]
             if run_active_experiments:
                 self.num_labels = [20]
 
@@ -318,7 +321,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             #suffixes['logNoise'] = [None,25,50,100]
             #suffixes['baseline'] = [None,'']
             #suffixes['noGrad'] = ['']
-            suffixes['numFeats'] = [str(pc.num_features)]
+            if pc.num_features > 0:
+                suffixes['numFeats'] = [str(pc.num_features)]
             suffixes['scipy'] = [None, '']
             suffixes['solver'] = ['SCS']
             #suffixes['numFeats'] = [str(num_feat)]
@@ -331,7 +335,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             all_params = list(grid_search.ParameterGrid(suffixes))
 
             methods = []
-            #methods.append(('numRandPairs','RelReg, %s pairs'))
+            methods.append(('numRandPairs','RelReg, %s pairs'))
             methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
 
             #methods.append(('numRandBound', 'RelReg, %s bounds'))
@@ -438,71 +442,68 @@ class BatchConfigs(bc.BatchConfigs):
         c.use_test_error_for_model_selection = False
         self.config_list = [MainConfigs(c)]
 
-        just_pairwise = True
-        '''
-        ssl_params = {
-            'use_ssl': [True]
-        }
-        self.config_list += [MainConfigs(configs) for configs in c.generate_copies(ssl_params)]
-        '''
-        pairwise_params = {
-            'use_pairwise': [True],
-            'num_pairwise': [50, 100]
-        }
-        self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
+        if batch_ssl:
+            ssl_params = {
+                'use_ssl': [True]
+            }
+            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(ssl_params)]
 
-        pairwise_hinge_params = {
-            'use_pairwise': [True],
-            'use_hinge': [True],
-            'num_pairwise': [50, 100]
-        }
-        self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_hinge_params)]
+        if batch_pairwise:
+            pairwise_params = {
+                'use_pairwise': [True],
+                'num_pairwise': [50, 100]
+            }
+            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
 
-        if just_pairwise:
-            return
+            pairwise_hinge_params = {
+                'use_pairwise': [True],
+                'use_hinge': [True],
+                'num_pairwise': [50, 100]
+            }
+            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_hinge_params)]
 
+        if batch_bound:
+            bound_params = {
+                'use_bound': [True],
+                'num_bound': [50, 100]
+            }
+            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bound_params)]
 
+            bound_baseline_params = {
+                'use_bound': [True],
+                'num_bound': [50, 100],
+                'use_baseline': [True],
+                'bound_logistic': [False]
+            }
+            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bound_baseline_params)]
 
-        bound_params = {
-            'use_bound': [True],
-            'num_bound': [50, 100]
-        }
-        self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bound_params)]
+            bound_hinge_params = {
+                'use_bound': [True],
+                'num_bound': [50, 100],
+                'bound_logistic': [False]
+            }
+            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bound_hinge_params)]
 
-        bound_baseline_params = {
-            'use_bound': [True],
-            'num_bound': [50, 100],
-            'use_baseline': [True],
-            'bound_logistic': [False]
-        }
-        self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bound_baseline_params)]
-        '''
-        hinge_params = {
-            'use_pairwise': [True],
-            'use_hinge': [True],
-            'num_pairwise': [10, 50, 100]
-        }
-        self.config_list += [MainConfigs(configs) for configs in c.generate_copies(hinge_params)]
-        '''
-        neighbor_params = {
-            'use_neighbor': [True],
-            'num_neighbor': [50, 100]
-        }
-        self.config_list += [MainConfigs(configs) for configs in c.generate_copies(neighbor_params)]
+        if batch_neighbor:
+            neighbor_params = {
+                'use_neighbor': [True],
+                'num_neighbor': [50, 100]
+            }
+            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(neighbor_params)]
 
-        similar_params = {
-            'use_similar': [True],
-            'num_similar': [50, 100]
-        }
-        self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_params)]
-        '''
-        similar_hinge_params = {
-            'use_similar': [True],
-            'use_similar_hinge': [True],
-            'num_similar': [10, 50, 100],
-        }
-        self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_hinge_params)]
-        '''
+        if batch_similar:
+            similar_params = {
+                'use_similar': [True],
+                'num_similar': [50, 100]
+            }
+            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_params)]
+
+            similar_hinge_params = {
+                'use_similar': [True],
+                'use_similar_hinge': [True],
+                'num_similar': [10, 50, 100],
+            }
+            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_hinge_params)]
 
 
 

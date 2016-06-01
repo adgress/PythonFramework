@@ -56,9 +56,13 @@ def _run_cross_validation_iteration_args(self, args):
     assert self.temp_dir is not None
     temp_file = self.temp_dir + '/' + str(args) + '.pkl'
     if os.path.isfile(temp_file):
-        ret = helper_functions.load_object(temp_file)
-        print 'Results already exist: ' + temp_file
-        return ret
+        try:
+            ret = helper_functions.load_object(temp_file)
+            print 'Results already exist: ' + temp_file
+            return ret
+        except:
+            print 'loading file failed - deleting and rerunning...'
+            os.remove(temp_file)
     while True:
         num_runs += 1
         if print_messages_cv:

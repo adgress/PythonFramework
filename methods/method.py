@@ -1182,11 +1182,14 @@ class RelativeRegressionMethod(Method):
                     pass
             w1 = results.x
             if (np.isnan(w1) | np.isinf(w1)).any() or (not results.success and self.ridge_on_fail):
-                w1[:] = 0
+                if self.ridge_on_fail:
+                    w1[:] = 0
+                    if not self.running_cv:
+                        self.optimization_failed = True
                 if not self.running_cv:
                     import warnings
                     warnings.warn('Optimization failed!')
-                    self.optimization_failed = True
+
 
 
             self.w, self.b = logistic_difference_optimize.unpack_linear(w1)

@@ -774,6 +774,10 @@ class RelativeRegressionMethod(Method):
         d.neighbor_ordering = None
         d.bound_ordering = None
         output =  super(RelativeRegressionMethod, self).train_and_test(d)
+        comm = mpi_utility.get_comm()
+        if comm != MPI.COMM_WORLD and self.use_mpi:
+            self.optimization_failed = comm.bcast(self.optimization_failed, root=0)
+        #if self.optimization_failed and (mpi_utility.is_group_master() or not self.use_mpi):
         if self.optimization_failed:
             warnings.warn('Optimized failed - using ridge instead...')
             self.optimization_failed = False
@@ -785,6 +789,11 @@ class RelativeRegressionMethod(Method):
             m = RelativeRegressionMethod(c)
             m.temp_dir = self.temp_dir  + '/ridge/'
             output = m.train_and_test(data)
+        '''
+        comm = mpi_utility.get_comm()
+        if comm != MPI.COMM_WORLD and self.use_mpi:
+            output = comm.bcast(output, root=0)
+        '''
         return output
 
 

@@ -25,12 +25,13 @@ data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
 data_sets_for_exps = [data_set_to_use]
 
 batch_pairwise = True
-batch_neighbor = False
-batch_similar = False
-batch_bound = False
+batch_neighbor = True
+batch_similar = True
+batch_bound = True
 batch_ssl = False
 
-num_features = 10
+ridge_on_fail = False
+num_features = -1
 active_iterations = 2
 active_items_per_iteration = 50
 
@@ -116,6 +117,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.use_mixed_cv = use_mixed_cv
         self.use_ssl = use_ssl
         self.use_baseline = use_baseline
+        self.ridge_on_fail = ridge_on_fail
 
         self.use_pairwise = use_pairwise
         self.num_pairwise = num_pairwise
@@ -224,6 +226,7 @@ class MainConfigs(bc.MainConfigs):
 
         method_configs.use_mixed_cv = pc.use_mixed_cv
         method_configs.use_baseline = pc.use_baseline
+        method_configs.ridge_on_fail = pc.ridge_on_fail
 
         method_configs.use_pairwise = pc.use_pairwise
         method_configs.num_pairwise = pc.num_pairwise
@@ -335,8 +338,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             all_params = list(grid_search.ParameterGrid(suffixes))
 
             methods = []
-            methods.append(('numRandPairs','RelReg, %s pairs'))
-            methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
+            #methods.append(('numRandPairs','RelReg, %s pairs'))
+            #methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
 
             #methods.append(('numRandBound', 'RelReg, %s bounds'))
             #methods.append(('numRandQuartiles', 'RelReg, %s quartiles'))
@@ -344,8 +347,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
 
             #methods.append(('numRandNeighborConvex', 'RelReg, %s rand neighbors convex'))
 
-            #methods.append(('numSimilar','RelReg, %s pairs'))
-            #methods.append(('numSimilarHinge','RelReg, %s pairs hinge'))
+            methods.append(('numSimilar','RelReg, %s pairs'))
+            methods.append(('numSimilarHinge','RelReg, %s pairs hinge'))
 
             for file_suffix, legend_name in methods:
                 for size in sizes:

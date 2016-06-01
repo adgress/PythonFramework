@@ -676,6 +676,7 @@ class RelativeRegressionMethod(Method):
             #self.transform = PCA(self.pca_dim,whiten=True)
         self.use_mixed_cv = configs.use_mixed_cv
         self.use_baseline = configs.use_baseline
+        self.ridge_on_fail = configs.ridge_on_fail
 
         self.add_random_pairwise = configs.use_pairwise
         self.use_pairwise = configs.use_pairwise
@@ -778,8 +779,9 @@ class RelativeRegressionMethod(Method):
         if comm != MPI.COMM_WORLD and self.use_mpi:
             self.optimization_failed = comm.bcast(self.optimization_failed, root=0)
         #if self.optimization_failed and (mpi_utility.is_group_master() or not self.use_mpi):
-        if self.optimization_failed:
-            warnings.warn('Optimized failed - using ridge instead...')
+        if self.optimization_failed and self.ridge_on_fail:
+            if mpi_utility.is_group_master():
+                warnings.warn('Optimized failed on ' + self.split_idx_str + ' - using ridge instead...')
             self.optimization_failed = False
             c = deepcopy(self.configs)
             c.use_pairwise = False
@@ -1179,7 +1181,7 @@ class RelativeRegressionMethod(Method):
                     print 'Results2 Success'
                     pass
             w1 = results.x
-            if (np.isnan(w1) | np.isinf(w1)).any() or not results.success:
+            if (np.isnan(w1) | np.isinf(w1)).any() or (not results.success and self.ridge_on_fail):
                 w1[:] = 0
                 if not self.running_cv:
                     import warnings
@@ -1384,10 +1386,12 @@ class RelativeRegressionMethod(Method):
         if not use_pairwise and not use_bound and not use_neighbor and not use_similar:
             s += '-noPairwiseReg'
         else:
+            using_cvx = False
             if use_pairwise:
                 if self.num_pairwise > 0 and self.add_random_pairwise:
                     if getattr(self, 'use_hinge', False):
                         s += '-numRandPairsHinge=' + str(int(self.num_pairwise))
+                        using_cvx = True
                     else:
                         s += '-numRandPairs=' + str(int(self.num_pairwise))
                         if getattr(self, 'pairwise_use_scipy', False):
@@ -1417,8 +1421,10 @@ class RelativeRegressionMethod(Method):
                     s += '-logFix'
             if use_bound:
                 hasRandBounds = self.num_bound > 0 and self.add_random_bound
+                using_cvx = True
                 if getattr(self, 'bound_logistic', False):
                     s += '-numRandLogBounds=' + str(int(self.num_bound))
+                    using_cvx = False
                 elif getattr(self, 'use_quartiles', False):
                     s += '-numRandQuartiles=' + str(int(self.num_bound))
                 else:
@@ -1427,6 +1433,7 @@ class RelativeRegressionMethod(Method):
                     s += '-baseline'
             if use_neighbor and self.num_neighbor > 0 and self.add_random_neighbor:
                 use_convex = getattr(self, 'neighbor_convex', False)
+                using_cvx = False
                 if getattr(self, 'use_min_pair_neighbor', False):
                     s += '-numMinNeighbor=' + str(int(self.num_neighbor))
                 elif use_convex:
@@ -1446,6 +1453,7 @@ class RelativeRegressionMethod(Method):
                         s += '-logistic'
             if use_similar and self.num_similar > 0 and self.add_random_similar:
                 if self.use_similar_hinge:
+                    using_cvx = True
                     s += '-numSimilarHinge=' + str(int(self.num_similar))
                 else:
                     s += '-numSimilar=' + str(int(self.num_similar))
@@ -1453,6 +1461,8 @@ class RelativeRegressionMethod(Method):
                         s += '-scipy'
             if getattr(self, 'use_mixed_cv', False):
                 s += '-mixedCV'
+            if not getattr(self, 'ridge_on_fail', True) and not using_cvx:
+                s += '-noRidgeOnFail'
             if hasattr(self, 'solver'):
                 s += '-solver=' + str(self.solver)
         num_features = getattr(self,'num_features', -1)

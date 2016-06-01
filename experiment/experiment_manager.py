@@ -152,6 +152,7 @@ def _run_experiment_args(self, results_file, data_and_splits, method_results, i_
     curr_data = data_and_splits.get_split(split, num_labels)
     learner = self.configs.learner
     curr_learner = copy.deepcopy(learner)
+    curr_learner.split_idx_str = s
     curr_learner.temp_dir = temp_dir
     curr_results = curr_learner.train_and_test(curr_data)
     if mpi_utility.is_group_master():

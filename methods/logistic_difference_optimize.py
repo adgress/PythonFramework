@@ -191,7 +191,7 @@ class logistic_pairwise(logistic_optimize):
         return v_log.sum()
         '''
         vals = np.log(1 + np.exp(-d))
-        I = np.isinf(vals)
+        I = np.isinf(vals) | np.isnan(vals)
         if I.any():
             #print 'logistic_pairwise eval: inf! ' + str(I.mean())
             #vals[np.isinf(vals)] = 1e16

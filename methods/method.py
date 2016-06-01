@@ -47,6 +47,7 @@ import itertools
 import random
 from methods import logistic_difference_optimize
 from scipy import optimize
+import warnings
 
 print_messages_cv = False
 
@@ -725,6 +726,7 @@ class RelativeRegressionMethod(Method):
 
         self.w_initial = None
         self.b_initial = None
+        self.optimization_failed = False
         if self.use_neighbor:
             self.cv_params['C'] = 10**np.asarray(list(reversed(range(-4,4))),dtype='float64')
             self.cv_params['C4'] = 10**np.asarray(list(reversed(range(-4,4))),dtype='float64')
@@ -750,7 +752,6 @@ class RelativeRegressionMethod(Method):
 
     def train_and_test(self, data):
         use_dccp = self.use_neighbor and not self.neighbor_convex
-
         #Solve for best w to initialize problem
         if use_dccp and (self.init_ridge or self.init_ideal):
             new_configs = deepcopy(self.configs)
@@ -772,7 +773,20 @@ class RelativeRegressionMethod(Method):
         d.pairwise_ordering = None
         d.neighbor_ordering = None
         d.bound_ordering = None
-        return super(RelativeRegressionMethod, self).train_and_test(d)
+        output =  super(RelativeRegressionMethod, self).train_and_test(d)
+        if self.optimization_failed:
+            warnings.warn('Optimized failed - using ridge instead...')
+            self.optimization_failed = False
+            c = deepcopy(self.configs)
+            c.use_pairwise = False
+            c.use_bound = False
+            c.use_neighbor = False
+            c.use_similar = False
+            m = RelativeRegressionMethod(c)
+            m.temp_dir = self.temp_dir
+            output = m.train_and_test(data)
+        return output
+
 
     def _create_cv_splits(self,data):
         splits = super(RelativeRegressionMethod, self)._create_cv_splits(data)
@@ -1161,6 +1175,8 @@ class RelativeRegressionMethod(Method):
                 if not self.running_cv:
                     import warnings
                     warnings.warn('Optimization failed!')
+                    self.optimization_failed = True
+
 
             self.w, self.b = logistic_difference_optimize.unpack_linear(w1)
             y_train_pred = x.dot(self.w) + self.b

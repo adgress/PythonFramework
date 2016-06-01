@@ -783,7 +783,7 @@ class RelativeRegressionMethod(Method):
             c.use_neighbor = False
             c.use_similar = False
             m = RelativeRegressionMethod(c)
-            m.temp_dir = self.temp_dir
+            m.temp_dir = self.temp_dir  + '/ridge/'
             output = m.train_and_test(data)
         return output
 

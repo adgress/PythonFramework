@@ -72,7 +72,7 @@ use_similar_hinge = False
 similar_use_scipy = True
 
 use_aic = True
-use_test_error_for_model_selection = False
+use_test_error_for_model_selection = True
 run_batch = True
 if helper_functions.is_laptop():
     run_batch = False
@@ -334,6 +334,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                 suffixes['numFeats'] = [str(pc.num_features)]
             suffixes['scipy'] = [None, '']
             suffixes['noRidgeOnFail'] = [None, '']
+            suffixes['tuneScale'] = [None, '']
             suffixes['solver'] = ['SCS']
 
             #suffixes['numFeats'] = [str(num_feat)]
@@ -341,18 +342,18 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             ordered_keys = [
                 'fastDCCP', 'initRidge', 'init_ideal', 'initRidgeTrain','logistic',
                 'pairBound', 'mixedCV', 'logNoise', 'scipy', 'noGrad',
-                'baseline', 'logFix', 'noRidgeOnFail', 'solver', 'numFeats'
+                'baseline', 'logFix', 'noRidgeOnFail', 'tuneScale', 'solver', 'numFeats'
             ]
             all_params = list(grid_search.ParameterGrid(suffixes))
 
             methods = []
             methods.append(('numRandPairs','RelReg, %s pairs'))
-            methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
+            #methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
 
             #methods.append(('numRandQuartiles', 'RelReg, %s quartiles'))
             #methods.append(('numRandLogBounds', '%s log bounds'))
 
-            methods.append(('numRandNeighborConvexHinge', 'RelReg, %s rand neighbors convex hinge'))
+            #methods.append(('numRandNeighborConvexHinge', 'RelReg, %s rand neighbors convex hinge'))
             #methods.append(('numRandNeighborConvex', 'RelReg, %s rand neighbors convex'))
 
             #methods.append(('numSimilar','RelReg, %s pairs'))
@@ -450,7 +451,7 @@ class BatchConfigs(bc.BatchConfigs):
         c.use_quartile = False
         c.use_similar = False
         c.use_similar_hinge = False
-        c.use_test_error_for_model_selection = False
+        #c.use_test_error_for_model_selection = False
         self.config_list = [MainConfigs(c)]
 
         if batch_ssl:

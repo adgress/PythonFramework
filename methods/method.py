@@ -657,7 +657,7 @@ class RelativeRegressionMethod(Method):
         self.cv_params['C3'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         self.cv_params['C4'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         self.cv_params['s'] = 10**np.asarray(list(reversed(range(-3,3))),dtype='float64')
-        self.cv_params['scale'] = 5**np.asarray(list(reversed(range(-3,3))),dtype='float64')
+        self.cv_params['scale'] = 5**np.asarray(list(reversed(range(-1,1))),dtype='float64')
 
         self.num_features = configs.num_features
         self.w = None
@@ -741,6 +741,10 @@ class RelativeRegressionMethod(Method):
             self.cv_params['C4'] = np.asarray([0])
         if not self.use_similar:
             self.cv_params['s'] = np.asarray([1])
+        elif not self.use_test_error_for_model_selection:
+            self.save_cv_temp = False
+            self.cv_params['C'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
+            self.cv_params['C2'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
         if not self.tune_scale:
             self.cv_params['scale'] = np.asarray([1])
         if self.use_pairwise and self.use_logistic_fix:

@@ -1478,7 +1478,7 @@ class RelativeRegressionMethod(Method):
                 s += '-mixedCV'
             if not getattr(self, 'ridge_on_fail', True) and not using_cvx:
                 s += '-noRidgeOnFail'
-            if getattr(self, 'tune_scale', False):
+            if getattr(self, 'tune_scale', False) and not using_cvx:
                 s += '-tuneScale'
             if hasattr(self, 'solver'):
                 s += '-solver=' + str(self.solver)

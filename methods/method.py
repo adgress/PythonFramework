@@ -18,7 +18,7 @@ from sklearn import grid_search
 from sklearn import linear_model
 from sklearn import neighbors
 from sklearn.metrics import pairwise
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 from sklearn.feature_selection import SelectKBest
@@ -658,6 +658,12 @@ class RelativeRegressionMethod(Method):
         self.cv_params['C4'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         self.cv_params['s'] = 10**np.asarray(list(reversed(range(-3,3))),dtype='float64')
         self.cv_params['scale'] = 5**np.asarray(list(reversed(range(-1,1))),dtype='float64')
+        self.small_param_range = configs.small_param_range
+        if self.small_param_range:
+            self.cv_params['C'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
+            self.cv_params['C2'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
+            self.cv_params['C3'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
+            self.cv_params['C4'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
 
         self.num_features = configs.num_features
         self.w = None
@@ -679,6 +685,15 @@ class RelativeRegressionMethod(Method):
         self.use_baseline = configs.use_baseline
         self.ridge_on_fail = configs.ridge_on_fail
         self.tune_scale = configs.tune_scale
+
+        self.y_transform = None
+        self.y_scale_min_max = configs.y_scale_min_max
+        self.y_scale_standard = configs.y_scale_standard
+        if self.y_scale_min_max:
+            self.y_transform = MinMaxScaler()
+        elif self.y_scale_standard:
+            self.y_transform = StandardScaler()
+
 
         self.add_random_pairwise = configs.use_pairwise
         self.use_pairwise = configs.use_pairwise
@@ -730,9 +745,12 @@ class RelativeRegressionMethod(Method):
         self.w_initial = None
         self.b_initial = None
         self.optimization_failed = False
+        #Why did I have this before?
+        '''
         if self.use_neighbor:
             self.cv_params['C'] = 10**np.asarray(list(reversed(range(-4,4))),dtype='float64')
             self.cv_params['C4'] = 10**np.asarray(list(reversed(range(-4,4))),dtype='float64')
+        '''
         if not self.use_pairwise:
             self.cv_params['C2'] = np.asarray([0])
         if not self.use_bound:
@@ -754,6 +772,7 @@ class RelativeRegressionMethod(Method):
             self.cv_params['C2'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
         if self.use_similar:
             self.cv_params['s'] = np.asarray([.05, .1, .2, .3],dtype='float64')
+            self.cv_params['C'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
             self.cv_params['C2'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
 
         for key, values in self.cv_params.iteritems():
@@ -765,6 +784,12 @@ class RelativeRegressionMethod(Method):
     def train_and_test(self, data):
         use_dccp = self.use_neighbor and not self.neighbor_convex and not self.neighbor_hinge
         #Solve for best w to initialize problem
+        if self.y_transform is not None:
+            data = deepcopy(data)
+            data.true_y = self.y_transform.fit_transform(data.true_y)
+            I = ~np.isnan(data.y)
+            data.y[I] = self.y_transform.transform(data.y[I])
+
         if use_dccp and (self.init_ridge or self.init_ideal):
             new_configs = deepcopy(self.configs)
             new_configs.use_neighbor = False
@@ -1204,8 +1229,6 @@ class RelativeRegressionMethod(Method):
                     import warnings
                     warnings.warn('Optimization failed!')
 
-
-
             self.w, self.b = logistic_difference_optimize.unpack_linear(w1)
             y_train_pred = x.dot(self.w) + self.b
             pass
@@ -1370,10 +1393,14 @@ class RelativeRegressionMethod(Method):
         if data.n == 0:
             return o
         if self.method == RelativeRegressionMethod.METHOD_RIDGE_SURROGATE:
+            assert False, 'y_transform?'
             o = self.ridge_reg.predict(data)
         else:
             x = self.transform.transform(data.x)
             y = x.dot(self.w) + self.b
+            if self.y_transform is not None:
+                y = self.y_transform.inverse_transform(y)
+                o.true_y = self.y_transform.inverse_transform(o.true_y)
             o.fu = y
             o.y = y
             #f = lambda x: x.dot(self.w)[0,0] + self.b
@@ -1486,8 +1513,14 @@ class RelativeRegressionMethod(Method):
                 s += '-noRidgeOnFail'
             if getattr(self, 'tune_scale', False) and not using_cvx:
                 s += '-tuneScale'
+            if getattr(self, 'small_param_range', False):
+                s += '-smallScale'
             if hasattr(self, 'solver'):
                 s += '-solver=' + str(self.solver)
+        if getattr(self, 'y_scale_min_max', False):
+            s += '-minMax'
+        elif getattr(self, 'y_scale_standard', False):
+            s += '-zScore'
         num_features = getattr(self,'num_features', -1)
         if num_features  > 0:
             s += '-numFeats=' + str(num_features)

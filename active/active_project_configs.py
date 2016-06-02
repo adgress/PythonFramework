@@ -17,30 +17,36 @@ def create_project_configs():
 
 pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
-#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-data_set_to_use = bc.DATA_BOSTON_HOUSING
+data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+#data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_WINE_RED
 #data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 
 data_sets_for_exps = [data_set_to_use]
 
-batch_pairwise = True
-batch_neighbor = True
-batch_similar = True
-batch_bound = True
-batch_ssl = False
+run_experiments = True
 
-tune_scale = True
+batch_pairwise = True
+batch_neighbor = False
+batch_similar = False
+batch_bound = False
+batch_ssl = False
+batch_hinge_exps = False
+
+small_param_range = True
+tune_scale = False
 ridge_on_fail = False
 num_features = -1
-active_iterations = 2
-active_items_per_iteration = 50
+other_method_configs = {
+    'y_scale_min_max': False,
+    'y_scale_standard': False
+}
 
 use_mixed_cv = False
 use_ssl = False
 use_baseline = False
 
-use_pairwise = False
+use_pairwise = True
 num_pairwise = 11
 #pair_bound = (.25,1)
 pair_bound = ()
@@ -77,11 +83,10 @@ run_batch = True
 if helper_functions.is_laptop():
     run_batch = False
 
-
-
+active_iterations = 2
+active_items_per_iteration = 50
 run_active_experiments = False
 
-run_experiments = True
 show_legend_on_all = True
 
 max_rows = 3
@@ -115,12 +120,15 @@ class ProjectConfigs(bc.ProjectConfigs):
         if use_arguments and arguments is not None:
             apply_arguments(self)
 
+        for key, value in other_method_configs.items():
+            setattr(self, key, value)
 
         self.use_mixed_cv = use_mixed_cv
         self.use_ssl = use_ssl
         self.use_baseline = use_baseline
         self.ridge_on_fail = ridge_on_fail
         self.tune_scale = tune_scale
+        self.small_param_range = small_param_range
 
         self.use_pairwise = use_pairwise
         self.num_pairwise = num_pairwise
@@ -228,10 +236,14 @@ class MainConfigs(bc.MainConfigs):
         method_configs.active_items_per_iteration = active_items_per_iteration
         method_configs.metric = 'euclidean'
 
+        for key in other_method_configs.keys():
+            setattr(method_configs, key, getattr(pc,key))
+
         method_configs.use_mixed_cv = pc.use_mixed_cv
         method_configs.use_baseline = pc.use_baseline
         method_configs.ridge_on_fail = pc.ridge_on_fail
         method_configs.tune_scale = pc.tune_scale
+        method_configs.small_param_range = pc.small_param_range
 
         method_configs.use_pairwise = pc.use_pairwise
         method_configs.num_pairwise = pc.num_pairwise
@@ -289,6 +301,97 @@ class MethodConfigs(bc.MethodConfigs):
         super(MethodConfigs, self).__init__()
         self.copy_fields(pc,pc_fields_to_copy)
 
+class BatchConfigs(bc.BatchConfigs):
+    def __init__(self, pc):
+        super(BatchConfigs, self).__init__()
+        from experiment.experiment_manager import MethodExperimentManager
+        self.method_experiment_manager_class = MethodExperimentManager
+        if not run_batch:
+            self.config_list = [MainConfigs(pc)]
+            return
+
+        c = pc.copy()
+        c.use_pairwise = False
+        c.use_neighbor = False
+        c.use_bound = False
+        c.use_hinge = False
+        c.use_quartile = False
+        c.use_similar = False
+        c.use_similar_hinge = False
+        #c.use_test_error_for_model_selection = False
+        self.config_list = [MainConfigs(c)]
+
+        if batch_ssl:
+            ssl_params = {
+                'use_ssl': [True]
+            }
+            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(ssl_params)]
+
+        if batch_pairwise:
+            pairwise_params = {
+                'use_pairwise': [True],
+                'num_pairwise': [50, 100]
+            }
+            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
+            if batch_hinge_exps:
+                pairwise_hinge_params = {
+                    'use_pairwise': [True],
+                    'use_hinge': [True],
+                    'num_pairwise': [50, 100]
+                }
+                self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_hinge_params)]
+
+        if batch_bound:
+            bound_params = {
+                'use_bound': [True],
+                'num_bound': [50, 100]
+            }
+            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bound_params)]
+
+            bound_baseline_params = {
+                'use_bound': [True],
+                'num_bound': [50, 100],
+                'use_baseline': [True],
+                'bound_logistic': [False]
+            }
+            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bound_baseline_params)]
+            if batch_hinge_exps:
+                bound_hinge_params = {
+                    'use_bound': [True],
+                    'num_bound': [50, 100],
+                    'bound_logistic': [False]
+                }
+                self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bound_hinge_params)]
+
+        if batch_neighbor:
+            neighbor_params = {
+                'use_neighbor': [True],
+                'num_neighbor': [50, 100]
+            }
+            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(neighbor_params)]
+
+            if batch_hinge_exps:
+                neighbor_hinge_params = {
+                    'use_neighbor': [True],
+                    'neighbor_hinge': [True],
+                    'num_neighbor': [50, 100]
+                }
+                self.config_list += [MainConfigs(configs) for configs in c.generate_copies(neighbor_hinge_params)]
+
+        if batch_similar:
+            similar_params = {
+                'use_similar': [True],
+                'num_similar': [50, 100]
+            }
+            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_params)]
+            if batch_hinge_exps:
+                similar_hinge_params = {
+                    'use_similar': [True],
+                    'use_similar_hinge': [True],
+                    'num_similar': [10, 50, 100],
+                }
+                self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_hinge_params)]
+
 class VisualizationConfigs(bc.VisualizationConfigs):
     def __init__(self, data_set=None):
         super(VisualizationConfigs, self).__init__()
@@ -303,7 +406,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             base_file_name = 'RelReg-cvx-constraints-%s=%s'
             #self.files['LapRidge.pkl'] = 'Laplacian Ridge Regression'
             #ridge_file = 'RelReg-cvx-constraints-noPairwiseReg%s.pkl'
-            use_test = False
+            use_test = use_test_error_for_model_selection
             if pc.num_features > 0:
                 if use_test:
                     self.files['RelReg-cvx-constraints-noPairwiseReg-numFeats=' + str(pc.num_features) + '-TEST.pkl'] = 'TEST: Ridge Regression'
@@ -335,6 +438,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             suffixes['scipy'] = [None, '']
             suffixes['noRidgeOnFail'] = [None, '']
             suffixes['tuneScale'] = [None, '']
+            suffixes['smallScale'] = [None, '']
             suffixes['solver'] = ['SCS']
 
             #suffixes['numFeats'] = [str(num_feat)]
@@ -342,13 +446,15 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             ordered_keys = [
                 'fastDCCP', 'initRidge', 'init_ideal', 'initRidgeTrain','logistic',
                 'pairBound', 'mixedCV', 'logNoise', 'scipy', 'noGrad',
-                'baseline', 'logFix', 'noRidgeOnFail', 'tuneScale', 'solver', 'numFeats'
+                'baseline', 'logFix', 'noRidgeOnFail', 'tuneScale',
+                'smallScale',
+                'solver', 'numFeats'
             ]
             all_params = list(grid_search.ParameterGrid(suffixes))
 
             methods = []
             methods.append(('numRandPairs','RelReg, %s pairs'))
-            #methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
+            methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
 
             #methods.append(('numRandQuartiles', 'RelReg, %s quartiles'))
             #methods.append(('numRandLogBounds', '%s log bounds'))
@@ -432,119 +538,3 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.ylims = [0,600]
         elif pc.data_set == bc.DATA_BOSTON_HOUSING:
             self.ylims = [0,100]
-
-
-class BatchConfigs(bc.BatchConfigs):
-    def __init__(self, pc):
-        super(BatchConfigs, self).__init__()
-        from experiment.experiment_manager import MethodExperimentManager
-        self.method_experiment_manager_class = MethodExperimentManager
-        if not run_batch:
-            self.config_list = [MainConfigs(pc)]
-            return
-
-        c = pc.copy()
-        c.use_pairwise = False
-        c.use_neighbor = False
-        c.use_bound = False
-        c.use_hinge = False
-        c.use_quartile = False
-        c.use_similar = False
-        c.use_similar_hinge = False
-        #c.use_test_error_for_model_selection = False
-        self.config_list = [MainConfigs(c)]
-
-        if batch_ssl:
-            ssl_params = {
-                'use_ssl': [True]
-            }
-            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(ssl_params)]
-
-        if batch_pairwise:
-            pairwise_params = {
-                'use_pairwise': [True],
-                'num_pairwise': [50, 100]
-            }
-            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
-
-            pairwise_hinge_params = {
-                'use_pairwise': [True],
-                'use_hinge': [True],
-                'num_pairwise': [50, 100]
-            }
-            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_hinge_params)]
-
-        if batch_bound:
-            bound_params = {
-                'use_bound': [True],
-                'num_bound': [50, 100]
-            }
-            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bound_params)]
-
-            bound_baseline_params = {
-                'use_bound': [True],
-                'num_bound': [50, 100],
-                'use_baseline': [True],
-                'bound_logistic': [False]
-            }
-            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bound_baseline_params)]
-
-            bound_hinge_params = {
-                'use_bound': [True],
-                'num_bound': [50, 100],
-                'bound_logistic': [False]
-            }
-            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bound_hinge_params)]
-
-        if batch_neighbor:
-            neighbor_params = {
-                'use_neighbor': [True],
-                'num_neighbor': [50, 100]
-            }
-            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(neighbor_params)]
-            neighbor_hinge_params = {
-                'use_neighbor': [True],
-                'neighbor_hinge': [True],
-                'num_neighbor': [50, 100]
-            }
-            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(neighbor_hinge_params)]
-
-        if batch_similar:
-            similar_params = {
-                'use_similar': [True],
-                'num_similar': [50, 100]
-            }
-            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_params)]
-
-            similar_hinge_params = {
-                'use_similar': [True],
-                'use_similar_hinge': [True],
-                'num_similar': [10, 50, 100],
-            }
-            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_hinge_params)]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

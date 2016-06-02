@@ -657,6 +657,7 @@ class RelativeRegressionMethod(Method):
         self.cv_params['C3'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         self.cv_params['C4'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         self.cv_params['s'] = 10**np.asarray(list(reversed(range(-3,3))),dtype='float64')
+        self.cv_params['scale'] = 5**np.asarray(list(reversed(range(-3,3))),dtype='float64')
 
         self.num_features = configs.num_features
         self.w = None
@@ -677,6 +678,7 @@ class RelativeRegressionMethod(Method):
         self.use_mixed_cv = configs.use_mixed_cv
         self.use_baseline = configs.use_baseline
         self.ridge_on_fail = configs.ridge_on_fail
+        self.tune_scale = configs.tune_scale
 
         self.add_random_pairwise = configs.use_pairwise
         self.use_pairwise = configs.use_pairwise
@@ -704,13 +706,13 @@ class RelativeRegressionMethod(Method):
         self.init_ridge_train = configs.init_ridge_train
         self.use_neighbor_logistic = configs.use_neighbor_logistic
         self.neighbor_convex = configs.neighbor_convex
+        self.neighbor_hinge = configs.neighbor_hinge
 
         self.add_random_similar = configs.use_similar
         self.use_similar = configs.use_similar
         self.num_similar = configs.num_similar
         self.use_similar_hinge = configs.use_similar_hinge
         self.similar_use_scipy = configs.similar_use_scipy
-
 
         self.use_test_error_for_model_selection = configs.use_test_error_for_model_selection
         self.no_linear_term = True
@@ -737,22 +739,25 @@ class RelativeRegressionMethod(Method):
             self.cv_params['C3'] = np.asarray([0])
         if not self.use_neighbor:
             self.cv_params['C4'] = np.asarray([0])
-        if not self.use_pairwise or not self.use_logistic_fix:
+        if not self.use_similar:
             self.cv_params['s'] = np.asarray([1])
+        if not self.tune_scale:
+            self.cv_params['scale'] = np.asarray([1])
         if self.use_pairwise and self.use_logistic_fix:
             self.cv_params['C'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
             self.cv_params['C2'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
         if self.use_similar:
             self.cv_params['s'] = np.asarray([.05, .1, .2, .3],dtype='float64')
             self.cv_params['C2'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
+
         for key, values in self.cv_params.iteritems():
-            if key == 's' or values.size <= 1:
+            if key == 's' or key == 'scale' or values.size <= 1:
                 continue
             self.cv_params[key] = np.append(values, 0)
 
 
     def train_and_test(self, data):
-        use_dccp = self.use_neighbor and not self.neighbor_convex
+        use_dccp = self.use_neighbor and not self.neighbor_convex and not self.neighbor_hinge
         #Solve for best w to initialize problem
         if use_dccp and (self.init_ridge or self.init_ideal):
             new_configs = deepcopy(self.configs)
@@ -1065,7 +1070,7 @@ class RelativeRegressionMethod(Method):
                 opt_data.bounds = bounds
                 eval = logistic_difference_optimize.logistic_bound.create_eval(opt_data)
                 grad = logistic_difference_optimize.logistic_bound.create_grad(opt_data)
-            elif self.use_neighbor and self.neighbor_convex:
+            elif self.use_neighbor and self.neighbor_convex and not self.neighbor_hinge:
                 method = 'SLSQP'
                 x_neighbor,x_low,x_high = ConvexNeighborConstraint.generate_neighbors_for_scipy_optimize(
                     data.pairwise_relationships,
@@ -1150,6 +1155,8 @@ class RelativeRegressionMethod(Method):
             if not self.use_grad:
                 grad = None
 
+            opt_data.s = self.s
+            opt_data.scale = self.scale
             with Capturing() as output:
                 results = optimize.minimize(eval,w0,method=method,jac=grad,options=options,constraints=constraints)
 
@@ -1165,18 +1172,19 @@ class RelativeRegressionMethod(Method):
 
                 w2 = results2.x
 
-                #tic()
-                self.solve_cvx(x, y, data)
-                #toc()
-                w_cvx = self.w
-                b_cvx = self.b
-
                 from numpy.linalg import norm
                 if norm(results.x) == 0:
                     print 'Error: Norm is 0'
                 else:
                     print 'Error: ' + str(norm(results.x-results2.x)/norm(results.x))
+                '''
+                #tic()
+                self.solve_cvx(x, y, data)
+                #toc()
+                w_cvx = self.w
+                b_cvx = self.b
                 print 'Error cvx: ' + str(norm(results2.x[0:-1] - w_cvx.T)/norm(w_cvx))
+                '''
                 if results2.success:
                     print 'Results2 Success'
                     pass
@@ -1440,7 +1448,11 @@ class RelativeRegressionMethod(Method):
                 if getattr(self, 'use_min_pair_neighbor', False):
                     s += '-numMinNeighbor=' + str(int(self.num_neighbor))
                 elif use_convex:
-                    s += '-numRandNeighborConvex=' + str(int(self.num_neighbor))
+                    if getattr(self, 'neighbor_hinge', False):
+                        s += '-numRandNeighborConvexHinge=' + str(int(self.num_neighbor))
+                        using_cvx = True
+                    else:
+                        s += '-numRandNeighborConvex=' + str(int(self.num_neighbor))
                 else:
                     s += '-numRandNeighbor=' + str(int(self.num_neighbor))
                 if not use_convex:
@@ -1466,6 +1478,8 @@ class RelativeRegressionMethod(Method):
                 s += '-mixedCV'
             if not getattr(self, 'ridge_on_fail', True) and not using_cvx:
                 s += '-noRidgeOnFail'
+            if getattr(self, 'tune_scale', False):
+                s += '-tuneScale'
             if hasattr(self, 'solver'):
                 s += '-solver=' + str(self.solver)
         num_features = getattr(self,'num_features', -1)

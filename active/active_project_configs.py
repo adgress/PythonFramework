@@ -17,8 +17,8 @@ def create_project_configs():
 
 pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
-data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-#data_set_to_use = bc.DATA_BOSTON_HOUSING
+#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_WINE_RED
 #data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 
@@ -30,6 +30,7 @@ batch_similar = True
 batch_bound = True
 batch_ssl = False
 
+tune_scale = True
 ridge_on_fail = False
 num_features = -1
 active_iterations = 2
@@ -40,7 +41,7 @@ use_ssl = False
 use_baseline = False
 
 use_pairwise = False
-num_pairwise = 50
+num_pairwise = 11
 #pair_bound = (.25,1)
 pair_bound = ()
 use_hinge = False
@@ -50,12 +51,12 @@ use_logistic_fix = False
 pairwise_use_scipy = True
 
 use_bound = False
-num_bound = 50
+num_bound = 11
 use_quartiles = True
 bound_logistic = True
 
 use_neighbor = False
-num_neighbor = 50
+num_neighbor = 11
 use_min_pair_neighbor = False
 fast_dccp = True
 init_ridge = False
@@ -63,9 +64,10 @@ init_ideal = False
 init_ridge_train = False
 use_neighbor_logistic = False
 neighbor_convex = True
+neighbor_hinge = False
 
 use_similar = False
-num_similar = 50
+num_similar = 11
 use_similar_hinge = False
 similar_use_scipy = True
 
@@ -118,6 +120,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.use_ssl = use_ssl
         self.use_baseline = use_baseline
         self.ridge_on_fail = ridge_on_fail
+        self.tune_scale = tune_scale
 
         self.use_pairwise = use_pairwise
         self.num_pairwise = num_pairwise
@@ -142,6 +145,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.use_neighbor_logistic = use_neighbor_logistic
         self.use_logistic_fix = use_logistic_fix
         self.neighbor_convex = neighbor_convex
+        self.neighbor_hinge = neighbor_hinge
         self.num_features = num_features
 
         self.use_similar = use_similar
@@ -227,6 +231,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.use_mixed_cv = pc.use_mixed_cv
         method_configs.use_baseline = pc.use_baseline
         method_configs.ridge_on_fail = pc.ridge_on_fail
+        method_configs.tune_scale = pc.tune_scale
 
         method_configs.use_pairwise = pc.use_pairwise
         method_configs.num_pairwise = pc.num_pairwise
@@ -251,6 +256,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.use_neighbor_logistic = pc.use_neighbor_logistic
         method_configs.use_logistic_fix = pc.use_logistic_fix
         method_configs.neighbor_convex = pc.neighbor_convex
+        method_configs.neighbor_hinge = pc.neighbor_hinge
 
         method_configs.use_similar = pc.use_similar
         method_configs.num_similar = pc.num_similar
@@ -327,28 +333,30 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             if pc.num_features > 0:
                 suffixes['numFeats'] = [str(pc.num_features)]
             suffixes['scipy'] = [None, '']
+            suffixes['noRidgeOnFail'] = [None, '']
             suffixes['solver'] = ['SCS']
+
             #suffixes['numFeats'] = [str(num_feat)]
 
             ordered_keys = [
                 'fastDCCP', 'initRidge', 'init_ideal', 'initRidgeTrain','logistic',
                 'pairBound', 'mixedCV', 'logNoise', 'scipy', 'noGrad',
-                'baseline', 'logFix', 'solver', 'numFeats'
+                'baseline', 'logFix', 'noRidgeOnFail', 'solver', 'numFeats'
             ]
             all_params = list(grid_search.ParameterGrid(suffixes))
 
             methods = []
-            #methods.append(('numRandPairs','RelReg, %s pairs'))
-            #methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
+            methods.append(('numRandPairs','RelReg, %s pairs'))
+            methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
 
-            #methods.append(('numRandBound', 'RelReg, %s bounds'))
             #methods.append(('numRandQuartiles', 'RelReg, %s quartiles'))
             #methods.append(('numRandLogBounds', '%s log bounds'))
 
+            methods.append(('numRandNeighborConvexHinge', 'RelReg, %s rand neighbors convex hinge'))
             #methods.append(('numRandNeighborConvex', 'RelReg, %s rand neighbors convex'))
 
-            methods.append(('numSimilar','RelReg, %s pairs'))
-            methods.append(('numSimilarHinge','RelReg, %s pairs hinge'))
+            #methods.append(('numSimilar','RelReg, %s pairs'))
+            #methods.append(('numSimilarHinge','RelReg, %s pairs hinge'))
 
             for file_suffix, legend_name in methods:
                 for size in sizes:
@@ -493,6 +501,12 @@ class BatchConfigs(bc.BatchConfigs):
                 'num_neighbor': [50, 100]
             }
             self.config_list += [MainConfigs(configs) for configs in c.generate_copies(neighbor_params)]
+            neighbor_hinge_params = {
+                'use_neighbor': [True],
+                'neighbor_hinge': [True],
+                'num_neighbor': [50, 100]
+            }
+            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(neighbor_hinge_params)]
 
         if batch_similar:
             similar_params = {

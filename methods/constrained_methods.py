@@ -83,7 +83,8 @@ class ConvexNeighborConstraint(CVXConstraint):
         #values = np.asarray(values)
         #values = np.expand_dims(values, 1)
         #cvx.logistic(values)
-        return cvx_logistic.logistic_difference(values), [yk > yj, yk > yi, 0 > -yj-yk+2*yi]
+        return cvx.abs(yj-yi) - (yk - yi), [yk > yj, yk > yi]
+        #return cvx_logistic.logistic_difference(values), [yk > yj, yk > yi, 0 > -yj-yk+2*yi]
 
     def predict(self, f):
         y0 = f(self.x[0])

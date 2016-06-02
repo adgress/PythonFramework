@@ -136,9 +136,10 @@ class logistic_similar(logistic_optimize):
         x1 = data.x1
         x2 = data.x2
         s = data.s
+        scale = data.scale
         y1 = apply_linear(x1, v)
         y2 = apply_linear(x2, v)
-        d = y2 - y1
+        d = (y2 - y1)/scale
         denom = np.log(1 + np.exp(s+d) + np.exp(d-s) + np.exp(2*d))
 
         vals = d - denom + np.log(np.exp(s) - np.exp(-s))
@@ -152,7 +153,8 @@ class logistic_similar(logistic_optimize):
         s = data.s
         y1 = apply_linear(x1, v)
         y2 = apply_linear(x2, v)
-        d = y2 - y1
+        scale = data.scale
+        d = (y2 - y1)/scale
         a = np.exp(s+d) + np.exp(d-s) + np.exp(2*d)
         a2 = np.exp(s+d) + np.exp(d-s) + 2*np.exp(2*d)
         n = x1.shape[0]
@@ -162,7 +164,7 @@ class logistic_similar(logistic_optimize):
         sig2 = sigmoid(-s - d)
 
         for i in range(n):
-            dx = x2[i,:] - x1[i,:]
+            dx = (x2[i,:] - x1[i,:])/scale
 
             ai = a[i]
             a2i = a2[i]
@@ -182,9 +184,10 @@ class logistic_pairwise(logistic_optimize):
     def eval_mixed_guidance(data, v):
         x_low = data.x_low
         x_high = data.x_high
+        scale = data.scale
         yj = apply_linear(x_low, v)
         yi = apply_linear(x_high, v)
-        d = yi - yj
+        d = (yi - yj)/scale
         '''
         v = sigmoid(yi-yj)
         v_log = -np.log(v)
@@ -202,13 +205,14 @@ class logistic_pairwise(logistic_optimize):
     def grad_mixed_guidance(data, v):
         x_low = data.x_low
         x_high = data.x_high
+        scale = data.scale
         n = x_low.shape[0]
-        d = apply_linear(x_high, v) - apply_linear(x_low, v)
+        d = (apply_linear(x_high, v) - apply_linear(x_low, v))/scale
         a = np.exp(-d)
         sig = sigmoid(d)
         g = np.zeros(v.size)
         for i in range(n):
-            dx = x_high[i,:] - x_low[i,:]
+            dx = (x_high[i,:] - x_low[i,:])/scale
             #t = a[i]
             #t *= ((1+a[i])**-2)
             #t *= ((1+a[i])**-1)
@@ -228,6 +232,7 @@ class logistic_neighbor(logistic_optimize):
         x = data.x_neighbor
         x_low = data.x_low
         x_high = data.x_high
+        scale = data.scale
         w, b = unpack_linear(v)
         y = apply_linear(x, w, b)
         y_low = apply_linear(x_low, w, b)
@@ -236,8 +241,8 @@ class logistic_neighbor(logistic_optimize):
         if (y_low + eps >= y_high).any() or (y + eps >= y_high).any():
             return np.inf
         '''
-        sig1 = sigmoid(y_high-y_low)
-        sig2 = sigmoid(2*y - y_high - y_low)
+        sig1 = sigmoid((y_high-y_low)/scale)
+        sig2 = sigmoid((2*y - y_high - y_low)/scale)
         diff = sig1 - sig2
         #assert (np.sign(diff) > 0).all()
         vals2 = -np.log(sig1-sig2 + eps)
@@ -254,13 +259,14 @@ class logistic_neighbor(logistic_optimize):
         x = data.x_neighbor
         x_low = data.x_low
         x_high = data.x_high
+        scale = data.scale
         w, b = unpack_linear(v)
         y = apply_linear(x, w, b)
         y_low = apply_linear(x_low, w, b)
         y_high = apply_linear(x_high, w, b)
 
-        sig1 = sigmoid(y_high-y_low)
-        sig2 = sigmoid(2*y - y_high - y_low)
+        sig1 = sigmoid((y_high-y_low)/scale)
+        sig2 = sigmoid((2*y - y_high - y_low)/scale)
         denom = sig1 - sig2 + eps
         val = np.zeros(v.shape)
         for i in range(x.shape[0]):
@@ -268,8 +274,8 @@ class logistic_neighbor(logistic_optimize):
             #val[0:-1] += (num1*x1 - num2*x2) / denom[i]
             #val[-1] += (num1 - num2) / denom[i]
 
-            x1 = x_high[i,:] - x_low[i,:]
-            x2 = 2*x[i,:] - x_low[i,:] - x_high[i,:]
+            x1 = (x_high[i,:] - x_low[i,:])/scale
+            x2 = (2*x[i,:] - x_low[i,:] - x_high[i,:])/scale
             num1 = sig1[i]*(1-sig1[i])*x1
             num2 = sig2[i]*(1-sig2[i])*x2
             val[0:-1] += (num1-num2)*(1/denom[i])
@@ -288,6 +294,7 @@ class logistic_neighbor(logistic_optimize):
 
     @staticmethod
     def _grad_num_mixed_guidance(x, x_low, x_high, w, b=None):
+        assert False
         if b is None:
             w,b = unpack_linear(w)
 
@@ -337,17 +344,20 @@ class logistic_bound(logistic_optimize):
         w, b = unpack_linear(v)
         x = data.x_bound
         bounds = data.bounds
+        scale = data.scale
         y = apply_linear(x, w, b)
         assert y.size == bounds.shape[0]
         c1 = bounds[:, 0]
         c2 = bounds[:, 1]
-        loss_num = np.log(np.exp(y - c1) - np.exp(y - c2))
-        loss_denom = np.log(1 + np.exp(y-c1) + np.exp(y-c2) + np.exp(2*y - c1 - c2))
+        y_c1 = (y-c1)/scale
+        y_c2 = (y-c2)/scale
+        loss_num = np.log(np.exp(y_c1) - np.exp(y_c2))
+        loss_denom = np.log(1 + np.exp(y_c1) + np.exp(y_c2) + np.exp(y_c1+y_c2))
         vals = (-loss_num + loss_denom)
         val = vals.sum()
 
-        sig1 = sigmoid(c2-y)
-        sig2 = sigmoid(c1-y)
+        sig1 = sigmoid((c2-y)/scale)
+        sig2 = sigmoid((c1-y)/scale)
         diff = sig1 - sig2
         vals2 = -np.log(sig1-sig2 + eps)
         val2 = vals2.sum()
@@ -359,6 +369,7 @@ class logistic_bound(logistic_optimize):
 
     @staticmethod
     def _grad_num_mixed_guidance(x, c, w, b=None):
+        assert False
         if b is None:
             w,b = unpack_linear(w)
         a = c - apply_linear(x, w, b)
@@ -371,21 +382,22 @@ class logistic_bound(logistic_optimize):
     def grad_mixed_guidance(data, v):
         bounds = data.bounds
         x = data.x_bound
+        scale = data.scale
         w, b = unpack_linear(v)
         y = apply_linear(x, w, b)
         assert y.size == bounds.shape[0]
         c1 = bounds[:, 0]
         c2 = bounds[:, 1]
 
-        sig1 = sigmoid(c2-y)
-        sig2 = sigmoid(c1-y)
+        sig1 = sigmoid((c2-y)/scale)
+        sig2 = sigmoid((c1-y)/scale)
         denom = sig1 - sig2 + eps
         val = np.zeros(v.shape)
         assert (denom > -1).all()
         for i in range(x.shape[0]):
             num1 = sig1[i]*(1-sig1[i])
             num2 = sig2[i]*(1-sig2[i])
-            val[0:-1] += (num1-num2)*(1/denom[i])*x[i,:]
+            val[0:-1] += (num1-num2)*(1/denom[i])*x[i,:]/scale
             val[-1] += (num1-num2)*(1/denom[i])
             '''
             num1, x1 = logistic_bound._grad_num_mixed_guidance(x[i, :], c2[i], w, b)
@@ -402,7 +414,7 @@ class logistic_bound(logistic_optimize):
             print 'grad_linear_bound_logistic: nan!'
             val[np.isnan(val)] = 0
         if np.isinf(val).any():
-            print 'grad_linear_bound_logistic: inf!'
+            #print 'grad_linear_bound_logistic: inf!'
             val[np.isinf(val)] = 0
         return val
 

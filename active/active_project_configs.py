@@ -17,10 +17,10 @@ def create_project_configs():
 
 pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
-data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_WINE_RED
-#data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
+data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 
 data_sets_for_exps = [data_set_to_use]
 
@@ -32,6 +32,7 @@ batch_similar = False
 batch_bound = False
 batch_ssl = False
 batch_hinge_exps = False
+batch_size = [50]
 
 small_param_range = True
 tune_scale = False
@@ -330,27 +331,27 @@ class BatchConfigs(bc.BatchConfigs):
         if batch_pairwise:
             pairwise_params = {
                 'use_pairwise': [True],
-                'num_pairwise': [50, 100]
+                'num_pairwise': batch_size,
             }
             self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
             if batch_hinge_exps:
                 pairwise_hinge_params = {
                     'use_pairwise': [True],
                     'use_hinge': [True],
-                    'num_pairwise': [50, 100]
+                    'num_pairwise': batch_size,
                 }
                 self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_hinge_params)]
 
         if batch_bound:
             bound_params = {
                 'use_bound': [True],
-                'num_bound': [50, 100]
+                'num_bound': batch_size,
             }
             self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bound_params)]
 
             bound_baseline_params = {
                 'use_bound': [True],
-                'num_bound': [50, 100],
+                'num_bound': batch_size,
                 'use_baseline': [True],
                 'bound_logistic': [False]
             }
@@ -358,7 +359,7 @@ class BatchConfigs(bc.BatchConfigs):
             if batch_hinge_exps:
                 bound_hinge_params = {
                     'use_bound': [True],
-                    'num_bound': [50, 100],
+                    'num_bound': batch_size,
                     'bound_logistic': [False]
                 }
                 self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bound_hinge_params)]
@@ -366,7 +367,7 @@ class BatchConfigs(bc.BatchConfigs):
         if batch_neighbor:
             neighbor_params = {
                 'use_neighbor': [True],
-                'num_neighbor': [50, 100]
+                'num_neighbor': batch_size,
             }
             self.config_list += [MainConfigs(configs) for configs in c.generate_copies(neighbor_params)]
 
@@ -374,21 +375,21 @@ class BatchConfigs(bc.BatchConfigs):
                 neighbor_hinge_params = {
                     'use_neighbor': [True],
                     'neighbor_hinge': [True],
-                    'num_neighbor': [50, 100]
+                    'num_neighbor': batch_size,
                 }
                 self.config_list += [MainConfigs(configs) for configs in c.generate_copies(neighbor_hinge_params)]
 
         if batch_similar:
             similar_params = {
                 'use_similar': [True],
-                'num_similar': [50, 100]
+                'num_similar': batch_size,
             }
             self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_params)]
             if batch_hinge_exps:
                 similar_hinge_params = {
                     'use_similar': [True],
                     'use_similar_hinge': [True],
-                    'num_similar': [10, 50, 100],
+                    'num_similar': batch_size,
                 }
                 self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_hinge_params)]
 
@@ -421,7 +422,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             sizes = []
             #sizes.append(10)
             sizes.append(50)
-            sizes.append(100)
+            #sizes.append(100)
             #sizes.append(150)
             #sizes.append(250)
             suffixes = OrderedDict()
@@ -437,8 +438,10 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                 suffixes['numFeats'] = [str(pc.num_features)]
             suffixes['scipy'] = [None, '']
             suffixes['noRidgeOnFail'] = [None, '']
-            suffixes['tuneScale'] = [None, '']
+            #suffixes['tuneScale'] = [None, '']
             suffixes['smallScale'] = [None, '']
+            suffixes['minMax'] = [None, '']
+            suffixes['zScore'] = [None, '']
             suffixes['solver'] = ['SCS']
 
             #suffixes['numFeats'] = [str(num_feat)]
@@ -448,13 +451,13 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                 'pairBound', 'mixedCV', 'logNoise', 'scipy', 'noGrad',
                 'baseline', 'logFix', 'noRidgeOnFail', 'tuneScale',
                 'smallScale',
-                'solver', 'numFeats'
+                'solver', 'minMax', 'zScore', 'numFeats'
             ]
             all_params = list(grid_search.ParameterGrid(suffixes))
 
             methods = []
             methods.append(('numRandPairs','RelReg, %s pairs'))
-            methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
+            #methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
 
             #methods.append(('numRandQuartiles', 'RelReg, %s quartiles'))
             #methods.append(('numRandLogBounds', '%s log bounds'))

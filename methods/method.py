@@ -685,6 +685,7 @@ class RelativeRegressionMethod(Method):
         self.use_baseline = configs.use_baseline
         self.ridge_on_fail = configs.ridge_on_fail
         self.tune_scale = configs.tune_scale
+        self.scipy_opt_method = configs.scipy_opt_method
 
         self.y_transform = None
         self.y_scale_min_max = configs.y_scale_min_max
@@ -1083,7 +1084,7 @@ class RelativeRegressionMethod(Method):
             self.w = w_anal
             self.b = b_anal
         elif self.method in RelativeRegressionMethod.CVX_METHODS:
-            method = 'BFGS'
+            method = self.scipy_opt_method
             options = {
                 'disp': True
             }
@@ -1188,9 +1189,10 @@ class RelativeRegressionMethod(Method):
 
             opt_data.s = self.s
             opt_data.scale = self.scale
+            tic()
             with Capturing() as output:
                 results = optimize.minimize(eval,w0,method=method,jac=grad,options=options,constraints=constraints)
-
+            toc()
             #options['gtol'] = 1e-3
             compare_results = False
             if compare_results:
@@ -1524,6 +1526,8 @@ class RelativeRegressionMethod(Method):
         num_features = getattr(self,'num_features', -1)
         if num_features  > 0:
             s += '-numFeats=' + str(num_features)
+        if getattr(self, 'scipy_opt_method', 'BFGS') != 'BFGS':
+            s += '-' + self.scipy_opt_method
         if self.use_test_error_for_model_selection:
             s += '-TEST'
         return s

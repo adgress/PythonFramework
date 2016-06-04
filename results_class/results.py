@@ -1,4 +1,4 @@
-__author__ = 'Aubrey'
+top__author__ = 'Aubrey'
 
 import numpy as np
 import collections
@@ -98,12 +98,18 @@ class ExperimentResults(ResultsContainer):
         errors = self.compute_error(loss_function)
         for i in range(errors.shape[1]):
             #mean = errors.mean()
-            mean = np.percentile(errors[:,i],50)
+            e = errors[:,i]
+            sorted = np.sort(e)
+            I = (e <= sorted[-4])
+            e = e[I]
+            #mean = np.percentile(errors[:,i],50)
+            mean = e.mean()
             n = errors.shape[0]
             zn = 1.96
             #if self.is_regression or mean > 1:
             if mean > 1:
-                std = errors[:,i].std()
+                #std = errors[:,i].std()
+                std = e.std()
                 se = std / math.sqrt(n)
                 low = se*zn
                 high = se*zn

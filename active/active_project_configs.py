@@ -25,6 +25,7 @@ data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 data_sets_for_exps = [data_set_to_use]
 
 run_experiments = True
+use_test_error_for_model_selection = False
 
 batch_pairwise = True
 batch_neighbor = False
@@ -40,7 +41,8 @@ ridge_on_fail = False
 num_features = -1
 other_method_configs = {
     'y_scale_min_max': False,
-    'y_scale_standard': False
+    'y_scale_standard': False,
+    'scipy_opt_method': 'CG'
 }
 
 use_mixed_cv = False
@@ -48,7 +50,7 @@ use_ssl = False
 use_baseline = False
 
 use_pairwise = True
-num_pairwise = 11
+num_pairwise = 51
 #pair_bound = (.25,1)
 pair_bound = ()
 use_hinge = False
@@ -79,7 +81,6 @@ use_similar_hinge = False
 similar_use_scipy = True
 
 use_aic = True
-use_test_error_for_model_selection = True
 run_batch = True
 if helper_functions.is_laptop():
     run_batch = False
@@ -422,7 +423,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             sizes = []
             #sizes.append(10)
             sizes.append(50)
-            #sizes.append(100)
+            sizes.append(100)
             #sizes.append(150)
             #sizes.append(250)
             suffixes = OrderedDict()
@@ -437,11 +438,11 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             if pc.num_features > 0:
                 suffixes['numFeats'] = [str(pc.num_features)]
             suffixes['scipy'] = [None, '']
-            suffixes['noRidgeOnFail'] = [None, '']
+            suffixes['noRidgeOnFail'] = ['']
             #suffixes['tuneScale'] = [None, '']
             suffixes['smallScale'] = [None, '']
-            suffixes['minMax'] = [None, '']
-            suffixes['zScore'] = [None, '']
+            #suffixes['minMax'] = [None, '']
+            #suffixes['zScore'] = [None, '']
             suffixes['solver'] = ['SCS']
 
             #suffixes['numFeats'] = [str(num_feat)]

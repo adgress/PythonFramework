@@ -165,12 +165,9 @@ class logistic_similar(logistic_optimize):
         d = (y2 - y1)/scale
         a = np.exp(s+d) + np.exp(d-s) + np.exp(2*d)
         a2 = np.exp(s+d) + np.exp(d-s) + 2*np.exp(2*d)
+        '''
         n = x1.shape[0]
         g = np.zeros(v.size)
-
-        sig1 = sigmoid(s - d)
-        sig2 = sigmoid(-s - d)
-
         for i in range(n):
             dx = (x2[i,:] - x1[i,:])/scale
 
@@ -184,8 +181,17 @@ class logistic_similar(logistic_optimize):
             g[0:-1] += t*dx
             g[-1] += t
         g[-1] = 0
+        '''
+
+        dx = (x2 - x1)/scale
+        I = np.isinf(a)
+        a[I] = 1
+        t = 1 - (a2/(1+a))
+        g_fast = (dx.T*t).sum(1)
+        g_fast = np.append(g_fast, 0)
+        #err = array_functions.relative_error(g, g_fast)
+        g = g_fast
         return -g
-        #return g
 
 class logistic_pairwise(logistic_optimize):
     @staticmethod
@@ -279,23 +285,28 @@ class logistic_neighbor(logistic_optimize):
         sig1 = sigmoid((y_high-y_low)/scale)
         sig2 = sigmoid((2*y - y_high - y_low)/scale)
         denom = sig1 - sig2 + eps
+        '''
         val = np.zeros(v.shape)
         for i in range(x.shape[0]):
-            #num1, x1, num2, x2 = logistic_neighbor._grad_num_mixed_guidance(x[i, :], x_low[i, :], x_high[i, :], w, b)
-            #val[0:-1] += (num1*x1 - num2*x2) / denom[i]
-            #val[-1] += (num1 - num2) / denom[i]
-
             x1 = (x_high[i,:] - x_low[i,:])/scale
             x2 = (2*x[i,:] - x_low[i,:] - x_high[i,:])/scale
             num1 = sig1[i]*(1-sig1[i])*x1
             num2 = sig2[i]*(1-sig2[i])*x2
             val[0:-1] += (num1-num2)*(1/denom[i])
-            #val[-1] += (num1-num2)*(1/denom[i])
 
-        #assert not np.isnan(val).any()
-        #Why isn't this necessary?
-        #val *= -1
         val[-1] = 0
+        '''
+        x1 = (x_high - x_low)/scale
+        x2 = (2*x - x_low - x_high)/scale
+
+        num1 = sig1*(1-sig1)
+        num2 = sig2*(1-sig2)
+        d = x1.T*num1 - x2.T*num2
+        g_fast = (d/denom).sum(1)
+        g_fast = np.append(g_fast, 0)
+
+        #err = array_functions.relative_error(val, g_fast)
+        val = g_fast
         val *= -1
         I = np.isnan(val) | np.isinf(val)
         if I.any():
@@ -403,6 +414,7 @@ class logistic_bound(logistic_optimize):
         sig1 = sigmoid((c2-y)/scale)
         sig2 = sigmoid((c1-y)/scale)
         denom = sig1 - sig2 + eps
+        '''
         val = np.zeros(v.shape)
         assert (denom > -1).all()
         for i in range(x.shape[0]):
@@ -410,17 +422,17 @@ class logistic_bound(logistic_optimize):
             num2 = sig2[i]*(1-sig2[i])
             val[0:-1] += (num1-num2)*(1/denom[i])*x[i,:]/scale
             val[-1] += (num1-num2)*(1/denom[i])
-            '''
-            num1, x1 = logistic_bound._grad_num_mixed_guidance(x[i, :], c2[i], w, b)
-            num2, x2 = logistic_bound._grad_num_mixed_guidance(x[i, :], c1[i], w, b)
-            t1 = num1*x1 - num2*x2
-            t2 = num1 - num2
-            val[0:-1] += (num1*x1 - num2*x2) / denom[i]
-            val[-1] += (num1 - num2) / denom[i]
-            '''
+        '''
         #assert not np.isnan(val).any()
         #Why isn't this necessary?
         #val *= -1
+        num = sig1*(1-sig1) - sig2*(1-sig2)
+        num /= scale
+        num /= denom
+        g_fast = (x.T*num).sum(1)
+        g_fast = np.append(g_fast, num.sum())
+        #rel_error = array_functions.relative_error(val, g_fast)
+        val = g_fast
         if np.isnan(val).any():
             print 'grad_linear_bound_logistic: nan!'
             val[np.isnan(val)] = 0

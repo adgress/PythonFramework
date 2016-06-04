@@ -31,12 +31,12 @@ run_experiments = True
 use_test_error_for_model_selection = False
 
 batch_pairwise = True
-batch_neighbor = False
-batch_similar = False
-batch_bound = False
+batch_neighbor = True
+batch_similar = True
+batch_bound = True
 batch_ssl = False
-batch_hinge_exps = False
-batch_size = [50]
+batch_hinge_exps = True
+batch_size = [50, 100]
 
 small_param_range = False
 tune_scale = False

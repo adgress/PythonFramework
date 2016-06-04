@@ -43,7 +43,7 @@ other_method_configs = {
     'y_scale_min_max': False,
     'y_scale_standard': False,
     'scipy_opt_method': 'L-BFGS-B',
-    'num_splits': 10
+    'num_cv_splits': 10
 }
 
 use_mixed_cv = False
@@ -439,12 +439,14 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             if pc.num_features > 0:
                 suffixes['numFeats'] = [str(pc.num_features)]
             suffixes['scipy'] = [None, '']
-            suffixes['noRidgeOnFail'] = ['']
+            suffixes['noRidgeOnFail'] = [None, '']
             #suffixes['tuneScale'] = [None, '']
             suffixes['smallScale'] = [None, '']
             #suffixes['minMax'] = [None, '']
             #suffixes['zScore'] = [None, '']
             suffixes['solver'] = ['SCS']
+            suffixes['L-BFGS-B'] = [None, '']
+            suffixes['nCV'] = ['10']
 
             #suffixes['numFeats'] = [str(num_feat)]
 
@@ -453,7 +455,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                 'pairBound', 'mixedCV', 'logNoise', 'scipy', 'noGrad',
                 'baseline', 'logFix', 'noRidgeOnFail', 'tuneScale',
                 'smallScale',
-                'solver', 'minMax', 'zScore', 'numFeats'
+                'solver', 'minMax', 'zScore', 'numFeats', 'L-BFGS-B', 'nCV'
             ]
             all_params = list(grid_search.ParameterGrid(suffixes))
 

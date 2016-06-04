@@ -2,6 +2,7 @@ import numpy as np
 from numpy.linalg import norm
 import scipy.optimize as optimize
 from scipy.special import expit as sigmoid
+from utility import array_functions
 
 
 #from http://stackoverflow.com/questions/4474395/staticmethod-and-abc-abstractmethod-will-it-blend
@@ -215,17 +216,20 @@ class logistic_pairwise(logistic_optimize):
         scale = data.scale
         n = x_low.shape[0]
         d = (apply_linear(x_high, v) - apply_linear(x_low, v))/scale
-        a = np.exp(-d)
         sig = sigmoid(d)
         g = np.zeros(v.size)
+        '''
         for i in range(n):
             dx = (x_high[i,:] - x_low[i,:])/scale
-            #t = a[i]
-            #t *= ((1+a[i])**-2)
-            #t *= ((1+a[i])**-1)
             t = 1-sig[i]
             g[0:-1] += t*dx
             g[-1] += t
+        '''
+        dx = x_high - x_low /scale
+        g_fast = (dx.T*(1-sig)).sum(1)
+        g_fast = np.append(g_fast, (1-sig).sum())
+        g = g_fast
+        #rel_err =  array_functions.relative_error(g,g_fast)
         g *= -1
         g[-1] *= 0
         return g

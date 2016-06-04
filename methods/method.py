@@ -143,8 +143,8 @@ class Method(Saveable):
     def _create_cv_splits(self,data):
         data_splitter = create_data_split.DataSplitter()
         num_splits = 5
-        if hasattr(self, 'num_splits'):
-            num_splits = self.num_splits
+        if hasattr(self, 'num_cv_splits'):
+            num_splits = self.num_cv_splits
         perc_train = .8
         is_regression = data.is_regression
         if self.cv_use_data_type:
@@ -1527,10 +1527,10 @@ class RelativeRegressionMethod(Method):
         num_features = getattr(self,'num_features', -1)
         if num_features  > 0:
             s += '-numFeats=' + str(num_features)
-        if getattr(self, 'scipy_opt_method', 'BFGS') != 'BFGS':
+        if not using_cvx and getattr(self, 'scipy_opt_method', 'BFGS') != 'BFGS':
             s += '-' + self.scipy_opt_method
-        if getattr(self, 'num_splits', 5) != 5:
-            s += '-nCV=' + str(self.num_splits)
         if self.use_test_error_for_model_selection:
             s += '-TEST'
+        elif getattr(self, 'num_cv_splits', 5) != 5:
+            s += '-nCV=' + str(self.num_cv_splits)
         return s

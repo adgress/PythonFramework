@@ -686,6 +686,7 @@ class RelativeRegressionMethod(Method):
         self.ridge_on_fail = configs.ridge_on_fail
         self.tune_scale = configs.tune_scale
         self.scipy_opt_method = configs.scipy_opt_method
+        self.num_splits = configs.num_splits
 
         self.y_transform = None
         self.y_scale_min_max = configs.y_scale_min_max
@@ -1528,6 +1529,8 @@ class RelativeRegressionMethod(Method):
             s += '-numFeats=' + str(num_features)
         if getattr(self, 'scipy_opt_method', 'BFGS') != 'BFGS':
             s += '-' + self.scipy_opt_method
+        if getattr(self, 'num_splits', 5) != 5:
+            s += '-nCV=' + str(self.num_splits)
         if self.use_test_error_for_model_selection:
             s += '-TEST'
         return s

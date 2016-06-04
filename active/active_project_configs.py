@@ -42,7 +42,8 @@ num_features = -1
 other_method_configs = {
     'y_scale_min_max': False,
     'y_scale_standard': False,
-    'scipy_opt_method': 'CG'
+    'scipy_opt_method': 'L-BFGS-B',
+    'num_splits': 10
 }
 
 use_mixed_cv = False

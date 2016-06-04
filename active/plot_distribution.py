@@ -8,8 +8,8 @@ def plot_function(xrange, f, axis_obj, n_samples=1000.0):
     #y = np.asarray([f(xi) for xi in x])
     y = f(x)
     axis_obj.plot(x, y)
-    axis_obj.set_xlabel('f(xi)')
-    axis_obj.set_ylabel('p(f(xi))')
+    axis_obj.set_xlabel('f(x)')
+    axis_obj.set_ylabel('p(f(x))')
 
 def plot_function_2d(xrange, yrange, f, axis_obj, n_samples=1000.0):
     x = np.arange(xrange[0], xrange[1], (xrange[1] - xrange[0])/n_samples)
@@ -47,7 +47,7 @@ def plot_similar(a):
 
 def plot_similar_contour(a):
     s = 1
-    f = lambda x: sigmoid(s-x[0]) + sigmoid(-s-x[1])
+    f = lambda x: sigmoid(s-(x[0] - x[1])) - sigmoid(-s-(x[0] - x[1]))
     plot_function_2d([-7.5, 7.5], [-7.5, 7.5], f, a)
     a.set_title('Similar')
 

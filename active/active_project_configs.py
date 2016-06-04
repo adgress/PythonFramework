@@ -18,11 +18,14 @@ def create_project_configs():
 pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-#data_set_to_use = bc.DATA_BOSTON_HOUSING
+data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_WINE_RED
-data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
+#data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 
 data_sets_for_exps = [data_set_to_use]
+
+viz_for_paper = True
+
 
 run_experiments = True
 use_test_error_for_model_selection = False
@@ -50,7 +53,7 @@ use_mixed_cv = False
 use_ssl = False
 use_baseline = False
 
-use_pairwise = True
+use_pairwise = False
 num_pairwise = 51
 #pair_bound = (.25,1)
 pair_bound = ()
@@ -61,12 +64,12 @@ use_logistic_fix = False
 pairwise_use_scipy = True
 
 use_bound = False
-num_bound = 11
+num_bound = 51
 use_quartiles = True
 bound_logistic = True
 
 use_neighbor = False
-num_neighbor = 11
+num_neighbor = 51
 use_min_pair_neighbor = False
 fast_dccp = True
 init_ridge = False
@@ -76,8 +79,8 @@ use_neighbor_logistic = False
 neighbor_convex = True
 neighbor_hinge = False
 
-use_similar = False
-num_similar = 11
+use_similar = True
+num_similar = 51
 use_similar_hinge = False
 similar_use_scipy = True
 
@@ -357,7 +360,9 @@ class BatchConfigs(bc.BatchConfigs):
                 'use_baseline': [True],
                 'bound_logistic': [False]
             }
+
             self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bound_baseline_params)]
+            '''
             if batch_hinge_exps:
                 bound_hinge_params = {
                     'use_bound': [True],
@@ -365,14 +370,14 @@ class BatchConfigs(bc.BatchConfigs):
                     'bound_logistic': [False]
                 }
                 self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bound_hinge_params)]
-
+            '''
         if batch_neighbor:
             neighbor_params = {
                 'use_neighbor': [True],
                 'num_neighbor': batch_size,
             }
             self.config_list += [MainConfigs(configs) for configs in c.generate_copies(neighbor_params)]
-
+            '''
             if batch_hinge_exps:
                 neighbor_hinge_params = {
                     'use_neighbor': [True],
@@ -380,13 +385,14 @@ class BatchConfigs(bc.BatchConfigs):
                     'num_neighbor': batch_size,
                 }
                 self.config_list += [MainConfigs(configs) for configs in c.generate_copies(neighbor_hinge_params)]
-
+            '''
         if batch_similar:
             similar_params = {
                 'use_similar': [True],
                 'num_similar': batch_size,
             }
             self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_params)]
+            '''
             if batch_hinge_exps:
                 similar_hinge_params = {
                     'use_similar': [True],
@@ -394,147 +400,23 @@ class BatchConfigs(bc.BatchConfigs):
                     'num_similar': batch_size,
                 }
                 self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_hinge_params)]
+            '''
 
 class VisualizationConfigs(bc.VisualizationConfigs):
-    def __init__(self, data_set=None):
-        super(VisualizationConfigs, self).__init__()
+    PLOT_PAIRWISE = 1
+    PLOT_BOUND = 2
+    PLOT_NEIGHBOR = 3
+    PLOT_SIMILAR = 4
+    def __init__(self, data_set=None, **kwargs):
+        super(VisualizationConfigs, self).__init__(data_set, **kwargs)
+        if getattr(self, 'plot_type', None) is None:
+            self.plot_type = VisualizationConfigs.PLOT_PAIRWISE
+        self.max_rows = 2
         pc = ProjectConfigs(data_set)
         self.copy_fields(pc,pc_fields_to_copy)
-        self.files = OrderedDict()
-        if run_active_experiments:
-            self.files['RelActiveRandom+SKL-RidgeReg.pkl'] = 'Random Pairwise, SKLRidge'
-            self.files['ActiveRandom+SKL-RidgeReg.pkl'] = 'Random, SKLRidge'
-            self.files['RelActiveRandom+RelReg-cvx-log-with-log-noLinear-TEST.pkl'] = 'TEST: RandomPairwise, RelReg'
-        else:
-            base_file_name = 'RelReg-cvx-constraints-%s=%s'
-            #self.files['LapRidge.pkl'] = 'Laplacian Ridge Regression'
-            #ridge_file = 'RelReg-cvx-constraints-noPairwiseReg%s.pkl'
-            use_test = use_test_error_for_model_selection
-            if pc.num_features > 0:
-                if use_test:
-                    self.files['RelReg-cvx-constraints-noPairwiseReg-numFeats=' + str(pc.num_features) + '-TEST.pkl'] = 'TEST: Ridge Regression'
-                else:
-                    self.files['RelReg-cvx-constraints-noPairwiseReg-numFeats=' + str(pc.num_features) + '.pkl'] = 'Ridge Regression'
-            else:
-                if use_test:
-                    self.files['RelReg-cvx-constraints-noPairwiseReg-TEST.pkl'] = 'TEST: Ridge Regression'
-                else:
-                    self.files['RelReg-cvx-constraints-noPairwiseReg.pkl'] = 'Ridge Regression'
 
-            sizes = []
-            #sizes.append(10)
-            sizes.append(50)
-            sizes.append(100)
-            #sizes.append(150)
-            #sizes.append(250)
-            suffixes = OrderedDict()
-            #suffixes['pairBound'] = [(0,.1),(0,.25),(0,.5),(0,.75),None]
-            #suffixes['pairBound'] = [(.5,1), (.25,1), None]
-            #suffixes['mixedCV'] = [None,'']
-            #suffixes['logNoise'] = [None, .1, .5, 1, 2]
-            #suffixes['logNoise'] = [.5]
-            #suffixes['logNoise'] = [None,25,50,100]
-            #suffixes['baseline'] = [None,'']
-            #suffixes['noGrad'] = ['']
-            if pc.num_features > 0:
-                suffixes['numFeats'] = [str(pc.num_features)]
-            suffixes['scipy'] = [None, '']
-            suffixes['noRidgeOnFail'] = [None, '']
-            #suffixes['tuneScale'] = [None, '']
-            suffixes['smallScale'] = [None, '']
-            #suffixes['minMax'] = [None, '']
-            #suffixes['zScore'] = [None, '']
-            suffixes['solver'] = ['SCS']
-            suffixes['L-BFGS-B'] = [None, '']
-            suffixes['nCV'] = ['10']
-
-            #suffixes['numFeats'] = [str(num_feat)]
-
-            ordered_keys = [
-                'fastDCCP', 'initRidge', 'init_ideal', 'initRidgeTrain','logistic',
-                'pairBound', 'mixedCV', 'logNoise', 'scipy', 'noGrad',
-                'baseline', 'logFix', 'noRidgeOnFail', 'tuneScale',
-                'smallScale',
-                'solver', 'minMax', 'zScore', 'numFeats', 'L-BFGS-B', 'nCV'
-            ]
-            all_params = list(grid_search.ParameterGrid(suffixes))
-
-            methods = []
-            methods.append(('numRandPairs','RelReg, %s pairs'))
-            #methods.append(('numRandPairsHinge','RelReg, %s pairs hinge'))
-
-            #methods.append(('numRandQuartiles', 'RelReg, %s quartiles'))
-            #methods.append(('numRandLogBounds', '%s log bounds'))
-
-            #methods.append(('numRandNeighborConvexHinge', 'RelReg, %s rand neighbors convex hinge'))
-            #methods.append(('numRandNeighborConvex', 'RelReg, %s rand neighbors convex'))
-
-            #methods.append(('numSimilar','RelReg, %s pairs'))
-            #methods.append(('numSimilarHinge','RelReg, %s pairs hinge'))
-
-            for file_suffix, legend_name in methods:
-                for size in sizes:
-                    for params in all_params:
-                        file_name = base_file_name
-                        file_name = file_name % (file_suffix, str(size))
-                        legend = legend_name % str(size)
-                        for key in ordered_keys:
-                            if not params.has_key(key):
-                                continue
-                            value = params[key]
-                            if value is None:
-                                continue
-                            if value == '':
-                                file_name += '-' + key
-                                legend += ', ' + key
-                            else:
-                                file_name += '-' + key + '=' + str(value)
-                                legend += ', ' + str(value) + ' ' + key
-                        if use_test:
-                            file_name += '-TEST'
-                            legend = 'TEST: ' + legend
-                        file_name += '.pkl'
-                        self.files[file_name] = legend
-
-
-
-
-            #self.files['RelReg-cvx-constraints-numRandNeighbor=50-fastDCCP-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 rand neighbors, fast dccp'
-
-            #self.files['RelReg-cvx-constraints-numRandPairs=150-mixedCV-solver=SCS.pkl'] = 'RelReg, 150 pairs, mixedCV'
-
-            #self.files['RelReg-cvx-constraints-numRandNeighbor=50-fastDCCP-initRidge-solver=SCS.pkl'] = 'RelReg, 50 rand neighbors, init ridge'
-
-            #self.files['RelReg-cvx-constraints-numRandNeighbor=50-initRidge-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 rand neighbors, init ridge'
-            #self.files['RelReg-cvx-constraints-numRandNeighbor=50-fastDCCP-initRidge-solver=SCS-TEST-lessParams.pkl'] = 'TEST: RelReg, 50 rand neighbors, init ridge, less params'
-
-            #self.files['RelReg-cvx-constraints-numRandNeighbor=250-fastDCCP-initRidge-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 250 rand neighbors, fast dccp, init ridge'
-            #self.files['RelReg-cvx-constraints-numRandNeighbor=250-fastDCCP-initRidge-solver=SCS-TEST-lessParams.pkl'] = 'TEST: RelReg, 250 rand neighbors, fast dccp, init ridge, less params'
-
-            '''
-            self.files['RelReg-cvx-constraints-numRandPairsHinge=50-pairBound=0.75-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs hinge, .75 pair bound'
-            self.files['RelReg-cvx-constraints-numRandPairsHinge=50-pairBound=0.5-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs hinge, .5 pair bound'
-            self.files['RelReg-cvx-constraints-numRandPairsHinge=50-pairBound=0.25-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs hinge, .25 pair bound'
-            self.files['RelReg-cvx-constraints-numRandPairsHinge=50-pairBound=0.1-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs hinge, .1 pair bound'
-            '''
-            '''
-            self.files['RelReg-cvx-constraints-numRandPairs=50-pairBound=(0.25, 1)-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, (.25, 1) pair bound'
-            self.files['RelReg-cvx-constraints-numRandPairs=50-pairBound=(0.5, 1)-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, (.5, 1)  pair bound'
-            '''
-            #self.files['RelReg-cvx-constraints-numRandPairs=50-noise=0.1-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, .1 noise'
-            '''
-            self.files['RelReg-cvx-constraints-numRandPairs=50-logNoise=1-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, 1 logistic noise'
-            self.files['RelReg-cvx-constraints-numRandPairs=50-logNoise=2-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, 2 logistic noise'
-            '''
-            '''
-            self.files['RelReg-cvx-constraints-numRandPairs=50-pairBound=0.99-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, .99 pair bound'
-            self.files['RelReg-cvx-constraints-numRandPairs=50-pairBound=0.75-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, .75 pair bound'
-            self.files['RelReg-cvx-constraints-numRandPairs=50-pairBound=0.5-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, .5 pair bound'
-            self.files['RelReg-cvx-constraints-numRandPairs=50-pairBound=0.25-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, .25 pair bound'
-            self.files['RelReg-cvx-constraints-numRandPairs=50-pairBound=0.1-solver=SCS-TEST.pkl'] = 'TEST: RelReg, 50 pairs, .1 pair bound'
-            '''
-        self.figsize = (7,7)
-        self.borders = (.1,.9,.9,.1)
+        self.figsize = (10,8.9)
+        self.borders = (.05,.95,.95,.05)
         self.data_set_to_use = pc.data_set
         self.title = bc.data_name_dict.get(self.data_set_to_use, 'Unknown Data Set')
         self.show_legend_on_all = show_legend_on_all
@@ -545,3 +427,126 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.ylims = [0,600]
         elif pc.data_set == bc.DATA_BOSTON_HOUSING:
             self.ylims = [0,100]
+
+        self.files = OrderedDict()
+        if run_active_experiments:
+            self.files['RelActiveRandom+SKL-RidgeReg.pkl'] = 'Random Pairwise, SKLRidge'
+            self.files['ActiveRandom+SKL-RidgeReg.pkl'] = 'Random, SKLRidge'
+            self.files['RelActiveRandom+RelReg-cvx-log-with-log-noLinear-TEST.pkl'] = 'TEST: RandomPairwise, RelReg'
+        else:
+            self.generate_file_names(pc)
+
+
+
+
+    def generate_file_names(self, pc):
+        self.files = OrderedDict()
+        base_file_name = 'RelReg-cvx-constraints-%s=%s'
+        #self.files['LapRidge.pkl'] = 'Laplacian Ridge Regression'
+        #ridge_file = 'RelReg-cvx-constraints-noPairwiseReg%s.pkl'
+        use_test = use_test_error_for_model_selection
+        if pc.num_features > 0:
+            if use_test:
+                self.files['RelReg-cvx-constraints-noPairwiseReg-numFeats=' + str(pc.num_features) + '-TEST.pkl'] = 'TEST: Ridge Regression'
+            else:
+                self.files['RelReg-cvx-constraints-noPairwiseReg-numFeats=' + str(pc.num_features) + '.pkl'] = 'Ridge Regression'
+        else:
+            if use_test:
+                self.files['RelReg-cvx-constraints-noPairwiseReg-TEST.pkl'] = 'TEST: Ridge Regression'
+            else:
+                self.files['RelReg-cvx-constraints-noPairwiseReg-nCV=10.pkl'] = 'Ridge Regression'
+
+        sizes = []
+        #sizes.append(10)
+        sizes.append(50)
+        sizes.append(100)
+        #sizes.append(150)
+        #sizes.append(250)
+        suffixes = OrderedDict()
+        #suffixes['pairBound'] = [(0,.1),(0,.25),(0,.5),(0,.75),None]
+        #suffixes['pairBound'] = [(.5,1), (.25,1), None]
+        #suffixes['mixedCV'] = [None,'']
+        #suffixes['logNoise'] = [None, .1, .5, 1, 2]
+        #suffixes['logNoise'] = [.5]
+        #suffixes['logNoise'] = [None,25,50,100]
+        #suffixes['baseline'] = [None,'']
+        #suffixes['noGrad'] = ['']
+        if pc.num_features > 0:
+            suffixes['numFeats'] = [str(pc.num_features)]
+        suffixes['scipy'] = [None, '']
+        suffixes['noRidgeOnFail'] = [None, '']
+        #suffixes['tuneScale'] = [None, '']
+        suffixes['smallScale'] = [None, '']
+        #suffixes['minMax'] = [None, '']
+        #suffixes['zScore'] = [None, '']
+        suffixes['solver'] = ['SCS']
+        suffixes['L-BFGS-B'] = [None, '']
+        suffixes['nCV'] = ['10']
+
+        #suffixes['numFeats'] = [str(num_feat)]
+
+        ordered_keys = [
+            'fastDCCP', 'initRidge', 'init_ideal', 'initRidgeTrain','logistic',
+            'pairBound', 'mixedCV', 'logNoise', 'scipy', 'noGrad',
+            'baseline', 'logFix', 'noRidgeOnFail', 'tuneScale',
+            'smallScale',
+            'solver', 'minMax', 'zScore', 'numFeats', 'L-BFGS-B', 'nCV'
+        ]
+        all_params = list(grid_search.ParameterGrid(suffixes))
+
+        methods = []
+        if self.plot_type == VisualizationConfigs.PLOT_PAIRWISE:
+            methods.append(('numRandPairs','RelReg, %s pairs', 'Our Method: %s relative'))
+            methods.append(('numRandPairsHinge','RelReg, %s pairs hinge', 'Zhu 2007: %s relative'))
+            self.title = 'Relative'
+            if pc.data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
+                self.ylims = [0,12]
+        elif self.plot_type == VisualizationConfigs.PLOT_BOUND:
+            methods.append(('numRandLogBounds', '%s log bounds', 'Our Method: %s bound'))
+            #methods.append(('numRandQuartiles', 'RelReg, %s quartiles', 'Our Method: %s bound, hinge'))
+            self.title = 'Bound'
+        elif self.plot_type == VisualizationConfigs.PLOT_NEIGHBOR:
+            methods.append(('numRandNeighborConvex', 'RelReg, %s rand neighbors convex', 'Our Method: %s neighbors'))
+            methods.append(('numRandPairs','RelReg, %s pairs', 'Our Method: %s relative'))
+            #methods.append(('numRandNeighborConvexHinge', 'RelReg, %s rand neighbors convex hinge', 'Our Method: %s hinge constraints'))
+            self.title = 'Neighbor'
+        elif self.plot_type == VisualizationConfigs.PLOT_SIMILAR:
+            methods.append(('numSimilar','RelReg, %s pairs', 'Our Method: %s similar'))
+            #methods.append(('numSimilarHinge','RelReg, %s pairs hinge', 'Our Method: %s similar, hinge'))
+            self.title = 'Similar'
+        for file_suffix, legend_name, legend_name_paper in methods:
+            for size in sizes:
+                for params in all_params:
+                    file_name = base_file_name
+                    file_name = file_name % (file_suffix, str(size))
+                    legend = legend_name
+                    if viz_for_paper:
+                        legend = legend_name_paper
+                    legend = legend % str(size)
+                    for key in ordered_keys:
+                        if not params.has_key(key):
+                            continue
+                        value = params[key]
+                        if value is None:
+                            continue
+                        if value == '':
+                            file_name += '-' + key
+                            if not viz_for_paper:
+                                legend += ', ' + key
+                        else:
+                            file_name += '-' + key + '=' + str(value)
+                            if not viz_for_paper:
+                                legend += ', ' + str(value) + ' ' + key
+                    if use_test:
+                        file_name += '-TEST'
+                        legend = 'TEST: ' + legend
+                    file_name += '.pkl'
+                    self.files[file_name] = legend
+
+
+viz_params = [
+    {'plot_type': VisualizationConfigs.PLOT_PAIRWISE},
+    {'plot_type': VisualizationConfigs.PLOT_BOUND},
+    {'plot_type': VisualizationConfigs.PLOT_NEIGHBOR},
+    {'plot_type': VisualizationConfigs.PLOT_SIMILAR},
+]

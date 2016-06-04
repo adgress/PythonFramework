@@ -53,7 +53,9 @@ def is_pair_data(data_idx):
     return data_idx > DATA_PAIR_START and data_idx < DATA_PAIR_END
 
 class Configs(object):
-    def __init__(self):
+    def __init__(self, **kwargs):
+        for key,value in kwargs.items():
+            setattr(self, key, value)
         self.overwrite_num_labels = None
         self.split_idx = None
         pass
@@ -246,8 +248,8 @@ class DataProcessingConfigs(Configs):
         self.labels_to_use = None
 
 class VisualizationConfigs(Configs):
-    def __init__(self, data_set=None):
-        super(VisualizationConfigs, self).__init__()
+    def __init__(self, data_set=None, **kwargs):
+        super(VisualizationConfigs, self).__init__(**kwargs)
         pc = ProjectConfigs(data_set)
         self.copy_fields(pc,pc_fields_to_copy)
         self.axis_to_use = None

@@ -36,22 +36,24 @@ def run_experiments(configs=None):
 
 def run_visualization():
     vis_configs = configs_lib.VisualizationConfigs()
-    data_sets = configs_lib.data_sets_for_exps
-    n = len(data_sets)
-    #fig = plt.figure(len(data_sets))
+    #data_sets = configs_lib.data_sets_for_exps
+    #n = len(data_sets)
+    viz_params = configs_lib.viz_params
+    n = len(viz_params)
 
     if getattr(vis_configs, 'figsize', None):
         fig = plt.figure(figsize=vis_configs.figsize)
     else:
         fig = plt.figure()
     #fig.suptitle('Results')
-    num_rows = min(n, configs_lib.max_rows)
+    #num_rows = min(n, configs_lib.max_rows)
+    num_rows = min(n, vis_configs.max_rows)
     num_cols = math.ceil(float(n) / num_rows)
-    for i, data_set_id in enumerate(data_sets):
+    for i, curr_viz_params in enumerate(viz_params):
         subplot_idx = i + 1
         plt.subplot(num_rows,num_cols,subplot_idx)
         axis = [0, 1, 0, .2]
-        vis_configs = configs_lib.VisualizationConfigs(data_set_id)
+        vis_configs = configs_lib.VisualizationConfigs(**curr_viz_params)
         sizes = None
         for file, legend_str in vis_configs.results_files:
             if not os.path.isfile(file):

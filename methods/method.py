@@ -1086,7 +1086,7 @@ class RelativeRegressionMethod(Method):
         elif self.method in RelativeRegressionMethod.CVX_METHODS:
             method = self.scipy_opt_method
             options = {
-                'disp': True
+                'disp': False
             }
             w0 = np.zeros(x.shape[1]+1)
             constraints = []

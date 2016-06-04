@@ -1432,6 +1432,7 @@ class RelativeRegressionMethod(Method):
         use_similar = getattr(self, 'use_similar', False)
         using_cvx = False
         if not use_pairwise and not use_bound and not use_neighbor and not use_similar:
+            using_cvx = True
             s += '-noPairwiseReg'
         else:
             if use_pairwise:

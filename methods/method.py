@@ -1222,7 +1222,7 @@ class RelativeRegressionMethod(Method):
                     print 'Results2 Success'
                     pass
             w1 = results.x
-            if (np.isnan(w1) | np.isinf(w1)).any() or (not results.success and self.ridge_on_fail):
+            if (np.isnan(w1) | np.isinf(w1)).any() or not results.success:
                 if self.ridge_on_fail:
                     w1[:] = 0
                     if not self.running_cv:

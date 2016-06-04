@@ -198,10 +198,12 @@ class Method(Saveable):
         param_results = [self.experiment_results_class(len(splits)) for i in range(len(param_grid))]
         if (my_comm is None or my_comm.Get_size() == 1 or my_comm == MPI.COMM_WORLD) \
                 or not self.use_mpi:
+            old_temp_dir = self.temp_dir
             for i in range(len(splits)):
                 curr_split = data_and_splits.get_split(i)
                 curr_split.remove_test_labels()
                 self.warm_start = False
+                self.temp_dir = old_temp_dir + str(i)
                 for param_idx, params in enumerate(param_grid):
                     #results, results_on_test = self._run_cross_validation_iteration(params, curr_split, test_data)
                     self.curr_split = curr_split
@@ -211,6 +213,7 @@ class Method(Saveable):
                     param_results_on_test[param_idx].set(results_on_test, i)
                     self.warm_start = True
             self.warm_start = False
+            self.temp_dir = old_temp_dir
         else:
             pool = mpipool.MPIPool(comm=my_comm, debug=False, loadbalance=True, object=self)
             self.data_and_splits = pool.bcast(data_and_splits, root=0)
@@ -222,7 +225,7 @@ class Method(Saveable):
             for i in range(len(splits)):
                 self.curr_split = data_and_splits.get_split(i)
                 self.curr_split.remove_test_labels()
-                self.temp_dir += str(i) + '-'
+                self.temp_dir += str(i)
                 if pool.is_master():
                     helper_functions.make_dir_for_file_name(self.temp_dir)
                 all_split_results = pool.map(_run_cross_validation_iteration_args, param_grid)

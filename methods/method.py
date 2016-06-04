@@ -1430,10 +1430,10 @@ class RelativeRegressionMethod(Method):
         use_neighbor = getattr(self, 'use_neighbor', False)
         use_baseline = getattr(self, 'use_baseline', False)
         use_similar = getattr(self, 'use_similar', False)
+        using_cvx = False
         if not use_pairwise and not use_bound and not use_neighbor and not use_similar:
             s += '-noPairwiseReg'
         else:
-            using_cvx = False
             if use_pairwise:
                 if self.num_pairwise > 0 and self.add_random_pairwise:
                     if getattr(self, 'use_hinge', False):

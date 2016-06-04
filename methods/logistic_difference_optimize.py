@@ -30,8 +30,15 @@ def loss_l2(y1, y2):
 def grad_linear_loss_l2(x, y, v):
     w,b = unpack_linear(v)
     n = y.size
-    grad_w = 2*(x.T.dot(x).dot(w) - x.T.dot(y) + 2*x.T.sum(1)*b)
-    grad_b = 2*(x.dot(w).sum() - 2*y.sum() + 2*n*b)
+    xw = x.dot(w)
+    grad_w = 2*(x.T.dot(xw) - x.T.dot(y) + 2*x.T.sum(1)*b)
+    grad_b = 2*(xw.sum() - 2*y.sum() + 2*n*b)
+    '''
+    grad_w_old = 2*(x.T.dot(x).dot(w) - x.T.dot(y) + 2*x.T.sum(1)*b)
+    grad_b_old = 2*(x.dot(w).sum() - 2*y.sum() + 2*n*b)
+    error_w = norm(grad_w-grad_w_old)/norm(grad_w)
+    error_b = np.abs(grad_b-grad_b_old)/np.abs(grad_b)
+    '''
     return pack_linear(grad_w, grad_b)
 
 def apply_linear(x, w, b=None):

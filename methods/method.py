@@ -1189,10 +1189,10 @@ class RelativeRegressionMethod(Method):
 
             opt_data.s = self.s
             opt_data.scale = self.scale
-            tic()
+            #tic()
             with Capturing() as output:
                 results = optimize.minimize(eval,w0,method=method,jac=grad,options=options,constraints=constraints)
-            toc()
+            #toc()
             #options['gtol'] = 1e-3
             compare_results = False
             if compare_results:

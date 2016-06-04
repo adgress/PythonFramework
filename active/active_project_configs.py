@@ -38,7 +38,7 @@ batch_ssl = False
 batch_hinge_exps = False
 batch_size = [50]
 
-small_param_range = True
+small_param_range = False
 tune_scale = False
 ridge_on_fail = False
 num_features = -1

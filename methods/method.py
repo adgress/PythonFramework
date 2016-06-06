@@ -660,7 +660,7 @@ class RelativeRegressionMethod(Method):
         self.cv_params['C3'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         self.cv_params['C4'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         self.cv_params['s'] = 10**np.asarray(list(reversed(range(-3,3))),dtype='float64')
-        self.cv_params['scale'] = 5**np.asarray(list(reversed(range(-1,1))),dtype='float64')
+        self.cv_params['scale'] = 5**np.asarray(list(reversed(range(-3,3))),dtype='float64')
         self.small_param_range = configs.small_param_range
         if self.small_param_range:
             self.cv_params['C'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')

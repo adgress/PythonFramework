@@ -98,11 +98,14 @@ class ExperimentResults(ResultsContainer):
         errors = self.compute_error(loss_function)
         for i in range(errors.shape[1]):
             #mean = errors.mean()
+            '''
             e = errors[:,i]
             sorted = np.sort(e)
             I = (e <= sorted[-4])
             e = e[I]
             #mean = np.percentile(errors[:,i],50)
+            '''
+            e = errors[:,i]
             mean = e.mean()
             n = errors.shape[0]
             zn = 1.96

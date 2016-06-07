@@ -23,7 +23,7 @@ from data.data import Data
 from loss_functions.loss_function import MeanSquaredError
 from loss_functions import loss_function
 from utility import mpi_utility
-
+import bisect
 
 def run_experiments(configs=None):
     pc = configs_lib.ProjectConfigs()
@@ -33,6 +33,30 @@ def run_experiments(configs=None):
         bc.config_list = [configs]
     batch_exp_manager = experiment_manager.BatchExperimentManager(bc)
     batch_exp_manager.run_experiments()
+
+def get_sized_results(file_name):
+    file_name_no_suffix = os.path.basename(helper_functions.remove_suffix(file_name, '.pkl'))
+    dir_name = os.path.dirname(file_name)
+    all_files = os.listdir(dir_name)
+    sized_file_name = file_name_no_suffix + '-num_labels='
+    files = []
+    results = []
+    for s in all_files:
+        if sized_file_name in s:
+            files.append(dir_name + '/' + s)
+            results.append(helper_functions.load_object(dir_name + '/' + s))
+    return results
+
+def combine_results(results, sized_results):
+    for r in sized_results:
+        for idx, size in enumerate(r.sizes):
+            if size in results.sizes:
+                print 'Duplicate size found - using results in original file'
+                continue
+            results_idx = bisect.bisect_left(results.sizes, size)
+            results.results_list.insert(results_idx, r.results_list[idx])
+            pass
+    return results
 
 def run_visualization():
     vis_configs = configs_lib.VisualizationConfigs()
@@ -55,15 +79,21 @@ def run_visualization():
         axis = [0, 1, 0, .2]
         vis_configs = configs_lib.VisualizationConfigs(**curr_viz_params)
         sizes = None
+        min_x = np.inf
+        max_x = -np.inf
         for file, legend_str in vis_configs.results_files:
             if not os.path.isfile(file):
                 print file + ' doesn''t exist - skipping'
                 assert vis_configs.show_legend_on_all, 'Just to be safe, set show_legend_on_all=True if files are missing'
                 continue
             results = helper_functions.load_object(file)
+            sized_results = get_sized_results(file)
+            results = combine_results(results, sized_results)
             #plt.plot([1,2,3], [1,2,3], 'go-', label='line 1', linewidth=2)
             processed_results = results.compute_error_processed(vis_configs.loss_function)
             sizes = results.sizes
+            min_x = min(min_x, sizes.min())
+            max_x = max(max_x, sizes.max())
             s = legend_str
             if s is None:
                 s = results.configs.learner.name_string
@@ -79,9 +109,9 @@ def run_visualization():
             print 'Empty plot - skipping'
             continue
         plt.title(vis_configs.title)
-        axis_range = np.max(sizes) - np.min(sizes)
-        axis[1] = np.max(sizes) + .1*axis_range
-        axis[0] = np.min(sizes) - .1*axis_range
+        axis_range = max_x - min_x
+        axis[1] = max_x + .1*axis_range
+        axis[0] = min_x - .1*axis_range
         #show_x_label = num_rows == 1 or subplot_idx > (num_rows-1)*num_cols
         #show_x_label = num_rows == 1 or subplot_idx == 8
         #show_x_label = subplot_idx == 2

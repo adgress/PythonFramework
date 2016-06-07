@@ -16,27 +16,28 @@ def create_project_configs():
     return ProjectConfigs()
 
 pc_fields_to_copy = bc.pc_fields_to_copy + [
+    'include_size_in_file_name'
 ]
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-data_set_to_use = bc.DATA_BOSTON_HOUSING
-#data_set_to_use = bc.DATA_WINE_RED
+#data_set_to_use = bc.DATA_BOSTON_HOUSING
+data_set_to_use = bc.DATA_WINE_RED
 #data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 
 data_sets_for_exps = [data_set_to_use]
 
-viz_for_paper = True
-
+viz_for_paper = False
 
 run_experiments = True
 use_test_error_for_model_selection = False
 
 batch_pairwise = True
-batch_neighbor = True
-batch_similar = True
-batch_bound = True
+batch_neighbor = False
+batch_similar = False
+batch_bound = False
 batch_ssl = False
 batch_hinge_exps = True
-batch_size = [50, 100]
+batch_size = [50]
+include_size_in_file_name = True
 
 small_param_range = False
 tune_scale = False
@@ -79,7 +80,7 @@ use_neighbor_logistic = False
 neighbor_convex = True
 neighbor_hinge = False
 
-use_similar = True
+use_similar = False
 num_similar = 51
 use_similar_hinge = False
 similar_use_scipy = True
@@ -170,6 +171,8 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.use_test_error_for_model_selection = use_test_error_for_model_selection
         self.use_aic = use_aic
 
+        self.include_size_in_file_name = include_size_in_file_name
+
     def set_data_set(self, data_set):
         self.data_set = data_set
         if data_set == bc.DATA_BOSTON_HOUSING:
@@ -190,9 +193,14 @@ class ProjectConfigs(bc.ProjectConfigs):
                 self.num_labels = [20]
         elif data_set == bc.DATA_WINE_RED:
             self.set_wine_red()
-            self.num_labels = [10, 20, 40]
+            #self.num_labels = [5, 10, 20, 40]
+            self.num_labels = [5]
             if run_active_experiments:
                 self.num_labels = [20]
+        '''
+        if self.include_size_in_file_name:
+            assert len(self.num_labels) == 1
+        '''
 
 
     def set_boston_housing(self):
@@ -475,13 +483,13 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             suffixes['numFeats'] = [str(pc.num_features)]
         suffixes['scipy'] = [None, '']
         suffixes['noRidgeOnFail'] = [None, '']
-        #suffixes['tuneScale'] = [None, '']
-        suffixes['smallScale'] = [None, '']
+        suffixes['tuneScale'] = [None, '']
+        #suffixes['smallScale'] = [None, '']
         #suffixes['minMax'] = [None, '']
         #suffixes['zScore'] = [None, '']
         suffixes['solver'] = ['SCS']
         suffixes['L-BFGS-B'] = [None, '']
-        suffixes['nCV'] = ['10']
+        #suffixes['nCV'] = ['10']
 
         #suffixes['numFeats'] = [str(num_feat)]
 
@@ -497,7 +505,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         methods = []
         if self.plot_type == VisualizationConfigs.PLOT_PAIRWISE:
             methods.append(('numRandPairs','RelReg, %s pairs', 'Our Method: %s relative'))
-            methods.append(('numRandPairsHinge','RelReg, %s pairs hinge', 'Zhu 2007: %s relative'))
+            #methods.append(('numRandPairsHinge','RelReg, %s pairs hinge', 'Zhu 2007: %s relative'))
             self.title = 'Relative'
             if pc.data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
                 self.ylims = [0,12]

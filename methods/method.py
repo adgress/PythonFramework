@@ -109,6 +109,8 @@ class Method(Saveable):
         self.use_aic = getattr(configs, 'use_aic', False)
         self.num_params = None
         self.likelihood = None
+        self.include_size_in_file_name = getattr(configs, 'include_size_in_file_name', False)
+        self.num_labels = getattr(configs, 'num_labels', None)
 
     def create_cv_params(self, i_low, i_high):
         return 10**np.asarray(list(reversed(range(i_low,i_high))),dtype='float64')
@@ -1537,4 +1539,7 @@ class RelativeRegressionMethod(Method):
             s += '-TEST'
         elif getattr(self, 'num_cv_splits', 5) != 5:
             s += '-nCV=' + str(self.num_cv_splits)
+        if getattr(self, 'include_size_in_file_name', False):
+            assert len(self.num_labels) == 1
+            s += '-num_labels=' + str(self.num_labels)
         return s

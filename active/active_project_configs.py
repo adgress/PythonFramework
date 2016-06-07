@@ -20,8 +20,9 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
-data_set_to_use = bc.DATA_WINE_RED
+#data_set_to_use = bc.DATA_WINE_RED
 #data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
+data_set_to_use = bc.DATA_CONCRETE
 
 data_sets_for_exps = [data_set_to_use]
 
@@ -37,7 +38,7 @@ batch_bound = False
 batch_ssl = False
 batch_hinge_exps = True
 batch_size = [50]
-include_size_in_file_name = True
+include_size_in_file_name = False
 
 small_param_range = False
 tune_scale = False
@@ -52,6 +53,7 @@ other_method_configs = {
 
 use_mixed_cv = False
 use_ssl = False
+use_mean = False
 use_baseline = False
 
 use_pairwise = False
@@ -132,6 +134,7 @@ class ProjectConfigs(bc.ProjectConfigs):
 
         self.use_mixed_cv = use_mixed_cv
         self.use_ssl = use_ssl
+        self.use_mean = use_mean
         self.use_baseline = use_baseline
         self.ridge_on_fail = ridge_on_fail
         self.tune_scale = tune_scale
@@ -193,15 +196,26 @@ class ProjectConfigs(bc.ProjectConfigs):
                 self.num_labels = [20]
         elif data_set == bc.DATA_WINE_RED:
             self.set_wine_red()
-            #self.num_labels = [5, 10, 20, 40]
-            self.num_labels = [5]
+            self.num_labels = [5, 10, 20, 40]
+            #self.num_labels = [5]
             if run_active_experiments:
                 self.num_labels = [20]
+        elif data_set == bc.DATA_CONCRETE:
+            self.set_concrete()
+            self.num_labels = [5, 10, 20, 40]
         '''
         if self.include_size_in_file_name:
             assert len(self.num_labels) == 1
         '''
 
+
+    def set_concrete(self):
+        self.loss_function = loss_function.MeanSquaredError()
+        self.cv_loss_function = loss_function.MeanSquaredError()
+        self.data_dir = 'data_sets/concrete'
+        self.data_name = 'concrete'
+        self.results_dir = 'concrete'
+        self.data_set_file_name = 'split_data.pkl'
 
     def set_boston_housing(self):
         self.loss_function = loss_function.MeanSquaredError()
@@ -305,10 +319,11 @@ class MainConfigs(bc.MainConfigs):
         else:
             if pc.use_ssl:
                 self.learner = lap_ridge
+            elif pc.use_mean:
+                self.learner = mean_reg
             else:
                 self.learner = relative_reg
             #self.learner = ridge_reg
-            #self.learner = mean_reg
 
 class MethodConfigs(bc.MethodConfigs):
     def __init__(self, pc):
@@ -463,7 +478,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                 self.files['RelReg-cvx-constraints-noPairwiseReg-TEST.pkl'] = 'TEST: Ridge Regression'
             else:
                 self.files['RelReg-cvx-constraints-noPairwiseReg-nCV=10.pkl'] = 'Ridge Regression'
-
+        self.files['SKL-DumReg.pkl'] = 'Predict Mean'
         sizes = []
         #sizes.append(10)
         sizes.append(50)

@@ -1229,7 +1229,9 @@ class RelativeRegressionMethod(Method):
                     print 'Results2 Success'
                     pass
             w1 = results.x
-            if (np.isnan(w1) | np.isinf(w1)).any() or not results.success:
+            if not np.isfinite(w1).all():
+                w1[:] = 0
+            if not results.success:
                 if self.ridge_on_fail:
                     w1[:] = 0
                     if not self.running_cv:
@@ -1421,7 +1423,8 @@ class RelativeRegressionMethod(Method):
                 c2.transform(self.transform)
                 is_pairwise_correct[i] = c2.is_correct(f)
             o.is_pairwise_correct = is_pairwise_correct
-
+        if not np.isfinite(o.fu).all():
+            print 'weird prediction'
         #p = self.transform.named_steps['pca']
         #z = self.transform.named_steps['z-score']
         return o

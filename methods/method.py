@@ -770,7 +770,8 @@ class RelativeRegressionMethod(Method):
             self.cv_params['scale'] = np.asarray([1])
         else:
             if self.use_test_error_for_model_selection:
-                self.save_cv_temp = False
+                #self.save_cv_temp = False
+                pass
             if self.use_pairwise:
                 self.cv_params['C'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
                 self.cv_params['C2'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
@@ -1096,7 +1097,7 @@ class RelativeRegressionMethod(Method):
             }
             w0 = np.zeros(x.shape[1]+1)
             constraints = []
-            if self.use_bound and self.bound_logistic:
+            if self.use_bound and self.bound_logistic and not self.use_baseline:
                 x_bound, bounds = LogisticBoundConstraint.generate_bounds_for_scipy_optimize(
                     data.pairwise_relationships,
                     self.transform

@@ -75,7 +75,7 @@ class ConvexNeighborConstraint(CVXConstraint):
         yi = f(self.x[0])
         yj = f(self.x[1])
         yk = f(self.x[2])
-        return cvx.max_elemwise(cvx.abs(yj-yi) - (yk - yi), 0), [yk > yj, yk > yi]
+        return cvx.max_elemwise(cvx.abs(yj-yi) - (yk - yi), 0), []
 
     def predict(self, f):
         y0 = f(self.x[0])

@@ -75,16 +75,7 @@ class ConvexNeighborConstraint(CVXConstraint):
         yi = f(self.x[0])
         yj = f(self.x[1])
         yk = f(self.x[2])
-        #assert False, 'Update this'
-        #d_close,d_far = self.get_convex_terms(f)
-        #d = d_close - d_far
-        #e = cvx.max_elemwise(d,0)
-        values = [yk-yj, -yj-yk+2*yi]
-        #values = np.asarray(values)
-        #values = np.expand_dims(values, 1)
-        #cvx.logistic(values)
-        return cvx.abs(yj-yi) - (yk - yi), [yk > yj, yk > yi]
-        #return cvx_logistic.logistic_difference(values), [yk > yj, yk > yi, 0 > -yj-yk+2*yi]
+        return cvx.max_elemwise(cvx.abs(yj-yi) - (yk - yi), 0), [yk > yj, yk > yi]
 
     def predict(self, f):
         y0 = f(self.x[0])

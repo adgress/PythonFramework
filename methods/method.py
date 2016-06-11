@@ -3,7 +3,8 @@ from utility.capturing import Capturing
 from methods.constrained_methods import \
     PairwiseConstraint, BoundLowerConstraint, BoundUpperConstraint, \
     NeighborConstraint, BoundConstraint, HingePairwiseConstraint, EqualsConstraint, \
-    SimilarConstraint, SimilarConstraintHinge, ConvexNeighborConstraint, LogisticBoundConstraint
+    SimilarConstraint, SimilarConstraintHinge, ConvexNeighborConstraint, LogisticBoundConstraint, \
+    ExpNeighborConstraint
 from timer import timer
 from timer.timer import tic, toc
 
@@ -693,6 +694,7 @@ class RelativeRegressionMethod(Method):
         self.scipy_opt_method = configs.scipy_opt_method
         self.num_cv_splits = configs.num_cv_splits
 
+        self.eps = configs.eps
         self.y_transform = None
         self.y_scale_min_max = configs.y_scale_min_max
         self.y_scale_standard = configs.y_scale_standard
@@ -729,6 +731,7 @@ class RelativeRegressionMethod(Method):
         self.use_neighbor_logistic = configs.use_neighbor_logistic
         self.neighbor_convex = configs.neighbor_convex
         self.neighbor_hinge = configs.neighbor_hinge
+        self.neighbor_exp = configs.neighbor_exp
 
         self.add_random_similar = configs.use_similar
         self.use_similar = configs.use_similar
@@ -1019,7 +1022,7 @@ class RelativeRegressionMethod(Method):
                 if self.use_min_pair_neighbor:
                     ordering = helper_functions.compute_min_pair(y1,y2,y3)
                     triplet = tuple(i[j] for j in ordering)
-                elif self.neighbor_convex:
+                elif self.neighbor_convex or self.neighbor_exp:
                     #ordering = helper_functions.compute_min_pair(y1,y2,y3)
                     #triplet = tuple(i[j] for j in ordering)
                     values = data.true_y[list(i)]
@@ -1040,6 +1043,8 @@ class RelativeRegressionMethod(Method):
                 y1,y2,y3 = data.true_y[list(triplet)]
                 if self.neighbor_convex:
                     constraint = ConvexNeighborConstraint(x1,x2,x3)
+                elif self.neighbor_exp:
+                    constraint = ExpNeighborConstraint(x1,x2,x3)
                 else:
                     constraint = NeighborConstraint(x1,x2,x3)
                 constraint.true_y = [data.true_y[a] for a in triplet]
@@ -1105,11 +1110,12 @@ class RelativeRegressionMethod(Method):
                 opt_data = logistic_difference_optimize.optimize_data(
                     x, y, self.C, self.C3
                 )
+                opt_data.eps = self.eps
                 opt_data.x_bound = x_bound
                 opt_data.bounds = bounds
                 eval = logistic_difference_optimize.logistic_bound.create_eval(opt_data)
                 grad = logistic_difference_optimize.logistic_bound.create_grad(opt_data)
-            elif self.use_neighbor and self.neighbor_convex and not self.neighbor_hinge:
+            elif self.use_neighbor and self.neighbor_convex and not self.neighbor_hinge and not self.neighbor_exp:
                 method = 'SLSQP'
                 x_neighbor,x_low,x_high = ConvexNeighborConstraint.generate_neighbors_for_scipy_optimize(
                     data.pairwise_relationships,
@@ -1137,6 +1143,7 @@ class RelativeRegressionMethod(Method):
                 opt_data.x_neighbor = x_neighbor
                 opt_data.x_low = x_low
                 opt_data.x_high = x_high
+                opt_data.eps = self.eps
                 opt_data_feasible.x_neighbor = x_neighbor
                 opt_data_feasible.x_low = x_low
                 opt_data_feasible.x_high = x_high
@@ -1185,7 +1192,7 @@ class RelativeRegressionMethod(Method):
                 opt_data.s = s
                 opt_data.x1 = x1
                 opt_data.x2 = x2
-
+                opt_data.eps = self.eps
                 eval = logistic_difference_optimize.logistic_similar.create_eval(opt_data)
                 grad = logistic_difference_optimize.logistic_similar.create_grad(opt_data)
             else:
@@ -1199,24 +1206,20 @@ class RelativeRegressionMethod(Method):
             #tic()
             with Capturing() as output:
                 results = optimize.minimize(eval,w0,method=method,jac=grad,options=options,constraints=constraints)
+            w1 = results.x
             #toc()
             #options['gtol'] = 1e-3
             compare_results = False
-            if compare_results:
-                #tic()
+            if compare_results or self.running_cv:
                 results2 = optimize.minimize(eval,w0,method=method,jac=None,options=options,constraints=constraints)
-                #toc()
-                #tic()
-                results = optimize.minimize(eval,w0,method=method,jac=grad,options=options,constraints=constraints)
-                #toc()
-
                 w2 = results2.x
 
                 from numpy.linalg import norm
                 if norm(results.x) == 0:
                     print 'Error: Norm is 0'
                 else:
-                    print 'Error: ' + str(norm(results.x-results2.x)/norm(results.x))
+                    err = norm(results.x-results2.x)/norm(results.x)
+                    print 'eval vs. jac Error: ' + str(err)
                 '''
                 #tic()
                 self.solve_cvx(x, y, data)
@@ -1228,7 +1231,6 @@ class RelativeRegressionMethod(Method):
                 if results2.success:
                     print 'Results2 Success'
                     pass
-            w1 = results.x
             if not np.isfinite(w1).all():
                 w1[:] = 0
             if not results.success:
@@ -1267,6 +1269,10 @@ class RelativeRegressionMethod(Method):
         constraints = []
         if self.use_pairwise and not self.use_hinge:
             pairwise_reg2 = PairwiseConstraint.generate_cvx(train_pairwise, func, transform=self.transform, scale=self.s)
+        elif self.use_bound and not self.bound_logistic and False:
+            bound_reg3 = BoundConstraint.generate_cvx(train_pairwise, func, transform=self.transform, scale=self.s)
+        elif self.use_neighbor and self.neighbor_hinge and self.neighbor_convex and False:
+            neighbor_reg4 = ConvexNeighborConstraint.generate_cvx(train_pairwise, func, transform=self.transform, scale=self.s)
         else:
             #pairwise_reg2_batch = PairwiseConstraint.generate_cvx(train_pairwise, func, transform=self.transform, scale=self.s)
             for c in train_pairwise:
@@ -1279,13 +1285,13 @@ class RelativeRegressionMethod(Method):
                     #assert False
                 elif c2.is_tertiary():
                     if not c2.use_dccp():
-                        val, cons = c2.to_cvx(func)
+                        val, cons = c2.to_cvx(func, scale=self.s)
                         neighbor_reg4 += val
                 else:
                     val, cons = c2.to_cvx(func)
                     bound_reg3 += val
                 constraints += cons
-        if self.add_random_neighbor and not self.neighbor_convex:
+        if self.add_random_neighbor and not self.neighbor_convex and not self.neighbor_exp:
             neighbor_reg4, t, t_constraints = NeighborConstraint.to_cvx_dccp(
                 train_pairwise,
                 func,
@@ -1490,18 +1496,22 @@ class RelativeRegressionMethod(Method):
                     s += '-baseline'
             if use_neighbor and self.num_neighbor > 0 and self.add_random_neighbor:
                 use_convex = getattr(self, 'neighbor_convex', False)
+                use_exp = getattr(self, 'neighbor_exp', False)
                 using_cvx = False
                 if getattr(self, 'use_min_pair_neighbor', False):
                     s += '-numMinNeighbor=' + str(int(self.num_neighbor))
-                elif use_convex:
-                    if getattr(self, 'neighbor_hinge', False):
+                elif use_convex or use_exp:
+                    if use_exp:
+                        s += '-numRandNeighborExp=' + str(int(self.num_neighbor))
+                        using_cvx = True
+                    elif getattr(self, 'neighbor_hinge', False):
                         s += '-numRandNeighborConvexHinge=' + str(int(self.num_neighbor))
                         using_cvx = True
                     else:
                         s += '-numRandNeighborConvex=' + str(int(self.num_neighbor))
                 else:
                     s += '-numRandNeighbor=' + str(int(self.num_neighbor))
-                if not use_convex:
+                if not use_convex and not use_exp:
                     if getattr(self, 'fast_dccp', False):
                         s += '-fastDCCP'
                     if getattr(self, 'init_ideal', False):
@@ -1528,8 +1538,13 @@ class RelativeRegressionMethod(Method):
                 s += '-tuneScale'
             if getattr(self, 'small_param_range', False):
                 s += '-smallScale'
+            if (use_similar or use_bound or use_neighbor) and not using_cvx:
+                eps = getattr(self,'eps',logistic_difference_optimize.eps)
+                if eps is not None and eps != logistic_difference_optimize.eps:
+                    s += '-eps=' + str(eps)
             if hasattr(self, 'solver'):
                 s += '-solver=' + str(self.solver)
+
         if getattr(self, 'y_scale_min_max', False):
             s += '-minMax'
         elif getattr(self, 'y_scale_standard', False):

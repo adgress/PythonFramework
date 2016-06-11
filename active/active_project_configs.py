@@ -19,10 +19,9 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
     'include_size_in_file_name'
 ]
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-#data_set_to_use = bc.DATA_BOSTON_HOUSING
-#data_set_to_use = bc.DATA_WINE_RED
+data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
-data_set_to_use = bc.DATA_CONCRETE
+#data_set_to_use = bc.DATA_CONCRETE
 
 data_sets_for_exps = [data_set_to_use]
 
@@ -48,7 +47,8 @@ other_method_configs = {
     'y_scale_min_max': False,
     'y_scale_standard': False,
     'scipy_opt_method': 'L-BFGS-B',
-    'num_cv_splits': 10
+    'num_cv_splits': 10,
+    'eps': 1e-8
 }
 
 use_mixed_cv = False
@@ -81,8 +81,9 @@ init_ridge_train = False
 use_neighbor_logistic = False
 neighbor_convex = True
 neighbor_hinge = False
+neighbor_exp = False
 
-use_similar = False
+use_similar = True
 num_similar = 51
 use_similar_hinge = False
 similar_use_scipy = True
@@ -164,6 +165,8 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.use_logistic_fix = use_logistic_fix
         self.neighbor_convex = neighbor_convex
         self.neighbor_hinge = neighbor_hinge
+        self.neighbor_exp = neighbor_exp
+
         self.num_features = num_features
 
         self.use_similar = use_similar
@@ -190,6 +193,7 @@ class ProjectConfigs(bc.ProjectConfigs):
                 self.num_labels = [20]
         elif data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
             self.set_adience_aligned_cnn_1()
+            #self.num_labels = [5]
             #self.num_labels = [10, 20, 40, 80]
             self.num_labels = [10, 20, 40]
             if run_active_experiments:
@@ -297,6 +301,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.use_logistic_fix = pc.use_logistic_fix
         method_configs.neighbor_convex = pc.neighbor_convex
         method_configs.neighbor_hinge = pc.neighbor_hinge
+        method_configs.neighbor_exp = pc.neighbor_exp
 
         method_configs.use_similar = pc.use_similar
         method_configs.num_similar = pc.num_similar
@@ -447,7 +452,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         if pc.data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
             self.ylims = [0,10]
         elif pc.data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
-            self.ylims = [0,600]
+            self.ylims = [0,1000]
         elif pc.data_set == bc.DATA_BOSTON_HOUSING:
             self.ylims = [0,100]
 
@@ -478,7 +483,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                 self.files['RelReg-cvx-constraints-noPairwiseReg-TEST.pkl'] = 'TEST: Ridge Regression'
             else:
                 self.files['RelReg-cvx-constraints-noPairwiseReg-nCV=10.pkl'] = 'Ridge Regression'
-        self.files['SKL-DumReg.pkl'] = 'Predict Mean'
+        #self.files['SKL-DumReg.pkl'] = 'Predict Mean'
         sizes = []
         #sizes.append(10)
         sizes.append(50)
@@ -492,7 +497,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #suffixes['logNoise'] = [None, .1, .5, 1, 2]
         #suffixes['logNoise'] = [.5]
         #suffixes['logNoise'] = [None,25,50,100]
-        #suffixes['baseline'] = [None,'']
+        suffixes['baseline'] = [None,'']
         #suffixes['noGrad'] = ['']
         if pc.num_features > 0:
             suffixes['numFeats'] = [str(pc.num_features)]
@@ -504,7 +509,10 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #suffixes['zScore'] = [None, '']
         suffixes['solver'] = ['SCS']
         suffixes['L-BFGS-B'] = [None, '']
-        #suffixes['nCV'] = ['10']
+        if not use_test:
+
+
+            suffixes['nCV'] = ['10']
 
         #suffixes['numFeats'] = [str(num_feat)]
 
@@ -520,22 +528,22 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         methods = []
         if self.plot_type == VisualizationConfigs.PLOT_PAIRWISE:
             methods.append(('numRandPairs','RelReg, %s pairs', 'Our Method: %s relative'))
-            #methods.append(('numRandPairsHinge','RelReg, %s pairs hinge', 'Zhu 2007: %s relative'))
+            methods.append(('numRandPairsHinge','RelReg, %s pairs hinge', 'Zhu 2007: %s relative'))
             self.title = 'Relative'
             if pc.data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
                 self.ylims = [0,12]
         elif self.plot_type == VisualizationConfigs.PLOT_BOUND:
             methods.append(('numRandLogBounds', '%s log bounds', 'Our Method: %s bound'))
-            #methods.append(('numRandQuartiles', 'RelReg, %s quartiles', 'Our Method: %s bound, hinge'))
+            methods.append(('numRandQuartiles', 'RelReg, %s quartiles', 'Our Method: %s bound, hinge'))
             self.title = 'Bound'
         elif self.plot_type == VisualizationConfigs.PLOT_NEIGHBOR:
             methods.append(('numRandNeighborConvex', 'RelReg, %s rand neighbors convex', 'Our Method: %s neighbors'))
             methods.append(('numRandPairs','RelReg, %s pairs', 'Our Method: %s relative'))
-            #methods.append(('numRandNeighborConvexHinge', 'RelReg, %s rand neighbors convex hinge', 'Our Method: %s hinge constraints'))
+            methods.append(('numRandNeighborConvexHinge', 'RelReg, %s rand neighbors convex hinge', 'Our Method: %s neighbor, hinge'))
             self.title = 'Neighbor'
         elif self.plot_type == VisualizationConfigs.PLOT_SIMILAR:
             methods.append(('numSimilar','RelReg, %s pairs', 'Our Method: %s similar'))
-            #methods.append(('numSimilarHinge','RelReg, %s pairs hinge', 'Our Method: %s similar, hinge'))
+            methods.append(('numSimilarHinge','RelReg, %s pairs hinge', 'Our Method: %s similar, hinge'))
             self.title = 'Similar'
         for file_suffix, legend_name, legend_name_paper in methods:
             for size in sizes:

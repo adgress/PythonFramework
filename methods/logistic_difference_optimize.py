@@ -262,7 +262,10 @@ class logistic_neighbor(logistic_optimize):
         sig2 = sigmoid((2*y - y_high - y_low)/scale)
         diff = sig1 - sig2
         #assert (np.sign(diff) > 0).all()
-        vals2 = -np.log(sig1-sig2 + eps)
+        small_constant = getattr(data,'eps',eps)
+        assert False, 'Should this be infinity instead?'
+        diff[diff < 0] = 0
+        vals2 = -np.log(diff + small_constant)
         I = np.isnan(vals2)
         if I.any():
             #print 'eval_linear_neighbor_logistic: inf = ' + str(I.mean())
@@ -284,7 +287,10 @@ class logistic_neighbor(logistic_optimize):
 
         sig1 = sigmoid((y_high-y_low)/scale)
         sig2 = sigmoid((2*y - y_high - y_low)/scale)
-        denom = sig1 - sig2 + eps
+        small_constant = getattr(data,'eps',eps)
+        diff = sig1 - sig2
+        #diff[diff < 0] = 0
+        denom = diff + small_constant
         '''
         val = np.zeros(v.shape)
         for i in range(x.shape[0]):
@@ -371,17 +377,19 @@ class logistic_bound(logistic_optimize):
         assert y.size == bounds.shape[0]
         c1 = bounds[:, 0]
         c2 = bounds[:, 1]
+        '''
         y_c1 = (y-c1)/scale
         y_c2 = (y-c2)/scale
         loss_num = np.log(np.exp(y_c1) - np.exp(y_c2))
         loss_denom = np.log(1 + np.exp(y_c1) + np.exp(y_c2) + np.exp(y_c1+y_c2))
         vals = (-loss_num + loss_denom)
         val = vals.sum()
-
+        '''
         sig1 = sigmoid((c2-y)/scale)
         sig2 = sigmoid((c1-y)/scale)
-        diff = sig1 - sig2
-        vals2 = -np.log(sig1-sig2 + eps)
+        small_constant = getattr(data,'eps',eps)
+        diff = sig1 - sig2 + small_constant
+        vals2 = -np.log(sig1-sig2 + small_constant)
         val2 = vals2.sum()
         I = np.isnan(vals2)
         if I.any():
@@ -413,7 +421,8 @@ class logistic_bound(logistic_optimize):
 
         sig1 = sigmoid((c2-y)/scale)
         sig2 = sigmoid((c1-y)/scale)
-        denom = sig1 - sig2 + eps
+        small_constant = getattr(data,'eps',eps)
+        denom = sig1 - sig2 + small_constant
         '''
         val = np.zeros(v.shape)
         assert (denom > -1).all()

@@ -71,7 +71,16 @@ class ConvexNeighborConstraint(CVXConstraint):
         super(ConvexNeighborConstraint, self).__init__()
         self.x = [x, x_close, x_far]
 
-    def to_cvx(self, f):
+    @classmethod
+    def generate_cvx(cls, constraints, f, transform=None, scale=1.0):
+        x, x_low, x_high = ConvexNeighborConstraint.generate_neighbors_for_scipy_optimize(constraints, transform)
+        yi = f(x)
+        yj = f(x_low)
+        fk = f(x_high)
+        assert False, 'TODO'
+        return cvx.sum_entries(vals)
+
+    def to_cvx(self, f, scale=1.0):
         yi = f(self.x[0])
         yj = f(self.x[1])
         yk = f(self.x[2])
@@ -113,12 +122,25 @@ class ConvexNeighborConstraint(CVXConstraint):
             x_high[idx,:] = x_curr[2,:]
         return x, x_low, x_high
 
+class ExpNeighborConstraint(ConvexNeighborConstraint):
+    def to_cvx(self, f, scale=1.0):
+        yi = f(self.x[0])
+        yj = f(self.x[1])
+        yk = f(self.x[2])
+        diff1 = yk - yj
+        diff2 = yk - yi
+        exp1 = 1 - cvx.exp(-scale*diff1)
+        exp2 = 1 - cvx.exp(-scale*diff2)
+        val = cvx.min_elemwise(exp1, exp2)
+        log_val = -cvx.log(val)
+        return log_val, [yk > yj, yk > yi]
+
 class NeighborConstraint(CVXConstraint):
     def __init__(self, x, x_close, x_far):
         super(NeighborConstraint, self).__init__()
         self.x = [x, x_close, x_far]
 
-    def to_cvx(self, f):
+    def to_cvx(self, f, scale=1.0):
         assert False, 'Update this'
         d_close,d_far = self.get_convex_terms(f)
         d = d_close - d_far
@@ -364,6 +386,25 @@ class BoundConstraint(CVXConstraint):
         lower = BoundLowerConstraint(x,quartiles[i-1])
         upper = BoundUpperConstraint(x,quartiles[i])
         return (lower,upper)
+
+    @classmethod
+    def generate_cvx(cls, constraints, f, transform=None, scale=1.0):
+        x = np.zeros((len(constraints), constraints[0].x[0].size))
+        b = np.zeros(len(constraints))
+        for i, c in enumerate(constraints):
+            x_curr = c.x[0]
+            if transform is not None:
+                x_curr = transform.transform(x_curr)
+            x[i,:] = x_curr
+            b[i] = c.c[0]
+            if c.bound_type == BoundConstraint.BOUND_LOWER:
+                x[i,:] *= -1
+                b[i] *= -1
+        d = f(x) - b
+        #d = np.asarray(d)
+        #z = np.zeros((len(constraints)))
+        vals = cvx.max_elemwise(d, 0)
+        return cvx.sum_entries(vals)
 
 
 

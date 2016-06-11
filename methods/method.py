@@ -1200,7 +1200,7 @@ class RelativeRegressionMethod(Method):
                 return
             if not self.use_grad:
                 grad = None
-
+            options['maxiter'] = 1000
             opt_data.s = self.s
             opt_data.scale = self.scale
             #tic()
@@ -1209,13 +1209,13 @@ class RelativeRegressionMethod(Method):
             w1 = results.x
             #toc()
             #options['gtol'] = 1e-3
-            compare_results = False
+            compare_results = True
             if compare_results or not self.running_cv:
                 results2 = optimize.minimize(eval,w0,method=method,jac=None,options=options,constraints=constraints)
                 w2 = results2.x
 
                 from numpy.linalg import norm
-                if norm(results.x) == 0:
+                if norm(results2.x) == 0:
                     print 'Error: Norm is 0'
                 else:
                     err = norm(results.x-results2.x)/norm(results.x)
@@ -1231,6 +1231,7 @@ class RelativeRegressionMethod(Method):
                 if results2.success:
                     print 'Results2 Success'
                     pass
+                print results.message
             if not np.isfinite(w1).all():
                 w1[:] = 0
             if not results.success:

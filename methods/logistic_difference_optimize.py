@@ -263,8 +263,8 @@ class logistic_neighbor(logistic_optimize):
         diff = sig1 - sig2
         #assert (np.sign(diff) > 0).all()
         small_constant = getattr(data,'eps',eps)
-        assert False, 'Should this be infinity instead?'
-        diff[diff < 0] = 0
+        #assert False, 'Should this be infinity instead?'
+        #diff[diff < 0] = 0
         vals2 = -np.log(diff + small_constant)
         I = np.isnan(vals2)
         if I.any():

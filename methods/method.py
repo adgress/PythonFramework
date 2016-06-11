@@ -1209,7 +1209,7 @@ class RelativeRegressionMethod(Method):
             w1 = results.x
             #toc()
             #options['gtol'] = 1e-3
-            compare_results = True
+            compare_results = False
             if compare_results or self.running_cv:
                 results2 = optimize.minimize(eval,w0,method=method,jac=None,options=options,constraints=constraints)
                 w2 = results2.x

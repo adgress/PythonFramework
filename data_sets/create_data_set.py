@@ -207,40 +207,41 @@ def create_energy():
 #3 - 1 to 3
 #4 - 1 to 3
 #5 -
-def create_concrete():
+def create_concrete(transfer = False):
     file = 'concrete/Concrete_Data.csv'
     used_field_names, concrete_data = load_csv(file)
 
-    feat_ind = 0
-
-    domain_ind = (used_field_names == 'age').nonzero()[0][0]
-    ages = concrete_data[:,domain_ind]
-    domain_ids = np.zeros(ages.shape)
-    domain_ids[ages < 10] = 1
-    domain_ids[(ages >= 10) & (ages <= 28)] = 2
-    domain_ids[ages > 75] = 3
-
-
     data = data_class.Data()
-    data.x = concrete_data[:,0:(concrete_data.shape[1]-2)]
-    #0,3,5
-    #data.x = preprocessing.scale(data.x)
-    if concrete_num_feats == 1:
-        data.x = array_functions.vec_to_2d(data.x[:,feat_ind])
-        t = '-feat=' + str(feat_ind)
-    elif concrete_num_feats >= data.x.shape[1]:
-        t = '-' + str(min(data.x.shape[1], concrete_num_feats))
+    t = ''
+    if transfer:
+        feat_ind = 0
+        domain_ind = (used_field_names == 'age').nonzero()[0][0]
+        ages = concrete_data[:,domain_ind]
+        domain_ids = np.zeros(ages.shape)
+        domain_ids[ages < 10] = 1
+        domain_ids[(ages >= 10) & (ages <= 28)] = 2
+        domain_ids[ages > 75] = 3
+        data.x = concrete_data[:,0:(concrete_data.shape[1]-2)]
+        #0,3,5
+        #data.x = preprocessing.scale(data.x)
+        if concrete_num_feats == 1:
+            data.x = array_functions.vec_to_2d(data.x[:,feat_ind])
+            t = '-feat=' + str(feat_ind)
+        elif concrete_num_feats >= data.x.shape[1]:
+            t = '-' + str(min(data.x.shape[1], concrete_num_feats))
+        else:
+            assert False
+        data.data_set_ids = domain_ids
     else:
-        assert False
+        data.x = concrete_data[:,0:-1]
 
     data.y = concrete_data[:,-1]
     data.set_train()
     data.set_target()
     data.set_true_y()
     data.is_regression = True
-    data.data_set_ids = domain_ids
 
-    viz = True
+    viz = False
     if viz:
         to_use = domain_ids > 0
         domain_ids = domain_ids[to_use]
@@ -551,7 +552,7 @@ def create_bike_sharing():
 
 if __name__ == "__main__":
     #create_boston_housing()
-    #create_concrete()
+    create_concrete()
     #create_bike_sharing()
     #create_wine()
     #create_energy()
@@ -562,6 +563,6 @@ if __name__ == "__main__":
     #create_synthetic_curve_transfer()
     #create_pair_82_83()
     #create_pair(pair_target,pair_source,0)
-    create_wine()
+    #create_wine()
     from data_sets import create_data_split
-    #create_data_split.run_main()
+    create_data_split.run_main()

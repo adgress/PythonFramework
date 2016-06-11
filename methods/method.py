@@ -1273,8 +1273,9 @@ class RelativeRegressionMethod(Method):
             bound_reg3 = BoundConstraint.generate_cvx(train_pairwise, func, transform=self.transform, scale=self.s)
         elif self.use_neighbor and self.neighbor_hinge and self.neighbor_convex and False:
             neighbor_reg4 = ConvexNeighborConstraint.generate_cvx(train_pairwise, func, transform=self.transform, scale=self.s)
+        elif self.use_neighbor and self.neighbor_exp:
+            neighbor_reg4, constraints = ExpNeighborConstraint.generate_cvx(train_pairwise, func, transform=self.transform, scale=self.s)
         else:
-            #pairwise_reg2_batch = PairwiseConstraint.generate_cvx(train_pairwise, func, transform=self.transform, scale=self.s)
             for c in train_pairwise:
                 cons = []
                 c2 = deepcopy(c)
@@ -1352,7 +1353,7 @@ class RelativeRegressionMethod(Method):
             with Capturing() as output:
                 #ret = prob.solve(cvx.ECOS, False, {'warm_start': warm_start})
                 if prob.is_dcp():
-                    ret = prob.solve(self.solver, False, {'warm_start': warm_start})
+                    ret = prob.solve(self.solver, True, {'warm_start': warm_start})
                     #ret = prob.solve(cvx.CVXOPT, False, {'warm_start': warm_start})
                 else:
                     print str(params)
@@ -1383,8 +1384,6 @@ class RelativeRegressionMethod(Method):
                         options['tau'] *= options['mu']
                         ret2 = prob.solve(solver=self.solver, **options)
                     '''
-
-
             w_value = w.value
             b_value = b.value
             #print prob.status
@@ -1402,6 +1401,14 @@ class RelativeRegressionMethod(Method):
             timer.toc()
         if warm_start:
             self.prob = prob
+        '''
+        for c in train_pairwise:
+            c.transform(self.transform)
+            c_cvx,_ = c.to_cvx(func)
+            print c_cvx.value
+            if np.isnan(c_cvx.value):
+                c.to_cvx(func)
+        '''
         self.w = w_value
         self.b = b_value
 

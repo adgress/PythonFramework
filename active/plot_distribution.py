@@ -19,6 +19,8 @@ def plot_function_2d(xrange, yrange, f, axis_obj, n_samples=1000.0):
     #z = [f(xyi) for xyi in xy]
     Z = f((X,Y))
     axis_obj.contourf(X, Y, Z, cmap=cm.gray)
+    print 'min: ' + str(Z.min())
+    print 'max: ' + str(Z.max())
     axis_obj.set_xlabel('f(x)')
     axis_obj.set_ylabel('f(y)')
 
@@ -65,16 +67,28 @@ def plot_neighbor_contour(a):
     plot_function_2d([-4,4], [-4,4], f, a)
     a.set_title('Neighbor')
 
-
+def plot_func(a):
+    f = lambda x: x[0]**4 + x[1]**4 + x[0]**2 * x[1]**2 -2*x[0]**3 * x[1] - 2*x[0]*x[1]**3 + 2*x[0]**2 * x[1] \
+        + 2*x[0]*x[1]**2 - x[0]**3 - x[1]**3 - x[0]*x[1]
+    #f = lambda x: 2*x[0]**2 * x[1] - 2*x[0]**3 * x[1] + 2*x[0]*x[1]**2 - 2*x[0]*x[1]**3 + x[0]**2 * x[1]**2 - x[0]*x[1]
+    #f = lambda x: x[0]**4 - x[0]**3 - 2*x[0]**3 * x[1] + 2*x[0]**2 * x[1] + .5*(x[0]**2 * x[1]**2 - x[0]*x[1])
+    f = lambda x: x[0]**4 - x[0]**3 + x[1]**4 - x[1]**3  + 2*x[0]**2 * x[1]**2 + \
+                  x[0]**2 *x[1] + x[0]*x[1]**2 - 2*x[0]**3 *x[1] - 2*x[1]**3 * x[0]
+    plot_function_2d([0,1], [0,1], f, a)
+    a.set_title('weird func')
 
 
 
 
 if __name__ == '__main__':
+    f, axarr = plt.subplots(1, 1)
+    plot_func(axarr)
+    '''
     f, axarr = plt.subplots(2, 2)
     plot_pairwise_contour(axarr[0,0])
     plot_bound(axarr[1,0])
     plot_similar_contour(axarr[0,1])
     plot_neighbor_contour(axarr[1,1])
+    '''
     f.tight_layout()
     plt.show()

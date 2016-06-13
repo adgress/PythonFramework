@@ -49,6 +49,7 @@ bike_file = 'bike_sharing%s/raw_data.pkl'
 wine_file = 'wine%s/raw_data.pkl'
 adience_aligned_cnn_file = 'adience_aligned_cnn/raw_data.pkl'
 adience_aligned_cnn_1_per_instance_id_file = 'adience_aligned_cnn_1_per_instance_id/raw_data.pkl'
+drosophila_file = 'drosophilia/raw_data.pkl'
 
 def pair_file(i,j):
     s = 'pair_data_' + str(i) + '_' + str(j) + '/raw_data.pkl'
@@ -201,7 +202,18 @@ def create_energy():
     viz_features(x,y,domain_ids,field_names, learner=learner)
     pass
 
-
+def create_drosophila():
+    data = helper_functions.load_object('drosophilia/processed_data.pkl')
+    x, y = data
+    y = np.reshape(y,y.shape[0])
+    data = data_class.Data()
+    data.x = x
+    data.y = y
+    data.set_train()
+    data.set_target()
+    data.set_true_y()
+    data.is_regression = True
+    helper_functions.save_object(drosophila_file, data)
 
 #0 - 1 to 3
 #3 - 1 to 3
@@ -552,7 +564,7 @@ def create_bike_sharing():
 
 if __name__ == "__main__":
     #create_boston_housing()
-    create_concrete()
+    #create_concrete()
     #create_bike_sharing()
     #create_wine()
     #create_energy()
@@ -564,5 +576,6 @@ if __name__ == "__main__":
     #create_pair_82_83()
     #create_pair(pair_target,pair_source,0)
     #create_wine()
+    create_drosophila()
     from data_sets import create_data_split
     create_data_split.run_main()

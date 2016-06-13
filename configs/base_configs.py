@@ -10,6 +10,7 @@ DATA_BIKE_SHARING = 4
 DATA_WINE = 5
 DATA_ADIENCE_ALIGNED_CNN_1 = 6
 DATA_WINE_RED = 7
+DATA_DROSOPHILIA = 8
 
 DATA_PAIR_START = 100
 DATA_PAIR_82_83 = 101
@@ -44,6 +45,7 @@ data_name_dict = {
     DATA_SYNTHETIC_LINEAR_REGRESSION: 'Synthetic Linear Regression',
     DATA_ADIENCE_ALIGNED_CNN_1: 'Adience Aligned CNN 1 Per Instance ID',
     DATA_WINE_RED: 'Wine: Red',
+    DATA_DROSOPHILIA: 'Drosophila',
 }
 
 def is_synthetic_data(data_idx):

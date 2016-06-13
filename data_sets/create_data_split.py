@@ -113,7 +113,8 @@ def run_main():
     #split_data('synthetic_linear_reg500-50-1/raw_data.pkl', boston_housing_configs())
     #split_data(create_data_set.adience_aligned_cnn_1_per_instance_id_file, regression_configs())
     #split_data(create_data_set.wine_file % '-red', regression_configs())
-    split_data(create_data_set.concrete_file % '', regression_configs())
+    #split_data(create_data_set.concrete_file % '', regression_configs())
+    split_data(create_data_set.drosophila_file, regression_configs())
 
 if __name__ == '__main__':
     run_main()

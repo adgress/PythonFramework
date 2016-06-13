@@ -19,9 +19,10 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
     'include_size_in_file_name'
 ]
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-data_set_to_use = bc.DATA_BOSTON_HOUSING
+#data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 #data_set_to_use = bc.DATA_CONCRETE
+data_set_to_use = bc.DATA_DROSOPHILIA
 
 data_sets_for_exps = [data_set_to_use]
 
@@ -42,13 +43,13 @@ include_size_in_file_name = False
 small_param_range = False
 tune_scale = False
 ridge_on_fail = False
-num_features = -1
+num_features = 50
 other_method_configs = {
     'y_scale_min_max': False,
     'y_scale_standard': False,
     'scipy_opt_method': 'L-BFGS-B',
     'num_cv_splits': 10,
-    'eps': 1e-8
+    'eps': 1e-10
 }
 
 use_mixed_cv = False
@@ -79,11 +80,11 @@ init_ridge = False
 init_ideal = False
 init_ridge_train = False
 use_neighbor_logistic = False
-neighbor_convex = True
+neighbor_convex = False
 neighbor_hinge = False
-neighbor_exp = False
+neighbor_exp = True
 
-use_similar = True
+use_similar = False
 num_similar = 51
 use_similar_hinge = False
 similar_use_scipy = True
@@ -207,11 +208,21 @@ class ProjectConfigs(bc.ProjectConfigs):
         elif data_set == bc.DATA_CONCRETE:
             self.set_concrete()
             self.num_labels = [5, 10, 20, 40]
+        elif data_set == bc.DATA_DROSOPHILIA:
+            self.set_drosophilia()
+            self.num_labels = [10,20,40]
         '''
         if self.include_size_in_file_name:
             assert len(self.num_labels) == 1
         '''
 
+    def set_drosophilia(self):
+        self.loss_function = loss_function.MeanSquaredError()
+        self.cv_loss_function = loss_function.MeanSquaredError()
+        self.data_dir = 'data_sets/drosophilia'
+        self.data_name = 'drosophilia'
+        self.results_dir = 'drosophilia'
+        self.data_set_file_name = 'split_data.pkl'
 
     def set_concrete(self):
         self.loss_function = loss_function.MeanSquaredError()
@@ -454,7 +465,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         elif pc.data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
             self.ylims = [0,1000]
         elif pc.data_set == bc.DATA_BOSTON_HOUSING:
-            self.ylims = [0,100]
+            self.ylims = [0,500]
 
         self.files = OrderedDict()
         if run_active_experiments:
@@ -486,8 +497,9 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #self.files['SKL-DumReg.pkl'] = 'Predict Mean'
         sizes = []
         #sizes.append(10)
+        sizes.append(20)
         sizes.append(50)
-        sizes.append(100)
+        #sizes.append(100)
         #sizes.append(150)
         #sizes.append(250)
         suffixes = OrderedDict()
@@ -507,11 +519,10 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #suffixes['smallScale'] = [None, '']
         #suffixes['minMax'] = [None, '']
         #suffixes['zScore'] = [None, '']
+        suffixes['eps'] = [None, '1e-08']
         suffixes['solver'] = ['SCS']
         suffixes['L-BFGS-B'] = [None, '']
         if not use_test:
-
-
             suffixes['nCV'] = ['10']
 
         #suffixes['numFeats'] = [str(num_feat)]
@@ -520,7 +531,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             'fastDCCP', 'initRidge', 'init_ideal', 'initRidgeTrain','logistic',
             'pairBound', 'mixedCV', 'logNoise', 'scipy', 'noGrad',
             'baseline', 'logFix', 'noRidgeOnFail', 'tuneScale',
-            'smallScale',
+            'smallScale', 'eps',
             'solver', 'minMax', 'zScore', 'numFeats', 'L-BFGS-B', 'nCV'
         ]
         all_params = list(grid_search.ParameterGrid(suffixes))
@@ -537,9 +548,10 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             methods.append(('numRandQuartiles', 'RelReg, %s quartiles', 'Our Method: %s bound, hinge'))
             self.title = 'Bound'
         elif self.plot_type == VisualizationConfigs.PLOT_NEIGHBOR:
-            methods.append(('numRandNeighborConvex', 'RelReg, %s rand neighbors convex', 'Our Method: %s neighbors'))
+            #methods.append(('numRandNeighborConvex', 'RelReg, %s rand neighbors convex', 'Our Method: %s neighbors'))
             methods.append(('numRandPairs','RelReg, %s pairs', 'Our Method: %s relative'))
             methods.append(('numRandNeighborConvexHinge', 'RelReg, %s rand neighbors convex hinge', 'Our Method: %s neighbor, hinge'))
+            methods.append(('numRandNeighborExp', 'RelReg, %s rand neighbors convex exp', 'Our Method: %s neighbor, exp'))
             self.title = 'Neighbor'
         elif self.plot_type == VisualizationConfigs.PLOT_SIMILAR:
             methods.append(('numSimilar','RelReg, %s pairs', 'Our Method: %s similar'))

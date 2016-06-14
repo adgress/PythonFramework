@@ -39,11 +39,11 @@ class LaplacianRidgeMethod(SemisupervisedMethod):
         self.transform = StandardScaler()
         self.b = None
         self.w = None
+        self.max_n_L = 500
 
 
     def train(self, data):
         x_transformed = self.graph_transform.fit_transform(data.x)
-        L = self.create_laplacian(x_transformed)
 
 
         I = data.is_train & data.is_labeled
@@ -60,8 +60,13 @@ class LaplacianRidgeMethod(SemisupervisedMethod):
         x_all_bias = np.hstack((x_all_transform,np.ones((x_all_transform.shape[0],1))))
         O = np.eye(p+1)
         O[p,p] = 0
+        x_L = x_all_bias
+        if x_L.shape[0] > self.max_n_L:
+            I_L = np.random.choice(x_L.shape[0], self.max_n_L, replace = False)
+            x_L = x_L[I_L,:]
+        L = self.create_laplacian(x_L)
         XX = x_bias.T.dot(x_bias)
-        XLX = x_all_bias.T.dot(L).dot(x_all_bias)
+        XLX = x_L.T.dot(L).dot(x_L)
         A = XX + self.C*O + self.C2*XLX
         v = np.linalg.lstsq(A,x_bias.T.dot(y))
         w_anal = array_functions.vec_to_2d(v[0][0:p])

@@ -29,7 +29,7 @@ data_sets_for_exps = [data_set_to_use]
 viz_for_paper = False
 
 run_experiments = True
-use_test_error_for_model_selection = False
+use_test_error_for_model_selection = True
 
 batch_pairwise = True
 batch_neighbor = False
@@ -43,13 +43,17 @@ include_size_in_file_name = False
 small_param_range = False
 tune_scale = False
 ridge_on_fail = False
-num_features = 50
+
+num_features = -1
+if data_set_to_use == bc.DATA_DROSOPHILIA:
+    num_features = 50
 other_method_configs = {
     'y_scale_min_max': False,
     'y_scale_standard': False,
     'scipy_opt_method': 'L-BFGS-B',
     'num_cv_splits': 10,
-    'eps': 1e-10
+    'eps': 1e-10,
+    'use_perfect_feature_selection': True
 }
 
 use_mixed_cv = False
@@ -487,11 +491,13 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         if pc.num_features > 0:
             if use_test:
                 self.files['RelReg-cvx-constraints-noPairwiseReg-numFeats=' + str(pc.num_features) + '-TEST.pkl'] = 'TEST: Ridge Regression'
+                self.files['RelReg-cvx-constraints-noPairwiseReg-numFeats=' + str(pc.num_features) + '-nCV=10.pkl'] = 'Ridge Regression'
             else:
-                self.files['RelReg-cvx-constraints-noPairwiseReg-numFeats=' + str(pc.num_features) + '.pkl'] = 'Ridge Regression'
+                self.files['RelReg-cvx-constraints-noPairwiseReg-numFeats=' + str(pc.num_features) + '-nCV=10.pkl'] = 'Ridge Regression'
         else:
             if use_test:
                 self.files['RelReg-cvx-constraints-noPairwiseReg-TEST.pkl'] = 'TEST: Ridge Regression'
+                self.files['RelReg-cvx-constraints-noPairwiseReg.pkl'] = 'Ridge Regression'
             else:
                 self.files['RelReg-cvx-constraints-noPairwiseReg-nCV=10.pkl'] = 'Ridge Regression'
         #self.files['SKL-DumReg.pkl'] = 'Predict Mean'
@@ -550,12 +556,12 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         elif self.plot_type == VisualizationConfigs.PLOT_NEIGHBOR:
             #methods.append(('numRandNeighborConvex', 'RelReg, %s rand neighbors convex', 'Our Method: %s neighbors'))
             methods.append(('numRandPairs','RelReg, %s pairs', 'Our Method: %s relative'))
-            methods.append(('numRandNeighborConvexHinge', 'RelReg, %s rand neighbors convex hinge', 'Our Method: %s neighbor, hinge'))
+            #methods.append(('numRandNeighborConvexHinge', 'RelReg, %s rand neighbors convex hinge', 'Our Method: %s neighbor, hinge'))
             methods.append(('numRandNeighborExp', 'RelReg, %s rand neighbors convex exp', 'Our Method: %s neighbor, exp'))
             self.title = 'Neighbor'
         elif self.plot_type == VisualizationConfigs.PLOT_SIMILAR:
             methods.append(('numSimilar','RelReg, %s pairs', 'Our Method: %s similar'))
-            methods.append(('numSimilarHinge','RelReg, %s pairs hinge', 'Our Method: %s similar, hinge'))
+            #methods.append(('numSimilarHinge','RelReg, %s pairs hinge', 'Our Method: %s similar, hinge'))
             self.title = 'Similar'
         for file_suffix, legend_name, legend_name_paper in methods:
             for size in sizes:

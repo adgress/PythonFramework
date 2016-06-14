@@ -672,6 +672,7 @@ class RelativeRegressionMethod(Method):
             self.cv_params['C4'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
 
         self.num_features = configs.num_features
+        self.use_perfect_feature_selection = configs.use_perfect_feature_selection
         self.w = None
         self.b = None
         self.transform = StandardScaler()
@@ -680,7 +681,7 @@ class RelativeRegressionMethod(Method):
             pca = PCA(self.pca_dim,whiten=True)
             self.transform = Pipeline([('pca', pca), ('z-score', self.transform)])
         '''
-        if self.num_features > 0:
+        if self.num_features > 0 and not self.use_perfect_feature_selection:
             select_k_best = SelectKBest(f_regression, self.num_features)
             self.transform = Pipeline([
                 ('selectK', select_k_best),
@@ -817,6 +818,9 @@ class RelativeRegressionMethod(Method):
             self.w_initial = new_instance.w
             self.b_initial = new_instance.b
         d = deepcopy(data)
+        if self.use_perfect_feature_selection:
+            select_k_best = SelectKBest(f_regression, self.num_features)
+            d.x = select_k_best.fit_transform(d.x, d.true_y)
         self.add_random_guidance(d)
         d.pairwise_ordering = None
         d.neighbor_ordering = None
@@ -1559,7 +1563,10 @@ class RelativeRegressionMethod(Method):
             s += '-zScore'
         num_features = getattr(self,'num_features', -1)
         if num_features  > 0:
-            s += '-numFeats=' + str(num_features)
+            if getattr(self, 'use_perfect_feature_selection', False):
+                s += '-numFeatsPerfect=' + str(num_features)
+            else:
+                s += '-numFeats=' + str(num_features)
         if not using_cvx and getattr(self, 'scipy_opt_method', 'BFGS') != 'BFGS':
             s += '-' + self.scipy_opt_method
         if self.use_test_error_for_model_selection:

@@ -129,12 +129,13 @@ class ExpNeighborConstraint(ConvexNeighborConstraint):
         yj = f(self.x[1])
         yk = f(self.x[2])
         diff1 = yk - yj + eps
-        diff2 = yk - yi + eps
+        #diff2 = yk - yi + eps
+        diff2 = yk + yj - 2*yi
         exp1 = 1 - cvx.exp(-scale*diff1)
         exp2 = 1 - cvx.exp(-scale*diff2)
         val = cvx.min_elemwise(exp1, exp2)
         log_val = -cvx.log(val)
-        return log_val, [yk > yj + eps, yk > yi + eps]
+        return log_val, [diff1 > eps, diff2 >  eps]
 
     @classmethod
     def generate_cvx(cls, constraints, f, transform=None, scale=1.0):
@@ -143,13 +144,14 @@ class ExpNeighborConstraint(ConvexNeighborConstraint):
         yj = f(x_low)
         yk = f(x_high)
         diff1 = yk - yj
-        diff2 = yk - yi
+        #diff2 = yk - yi
+        diff2 = yk + yj - 2*yi
         exp1 = 1 - cvx.exp(-scale*diff1) + eps
         exp2 = 1 - cvx.exp(-scale*diff2) + eps
         val = cvx.min_elemwise(exp1, exp2)
         log_val = -cvx.log(val)
         sum_val = cvx.sum_entries(log_val)
-        return sum_val, [yk > yj + eps, yk > yi + eps]
+        return sum_val, [diff1 > eps, diff2 > eps]
 
 class NeighborConstraint(CVXConstraint):
     def __init__(self, x, x_close, x_far):

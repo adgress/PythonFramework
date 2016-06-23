@@ -20,16 +20,17 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
-#data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 #data_set_to_use = bc.DATA_CONCRETE
 data_set_to_use = bc.DATA_DROSOPHILIA
 
+#data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
+
 data_sets_for_exps = [data_set_to_use]
 
-viz_for_paper = False
+viz_for_paper = True
 
-run_experiments = True
-use_test_error_for_model_selection = True
+run_experiments = False
+use_test_error_for_model_selection = False
 
 batch_pairwise = True
 batch_neighbor = False
@@ -465,11 +466,15 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.show_legend_on_all = show_legend_on_all
         self.x_axis_string = 'Number of labeled instances'
         if pc.data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
-            self.ylims = [0,10]
+            self.ylims = [0,12]
         elif pc.data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
             self.ylims = [0,1000]
         elif pc.data_set == bc.DATA_BOSTON_HOUSING:
-            self.ylims = [0,500]
+            self.ylims = [0,200]
+        elif pc.data_set == bc.DATA_CONCRETE:
+            self.ylims = [0,1000]
+        elif pc.data_set == bc.DATA_DROSOPHILIA:
+            self.ylims = [0,3]
 
         self.files = OrderedDict()
         if run_active_experiments:
@@ -485,8 +490,6 @@ class VisualizationConfigs(bc.VisualizationConfigs):
     def generate_file_names(self, pc):
         self.files = OrderedDict()
         base_file_name = 'RelReg-cvx-constraints-%s=%s'
-        #self.files['LapRidge.pkl'] = 'Laplacian Ridge Regression'
-        #ridge_file = 'RelReg-cvx-constraints-noPairwiseReg%s.pkl'
         use_test = use_test_error_for_model_selection
         if pc.num_features > 0:
             if use_test:
@@ -500,10 +503,11 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                 self.files['RelReg-cvx-constraints-noPairwiseReg.pkl'] = 'Ridge Regression'
             else:
                 self.files['RelReg-cvx-constraints-noPairwiseReg-nCV=10.pkl'] = 'Ridge Regression'
+        self.files['LapRidge.pkl'] = 'Laplacian Ridge Regression'
         #self.files['SKL-DumReg.pkl'] = 'Predict Mean'
         sizes = []
         #sizes.append(10)
-        sizes.append(20)
+        #sizes.append(20)
         sizes.append(50)
         #sizes.append(100)
         #sizes.append(150)
@@ -518,14 +522,16 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         suffixes['baseline'] = [None,'']
         #suffixes['noGrad'] = ['']
         if pc.num_features > 0:
-            suffixes['numFeats'] = [str(pc.num_features)]
+            if other_method_configs['use_perfect_feature_selection']:
+                suffixes['numFeatsPerfect'] = [str(pc.num_features)]
+            else:
+                suffixes['numFeats'] = [str(pc.num_features)]
         suffixes['scipy'] = [None, '']
         suffixes['noRidgeOnFail'] = [None, '']
         suffixes['tuneScale'] = [None, '']
         #suffixes['smallScale'] = [None, '']
         #suffixes['minMax'] = [None, '']
         #suffixes['zScore'] = [None, '']
-        suffixes['eps'] = [None, '1e-08']
         suffixes['solver'] = ['SCS']
         suffixes['L-BFGS-B'] = [None, '']
         if not use_test:
@@ -538,9 +544,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             'pairBound', 'mixedCV', 'logNoise', 'scipy', 'noGrad',
             'baseline', 'logFix', 'noRidgeOnFail', 'tuneScale',
             'smallScale', 'eps',
-            'solver', 'minMax', 'zScore', 'numFeats', 'L-BFGS-B', 'nCV'
+            'solver', 'minMax', 'zScore', 'numFeats', 'numFeatsPerfect', 'L-BFGS-B', 'nCV'
         ]
-        all_params = list(grid_search.ParameterGrid(suffixes))
 
         methods = []
         if self.plot_type == VisualizationConfigs.PLOT_PAIRWISE:
@@ -551,18 +556,23 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                 self.ylims = [0,12]
         elif self.plot_type == VisualizationConfigs.PLOT_BOUND:
             methods.append(('numRandLogBounds', '%s log bounds', 'Our Method: %s bound'))
-            methods.append(('numRandQuartiles', 'RelReg, %s quartiles', 'Our Method: %s bound, hinge'))
+            methods.append(('numRandQuartiles', 'RelReg, %s quartiles', 'Baseline: %s'))
+            suffixes['eps'] = [None, '1e-08', '1e-10', '1e-16']
             self.title = 'Bound'
         elif self.plot_type == VisualizationConfigs.PLOT_NEIGHBOR:
             #methods.append(('numRandNeighborConvex', 'RelReg, %s rand neighbors convex', 'Our Method: %s neighbors'))
             methods.append(('numRandPairs','RelReg, %s pairs', 'Our Method: %s relative'))
             #methods.append(('numRandNeighborConvexHinge', 'RelReg, %s rand neighbors convex hinge', 'Our Method: %s neighbor, hinge'))
-            methods.append(('numRandNeighborExp', 'RelReg, %s rand neighbors convex exp', 'Our Method: %s neighbor, exp'))
+            methods.append(('numRandNeighborExp', 'RelReg, %s rand neighbors convex exp', 'Our Method: %s neighbor'))
+            sizes = [20, 50]
             self.title = 'Neighbor'
         elif self.plot_type == VisualizationConfigs.PLOT_SIMILAR:
-            methods.append(('numSimilar','RelReg, %s pairs', 'Our Method: %s similar'))
+            suffixes['eps'] = [None, '1e-08', '1e-10', '1e-16']
+            methods.append(('numSimilar','RelReg, %s similar', 'Our Method: %s similar'))
             #methods.append(('numSimilarHinge','RelReg, %s pairs hinge', 'Our Method: %s similar, hinge'))
             self.title = 'Similar'
+
+        all_params = list(grid_search.ParameterGrid(suffixes))
         for file_suffix, legend_name, legend_name_paper in methods:
             for size in sizes:
                 for params in all_params:

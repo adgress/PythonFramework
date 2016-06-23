@@ -92,6 +92,8 @@ def run_visualization():
             #plt.plot([1,2,3], [1,2,3], 'go-', label='line 1', linewidth=2)
             processed_results = results.compute_error_processed(vis_configs.loss_function)
             sizes = results.sizes
+
+            #sizes = sizes[0:4]
             min_x = min(min_x, sizes.min())
             max_x = max(max_x, sizes.max())
             s = legend_str

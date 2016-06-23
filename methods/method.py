@@ -818,7 +818,7 @@ class RelativeRegressionMethod(Method):
             self.w_initial = new_instance.w
             self.b_initial = new_instance.b
         d = deepcopy(data)
-        if self.use_perfect_feature_selection:
+        if self.num_features > 0 and self.use_perfect_feature_selection:
             select_k_best = SelectKBest(f_regression, self.num_features)
             d.x = select_k_best.fit_transform(d.x, d.true_y)
         self.add_random_guidance(d)

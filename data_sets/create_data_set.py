@@ -206,6 +206,9 @@ def create_drosophila():
     data = helper_functions.load_object('drosophilia/processed_data.pkl')
     x, y = data
     y = np.reshape(y,y.shape[0])
+    I = np.random.choice(x.shape[0], size=500, replace=False)
+    x = x[I,:]
+    y = y[I]
     data = data_class.Data()
     data.x = x
     data.y = y
@@ -213,6 +216,7 @@ def create_drosophila():
     data.set_target()
     data.set_true_y()
     data.is_regression = True
+
     helper_functions.save_object(drosophila_file, data)
 
 #0 - 1 to 3

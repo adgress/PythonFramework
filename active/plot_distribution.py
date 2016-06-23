@@ -32,7 +32,7 @@ def plot_pairwise(a):
 def plot_pairwise_contour(a):
     f = lambda xy: sigmoid(xy[0]-xy[1])
     plot_function_2d([-8,8], [-8, 8], f, a)
-    a.set_title('Pairwise')
+    a.set_title('Relative')
 
 def plot_bound(a):
     c1 = 2
@@ -57,13 +57,17 @@ def plot_neighbor(a):
     yi = 1
     yj = 0
     yk = 1
-    f = lambda x: sigmoid(yk-yj) - sigmoid(-yj-yk+2*x)
+    h = lambda x: 1 - np.exp(-x)
+    f = lambda x: min(h(yk-yj), h(yk-yi))
     plot_function([-1,(yk-yj)/2], f, a)
     a.set_title('Neighbor')
 
 def plot_neighbor_contour(a):
-    yk = 1
-    f = lambda x: sigmoid(yk-x[0]) - sigmoid(-x[1]-yk+2*x[0])
+    yk = 4
+    hx = lambda x: 1 - np.exp(-x)
+    #f = lambda x: np.minimum(hx(yk-x[0]), hx(yk-x[1]))
+    f = lambda x: np.minimum(hx(yk-x[1]), hx(yk+x[1] - 2*x[0]))
+    #f = lambda x: sigmoid(yk-x[0]) - sigmoid(-x[1]-yk+2*x[0])
     plot_function_2d([-4,4], [-4,4], f, a)
     a.set_title('Neighbor')
 
@@ -81,14 +85,14 @@ def plot_func(a):
 
 
 if __name__ == '__main__':
-    f, axarr = plt.subplots(1, 1)
-    plot_func(axarr)
-    '''
+    #f, axarr = plt.subplots(1, 1)
+    #plot_func(axarr)
+
     f, axarr = plt.subplots(2, 2)
     plot_pairwise_contour(axarr[0,0])
     plot_bound(axarr[1,0])
     plot_similar_contour(axarr[0,1])
     plot_neighbor_contour(axarr[1,1])
-    '''
+
     f.tight_layout()
     plt.show()

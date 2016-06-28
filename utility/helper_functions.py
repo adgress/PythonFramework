@@ -48,9 +48,8 @@ def flatten_list_of_lists(list_of_lists):
     return [item for sublist in list_of_lists for item in sublist]
 
 def is_laptop():
-    user_name = get_user_name()
-    laptop_usernames = {'Aubrey', 'adgress'}
-    return user_name in laptop_usernames
+    laptop_hostnames = {'LAPTOP-9Q14E7KT'}
+    return get_hostname() in laptop_hostnames
 
 def get_user_name():
     name = getpass.getuser()

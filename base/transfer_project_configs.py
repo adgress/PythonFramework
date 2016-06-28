@@ -121,9 +121,15 @@ else:
     use_pool = True
     pool_size = 24
 max_features = create_data_set.max_features
+arguments = None
+def apply_arguments(configs):
+    if arguments.num_labels is not None:
+        configs.overwrite_num_labels = arguments.num_labels
+    if arguments.split_idx is not None:
+        configs.split_idx = arguments.split_idx
 
 class ProjectConfigs(bc.ProjectConfigs):
-    def __init__(self, data_set=None):
+    def __init__(self, data_set=None, use_arguments=True):
         super(ProjectConfigs, self).__init__()
         self.target_labels = np.empty(0)
         self.source_labels = np.empty(0)
@@ -135,6 +141,8 @@ class ProjectConfigs(bc.ProjectConfigs):
         if data_set is None:
             data_set = data_set_to_use
         self.set_data_set(data_set, use_1d_data)
+        if use_arguments and arguments is not None:
+            apply_arguments(self)
 
     def set_data_set(self, data_set, use_1d):
         self.data_set = data_set

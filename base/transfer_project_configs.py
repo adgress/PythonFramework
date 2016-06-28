@@ -118,7 +118,7 @@ if helper_functions.is_laptop():
     use_pool = False
     pool_size = 4
 else:
-    use_pool = True
+    use_pool = False
     pool_size = 24
 max_features = create_data_set.max_features
 arguments = None

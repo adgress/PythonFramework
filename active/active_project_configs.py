@@ -10,8 +10,10 @@ from utility import helper_functions
 from results_class import results as results_lib
 from sklearn import grid_search
 
-#Command line arguments for ProjectConfigs
+# Command line arguments for ProjectConfigs
 arguments = None
+
+
 def create_project_configs():
     return ProjectConfigs()
 

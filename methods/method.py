@@ -35,7 +35,6 @@ from saveable.saveable import Saveable
 from utility import array_functions
 from utility import helper_functions
 #from dccp.dccp_problem import is_dccp
-from dccp.problem import is_dccp
 #from pyqt_fit import nonparam_regression
 #from pyqt_fit import npr_methods
 from mpipool import core as mpipool
@@ -49,24 +48,32 @@ import random
 from methods import logistic_difference_optimize
 from scipy import optimize
 import warnings
+from methods import preprocessing
+try:
+    from dccp.problem import is_dccp
+except:
+    is_dccp = lambda x: False
+
 
 print_messages_cv = False
 
 
 def _run_cross_validation_iteration_args(self, args):
     num_runs = 0
-    assert self.temp_dir is not None
-    temp_file = self.temp_dir + '/' + str(args) + '.pkl'
-    if os.path.isfile(temp_file):
-        ret = None
-        try:
-            ret = helper_functions.load_object(temp_file)
-            print 'Results already exist: ' + temp_file
-        except:
-            print 'loading file failed - deleting and rerunning...'
-            os.remove(temp_file)
-        if ret is not None:
-            return ret
+    #assert self.temp_dir is not None
+    temp_file = None
+    if self.temp_dir is not None:
+        temp_file = self.temp_dir + '/' + str(args) + '.pkl'
+        if os.path.isfile(temp_file):
+            ret = None
+            try:
+                ret = helper_functions.load_object(temp_file)
+                print 'Results already exist: ' + temp_file
+            except:
+                print 'loading file failed - deleting and rerunning...'
+                os.remove(temp_file)
+            if ret is not None:
+                return ret
     while True:
         num_runs += 1
         if print_messages_cv:
@@ -76,7 +83,7 @@ def _run_cross_validation_iteration_args(self, args):
             ret = self._run_cross_validation_iteration(args, self.curr_split, self.test_data)
             if print_messages_cv:
                 timer.toc()
-            if self.save_cv_temp and not helper_functions.is_laptop():
+            if self.save_cv_temp and not helper_functions.is_laptop() and temp_file is not None:
                 helper_functions.save_object(temp_file, ret)
             return ret
         except MemoryError:
@@ -112,6 +119,7 @@ class Method(Saveable):
         self.likelihood = None
         self.include_size_in_file_name = getattr(configs, 'include_size_in_file_name', False)
         self.num_labels = getattr(configs, 'num_labels', None)
+        self.preprocessor = preprocessing.IdentityPreprocessor()
 
     def create_cv_params(self, i_low, i_high):
         return 10**np.asarray(list(reversed(range(i_low,i_high))),dtype='float64')
@@ -167,7 +175,9 @@ class Method(Saveable):
         fold_results = FoldResults()
         fold_results.prediction = results
         #param_results[param_idx].set(fold_results, i)
-        results_on_test_data = self.predict(test_data)
+        results_on_test_data = None
+        if test_data.n > 0:
+            results_on_test_data = self.predict(test_data)
         fold_results_on_test_data = FoldResults()
         fold_results_on_test_data.prediction = results_on_test_data
         #param_results_on_test[param_idx].set(fold_results_on_test_data, i)
@@ -206,7 +216,8 @@ class Method(Saveable):
                 curr_split = data_and_splits.get_split(i)
                 curr_split.remove_test_labels()
                 self.warm_start = False
-                self.temp_dir = old_temp_dir + str(i)
+                if old_temp_dir is not None:
+                    self.temp_dir = old_temp_dir + str(i)
                 for param_idx, params in enumerate(param_grid):
                     #results, results_on_test = self._run_cross_validation_iteration(params, curr_split, test_data)
                     self.curr_split = curr_split
@@ -249,24 +260,32 @@ class Method(Saveable):
             param_results_on_test = pool.bcast(param_results_on_test, root=0)            
 
         errors = np.empty(len(param_grid))
-        errors_on_test_data = np.empty(len(param_grid))
+        aggregate_test_results = data.n_test > 0
+        errors_on_test_data = None
+        if aggregate_test_results:
+            errors_on_test_data = np.empty(len(param_grid))
         for i in range(len(param_grid)):
             agg_results = param_results[i].aggregate_error(self.configs.cv_loss_function)
             assert len(agg_results) == 1
             errors[i] = agg_results[0].mean
 
-            agg_results_test = param_results_on_test[i].aggregate_error(self.configs.cv_loss_function)
-            assert len(agg_results_test) == 1
-            errors_on_test_data[i] = agg_results_test[0].mean
+            if aggregate_test_results:
+                agg_results_test = param_results_on_test[i].aggregate_error(self.configs.cv_loss_function)
+                assert len(agg_results_test) == 1
+                errors_on_test_data[i] = agg_results_test[0].mean
 
         min_error = errors.min()
         best_params = param_grid[errors.argmin()]
         if not self.quiet and mpi_utility.is_group_master():
             print best_params
         self.best_params = best_params
-        return [best_params, min_error, errors_on_test_data[errors.argmin()]]
+        performance_on_test_data = None
+        if aggregate_test_results:
+            performance_on_test_data = errors_on_test_data[errors.argmin()]
+        return [best_params, min_error, performance_on_test_data]
 
     def process_data(self, data):
+        data = self.preprocessor.preprocess(data, self.configs)
         labels_to_keep = np.empty(0)
         t = getattr(self.configs,'target_labels',None)
         s = getattr(self.configs,'source_labels',None)

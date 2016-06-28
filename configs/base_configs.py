@@ -54,6 +54,12 @@ def is_synthetic_data(data_idx):
 def is_pair_data(data_idx):
     return data_idx > DATA_PAIR_START and data_idx < DATA_PAIR_END
 
+def apply_arguments(configs, arguments):
+    if arguments.num_labels is not None:
+        configs.overwrite_num_labels = arguments.num_labels
+    if arguments.split_idx is not None:
+        configs.split_idx = arguments.split_idx
+
 class Configs(object):
     def __init__(self, **kwargs):
         for key,value in kwargs.items():
@@ -162,6 +168,13 @@ class ProjectConfigs(Configs):
     def set_data_set(self, data_set):
         assert False
 
+    def set_data_set_defaults(self, data_set_name):
+        self.loss_function = loss_function.MeanSquaredError()
+        self.cv_loss_function = loss_function.MeanSquaredError()
+        self.data_dir = 'data_sets/' + data_set_name
+        self.data_name = data_set_name
+        self.results_dir = data_set_name
+        self.data_set_file_name = 'split_data.pkl'
 
 
 
@@ -236,6 +249,7 @@ class MethodConfigs(Configs):
         self.cv_loss_function = pc.cv_loss_function
         self.loss_function = pc.loss_function
         self.use_validation = False
+        self.metric = 'euclidean'
 
     @property
     def results_file_name(self):
@@ -265,6 +279,7 @@ class VisualizationConfigs(Configs):
         self.fontsize = None
         self.data_set_to_use = pc.data_set
         self.show_legend_on_all = True
+        self.max_rows = 3
 
         self.files = [
             'SKL-RidgeReg.pkl'

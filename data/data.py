@@ -111,7 +111,7 @@ class LabeledVector(object):
         try:
             #Old instances may be missing 'pairwise_relationships' or it will be a list
             if not hasattr(self,'pairwise_relationships') or len(self.pairwise_relationships) == 0:
-                self.pairwise_relationships = Set()
+                self.pairwise_relationships = set()
             assert inds.shape[1] == 2
             #assert np.asarray([len(i) == 2 for i in inds]).all()
             inds_set = set()
@@ -327,10 +327,14 @@ class LabeledData(LabeledVector):
 
 
 class Data(LabeledData):
-    def __init__(self):
+    def __init__(self, x=None, y=None):
         super(Data, self).__init__()
-        self.x = np.empty((0,0))
-        self.y = np.empty(0)
+        self.x = x
+        self.y = y
+        if y is not None:
+            self.set_target()
+            self.set_train()
+            self.set_true_y()
         self.feature_names = None
         self.label_names = None
 

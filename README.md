@@ -2,13 +2,26 @@
 
 Python experiment framework
 
+WINDOWS SETUP
+
+Install Python xy
+Update path with python install directory
+
+pip --upgrade pip
+pip install mpi4py
+pip install boto
+pip install dccp
+
+NOTE: I tried updated scipy, numpy, cvxpy but got errors about not having blas/lapack.  I worked on this but was unable to get it working
+
+Install MPI: https://www.microsoft.com/en-us/download/confirmation.aspx?id=47259 (Path should be updated automatically)
+
+
 LINUX SETUP
 
 1) Install Anaconda: Many of the necessary packages are in Anaconda
 
 Follow instructions at: https://www.continuum.io/downloads
-
-LINUX:
 
 wget https://3230d63b5fc54e62148e-c95ac804525aac4b6dba79b00b39d1d3.ssl.cf1.rackcdn.com/Anaconda2-2.4.1-Linux-x86_64.sh
 bash Anaconda3-2.4.1-Linux-x86_64.sh  -b

@@ -482,6 +482,7 @@ class MainConfigs(bc.MainConfigs):
         sms_transfer = methods.local_transfer_methods.SMSTransfer(method_configs)
         dt_local_transfer = methods.local_transfer_methods.LocalTransferDelta(method_configs)
         dt_sms = methods.local_transfer_methods.LocalTransferDeltaSMS(method_configs)
+        cov_shift = transfer_methods.ReweightedTransfer(method_configs)
 
         from methods import semisupervised
         from methods import preprocessing
@@ -495,7 +496,8 @@ class MainConfigs(bc.MainConfigs):
         #self.learner = sms_transfer
         #self.learner = dt_local_transfer
         #self.learner = dt_sms
-        self.learner = ssl_regression
+        #self.learner = ssl_regression
+        self.learner = cov_shift
         self.learner.configs.use_validation = use_validation
 
 
@@ -571,6 +573,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             '''
             self.files['LocalTransferDelta_radius_l2_linear-b_clip-b.pkl'] = 'Ours: Linear'
             self.files['LocalTransferDelta_C3=0_radius_l2_linear-b.pkl'] = 'Ours: Linear, alpha=0'
+            self.files['CovShift.pkl'] = 'Reweighting'
         elif plot_idx == PLOT_VALIDATION:
             self.files = OrderedDict()
             self.files['TargetTransfer+NW.pkl'] = 'Target Only'
@@ -684,6 +687,20 @@ class BatchConfigs(bc.BatchConfigs):
         assert len(self.config_list) > 0
 
 
-viz_params = [
-    {'None': None},
-]
+
+#data_set_to_use = bc.DATA_BOSTON_HOUSING
+#data_set_to_use = bc.DATA_CONCRETE
+#data_set_to_use = bc.DATA_WINE
+#data_set_to_use = bc.DATA_BIKE_SHARING
+#data_set_to_use = bc.DATA_PAIR_82_83
+
+#data_set_to_use = bc.DATA_SYNTHETIC_CURVE
+#data_set_to_use = bc.DATA_SYNTHETIC_SLANT
+#data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
+#data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
+#data_set_to_use = bc.DATA_SYNTHETIC_CROSS
+
+if use_1d_data:
+    viz_params = [{'data_set': d} for d in all_1d]
+else:
+    viz_params = [{'data_set': d} for d in real_data_sets_full]

@@ -121,6 +121,10 @@ class Method(Saveable):
         self.num_labels = getattr(configs, 'num_labels', None)
         self.preprocessor = preprocessing.IdentityPreprocessor()
 
+    @property
+    def can_use_instance_weights(self):
+        return False
+
     def create_cv_params(self, i_low, i_high):
         return 10**np.asarray(list(reversed(range(i_low,i_high))),dtype='float64')
 
@@ -382,6 +386,10 @@ class NadarayaWatsonMethod(Method):
             self.metric = configs.metric
         self.instance_weights = None
         #self.metric = 'cosine'
+
+    @property
+    def can_use_instance_weights(self):
+        return True
 
     def compute_kernel(self,x,y):
         #TODO: Optimize this for cosine similarity using cross product and matrix multiplication

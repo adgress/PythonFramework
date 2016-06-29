@@ -1,11 +1,12 @@
 __author__ = 'Aubrey'
 import copy
-
+from copy import deepcopy
 import numpy as np
 
 import method
 from data import data as data_lib
-
+from sklearn.neighbors import KernelDensity
+from sklearn.grid_search import GridSearchCV
 
 class TargetTranfer(method.Method):
     def __init__(self, configs=None):
@@ -107,3 +108,70 @@ class ModelSelectionTransfer(method.ModelSelectionMethod):
     @property
     def prefix(self):
         return 'ModelSelTransfer'
+
+class ReweightedTransfer(method.Method):
+    def __init__(self, configs=None):
+        super(ReweightedTransfer, self).__init__(configs)
+        self.target_kde = None
+        self.source_kde = None
+        self.kde_bandwidths = 10**np.asarray(range(-6,6),dtype='float64')
+        c = deepcopy(configs)
+        c.temp_dir = None
+        self.base_learner = method.NadarayaWatsonMethod(configs)
+        self.cv_params = {
+            'B': np.asarray([2, 4, 8, 16, 32])
+        }
+        self.base_learner_cv_keys = []
+
+    def train_and_test(self, data):
+        assert self.base_learner.can_use_instance_weights
+        target_data = data.get_transfer_subset(self.configs.target_labels.ravel(),include_unlabeled=False)
+        source_data = data.get_transfer_subset(self.configs.source_labels.ravel(), include_unlabeled=False)
+        is_source = data.get_transfer_inds(self.configs.source_labels.ravel())
+        data.type[is_source] = data_lib.TYPE_SOURCE
+
+        x_T = target_data.x
+        x_S = source_data.x
+
+        params = {'bandwidth': self.kde_bandwidths}
+        grid = GridSearchCV(KernelDensity(), params)
+        grid.fit(x_T)
+        self.target_kde = deepcopy(grid.best_estimator_)
+        grid.fit(x_S)
+        self.source_kde = deepcopy(grid.best_estimator_)
+
+        old_cv = self.cv_params.copy()
+        old_base_cv = self.base_learner.cv_params.copy()
+
+        assert set(old_cv.keys()) & set(old_base_cv.keys()) == set()
+        self.cv_params.update(self.base_learner.cv_params)
+        self.base_learner_cv_keys = old_base_cv.keys()
+
+        o = super(ReweightedTransfer, self).train_and_test(data)
+        self.cv_params = old_cv
+        self.base_learner.cv_params = old_base_cv
+        return o
+
+    def train(self, data):
+        I = data.is_labeled
+        weights = self.get_weights(data.x)
+        assert np.all(weights >=0 )
+        weights[weights > self.B] = self.B
+        data.instance_weights = weights
+        for key in self.base_learner_cv_keys:
+            setattr(self.base_learner, key, getattr(self, key))
+        self.base_learner.train(data)
+
+    def get_weights(self, x):
+        target_scores = np.exp(self.target_kde.score_samples(x))
+        source_scores = np.exp(self.source_kde.score_samples(x))
+        return target_scores / source_scores
+
+    def predict(self, data):
+        data.instance_weights = self.get_weights(data.x)
+        return self.base_learner.predict(data)
+
+    @property
+    def prefix(self):
+        return 'CovShift'
+

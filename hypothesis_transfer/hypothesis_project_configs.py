@@ -45,7 +45,7 @@ other_method_configs = {
     'use_test_error_for_model_selection': False,
 }
 
-run_batch = True
+run_batch = False
 if helper_functions.is_laptop():
     run_batch = False
 

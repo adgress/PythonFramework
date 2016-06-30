@@ -7,7 +7,7 @@ import collections
 import copy
 from scipy.stats import mstats
 from utility import array_functions
-data_subset = collections.namedtuple('DataSubset',['x','y'])
+data_subset = collections.namedtuple('DataSubset',['x','y','instance_weights'])
 
 TYPE_TARGET = 1
 TYPE_SOURCE = 2
@@ -213,7 +213,7 @@ class LabeledData(LabeledVector):
         if self.is_regression:
             return array_functions.find_set(self.data_set_ids,labels_or_ids)
         else:
-            return array_functions.find_set(self.y,labels_or_ids)
+            return array_functions.find_set(self.true_y,labels_or_ids)
 
     def get_transfer_subset(self,labels_or_ids,include_unlabeled=False):
         assert len(labels_or_ids) > 0
@@ -226,6 +226,12 @@ class LabeledData(LabeledVector):
             if include_unlabeled:
                 inds = inds | ~self.is_labeled
         return self.get_subset(inds)
+
+    def has_true_label(self, labels):
+        return array_functions.find_set(self.true_y, labels)
+
+    def has_label(self, labels):
+        return array_functions.find_set(self.y, labels)
 
     def get_with_labels(self,labels):
         inds = array_functions.find_set(self.true_y,labels)
@@ -293,13 +299,14 @@ class LabeledData(LabeledVector):
 
     def change_labels(self, curr_labels, new_labels):
         #assert len(curr_labels) == len(new_labels)
-        assert curr_labels.shape[1] == new_labels.shape[0]
+        assert curr_labels.shape == new_labels.shape or curr_labels.shape[1] == new_labels.shape[0]
         if curr_labels.ndim == 1:
-            curr_labels = np.expand_dims(curr_labels,1)
+            curr_labels = np.expand_dims(curr_labels,0)
         new_y = self.y.copy()
         new_true_y = self.true_y.copy()
-        for i in range(curr_labels.shape[0]):
-            l = curr_labels[i,:]
+        #for i in range(curr_labels.shape[0]):
+        #    l = curr_labels[i,:]
+        for i, l in enumerate(curr_labels):
             for curr, new in zip(l, new_labels):
                 new_y[self.y == curr] = new
                 new_true_y[self.true_y == curr] = new
@@ -344,7 +351,10 @@ class Data(LabeledData):
 
     def labeled_training_data(self):
         I = self.is_train & self.is_labeled
-        return data_subset(x=self.x[I,:],y=self.y[I])
+        weights = None
+        if self.instance_weights is not None:
+            weights = self.instance_weights[I]
+        return data_subset(x=self.x[I,:],y=self.y[I],instance_weights=weights)
 
     def labeled_test_data(self):
         I = ~self.is_train & self.is_labeled

@@ -63,7 +63,7 @@ run_experiments = True
 show_legend_on_all = True
 
 run_batch_exps = True
-use_1d_data = False
+use_1d_data = True
 use_sms_plot_data_sets = plot_idx == PLOT_SMS
 
 use_constraints = True

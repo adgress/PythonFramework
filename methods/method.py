@@ -24,6 +24,8 @@ from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import f_regression
+from sklearn.preprocessing import LabelEncoder
+
 
 from configs.base_configs import MethodConfigs
 from data import data as data_lib
@@ -110,6 +112,7 @@ class Method(Saveable):
         self.quiet = True
         self.best_params = None
         self.transform = None
+        self.label_transform = None
         self.warm_start = False
         self.temp_dir = None
         self.save_cv_temp = True
@@ -237,21 +240,20 @@ class Method(Saveable):
             self.data_and_splits = pool.bcast(data_and_splits, root=0)
             self.test_data = pool.bcast(test_data, root=0)
             splits = pool.bcast(splits, root=0)
-            if pool.is_master():
+            if pool.is_master() and self.temp_dir is not None:
                 helper_functions.make_dir_for_file_name(self.temp_dir)
             old_temp_dir = self.temp_dir
             for i in range(len(splits)):
                 self.curr_split = data_and_splits.get_split(i)
                 self.curr_split.remove_test_labels()
-                self.temp_dir += str(i)
-                if pool.is_master():
-                    helper_functions.make_dir_for_file_name(self.temp_dir)
+                if self.temp_dir is not None:
+                    self.temp_dir += str(i)
                 all_split_results = pool.map(_run_cross_validation_iteration_args, param_grid)
                 self.temp_dir = old_temp_dir
                 pool.close()
                 if pool.is_master():
                     param_idx = 0
-                    for split_results, split_results_on_test in all_split_results:                        
+                    for split_results, split_results_on_test in all_split_results:
                         param_results[param_idx].set(split_results, i)
                         param_results_on_test[param_idx].set(split_results, i)
                         param_idx = param_idx + 1                    
@@ -501,18 +503,22 @@ class ScikitLearnMethod(Method):
         'DummyRegressor': 'DumReg',
         'LogisticRegression': 'LogReg',
         'KNeighborsClassifier': 'KNN',
+        'RidgeClassifier': 'RidgeClass'
     }
 
     def __init__(self,configs=MethodConfigs(),skl_method=None):
         super(ScikitLearnMethod, self).__init__(configs)
         self.skl_method = skl_method
 
+    def can_use_instance_weights(self):
+        return True
+
     def train(self, data):
         labeled_train = data.labeled_training_data()
         x = labeled_train.x
         if self.transform is not None:
             x = self.transform.fit_transform(x)
-        self.skl_method.fit(x, labeled_train.y)
+        self.skl_method.fit(x, labeled_train.y, labeled_train.instance_weights)
 
     def predict(self, data):
         o = Output(data)
@@ -527,6 +533,14 @@ class ScikitLearnMethod(Method):
     def set_params(self, **kwargs):
         super(ScikitLearnMethod,self).set_params(**kwargs)
         self.skl_method.set_params(**kwargs)
+
+    @property
+    def w(self):
+        return self.skl_method.coef_
+
+    @property
+    def b(self):
+        return self.skl_method.intercept_
 
     def _skl_method_name(self):
         return repr(self.skl_method).split('(')[0]
@@ -561,6 +575,18 @@ class SKLRidgeRegression(ScikitLearnMethod):
         o.fu = y
         o.y = y
         return o
+
+class SKLRidgeClassification(ScikitLearnMethod):
+    def __init__(self, configs=None):
+        super(SKLRidgeClassification, self).__init__(configs, linear_model.RidgeClassifier())
+        self.cv_params['alpha'] = 10 ** np.asarray(range(-8, 8), dtype='float64')
+        self.set_params(alpha=0, fit_intercept=True, normalize=True, tol=1e-12)
+        self.set_params(solver='auto')
+
+        useStandardScale = True
+        if useStandardScale:
+            self.set_params(normalize=False)
+            self.transform = StandardScaler()
 
 class SKLLogisticRegression(ScikitLearnMethod):
     def __init__(self,configs=None):

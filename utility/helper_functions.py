@@ -78,7 +78,7 @@ def delete_dir_if_exists(dir_name):
     :param dir_name: directory to delete
     :return:
     """
-    if os.path.isdir(dir_name):
+    if dir_name is not None and os.path.isdir(dir_name):
         shutil.rmtree(dir_name)
 
 def remove_suffix(s, suffix):

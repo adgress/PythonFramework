@@ -8,7 +8,8 @@ import importlib
 #import configs.base_configs as configs_lib
 #import base.project_configs as configs_lib
 
-import base.transfer_project_configs as configs_library
+import hypothesis_transfer.hypothesis_project_configs as configs_library
+#import base.transfer_project_configs as configs_library
 #import active.active_project_configs as configs_library
 #import new_project.new_project_configs as configs_library
 

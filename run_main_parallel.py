@@ -1,7 +1,9 @@
 from subprocess import call, Popen
 from timer.timer import tic, toc
 import sys
-import active.active_project_configs as configs_lib
+#import active.active_project_configs as configs_lib
+#import base.transfer_project_configs as configs_lib
+import hypothesis_transfer.hypothesis_project_configs as configs_lib
 import itertools
 from utility import multiprocessing_utility
 from utility import helper_functions
@@ -20,7 +22,7 @@ comm = MPI.COMM_WORLD
 use_mpi = comm.Get_size() > 1
 debug_mpi_pool = False
 use_multiprocessing_pool = True
-parallelize_cv = True
+parallelize_cv = False
 
 if helper_functions.is_laptop():
     pool_size = 2

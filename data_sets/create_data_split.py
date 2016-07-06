@@ -21,6 +21,13 @@ def classification_configs():
     c.is_regression = False
     return c
 
+def hypothesis_transfer_configs():
+    c = configs_lib.DataProcessingConfigs()
+    c.is_regression = False
+    c.split_data_set_ids = np.zeros(1)
+    c.data_set_ids_to_keep = np.asarray([1,2])
+    return c
+
 def synthetic_classification_configs():
     c = configs_lib.DataProcessingConfigs()
     c.is_regression = False
@@ -48,17 +55,34 @@ def split_data(file, configs):
     splitData.data = data
     num_splits = 30
     perc_train = .8
-
+    keep_for_splitting = None
+    if configs.split_data_set_ids is not None:
+        keep_for_splitting = array_functions.false(data.n)
+        keep_for_splitting[data.data_set_ids == 0] = True
     #Pretend data_set_ids is a label vector to ensure each data set is split equally
     if data.is_regression and data.data_set_ids is not None:
         assert len(data.data_set_ids) == data.n
         is_regression = False
-        splitData.splits = splitter.generate_splits(data.data_set_ids,num_splits,perc_train,is_regression)
+        splitData.splits = splitter.generate_splits(
+            data.data_set_ids,
+            num_splits,
+            perc_train,
+            is_regression,
+            keep_for_splitting
+        )
     else:
-        splitData.splits = splitter.generate_splits(data.y,num_splits,perc_train,data.is_regression)
+        splitData.splits = splitter.generate_splits(
+            data.y,
+            num_splits,
+            perc_train,
+            data.is_regression,
+            keep_for_splitting
+        )
+    splitData.data_set_ids_to_keep = configs.data_set_ids_to_keep
     split_dir = os.path.dirname(file)
     save_file = split_dir + '/split_data.pkl'
     helper_functions.save_object(save_file,splitData)
+    return splitData
 
 class DataSplitter(object):
     def __init__(self):
@@ -114,7 +138,11 @@ def run_main():
     #split_data(create_data_set.adience_aligned_cnn_1_per_instance_id_file, regression_configs())
     #split_data(create_data_set.wine_file % '-red', regression_configs())
     #split_data(create_data_set.concrete_file % '', regression_configs())
-    split_data(create_data_set.drosophila_file, regression_configs())
+    #split_data(create_data_set.drosophila_file, regression_configs())
+    s = split_data('synthetic_hyp_trans_class500-50-1.0-0.3-1-1/raw_data.pkl',
+               hypothesis_transfer_configs()
+    )
+    pass
 
 if __name__ == '__main__':
     run_main()

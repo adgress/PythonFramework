@@ -1,6 +1,29 @@
 from data import data as data_lib
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, LabelBinarizer
 import numpy as np
+
+class NanLabelBinarizer(LabelBinarizer):
+    def fit(self, y):
+        I = ~np.isnan(y)
+        super(NanLabelBinarizer, self).fit(y[I])
+
+    def fit_transform(self, y):
+        self.fit(y)
+        return self.transform(y)
+
+    def inverse_transform(self, y):
+        I = ~np.isnan(y)
+        y2 = super(NanLabelBinarizer, self).inverse_transform(y[I])
+        y = np.copy(y)
+        y[I] = y2
+        return y
+
+    def transform(self, y):
+        I = ~np.isnan(y)
+        y2 = super(NanLabelBinarizer, self).transform(y[I])
+        y = np.copy(y)
+        y[I] = y2
+        return y
 
 class NanLabelEncoding(LabelEncoder):
     def fit(self, y):

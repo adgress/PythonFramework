@@ -23,9 +23,33 @@ class LabeledVector(object):
         self.instance_weights = None
         self.is_regression = None
 
+    def combine(self, o):
+        d = self.__dict__
+        n = self.n
+        for key, v_self in d.items():
+            v_o = getattr(o, key, None)
+            if v_o is None:
+                continue
+            #What should we do when o.key is not None but self.key isn't?
+            assert v_self is not None
+            if array_functions.is_matrix(v_self) and v_self.shape[0] == n:
+                if v_self.ndim == 1:
+                    value = array_functions.append_rows(v_self, v_o)
+                elif v_self.ndim == 2:
+                    value = array_functions.append_rows(v_self, v_o)
+                else:
+                    assert False
+                setattr(self, key, value)
+
+    @property
+    def n_x(self):
+        return self.x.shape[0]
+
     @property
     def n(self):
-        return self.y.shape[0]
+        n = self.y.shape[0]
+        assert n == self.n_x
+        return n
 
     @property
     def n_train(self):
@@ -48,6 +72,14 @@ class LabeledVector(object):
         return (self.is_source & self.is_test).sum()
 
     @property
+    def n_per_id_0(self):
+        return self._n_per_y(self.data_set_ids == 0)
+
+    @property
+    def n_per_id_nonzero(self):
+        return self._n_per_y(self.data_set_ids > 0)
+
+    @property
     def n_per_y_source(self):
         return self._n_per_y(self.is_source)
 
@@ -57,7 +89,7 @@ class LabeledVector(object):
 
     @property
     def n_per_y(self):
-        return self.n_per_y
+        return self._n_per_y()
 
     def _n_per_y(self, inds=None):
         if inds is None:
@@ -256,8 +288,13 @@ class LabeledData(LabeledVector):
                 else:
                     assert False
                 setattr(self,key,value)
+            else:
+                #print key
+                pass
+        pass
 
     def apply_split(self,split):
+        assert self.n == self.x.shape[0]
         self.is_train = split.is_train
         #self.type = split.type
         self.permute(split.permutation)
@@ -365,6 +402,9 @@ class Data(LabeledData):
         x = np.squeeze(self.x)
         return np.squeeze(self.x.argsort(0))
 
+    def combine(self, d):
+        super(Data, self).combine(d)
+
 class Split(object):
     def __init__(self,n=0):
         self.permutation = np.empty(n)
@@ -379,6 +419,7 @@ class SplitData(object):
         self.labels_to_not_sample = {}
         self.target_labels = None
         self.use_data_set_ids = True
+        self.data_set_ids_to_keep = None
 
     def get_split(self, i, num_labeled=None):
         if 'use_data_set_ids' not in self.__dict__:
@@ -389,15 +430,20 @@ class SplitData(object):
         if self.labels_to_keep is not None:
             #d = d.get_with_labels(self.labels_to_keep)
             d = d.get_transfer_subset(self.labels_to_keep)
+        to_keep = None
+        if self.data_set_ids_to_keep is not None:
+            to_keep = array_functions.find_set(d.data_set_ids, self.data_set_ids_to_keep)
+            d.y[to_keep] = np.nan
         if num_labeled is not None:
             if d.is_regression:
-                labeled_inds = np.nonzero(d.is_train)[0]
+                labeled_inds = np.nonzero(d.is_train & d.is_labeled)[0]
                 if self.use_data_set_ids and \
                                 d.data_set_ids is not None and \
                                 self.target_labels is not None:
                     labeled_inds = np.nonzero(d.is_train & (d.data_set_ids == self.target_labels))[0]
                 to_clear = labeled_inds[num_labeled:]
                 d.y[to_clear] = np.nan
+                d.y[d.is_test] = np.nan
             else:
                 d.y = d.y.astype('float32')
                 d.true_y = d.true_y.astype('float32')
@@ -405,11 +451,20 @@ class SplitData(object):
                 for c in classes:
                     if c in self.labels_to_not_sample:
                         continue
-                    class_inds_train = np.nonzero((d.y==c) & d.is_train)[0]
+                    class_inds_train = (d.y==c) & d.is_train
+                    if to_keep is not None:
+                        class_inds_train[to_keep] = False
+                    class_inds_train = np.nonzero(class_inds_train)[0]
                     assert len(class_inds_train) >= num_labeled
+
                     d.y[class_inds_train[num_labeled:]] = np.nan
-                    class_inds_test = np.nonzero((d.y==c) & ~d.is_train)[0]
+                    class_inds_test = (d.y==c) & ~d.is_train
+                    if to_keep is not None:
+                        class_inds_test[to_keep] = False
+                    class_inds_test = np.nonzero(class_inds_test)[0]
                     d.y[class_inds_test] = np.nan
+        if to_keep is not None:
+            d.y[to_keep] = d.true_y[to_keep]
         return d
 
 

@@ -2,9 +2,9 @@ __author__ = 'Aubrey'
 import copy
 from copy import deepcopy
 import numpy as np
-
+from numpy.linalg import norm
 import method
-from preprocessing import NanLabelEncoding
+from preprocessing import NanLabelEncoding, NanLabelBinarizer
 from data import data as data_lib
 from sklearn.neighbors import KernelDensity
 from sklearn.grid_search import GridSearchCV
@@ -66,7 +66,7 @@ class FuseTransfer(TargetTranfer):
         self.use_oracle = False
         #self.target_weight_scale = None
         self.target_weight_scale = .75
-        self.label_transform = NanLabelEncoding()
+        self.label_transform = NanLabelBinarizer()
 
     def train(self, data):
         is_labeled_train = data.is_labeled & data.is_train
@@ -89,6 +89,11 @@ class FuseTransfer(TargetTranfer):
         source_labels = self.configs.source_labels
         target_labels = self.configs.target_labels
         data_copy = copy.deepcopy(data)
+        if data.data_set_ids is not None:
+            assert source_labels is None
+            assert target_labels is None
+            data_copy.type[data_copy.data_set_ids > 0] = data_lib.TYPE_SOURCE
+            return data_copy
         #source_inds = array_functions.find_set(data_copy.true_y,source_labels)
         if self.use_oracle:
             oracle_labels = self.configs.oracle_labels
@@ -118,6 +123,10 @@ class FuseTransfer(TargetTranfer):
 
 
 class HypothesisTransfer(FuseTransfer):
+
+    WEIGHTS_ALL = 0
+    WEIGHTS_JUST_TARGET = 1
+    WEIGHTS_JUST_OPTIMAL = 2
     def __init__(self, configs=None):
         super(HypothesisTransfer, self).__init__(configs)
         self.cv_params = {
@@ -127,58 +136,115 @@ class HypothesisTransfer(FuseTransfer):
         }
         self.w = None
         self.b = None
-        self.base_source_learner = method.SKLRidgeClassification(deepcopy(configs))
-        self.base_source_learner.cv_use_data_type = False
+
+        #self.base_source_learner = method.SKLRidgeClassification(deepcopy(configs))
+        self.base_source_learner = None
+        self.label_transform = None
+
         self.source_w = []
         self.transform = StandardScaler()
+        #self.transform = None
         self.use_oracle = False
-        self.just_target = True
+        self.tune_C = False
+        #self.weight_type = HypothesisTransfer.WEIGHTS_ALL
+        #self.weight_type = HypothesisTransfer.WEIGHTS_JUST_TARGET
+        self.weight_type = HypothesisTransfer.WEIGHTS_JUST_OPTIMAL
+        if hasattr(configs, 'weight_type'):
+            self.weight_type = configs.weight_type
+        self.c_value = None
+        self.use_test_error_for_model_selection = configs.use_test_error_for_model_selection
+        if self.weight_type == HypothesisTransfer.WEIGHTS_JUST_TARGET:
+            del self.cv_params['C2']
+            del self.cv_params['C3']
+            self.C2 = 0
+            self.C3 = 0
+        elif not getattr(self, 'tune_C', True):
+            del self.cv_params['C']
+            self.C = 0
 
 
     def train_and_test(self, data):
+        #data = data.get_subset(data.data_set_ids == 0)
         source_labels = self.configs.source_labels
         data = self._prepare_data(data)
-        for i, s in enumerate(source_labels):
-            #source_inds = data.get_transfer_inds(s)
-            source_data = data.get_subset(data.data_set_ids == i+1)
-            self.base_source_learner.train_and_test(source_data)
-            w = np.squeeze(self.base_source_learner.w)
-            w /= np.linalg.norm(w)
-            b = self.base_source_learner.b
-            self.source_w.append(w)
-            pass
-        target_labels = self.configs.target_labels
         target_data = data.get_subset(data.data_set_ids == 0)
-        return super(HypothesisTransfer, self).train_and_test(target_data)
+        #self.cv_params['C'] = np.zeros(1)
+        if self.weight_type != HypothesisTransfer.WEIGHTS_JUST_TARGET:
+            base_configs = deepcopy(self.configs)
+            base_configs.weight_type = HypothesisTransfer.WEIGHTS_JUST_TARGET
+            self.base_source_learner = HypothesisTransfer(base_configs)
+            self.base_source_learner.cv_use_data_type = False
+            self.base_source_learner.use_test_error_for_model_selection = False
+            #self.base_source_learner.cv_params['C'] = np.zeros(1)
 
-    def train(self, data):
-        x = self.transform.fit_transform(data.x[data.is_labeled & data.is_train])
+            #for i, s in enumerate(source_labels):
+            for data_set_id in np.unique(data.data_set_ids):
+                if data_set_id == 0:
+                    continue
+                #source_inds = data.get_transfer_inds(s)
+                source_data = data.get_subset(data.data_set_ids == data_set_id)
+                source_data.data_set_ids[:] = 0
+                source_data.is_target[:] = True
+                self.base_source_learner.train_and_test(source_data)
+                best_params = self.base_source_learner.best_params
+                w = np.squeeze(self.base_source_learner.w)
+                w /= np.linalg.norm(w)
+                b = self.base_source_learner.b
+                self.source_w.append(w)
+                pass
+            ws1 = self.source_w[0]
+            ws2 = self.source_w[1]
+            target_data_copy = deepcopy(target_data)
+            target_data_copy.is_train[:] = True
+            target_data_copy.y = target_data_copy.true_y
+            self.base_source_learner.train_and_test(target_data_copy)
+            wt = np.squeeze(self.base_source_learner.w)
+            wt /= np.linalg.norm(wt)
+            d1 = norm(ws1-wt)
+            d2 = norm(ws2-wt)
+            #print 'using wt!  Change this back'
+            #self.source_w[0] = wt/norm(wt)
+            #self.source_w[1] = wt / norm(wt)
+            self.source_w[0] = ws1
+            self.source_w[1] = ws2
+            pass
+
+        o = super(HypothesisTransfer, self).train_and_test(target_data)
+        print 'c: ' + str(np.squeeze(self.c_value))
+        return o
+
+    def estimate_c(self, data):
+        x = data.x[data.is_labeled & data.is_train]
+        if self.transform is not None:
+            x = self.transform.fit_transform(x)
         y = data.y[data.is_labeled]
-        y = self.label_transform.fit_transform(y)
+        if self.label_transform is not None:
+            y = self.label_transform.fit_transform(y)
         n = y.size
         p = data.p
-        self.b = y.mean()
         c = cvx.Variable(len(self.source_w))
         ws1 = self.source_w[0]
         ws2 = self.source_w[1]
 
         constraints = [c >= 0]
-        if self.just_target:
+        if self.weight_type == HypothesisTransfer.WEIGHTS_JUST_OPTIMAL:
             constraints.append(c[1] == 0)
         loss = 0
         for i in range(y.size):
-            xi = x[i,:]
+            xi = x[i, :]
             yi = y[i]
             x_mi = np.delete(x, i, axis=0)
             y_mi = np.delete(y, i, axis=0)
-            b_mi = y_mi.mean() / (n - 1) ** 2
-            A = x_mi.T.dot(x_mi) - (self.C + self.C2)*np.eye(p)
-            k = x_mi.T.dot(y_mi) + x_mi.T.sum(1)*b_mi - self.C2*(ws1*c[0] + ws2*c[1])
-            #w_mi = np.linalg.solve(A, k)
-            w_mi = scipy.linalg.inv(A)*k
-            loss += cvx.power(w_mi.T*xi + b_mi - yi,2)
-        reg = cvx.power(cvx.norm2(c),2)
-        obj = cvx.Minimize(loss + self.C3*reg)
+            b_mi = y_mi.mean()
+            A = x_mi.T.dot(x_mi) + (self.C + self.C2) * np.eye(p)
+            k = x_mi.T.dot(y_mi) - x_mi.T.sum(1) * b_mi + self.C2 * (ws1 * c[0] + ws2 * c[1])
+            # w_mi = np.linalg.solve(A, k)
+            w_mi = scipy.linalg.inv(A) * k
+            loss += cvx.power(w_mi.T * xi + b_mi - yi, 2)
+            #loss += cvx.max_elemwise(1 - (w_mi.T * xi + b_mi)*yi, 0)
+        # reg = cvx.power(cvx.norm2(c),2)
+        reg = cvx.norm1(c)
+        obj = cvx.Minimize(loss + self.C3 * reg)
         prob = cvx.Problem(obj, constraints)
         assert prob.is_dcp()
         try:
@@ -187,30 +253,73 @@ class HypothesisTransfer(FuseTransfer):
         except Exception as e:
             print str(e)
             c_value = np.zeros(p)
+        # c_value[np.abs(c_value) <= 1e-4] = 0
+        # assert np.all(c_value >= 0)
+        c_value[c_value < 0] = 0
+        return c_value
 
+    def train(self, data):
+        x = data.x[data.is_labeled & data.is_train]
+        if self.transform is not None:
+            x = self.transform.fit_transform(x)
+        y = data.y[data.is_labeled]
+        if self.label_transform is not None:
+            y = self.label_transform.fit_transform(y)
+        n = y.size
+        p = data.p
+        self.b = y.mean()
+
+        #print str(np.squeeze(c_value))
+        if self.weight_type == HypothesisTransfer.WEIGHTS_JUST_TARGET:
+            c_value = np.zeros(2)
+            ws1 = 0
+            ws2 = 0
+        else:
+            c_value = self.estimate_c(data)
+            ws1 = self.source_w[0]
+            ws2 = self.source_w[1]
         A = x.T.dot(x) + (self.C + self.C2)*np.eye(p)
-        k = x.T.dot(y) + x.T.sum(1)*self.b - self.C2*(ws1*c_value[0] + ws2*c_value[1])
+        k = x.T.dot(y) - x.T.sum(1)*self.b + self.C2*(ws1*c_value[0] + ws2*c_value[1])
         self.w = np.linalg.solve(A, k)
+        self.c_value = c_value
         pass
 
     def predict(self, data):
         o = Output(data)
-        x = self.transform.transform(data.x)
+        x = data.x
+        if self.transform is not None:
+            x = self.transform.transform(x)
         y = x.dot(self.w) + self.b
         #y = np.round(y)
-        y[y >= .5] = 1
-        y[y < .5] = 0
+        #y[y >= .5] = 1
+        #y[y < .5] = 0
+        y = np.sign(y)
         o.y = y
         o.fu = y
         if self.label_transform is not None:
             o.true_y = self.label_transform.transform(o.true_y)
+
+        if not self.running_cv:
+            is_correct = (o.y == o.true_y)
+            mean_train = is_correct[o.is_train].mean()
+            mean_test = is_correct[o.is_test].mean()
+            mean_train_labeled = is_correct[data.is_train & data.is_labeled].mean()
+            pass
         return o
 
     @property
     def prefix(self):
         s = 'HypTransfer'
-        if getattr(self, 'just_target', False):
+        weight_type = getattr(self, 'weight_type', HypothesisTransfer.WEIGHTS_ALL)
+        if weight_type == HypothesisTransfer.WEIGHTS_JUST_TARGET:
             s += '-target'
+        else:
+            if weight_type == HypothesisTransfer.WEIGHTS_JUST_OPTIMAL:
+                s += '-optimal'
+            if not getattr(self, 'tune_C', False):
+                s += '-noC'
+        if getattr(self, 'use_test_error_for_model_selection', False):
+            s += '-TEST'
         return s
 
 

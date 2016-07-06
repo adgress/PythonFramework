@@ -29,7 +29,8 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
     'source_labels',
 ]
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-data_set_to_use = bc.DATA_NG
+#data_set_to_use = bc.DATA_NG
+data_set_to_use = bc.DATA_SYNTHETIC_HYP_TRANS_1_1
 
 viz_for_paper = True
 
@@ -94,10 +95,22 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.set_data_set_defaults('20ng-2000')
             self.loss_function = loss_function.ZeroOneError()
             self.cv_loss_function = loss_function.ZeroOneError()
-            self.num_labels = [5, 10, 20, 40]
+            #self.num_labels = [5, 10, 20, 40]
             self.target_labels = CR[0]
             self.source_labels = np.vstack((CR[1], ST[1]))
             self.oracle_labels = CR[1]
+        elif data_set == bc.DATA_SYNTHETIC_HYP_TRANS_1_1:
+            #self.set_data_set_defaults('synthetic_hyp_trans_class500-50-1.0-0.3-1-1')
+            #self.set_data_set_defaults('synthetic_hyp_trans_class500-50-1.0-0.3-0-0')
+            self.set_data_set_defaults('synthetic_hyp_trans_class500-50-1.0-0.3-1-1')
+            #self.loss_function = loss_function.ZeroOneError()
+            #self.cv_loss_function = loss_function.ZeroOneError()
+            #self.num_labels = [5, 10, 20, 40]
+            self.num_labels = [10, 20, 40]
+            #self.num_labels = [20]
+            self.target_labels = None
+            self.source_labels = None
+            self.oracle_data_set_ids = np.asarray([1])
         else:
             assert False
         '''
@@ -129,6 +142,7 @@ class MainConfigs(bc.MainConfigs):
 
         #self.learner = fuse_transfer
         self.learner = hyp_transfer
+        #self.learner = method.SKLRidgeClassification(method_configs)
 
 class MethodConfigs(bc.MethodConfigs):
     def __init__(self, pc):
@@ -184,8 +198,15 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files['FuseTransfer+SKL-RidgeClass.pkl'] = 'Source and Target'
         #self.files['FuseTransfer+SKL-RidgeClass-tws=0.5.pkl'] = 'Source and Target: Weighted 50%'
         #self.files['FuseTransfer+SKL-RidgeClass-tws=1.pkl'] = 'Source and Target: Weighted 100%'
-        self.files['HypTransfer.pkl'] = 'Hypothesis Transfer'
-        #self.files['SKL-DumReg.pkl'] = 'Predict Mean'
+
+        '''
+        self.files['HypTransfer-target-TEST.pkl'] = 'TEST: Hypothesis Transfer - target'
+        self.files['HypTransfer-optimal-TEST.pkl'] = 'TEST: Hypothesis Transfer - optimal'
+        self.files['HypTransfer-optimal-noC-TEST.pkl'] = 'TEST: Hypothesis Transfer - optimal, no C'
+        '''
+        self.files['HypTransfer-target.pkl'] = 'Hypothesis Transfer - target'
+        self.files['HypTransfer-optimal.pkl'] = 'Hypothesis Transfer - optimal'
+        self.files['HypTransfer-optimal-noC.pkl'] = 'Hypothesis Transfer - optimal, no C'
         sizes = []
         suffixes = OrderedDict()
         #suffixes['mixedCV'] = [None,'']

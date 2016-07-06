@@ -83,6 +83,16 @@ def plot_histogram(x, num_bins=10):
     #move_fig()
     pl.show()
 
+def append_rows(x,y):
+    if x.ndim == 1:
+        x = np.expand_dims(x, 1)
+    if y.ndim == 1:
+        y = np.expand_dims(y,1)
+    z = np.squeeze(np.vstack((x, y)))
+    return z
+
+def append_cols(x,y):
+    return np.vstack((x, y))
 
 def append_column(x,y):
     return np.hstack((x, vec_to_2d(y)))

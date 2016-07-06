@@ -27,6 +27,8 @@ DATA_SYNTHETIC_CROSS = DATA_SYNTHETIC_START + 6
 DATA_SYNTHETIC_SLANT = DATA_SYNTHETIC_START + 7
 DATA_SYNTHETIC_CURVE = DATA_SYNTHETIC_START + 8
 
+DATA_SYNTHETIC_HYP_TRANS_1_1 = DATA_SYNTHETIC_START + 9
+
 DATA_SYNTHETIC_LINEAR_REGRESSION = 2000
 
 data_name_dict = {
@@ -154,6 +156,8 @@ class ProjectConfigs(Configs):
         self.labels_to_use = None
         self.labels_to_not_sample = None
         self.target_labels = None
+        self.source_labels = None
+        self.oracle_labels = None
         self.num_labels = range(40,201,40)
         #self.num_labels = range(40,81,40)
         self.set_boston_housing()
@@ -164,6 +168,8 @@ class ProjectConfigs(Configs):
         self.use_pool = False
         self.pool_size = 2
         self.method_results_class = results_lib.MethodResults
+
+        self.oracle_data_set_ids = None
 
     def set_data_set(self, data_set):
         assert False
@@ -262,6 +268,7 @@ class DataProcessingConfigs(Configs):
         self.splits = 30
         self.is_regression = False
         self.labels_to_use = None
+        self.split_data_set_ids = None
 
 class VisualizationConfigs(Configs):
     def __init__(self, data_set=None, **kwargs):

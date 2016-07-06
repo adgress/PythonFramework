@@ -7,6 +7,7 @@ import pandas as pd
 import math
 from PyMTL_master.src import PyMTL
 from viz_data import viz_features
+from numpy.linalg import *
 
 synthetic_dim = 5
 
@@ -20,6 +21,7 @@ synthetic_classification_local_file = 'synthetic_classification_local/raw_data.p
 synthetic_slant_file = 'synthetic_slant/raw_data.pkl'
 synthetic_curve_file = 'synthetic_curve/raw_data.pkl'
 synthetic_linear_reg_file = 'synthetic_linear_reg%s/raw_data.pkl'
+synthetic_hypothesis_transfer_class_file = 'synthetic_hyp_trans_class%s/raw_data.pkl'
 
 def create_synthetic_classification(file_dir='',local=True):
     dim = 1
@@ -159,7 +161,7 @@ def create_synthetic_regression_transfer(target_fun, source_fun, n_target=100, n
 
 def create_synthetic_linear_regression(n=500, p=50, sigma=1):
     data = data_class.Data()
-    data.x = np.random.uniform(0,1,(n,p))
+    data.x = np.random.uniform(0,sigma,(n,p))
     w = np.random.normal(0,1,p)
     data.y = data.x.dot(w)
     data.y += np.random.normal(0,sigma,n)
@@ -169,6 +171,63 @@ def create_synthetic_linear_regression(n=500, p=50, sigma=1):
     s = synthetic_linear_reg_file % (str(n) + '-' + str(p) + '-' + str(sigma))
     helper_functions.save_object(s,data)
 
+def create_synthetic_linear_classification(n=500, p=50, sigma=1, w=None, x=None):
+    data = data_class.Data()
+    if x is None:
+        x = np.random.uniform(0, 1, (n, p))
+    data.x = x
+    if w is None:
+        w = np.random.normal(0, sigma, p)
+    data.y = data.x.dot(w)
+    data.y -= data.y.mean()
+    data.y += np.random.normal(0, sigma, n)
+    y = data.y
+
+    #data.y = np.sign(data.y)
+    #w_eff = inv(x.T.dot(x)).dot(x.T).dot(y)
+    #data.is_regression = False
+
+    data.is_regression = True
+    w_eff = w
+
+    data.set_true_y()
+    data.set_train()
+    return data, w_eff
+
+def create_synthetic_hypothesis_transfer(n=500, p=50, kt=1, ks=1, sigma=1.0, sigma_s=.3):
+    wt = np.random.normal(0, sigma, p)
+    all_data, w_eff = create_synthetic_linear_classification(n=n, p=p, sigma=sigma, w=wt)
+    x = all_data.x
+    all_data.data_set_ids = np.zeros(n)
+    wt = w_eff
+    data_set_counter = 1
+    diffs = []
+    is_target = array_functions.false(kt+ks)
+    is_target[:kt] = True
+    all_data.true_w = np.zeros((ks+kt+1,p))
+    all_data.true_w[0,:] = wt
+    for i, val in enumerate(is_target):
+        data_set_id = data_set_counter
+        data_set_counter += 1
+        if val:
+            ws = wt + np.random.normal(0, sigma_s, p)
+            ws = wt
+        else:
+            ws = np.random.normal(0, sigma, p)
+        source_data, ws = create_synthetic_linear_classification(w=ws, x=x)
+        source_data.data_set_ids = data_set_id*np.ones(n)
+        #source_data.true_y *= (i+2)
+        source_data.y = source_data.true_y
+        all_data.combine(source_data)
+        diff = norm(wt/norm(wt) - ws/norm(ws))
+        diffs.append(diff)
+        all_data.true_w[data_set_id,:] = ws
+    all_data.true_w = all_data.true_w.T
+    s = synthetic_hypothesis_transfer_class_file % \
+        (str(n) + '-' + str(p) + '-' + str(sigma) + '-' + str(sigma_s) + '-' + str(kt) + '-' + str(ks))
+    helper_functions.save_object(s, all_data)
+
 
 if __name__ == '__main__':
-    create_synthetic_linear_regression()
+    #create_synthetic_linear_regression()
+    create_synthetic_hypothesis_transfer()

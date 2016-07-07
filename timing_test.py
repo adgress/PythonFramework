@@ -13,7 +13,8 @@ def run_test():
     if comm.Get_size() > 1:
         #pool = mpi_group_pool.MPIGroupPool(debug=False, loadbalance=True, comms=mpi_comms)
         pool = mpipool.MPIPool(debug=False, loadbalance=True)
-    f = mult_test
+    f = cvx_test
+    #f = mult_test
     #f = inv_test
     if pool is None:
         for i in range(num_iterations):
@@ -39,6 +40,23 @@ def inv_test(*args):
     C = 1e-3
     XX = X.T.dot(X) + C*np.eye(X.shape[1])
     np.linalg.inv(XX)
+
+def cvx_test(*args):
+    n = 5000
+    p = 100
+    X = np.random.uniform(-1,1,(n,p))
+    C = 1e-3
+    y = np.random.uniform(-1,1, n)
+    w = cvx.Variable(p)
+    loss = cvx.sum_entries(cvx.square(X*w - y))
+    reg = cvx.norm2(w)**2
+    obj = cvx.Minimize(loss + C*reg)
+    prob = cvx.Problem(obj, [])
+    tic()
+    prob.solve(solver=cvx.SCS, verbose=False)
+    toc()
+
+
 
 if __name__ == '__main__':
     comm = MPI.COMM_WORLD

@@ -13,16 +13,22 @@ def run_test():
     if comm.Get_size() > 1:
         #pool = mpi_group_pool.MPIGroupPool(debug=False, loadbalance=True, comms=mpi_comms)
         pool = mpipool.MPIPool(debug=False, loadbalance=True)
-
+    f = mult_test
+    #f = inv_test
     if pool is None:
         for i in range(num_iterations):
             print str(i) + ' of ' + str(num_iterations)
             inv_test()
     else:
         args = [(i,) for i in range(num_iterations)]
-        pool.map(inv_test, args)
+        pool.map(f, args)
         pool.close()
         pass
+
+def mult_test(*args):
+    size = (8000, 8000)
+    X = np.random.uniform(-1, 1, size)
+    XX = X.T.dot(X)
 
 def inv_test(*args):
     size = (1000, 1000)

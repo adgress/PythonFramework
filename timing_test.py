@@ -13,7 +13,8 @@ def run_test():
     if comm.Get_size() > 1:
         #pool = mpi_group_pool.MPIGroupPool(debug=False, loadbalance=True, comms=mpi_comms)
         pool = mpipool.MPIPool(debug=False, loadbalance=True)
-    f = cvx_test
+    f = normal_test
+    #f = cvx_test
     #f = mult_test
     #f = inv_test
     if pool is None:
@@ -40,6 +41,18 @@ def inv_test(*args):
     C = 1e-3
     XX = X.T.dot(X) + C*np.eye(X.shape[1])
     np.linalg.inv(XX)
+
+def normal_test(*args):
+    n = 5000
+    p = 1000
+    X = np.random.uniform(-1, 1, (n, p))
+    C = 1e-3
+    y = np.random.uniform(-1, 1, n)
+    tic()
+    A = X.T.dot(X) + C*np.eye(p)
+    k = X.T.dot(y)
+    w = np.linalg.solve(A, k)
+    toc()
 
 def cvx_test(*args):
     n = 5000

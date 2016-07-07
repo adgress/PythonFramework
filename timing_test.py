@@ -18,7 +18,7 @@ def run_test():
     if pool is None:
         for i in range(num_iterations):
             print str(i) + ' of ' + str(num_iterations)
-            inv_test()
+            f()
     else:
         args = [(i,) for i in range(num_iterations)]
         pool.map(f, args)
@@ -26,9 +26,12 @@ def run_test():
         pass
 
 def mult_test(*args):
-    size = (8000, 8000)
+    print 'mult'
+    size = (2000, 2000)
     X = np.random.uniform(-1, 1, size)
+    tic()
     XX = X.T.dot(X)
+    toc()
 
 def inv_test(*args):
     size = (1000, 1000)

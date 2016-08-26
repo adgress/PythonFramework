@@ -50,6 +50,12 @@ else:
     use_pool = False
     pool_size = 1
 
+arguments = None
+def apply_arguments(configs):
+    if arguments.num_labels is not None:
+        configs.overwrite_num_labels = arguments.num_labels
+    if arguments.split_idx is not None:
+        configs.split_idx = arguments.split_idx
 
 
 class ProjectConfigs(bc.ProjectConfigs):
@@ -63,7 +69,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.set_data_set(data_set)
         self.num_splits = 30
         if use_arguments and arguments is not None:
-            bc.apply_arguments(self, arguments)
+            apply_arguments(self, arguments)
 
         for key, value in other_method_configs.items():
             setattr(self, key, value)

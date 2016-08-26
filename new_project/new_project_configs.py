@@ -50,7 +50,12 @@ else:
     use_pool = False
     pool_size = 1
 
-
+arguments = None
+def apply_arguments(configs):
+    if arguments.num_labels is not None:
+        configs.overwrite_num_labels = arguments.num_labels
+    if arguments.split_idx is not None:
+        configs.split_idx = arguments.split_idx
 
 class ProjectConfigs(bc.ProjectConfigs):
     def __init__(self, data_set=None, use_arguments=True):

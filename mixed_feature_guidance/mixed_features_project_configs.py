@@ -69,7 +69,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.set_data_set(data_set)
         self.num_splits = 30
         if use_arguments and arguments is not None:
-            apply_arguments(self, arguments)
+            apply_arguments(self)
 
         for key, value in other_method_configs.items():
             setattr(self, key, value)

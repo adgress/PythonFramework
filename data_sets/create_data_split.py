@@ -139,9 +139,12 @@ def run_main():
     #split_data(create_data_set.wine_file % '-red', regression_configs())
     #split_data(create_data_set.concrete_file % '', regression_configs())
     #split_data(create_data_set.drosophila_file, regression_configs())
+    '''
     s = split_data('synthetic_hyp_trans_class500-50-1.0-0.3-2-2/raw_data.pkl',
                hypothesis_transfer_configs([1,2,3,4])
     )
+    '''
+    split_data('synthetic_linear_reg500-10-1-nnz=4/raw_data.pkl', regression_configs())
     pass
 
 if __name__ == '__main__':

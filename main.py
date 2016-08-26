@@ -8,11 +8,11 @@ import importlib
 #import configs.base_configs as configs_lib
 #import base.project_configs as configs_lib
 
-import hypothesis_transfer.hypothesis_project_configs as configs_library
+#import hypothesis_transfer.hypothesis_project_configs as configs_library
 #import base.transfer_project_configs as configs_library
 #import active.active_project_configs as configs_library
 #import new_project.new_project_configs as configs_library
-
+import mixed_feature_guidance.mixed_features_project_configs as configs_library
 
 configs_lib = configs_library
 import boto

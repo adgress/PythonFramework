@@ -431,7 +431,7 @@ class SplitData(object):
             #d = d.get_with_labels(self.labels_to_keep)
             d = d.get_transfer_subset(self.labels_to_keep)
         to_keep = None
-        if self.data_set_ids_to_keep is not None:
+        if hasattr(self, 'data_set_ids_to_keep') and self.data_set_ids_to_keep is not None:
             to_keep = array_functions.find_set(d.data_set_ids, self.data_set_ids_to_keep)
             d.y[to_keep] = np.nan
         if num_labeled is not None:

@@ -15,12 +15,20 @@ f     = function value
            * * *
 
 Machine precision = 2.220D-16
- N =            8     M =           10
+ N =           10     M =           10
 
    it   nf  nseg  nact  sub  itls  stepl    tstep     projg        f
-    0    1     -     -   -     -     -        -     0.000D+00  8.000D+00
+    0    1     -     -   -     -     -        -     1.000D+00  1.000D+05
+    1    2    10    10  ---    0  3.2D-01  1.0D+00  6.838D-01  4.677D+04
+    2    3    10     9  con    0  1.0D+00  2.2D+00  7.585D+08  2.156D+01
+    3   43     2     4  con   19  1.1D-14  1.4D-05      -          -
 
-CONVERGENCE: NORM_OF_PROJECTED_GRADIENT_<=_PGTOL            
+ABNORMAL_TERMINATION_IN_LNSRCH                              
+
+ Line search cannot locate an adequate point after 20 function
+  and gradient evaluations.  Previous x, f and g restored.
+ Possible causes: 1 error in function or gradient evaluation;
+                  2 rounding error dominate computation.
 
  Total User time 0.000E+00 seconds.
 
@@ -41,14 +49,186 @@ f     = function value
            * * *
 
 Machine precision = 2.220D-16
- N =            8     M =           10
+ N =           10     M =           10
 
    it   nf  nseg  nact  sub  itls  stepl    tstep     projg        f
-    0    1     -     -   -     -     -        -     2.000D+00  8.000D+00
-    1    2     1     0  ---    0  1.8D-01  1.0D+00  1.293D+00  3.343D+00
-    2    3     1     0  con    0  1.0D+00  1.8D+00  4.298D-07  3.868D-13
+    0    1     -     -   -     -     -        -     1.000D+00  1.001D+04
+    1    2    10    10  ---    0  3.2D-01  1.0D+00  6.838D-01  4.690D+03
+    2    3     4     3  con    0  1.0D+00  2.2D+00  8.781D+06  1.598D+01
+    3   18     3     4  con   14  1.2D-07  5.7D-04  8.943D+04  8.976D+00
+    4   20     2     3  con    1  4.0D-01  6.0D-07  7.426D+04  8.657D+00
+    5   22     1     2  con    1  3.2D-01  1.7D-07  6.643D+04  8.629D+00
+    6   23     1     2  con    0  1.0D+00  5.8D-08  1.109D+05  8.628D+00
+    7   24     1     2  con    0  1.0D+00  7.6D-08  1.609D+05  8.625D+00
+    8   25     1     2  con    0  1.0D+00  7.4D-07  4.291D+05  8.605D+00
+    9   26     1     1  bnd    0  1.0D+00  1.4D-06  3.727D+05  8.548D+00
+   10   28     1     1  bnd    1  1.9D-01  1.8D-06  5.027D+04  8.511D+00
+   11   29     1     2  con    0  1.0D+00  7.9D-06  1.607D+04  8.334D+00
+   12   30     1     2  con    0  1.0D+00  4.2D-06  1.598D+04  8.301D+00
+   13   31     1     2  con    0  1.0D+00  2.9D-06  1.602D+04  8.292D+00
+   14   32     1     2  con    0  1.0D+00  1.2D-06  1.583D+04  8.287D+00
+   15   33     1     2  con    0  1.0D+00  4.8D-06  1.432D+04  8.255D+00
+   16   34     1     2  con    0  1.0D+00  7.4D-06  1.159D+04  8.199D+00
+   17   35     1     2  con    0  1.0D+00  1.2D-05  7.735D+03  8.094D+00
+   18   36     1     2  bnd    0  1.0D+00  2.5D-05  2.899D+03  7.809D+00
+   19   37     1     3  con    0  1.0D+00  7.7D-06  1.433D+03  7.719D+00
+   20   39     1     3  con    1  3.6D-01  8.9D-06  9.952D+02  7.663D+00
+   21   40     1     3  con    0  1.0D+00  3.3D-06  7.262D+03  7.660D+00
+   22   42     1     3  con    1  6.1D-02  8.8D-08  1.016D+04  7.660D+00
+   23   44     1     3  con    1  5.0D+00  9.4D-07  2.407D+04  7.653D+00
+   24   45     1     3  con    0  1.0D+00  8.9D-06  7.740D+04  7.620D+00
+   25   47     1     3  con    1  3.9D-01  1.4D-05  1.300D+05  7.583D+00
+   26   49     1     2  bnd    1  3.9D-01  1.2D-05  1.255D+05  7.554D+00
+   27   51     1     2  bnd    1  3.3D-01  1.2D-05  1.438D+05  7.506D+00
+   28   63     1     2  bnd   11  9.6D-01  6.1D-05  8.494D+06  7.351D+00
+   29   68     2     3  con    4  6.6D-03  7.1D-07  6.671D+05  7.271D+00
+   30   72     1     2  con    3  1.4D-02  2.2D-06  1.096D+06  7.259D+00
+   31   77     1     2  bnd    4  3.7D-01  1.4D-05  6.380D+05  7.190D+00
+   32   79     1     2  bnd    1  2.5D-01  1.5D-06  9.849D+05  7.188D+00
+   33   81     2     3  bnd    1  3.2D-01  2.0D-06  1.591D+06  7.162D+00
+   34   82     1     2  bnd    0  1.0D+00  1.1D-06  2.768D+06  7.037D+00
+   35   85     1     3  bnd    2  1.3D-01  1.7D-06  1.339D+06  6.894D+00
+   36   93     1     3  bnd    7  7.9D-01  2.5D-05  2.732D+06  6.792D+00
+   37   96     2     4  con    2  6.7D-02  1.1D-07  6.431D+05  6.718D+00
+   38  109     1     3  bnd   12  9.4D-01  1.6D-04  2.962D+06  6.706D+00
+   39  113     4     6  bnd    3  6.7D-02  2.2D-06  1.952D+00  6.676D+00
+   40  128     3     5  bnd   14  2.3D-09  9.0D-15  1.974D+00  6.676D+00
 
-CONVERGENCE: NORM_OF_PROJECTED_GRADIENT_<=_PGTOL            
+CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH             
+
+ Warning:  more than 10 function and gradient
+   evaluations in the last line search.  Termination
+   may possibly be caused by a bad search direction.
 
  Total User time 0.000E+00 seconds.
 
+RUNNING THE L-BFGS-B CODE
+
+it    = iteration number
+nf    = number of function evaluations
+nseg  = number of segments explored during the Cauchy search
+nact  = number of active bounds at the generalized Cauchy point
+sub   = manner in which the subspace minimization terminated:
+        con = converged, bnd = a bound was reached
+itls  = number of iterations performed in the line search
+stepl = step length used
+tstep = norm of the displacement (total step)
+projg = norm of the projected gradient
+f     = function value
+
+           * * *
+
+Machine precision = 2.220D-16
+ N =           10     M =           10
+
+   it   nf  nseg  nact  sub  itls  stepl    tstep     projg        f
+    0    1     -     -   -     -     -        -     1.000D+00  1.015D+03
+    1    2    10    10  ---    0  3.2D-01  1.0D+00  6.838D-01  4.825D+02
+    2    3     4     3  con    0  1.0D+00  2.2D+00  8.077D+05  1.607D+01
+    3   16     3     4  con   12  1.1D-06  4.6D-03  6.290D+03  1.033D+01
+    4   19     2     3  con    2  8.0D-01  1.6D-05  2.456D+04  8.731D+00
+    5   21     1     2  con    1  8.5D-02  2.0D-07  4.057D+03  8.729D+00
+    6   22     1     2  con    0  1.0D+00  2.2D-07  4.057D+03  8.729D+00
+    7   23     1     2  con    0  1.0D+00  2.5D-06  1.165D+04  8.728D+00
+    8   24     1     2  con    0  1.0D+00  5.5D-06  2.189D+04  8.727D+00
+    9   25     1     2  con    0  1.0D+00  1.9D-05  4.194D+04  8.722D+00
+   10   26     1     2  con    0  1.0D+00  4.8D-05  7.142D+04  8.711D+00
+   11   27     1     1  bnd    0  1.0D+00  1.3D-04  3.521D+04  8.655D+00
+   12   28     1     2  con    0  1.0D+00  8.0D-04  2.485D+03  8.479D+00
+   13   29     1     2  con    0  1.0D+00  4.2D-04  1.949D+03  8.445D+00
+   14   30     1     2  con    0  1.0D+00  2.6D-04  1.793D+03  8.433D+00
+   15   31     1     2  con    0  1.0D+00  2.2D-04  1.551D+03  8.391D+00
+   16   32     1     2  con    0  1.0D+00  1.3D-03  1.427D+04  8.071D+00
+   17   34     1     2  bnd    1  3.8D-01  4.1D-04  1.869D+04  7.936D+00
+   18   36     1     2  con    1  4.1D-01  3.1D-04  6.758D+03  7.909D+00
+   19   37     1     2  con    0  1.0D+00  7.4D-05  3.370D+03  7.890D+00
+   20   40     1     2  bnd    2  7.8D-01  5.3D-04  1.211D+04  7.714D+00
+   21   42     1     2  bnd    1  3.3D-01  8.4D-04  1.162D+04  7.093D+00
+   22   44     1     2  bnd    1  3.3D-01  3.3D-03  5.124D+03  6.936D+00
+   23   50     1     2  con    5  4.6D-04  4.5D-04  1.941D+03  6.925D+00
+   24   51     1     2  bnd    0  1.0D+00  2.0D-04  1.828D+03  6.009D+00
+   25   52     1     3  bnd    0  1.0D+00  6.9D-03  8.719D+03  5.343D+00
+   26   53     1     5  con    0  1.0D+00  7.5D-04  2.750D+03  5.106D+00
+   27   54     1     5  con    0  1.0D+00  3.7D-04  5.084D+03  5.067D+00
+   28   55     1     5  con    0  1.0D+00  1.9D-05  8.309D+03  5.048D+00
+   29   56     1     5  con    0  1.0D+00  3.3D-04  6.010D+03  5.023D+00
+   30   57     1     5  con    0  1.0D+00  4.2D-04  8.301D+03  5.008D+00
+   31   60     1     4  con    2  2.8D-02  9.8D-04  2.402D+02  4.995D+00
+   32   61     1     4  con    0  1.0D+00  1.2D-04  2.115D+02  4.986D+00
+   33   62     1     4  con    0  1.0D+00  7.5D-05  2.717D+03  4.983D+00
+   34   63     1     4  con    0  1.0D+00  1.0D-04  1.430D+02  4.981D+00
+   35   64     1     4  con    0  1.0D+00  6.0D-05  1.313D+02  4.979D+00
+   36   65     1     4  con    0  1.0D+00  1.7D-04  8.420D+01  4.974D+00
+   37   66     1     4  con    0  1.0D+00  7.1D-05  5.455D+01  4.971D+00
+   38   67     1     4  con    0  1.0D+00  1.3D-04  2.779D+01  4.968D+00
+   39   68     1     4  con    0  1.0D+00  1.5D-04  1.408D+01  4.966D+00
+   40   69     1     4  con    0  1.0D+00  1.7D-04  2.900D+02  4.965D+00
+   41   70     1     4  con    0  1.0D+00  2.1D-04  3.201D+02  4.964D+00
+   42   71     1     4  con    0  1.0D+00  2.5D-04  2.562D+02  4.963D+00
+   43   72     1     4  con    0  1.0D+00  3.3D-04  1.542D+02  4.963D+00
+   44   73     1     4  con    0  1.0D+00  4.4D-04  4.099D+00  4.962D+00
+   45   74     1     4  con    0  1.0D+00  5.9D-04  5.263D+00  4.962D+00
+   46   75     1     4  con    0  1.0D+00  6.6D-04  6.218D+00  4.962D+00
+   47   76     1     4  con    0  1.0D+00  4.9D-04  1.431D+02  4.962D+00
+   48   77     1     4  con    0  1.0D+00  2.6D-04  2.759D+02  4.962D+00
+   49   78     1     4  con    0  1.0D+00  2.4D-04  2.952D+02  4.962D+00
+   50   79     1     4  con    0  1.0D+00  2.5D-04  1.895D+02  4.961D+00
+   51   80     1     4  con    0  1.0D+00  5.3D-05  6.573D+00  4.961D+00
+   52   81     1     4  con    0  1.0D+00  6.6D-05  6.470D+00  4.961D+00
+   53   82     1     4  con    0  1.0D+00  1.1D-05  6.449D+00  4.961D+00
+   54   83     1     4  con    0  1.0D+00  2.6D-05  6.430D+00  4.961D+00
+   55   84     1     4  con    0  1.0D+00  8.8D-05  6.354D+00  4.961D+00
+   56   85     1     4  con    0  1.0D+00  9.5D-05  6.237D+00  4.961D+00
+   57   86     1     4  con    0  1.0D+00  1.8D-04  5.963D+00  4.961D+00
+   58   87     1     4  con    0  1.0D+00  3.7D-04  5.456D+00  4.961D+00
+   59   88     1     4  con    0  1.0D+00  5.7D-04  4.775D+00  4.961D+00
+   60   89     1     4  con    0  1.0D+00  6.4D-04  4.127D+00  4.960D+00
+   61   90     1     4  con    0  1.0D+00  6.1D-04  3.717D+00  4.960D+00
+   62   91     1     4  con    0  1.0D+00  3.9D-04  3.643D+00  4.960D+00
+   63   92     1     4  con    0  1.0D+00  1.1D-04  3.371D+01  4.960D+00
+   64   93     1     4  con    0  1.0D+00  2.8D-05  3.442D+01  4.960D+00
+   65   94     1     4  con    0  1.0D+00  1.7D-05  2.412D+01  4.960D+00
+   66   95     1     4  con    0  1.0D+00  6.7D-06  1.217D+01  4.960D+00
+   67   96     1     4  con    0  1.0D+00  3.9D-06  5.251D+00  4.960D+00
+   68   97     1     4  con    0  1.0D+00  3.3D-06  3.681D+00  4.960D+00
+   69   98     1     4  con    0  1.0D+00  1.4D-06  3.676D+00  4.960D+00
+
+CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH             
+
+ Total User time 0.000E+00 seconds.
+
+RUNNING THE L-BFGS-B CODE
+
+it    = iteration number
+nf    = number of function evaluations
+nseg  = number of segments explored during the Cauchy search
+nact  = number of active bounds at the generalized Cauchy point
+sub   = manner in which the subspace minimization terminated:
+        con = converged, bnd = a bound was reached
+itls  = number of iterations performed in the line search
+stepl = step length used
+tstep = norm of the displacement (total step)
+projg = norm of the projected gradient
+f     = function value
+
+           * * *
+
+Machine precision = 2.220D-16
+ N =           10     M =           10
+
+   it   nf  nseg  nact  sub  itls  stepl    tstep     projg        f
+    0    1     -     -   -     -     -        -     1.000D+00  1.149D+02
+    1    2    10    10  ---    0  3.2D-01  1.0D+00  6.838D-01  6.169D+01
+    2    3     4     3  con    0  1.0D+00  2.2D+00  9.048D+04  1.517D+01
+    3   15     3     4  con   11  3.4D-06  1.5D-02  9.225D+02  1.171D+01
+    4   21     2     3  con    5  9.3D-01  1.4D-04  7.252D+02  8.752D+00
+    5   23     2     3  con    1  2.0D-01  1.3D-05  2.578D+04  8.737D+00
+    6   24     1     1  con    0  1.0D+00  8.7D-07  1.114D+04  8.731D+00
+    7   25     1     1  con    0  1.0D+00  6.5D-06  6.215D+03  8.724D+00
+    8   26     1     1  con    0  1.0D+00  7.9D-05  6.114D+02  8.679D+00
+    9   27     1     1  bnd    0  1.0D+00  2.0D-05  5.727D+02  8.653D+00
+   10   28     1     2  con    0  1.0D+00  6.6D-06  4.330D+04  8.628D+00
+   11   30     1     1  bnd    1  1.0D-01  9.9D-06  5.222D+02  8.611D+00
+   12   32     1     2  con    1  5.0D+00  6.9D-05  2.109D+04  8.496D+00
+   13   35     1     1  bnd    2  3.2D-02  2.9D-05  3.656D+02  8.490D+00
+   14   36     1     1  bnd    0  1.0D+00  8.6D-06  3.061D+03  8.471D+00

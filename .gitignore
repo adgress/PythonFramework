@@ -24,3 +24,4 @@ eegtools/*/*/*
 hostfile
 data_sets/DS?/*.txt
 data_sets/DS?/*.html
+*.dat

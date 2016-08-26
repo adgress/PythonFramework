@@ -31,6 +31,7 @@ DATA_SYNTHETIC_HYP_TRANS_1_1 = DATA_SYNTHETIC_START + 9
 DATA_SYNTHETIC_HYP_TRANS_2_2 = DATA_SYNTHETIC_START + 10
 
 DATA_SYNTHETIC_LINEAR_REGRESSION = 2000
+DATA_SYNTHETIC_LINEAR_REGRESSION_10_nnz4 = 2001
 
 data_name_dict = {
     DATA_NG: '20ng',
@@ -46,6 +47,7 @@ data_name_dict = {
     DATA_SYNTHETIC_SLANT: 'Synthetic Slant',
     DATA_SYNTHETIC_CURVE: 'Synthetic Curve',
     DATA_SYNTHETIC_LINEAR_REGRESSION: 'Synthetic Linear Regression',
+    DATA_SYNTHETIC_LINEAR_REGRESSION_10_nnz4: 'Synthetic Linear Regression p=10, nnz=4',
     DATA_ADIENCE_ALIGNED_CNN_1: 'Adience Aligned CNN 1 Per Instance ID',
     DATA_WINE_RED: 'Wine: Red',
     DATA_DROSOPHILIA: 'Drosophila',
@@ -270,6 +272,7 @@ class DataProcessingConfigs(Configs):
         self.is_regression = False
         self.labels_to_use = None
         self.split_data_set_ids = None
+        self.data_set_ids_to_keep = None
 
 class VisualizationConfigs(Configs):
     def __init__(self, data_set=None, **kwargs):

@@ -159,16 +159,21 @@ def create_synthetic_regression_transfer(target_fun, source_fun, n_target=100, n
     data.is_regression = True
     return data
 
-def create_synthetic_linear_regression(n=500, p=50, sigma=1):
+def create_synthetic_linear_regression(n=500, p=50, sigma=1, num_non_zero=None):
     data = data_class.Data()
     data.x = np.random.uniform(0,sigma,(n,p))
     w = np.random.normal(0,1,p)
+    if num_non_zero is not None:
+        w[num_non_zero:] = 0
     data.y = data.x.dot(w)
     data.y += np.random.normal(0,sigma,n)
     data.is_regression = True
     data.set_true_y()
     data.set_train()
-    s = synthetic_linear_reg_file % (str(n) + '-' + str(p) + '-' + str(sigma))
+    suffix = str(n) + '-' + str(p) + '-' + str(sigma)
+    if num_non_zero is not None:
+        suffix += '-nnz=' + str(num_non_zero)
+    s = synthetic_linear_reg_file % suffix
     helper_functions.save_object(s,data)
 
 def create_synthetic_linear_classification(n=500, p=50, sigma=1, w=None, x=None):
@@ -230,4 +235,5 @@ def create_synthetic_hypothesis_transfer(n=500, p=50, kt=1, ks=1, sigma=1.0, sig
 
 if __name__ == '__main__':
     #create_synthetic_linear_regression()
-    create_synthetic_hypothesis_transfer(kt=2, ks=2)
+    #create_synthetic_hypothesis_transfer(kt=2, ks=2)
+    create_synthetic_linear_regression(p=10, num_non_zero=4)

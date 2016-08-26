@@ -127,6 +127,7 @@ class HypothesisTransfer(FuseTransfer):
     WEIGHTS_ALL = 0
     WEIGHTS_JUST_TARGET = 1
     WEIGHTS_JUST_OPTIMAL = 2
+    WEIGHTS_JUST_FIRST = 3
     def __init__(self, configs=None):
         super(HypothesisTransfer, self).__init__(configs)
         self.cv_params = {
@@ -148,9 +149,11 @@ class HypothesisTransfer(FuseTransfer):
         self.tune_C = False
         #self.weight_type = HypothesisTransfer.WEIGHTS_ALL
         #self.weight_type = HypothesisTransfer.WEIGHTS_JUST_TARGET
-        self.weight_type = HypothesisTransfer.WEIGHTS_JUST_OPTIMAL
+        #self.weight_type = HypothesisTransfer.WEIGHTS_JUST_OPTIMAL
+        self.weight_type = HypothesisTransfer.WEIGHTS_JUST_FIRST
         if hasattr(configs, 'weight_type'):
             self.weight_type = configs.weight_type
+        self.oracle_data_set_ids = configs.oracle_data_set_ids
         self.c_value = None
         self.use_test_error_for_model_selection = configs.use_test_error_for_model_selection
         if self.weight_type == HypothesisTransfer.WEIGHTS_JUST_TARGET:
@@ -202,11 +205,6 @@ class HypothesisTransfer(FuseTransfer):
             wt /= np.linalg.norm(wt)
             d1 = norm(ws1-wt)
             d2 = norm(ws2-wt)
-            #print 'using wt!  Change this back'
-            #self.source_w[0] = wt/norm(wt)
-            #self.source_w[1] = wt / norm(wt)
-            self.source_w[0] = ws1
-            self.source_w[1] = ws2
             pass
 
         o = super(HypothesisTransfer, self).train_and_test(target_data)
@@ -223,12 +221,28 @@ class HypothesisTransfer(FuseTransfer):
         n = y.size
         p = data.p
         c = cvx.Variable(len(self.source_w))
-        ws1 = self.source_w[0]
-        ws2 = self.source_w[1]
+        #ws1 = self.source_w[0]
+        #ws2 = self.source_w[1]
+
+        ws = 0
+        for i, wsi in enumerate(self.source_w):
+            ws += wsi * c[i]
 
         constraints = [c >= 0]
-        if self.weight_type == HypothesisTransfer.WEIGHTS_JUST_OPTIMAL:
-            constraints.append(c[1] == 0)
+        constraint_methods = {
+            HypothesisTransfer.WEIGHTS_JUST_OPTIMAL,
+            HypothesisTransfer.WEIGHTS_JUST_FIRST
+        }
+        found_first = False
+        if self.weight_type in constraint_methods:
+            for i in range(c.size[0]):
+                id = i + 1
+                is_oracle = id in self.oracle_data_set_ids
+                just_first = self.weight_type == HypothesisTransfer.WEIGHTS_JUST_FIRST and found_first
+                if is_oracle and not just_first:
+                    found_first = True
+                    continue
+                constraints.append(c[i] == 0)
         loss = 0
         for i in range(y.size):
             xi = x[i, :]
@@ -237,13 +251,11 @@ class HypothesisTransfer(FuseTransfer):
             y_mi = np.delete(y, i, axis=0)
             b_mi = y_mi.mean()
             A = x_mi.T.dot(x_mi) + (self.C + self.C2) * np.eye(p)
-            k = x_mi.T.dot(y_mi) - x_mi.T.sum(1) * b_mi + self.C2 * (ws1 * c[0] + ws2 * c[1])
-            # w_mi = np.linalg.solve(A, k)
+            k = x_mi.T.dot(y_mi) - x_mi.T.sum(1) * b_mi + self.C2 * ws
             w_mi = scipy.linalg.inv(A) * k
             loss += cvx.power(w_mi.T * xi + b_mi - yi, 2)
-            #loss += cvx.max_elemwise(1 - (w_mi.T * xi + b_mi)*yi, 0)
-        # reg = cvx.power(cvx.norm2(c),2)
-        reg = cvx.norm1(c)
+        reg = cvx.norm2(c)**2
+        #reg = cvx.norm2(c)
         obj = cvx.Minimize(loss + self.C3 * reg)
         prob = cvx.Problem(obj, constraints)
         assert prob.is_dcp()
@@ -271,15 +283,19 @@ class HypothesisTransfer(FuseTransfer):
 
         #print str(np.squeeze(c_value))
         if self.weight_type == HypothesisTransfer.WEIGHTS_JUST_TARGET:
-            c_value = np.zeros(2)
-            ws1 = 0
-            ws2 = 0
+            c_value = np.zeros(len(self.source_w))
+            #ws1 = 0
+            #ws2 = 0
         else:
             c_value = self.estimate_c(data)
-            ws1 = self.source_w[0]
-            ws2 = self.source_w[1]
+            #ws1 = self.source_w[0]
+            #ws2 = self.source_w[1]
+        ws = 0
+        for i, wsi in enumerate(self.source_w):
+            ws += wsi*c_value[i]
         A = x.T.dot(x) + (self.C + self.C2)*np.eye(p)
-        k = x.T.dot(y) - x.T.sum(1)*self.b + self.C2*(ws1*c_value[0] + ws2*c_value[1])
+        #k = x.T.dot(y) - x.T.sum(1)*self.b + self.C2*(ws1*c_value[0] + ws2*c_value[1])
+        k = x.T.dot(y) - x.T.sum(1) * self.b + self.C2 * ws
         self.w = np.linalg.solve(A, k)
         self.c_value = c_value
         pass
@@ -316,6 +332,8 @@ class HypothesisTransfer(FuseTransfer):
         else:
             if weight_type == HypothesisTransfer.WEIGHTS_JUST_OPTIMAL:
                 s += '-optimal'
+            elif weight_type == HypothesisTransfer.WEIGHTS_JUST_FIRST:
+                s += '-first'
             if not getattr(self, 'tune_C', False):
                 s += '-noC'
         if getattr(self, 'use_test_error_for_model_selection', False):

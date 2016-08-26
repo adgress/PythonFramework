@@ -14,6 +14,7 @@ import numpy as np
 from timer import timer
 import inspect
 from utility import mpi_utility
+from utility.mpi_utility import mpi_rollcall, mpi_split_even_odd
 from utility import mpi_group_pool
 from mpipool import core as mpipool
 import os
@@ -46,24 +47,6 @@ def launch_subprocess(num_labels, split_idx):
                 '-no_viz'
                 ])
 
-def mpi_rollcall():
-    comm = MPI.COMM_WORLD
-    s = comm.Get_size()
-    rank = comm.Get_rank()
-    for i in range(s):
-        if rank == i:
-            hostname = helper_functions.get_hostname()
-            print '(' + hostname + '): ' + str(rank) + ' of ' + str(s)
-        comm.Barrier()
-
-def mpi_split_even_odd():
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-    size = comm.Get_size()
-    color = rank % 2
-    local_comm = MPI.COMM_WORLD.Split(color, rank)
-    print 'World Rank = ' + str(rank) + ', Local Rank = ' + str(local_comm.Get_rank())
-    exit()
 
 mpi_comms = None
 def mpi_run_main_args(args):

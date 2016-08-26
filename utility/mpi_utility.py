@@ -1,6 +1,25 @@
 from mpi4py import MPI
 from utility import helper_functions
 
+def mpi_rollcall():
+    comm = MPI.COMM_WORLD
+    s = comm.Get_size()
+    rank = comm.Get_rank()
+    for i in range(s):
+        if rank == i:
+            hostname = helper_functions.get_hostname()
+            print '(' + hostname + '): ' + str(rank) + ' of ' + str(s)
+        comm.Barrier()
+
+def mpi_split_even_odd():
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    size = comm.Get_size()
+    color = rank % 2
+    local_comm = MPI.COMM_WORLD.Split(color, rank)
+    print 'World Rank = ' + str(rank) + ', Local Rank = ' + str(local_comm.Get_rank())
+    exit()
+
 def get_comm():
     import main
     comm = main.configs_lib.comm

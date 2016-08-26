@@ -71,6 +71,17 @@ def plot_neighbor_contour(a):
     plot_function_2d([-4,4], [-4,4], f, a)
     a.set_title('Neighbor')
 
+def plot_hyp_pos(a):
+    f = lambda x: (x[0] + x[1])**2 / (x[0]**2 + x[1]**2)
+    plot_function_2d([-4, 4], [-4, 4], f, a)
+    a.set_title('Hyp Pos')
+
+def plot_hyp_neg(a):
+    f = lambda x: (x[0] - x[1])**2 / (x[0]**2 + x[1]**2)
+    plot_function_2d([-4, 4], [-4, 4], f, a)
+    a.set_title('Hyp Neg')
+
+
 def plot_func(a):
     f = lambda x: x[0]**4 + x[1]**4 + x[0]**2 * x[1]**2 -2*x[0]**3 * x[1] - 2*x[0]*x[1]**3 + 2*x[0]**2 * x[1] \
         + 2*x[0]*x[1]**2 - x[0]**3 - x[1]**3 - x[0]*x[1]
@@ -87,12 +98,29 @@ def plot_func(a):
 if __name__ == '__main__':
     #f, axarr = plt.subplots(1, 1)
     #plot_func(axarr)
+    xrange = (-100,100)
+    yrange = xrange
+    n_samples = 1000.0
+    x = np.arange(xrange[0], xrange[1], (xrange[1] - xrange[0]) / n_samples)
+    y = np.arange(yrange[0], yrange[1], (yrange[1] - yrange[0]) / n_samples)
+    X, Y = np.meshgrid(x, y)
+    import math
+    pdf = lambda x: (1/math.sqrt(2.0*math.pi))*np.exp(-x**2 / 2)
+    pdf_x = pdf(X)
+    pdf_y = pdf(Y)
+    pdf_x /= pdf_x.sum()
+    pdf_y /= pdf_y.sum()
+    vals = X*Y/(X**2 + Y**2)
 
+    '''
     f, axarr = plt.subplots(2, 2)
     plot_pairwise_contour(axarr[0,0])
     plot_bound(axarr[1,0])
     plot_similar_contour(axarr[0,1])
     plot_neighbor_contour(axarr[1,1])
-
+    '''
+    f, axarr = plt.subplots(1, 2)
+    plot_hyp_pos(axarr[0])
+    plot_hyp_neg(axarr[1])
     f.tight_layout()
     plt.show()

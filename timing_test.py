@@ -44,7 +44,7 @@ def inv_test(*args):
 
 def normal_test(*args):
     n = 5000
-    p = 1000
+    p = 2000
     X = np.random.uniform(-1, 1, (n, p))
     C = 1e-3
     y = np.random.uniform(-1, 1, n)

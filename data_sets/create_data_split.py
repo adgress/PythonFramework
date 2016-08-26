@@ -21,11 +21,11 @@ def classification_configs():
     c.is_regression = False
     return c
 
-def hypothesis_transfer_configs():
+def hypothesis_transfer_configs(source_ids):
     c = configs_lib.DataProcessingConfigs()
     c.is_regression = False
     c.split_data_set_ids = np.zeros(1)
-    c.data_set_ids_to_keep = np.asarray([1,2])
+    c.data_set_ids_to_keep = np.asarray(source_ids)
     return c
 
 def synthetic_classification_configs():
@@ -139,8 +139,8 @@ def run_main():
     #split_data(create_data_set.wine_file % '-red', regression_configs())
     #split_data(create_data_set.concrete_file % '', regression_configs())
     #split_data(create_data_set.drosophila_file, regression_configs())
-    s = split_data('synthetic_hyp_trans_class500-50-1.0-0.3-1-1/raw_data.pkl',
-               hypothesis_transfer_configs()
+    s = split_data('synthetic_hyp_trans_class500-50-1.0-0.3-2-2/raw_data.pkl',
+               hypothesis_transfer_configs([1,2,3,4])
     )
     pass
 

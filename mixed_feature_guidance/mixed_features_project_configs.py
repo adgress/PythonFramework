@@ -131,8 +131,9 @@ class BatchConfigs(bc.BatchConfigs):
         if not run_batch:
             self.config_list = [MainConfigs(pc)]
             return
-
-        assert False, 'Not Implemented Yet'
+        else
+            self.config_list = [MainConfigs(pc)]
+            #assert False, 'Not Implemented Yet'
 
 class VisualizationConfigs(bc.VisualizationConfigs):
     def __init__(self, data_set=None, **kwargs):

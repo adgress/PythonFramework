@@ -131,7 +131,7 @@ class BatchConfigs(bc.BatchConfigs):
         if not run_batch:
             self.config_list = [MainConfigs(pc)]
             return
-        else
+        else:
             self.config_list = [MainConfigs(pc)]
             #assert False, 'Not Implemented Yet'
 

@@ -12,6 +12,8 @@ pip install mpi4py
 pip install boto
 pip install dccp
 
+NOTE: I had trouble using the latest version of mpi4py on Linux.  See step (3) below.
+
 NOTE: I tried updated scipy, numpy, cvxpy but got errors about not having blas/lapack.  I worked on this but was unable to get it working
 
 Install MPI: https://www.microsoft.com/en-us/download/confirmation.aspx?id=47259 (Path should be updated automatically)
@@ -61,7 +63,13 @@ git clone https://github.com/adgress/PythonFramework.git
 #From: https://github.com/ContinuumIO/anaconda-issues/issues/686
 export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libgfortran.so.3
 
+3) Install mpi4py
 
-3) Copy (or generate) datasets
+You may need to install openmpi and update LD_LIBRARY_PATH
+
+I had trouble with mpi4py version 2.0.0, so I install the previous version instead (1.4.3?)
+This can be done using 'pip install mpi4py=X.Y.Z'
+
+4) Copy (or generate) datasets
 
 The raw data and split data is not included in the repository, so it needs to be generated or copied over

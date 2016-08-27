@@ -26,7 +26,7 @@ other_pc_configs = {
 other_method_configs = {
     'include_size_in_file_name': False,
     'num_features': -1,
-    'use_test_error_for_model_selection': True,
+    'use_test_error_for_model_selection': False,
     'y_scale_min_max': False,
     'y_scale_standard': False,
     'scipy_opt_method': 'L-BFGS-B',

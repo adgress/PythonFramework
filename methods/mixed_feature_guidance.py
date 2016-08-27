@@ -30,6 +30,9 @@ class MixedFeatureGuidanceMethod(method.Method):
     METHOD_RIDGE = 2
     METHOD_ORACLE_WEIGHTS = 3
     METHOD_ORACLE_SPARSITY = 4
+    METHODS_UNIFORM_C = {
+        METHOD_NO_RELATIVE, METHOD_ORACLE_SPARSITY
+    }
     METHODS_NO_C2 = {
         METHOD_RIDGE, METHOD_ORACLE_WEIGHTS
     }
@@ -48,6 +51,9 @@ class MixedFeatureGuidanceMethod(method.Method):
         #self.method = MixedFeatureGuidanceMethod.METHOD_ORACLE_SPARSITY
         self.can_use_test_error_for_model_selection = True
         self.use_test_error_for_model_selection = configs.use_test_error_for_model_selection
+        if self.method in MixedFeatureGuidanceMethod.METHODS_UNIFORM_C:
+            self.C = 1
+            del self.cv_params['C']
         if self.method in MixedFeatureGuidanceMethod.METHODS_NO_C3:
             self.C3 = 0
             del self.cv_params['C3']

@@ -34,13 +34,13 @@ class MixedFeatureGuidanceMethod(method.Method):
         METHOD_RIDGE, METHOD_ORACLE_WEIGHTS
     }
     METHODS_NO_C3 = {
-        METHOD_NO_RELATIVE, METHOD_RIDGE, METHOD_ORACLE_WEIGHTS
+        METHOD_NO_RELATIVE, METHOD_RIDGE, METHOD_ORACLE_WEIGHTS, METHOD_ORACLE_SPARSITY
     }
     def __init__(self,configs=MethodConfigs()):
         super(MixedFeatureGuidanceMethod, self).__init__(configs)
-        self.cv_params['C'] = self.create_cv_params(-5, 5)
-        self.cv_params['C2'] = self.create_cv_params(-5, 5)
-        self.cv_params['C3'] = self.create_cv_params(-5, 5)
+        self.cv_params['C'] = self.create_cv_params(-5, 5, preprend_zero=True)
+        self.cv_params['C2'] = self.create_cv_params(-5, 5, preprend_zero=True)
+        self.cv_params['C3'] = self.create_cv_params(-5, 5, preprend_zero=True)
         self.transform = StandardScaler()
         self.method = MixedFeatureGuidanceMethod.METHOD_NO_RELATIVE
         #self.method = MixedFeatureGuidanceMethod.METHOD_RIDGE
@@ -64,7 +64,6 @@ class MixedFeatureGuidanceMethod(method.Method):
     @staticmethod
     def solve_w(a, x, y, C):
         try:
-            assert False
             w = np.linalg.lstsq(x.T.dot(x) + C * np.diag(a), x.T.dot(y))[0]
         except Exception as e:
             w = np.zeros(x.shape[1])
@@ -116,21 +115,22 @@ class MixedFeatureGuidanceMethod(method.Method):
         C = self.C
         C2 = self.C2
         C3 = self.C3
-        #C = 1
-        #C2 = .001
-        #eval = self.create_eval(x, y, C, C2, C3)
+
         self.a = np.ones(p)
         irrelevant_features = array_functions.false(p)
-        big_float = 1e16
+        big_float = 1e4
         irrelevant_features[4:] = True
 
         if self.method == MixedFeatureGuidanceMethod.METHOD_ORACLE_WEIGHTS:
             self.a[irrelevant_features] = big_float
-        elif self.C2 != 0 or self.C3 != 0:
+        elif C2 != 0 or C3 != 0:
             opt_data = optimize_data(x, y, C, C2, C3)
             eval_func = lambda a: MixedFeatureGuidanceMethod.eval(opt_data, a)
             #MixedFeatureGuidanceMethod.eval(opt_data, np.ones(p))
             a0 = np.ones(p)
+            options = {}
+            options['maxiter'] = 1000
+            options['disp'] = False
             '''
             constraints = [{
                 'type': 'ineq',
@@ -138,13 +138,26 @@ class MixedFeatureGuidanceMethod(method.Method):
             }]
             '''
             bounds = [(0, None)]*p
+            constraints = []
+            '''
+            w1 = optimize.minimize(
+                eval_func,
+                a0,
+                method=self.configs.scipy_opt_method,
+                jac=None,
+                options=options,
+                bounds = bounds,
+                constraints=constraints
+            ).x
+            '''
             if self.method == MixedFeatureGuidanceMethod.METHOD_ORACLE_SPARSITY:
-                bounds[irrelevant_features] = (big_float, big_float)
-            constraints = None
+                for i in range(p):
+                    if irrelevant_features[i]:
+                        bounds[i] = (big_float, big_float)
+                        a0[i] = big_float
 
-            options = {}
-            options['maxiter'] = 1000
-            options['disp'] = False
+
+
             #with Capturing() as output:
             results = optimize.minimize(
                 eval_func,
@@ -155,6 +168,7 @@ class MixedFeatureGuidanceMethod(method.Method):
                 bounds = bounds,
                 constraints=constraints
             )
+            w2 = results.x
             self.a = results.x
         self.b = y.mean()
         x = self.transform.fit_transform(x)

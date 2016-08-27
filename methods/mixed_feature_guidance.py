@@ -63,7 +63,11 @@ class MixedFeatureGuidanceMethod(method.Method):
 
     @staticmethod
     def solve_w(a, x, y, C):
-        w = np.linalg.lstsq(x.T.dot(x) + C * np.diag(a), x.T.dot(y))[0]
+        try:
+            assert False
+            w = np.linalg.lstsq(x.T.dot(x) + C * np.diag(a), x.T.dot(y))[0]
+        except Exception as e:
+            w = np.zeros(x.shape[1])
         return w
 
     @staticmethod

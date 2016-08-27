@@ -5,7 +5,7 @@ from loss_functions import loss_function
 from utility import helper_functions
 from results_class import results as results_lib
 from sklearn import grid_search
-
+from utility import helper_functions
 # Command line arguments for ProjectConfigs
 arguments = None
 
@@ -176,6 +176,9 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #self.files['NW.pkl'] = 'NW'
         self.files['SKL-RidgeReg.pkl'] = 'SKL Ridge Regression'
         self.files['Mixed-feats_method=Ridge.pkl'] = 'Mixed: Ridge'
+        self.files['Mixed-feats_method=NoRel.pkl'] = 'Mixed: No Relative'
+        self.files['Mixed-feats_method=OracleWeights.pkl'] = 'Mixed: Oracle Weights'
+        self.files['Mixed-feats_method=OracleSparsity.pkl'] = 'Mixed: Oracle Sparsity'
         #self.files['SKL-DumReg.pkl'] = 'Predict Mean'
         sizes = []
         suffixes = OrderedDict()
@@ -188,6 +191,15 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         ordered_keys = [
             'nCV',
         ]
+
+        if use_test:
+            test_files = {}
+            for f, leg in self.files.iteritems():
+                f = helper_functions.remove_suffix(f, '.pkl')
+                f += '-TEST.pkl'
+                leg = 'TEST: ' + leg
+                test_files[f] = leg
+            self.files = test_files
 
         methods = []
         #methods.append(('numRandPairs','RelReg, %s pairs', 'Our Method: %s relative'))
@@ -222,6 +234,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                         legend = 'TEST: ' + legend
                     file_name += '.pkl'
                     self.files[file_name] = legend
+
 
 
 viz_params = [

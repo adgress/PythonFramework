@@ -28,8 +28,13 @@ class optimize_data(object):
 class MixedFeatureGuidanceMethod(method.Method):
     METHOD_NO_RELATIVE = 1
     METHOD_RIDGE = 2
+    METHOD_ORACLE_WEIGHTS = 3
+    METHOD_ORACLE_SPARSITY = 4
+    METHODS_NO_C2 = {
+        METHOD_RIDGE, METHOD_ORACLE_WEIGHTS
+    }
     METHODS_NO_C3 = {
-        METHOD_NO_RELATIVE, METHOD_RIDGE
+        METHOD_NO_RELATIVE, METHOD_RIDGE, METHOD_ORACLE_WEIGHTS
     }
     def __init__(self,configs=MethodConfigs()):
         super(MixedFeatureGuidanceMethod, self).__init__(configs)
@@ -39,12 +44,15 @@ class MixedFeatureGuidanceMethod(method.Method):
         self.transform = StandardScaler()
         self.method = MixedFeatureGuidanceMethod.METHOD_NO_RELATIVE
         #self.method = MixedFeatureGuidanceMethod.METHOD_RIDGE
+        #self.method = MixedFeatureGuidanceMethod.METHOD_ORACLE_WEIGHTS
+        #self.method = MixedFeatureGuidanceMethod.METHOD_ORACLE_SPARSITY
         self.can_use_test_error_for_model_selection = True
+        self.use_test_error_for_model_selection = configs.use_test_error_for_model_selection
         if self.method in MixedFeatureGuidanceMethod.METHODS_NO_C3:
             self.C3 = 0
             del self.cv_params['C3']
 
-        if self.method == MixedFeatureGuidanceMethod.METHOD_RIDGE:
+        if self.method in MixedFeatureGuidanceMethod.METHODS_NO_C2:
             self.C2 = 0
             del self.cv_params['C2']
 
@@ -107,9 +115,14 @@ class MixedFeatureGuidanceMethod(method.Method):
         #C = 1
         #C2 = .001
         #eval = self.create_eval(x, y, C, C2, C3)
-        if self.C2 == 0 and self.C3 == 0:
-            self.a = np.ones(p)
-        else:
+        self.a = np.ones(p)
+        irrelevant_features = array_functions.false(p)
+        big_float = 1e16
+        irrelevant_features[4:] = True
+
+        if self.method == MixedFeatureGuidanceMethod.METHOD_ORACLE_WEIGHTS:
+            self.a[irrelevant_features] = big_float
+        elif self.C2 != 0 or self.C3 != 0:
             opt_data = optimize_data(x, y, C, C2, C3)
             eval_func = lambda a: MixedFeatureGuidanceMethod.eval(opt_data, a)
             #MixedFeatureGuidanceMethod.eval(opt_data, np.ones(p))
@@ -121,6 +134,8 @@ class MixedFeatureGuidanceMethod(method.Method):
             }]
             '''
             bounds = [(0, None)]*p
+            if self.method == MixedFeatureGuidanceMethod.METHOD_ORACLE_SPARSITY:
+                bounds[irrelevant_features] = (big_float, big_float)
             constraints = None
 
             options = {}
@@ -140,6 +155,7 @@ class MixedFeatureGuidanceMethod(method.Method):
         self.b = y.mean()
         x = self.transform.fit_transform(x)
         self.w = MixedFeatureGuidanceMethod.solve_w(self.a, x, y, C)
+        pass
 
 
 
@@ -159,6 +175,10 @@ class MixedFeatureGuidanceMethod(method.Method):
             s += '_method=Ridge'
         elif self.method == MixedFeatureGuidanceMethod.METHOD_NO_RELATIVE:
             s += '_method=NoRel'
+        elif self.method == MixedFeatureGuidanceMethod.METHOD_ORACLE_WEIGHTS:
+            s += '_method=OracleWeights'
+        elif self.method == MixedFeatureGuidanceMethod.METHOD_ORACLE_SPARSITY:
+            s += '_method=OracleSparsity'
         if self.use_test_error_for_model_selection:
             s += '-TEST'
         return s

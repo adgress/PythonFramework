@@ -128,10 +128,10 @@ class Method(Saveable):
     def can_use_instance_weights(self):
         return False
 
-    def create_cv_params(self, i_low, i_high, preprend_zero=False):
+    def create_cv_params(self, i_low, i_high, append_zero=False):
         a = 10**np.asarray(list(reversed(range(i_low,i_high))),dtype='float64')
-        if preprend_zero:
-            a = np.insert(a,0,0)
+        if append_zero:
+            a = np.append(a,0)
         return a
 
     def run_pre_experiment_setup(self, data_and_splits):

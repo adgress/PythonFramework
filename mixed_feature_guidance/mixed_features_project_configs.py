@@ -6,6 +6,7 @@ from utility import helper_functions
 from results_class import results as results_lib
 from sklearn import grid_search
 from utility import helper_functions
+from methods import mixed_feature_guidance
 # Command line arguments for ProjectConfigs
 arguments = None
 
@@ -14,11 +15,16 @@ def create_project_configs():
 
 pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
-data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10_nnz4
+#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10_nnz4
+data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
 
 viz_for_paper = False
 
 run_experiments = True
+
+use_ridge = False
+mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
+#mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
 
 other_pc_configs = {
 }
@@ -26,7 +32,7 @@ other_pc_configs = {
 other_method_configs = {
     'include_size_in_file_name': False,
     'num_features': -1,
-    'use_test_error_for_model_selection': False,
+    'use_test_error_for_model_selection': True,
     'y_scale_min_max': False,
     'y_scale_standard': False,
     'scipy_opt_method': 'L-BFGS-B',
@@ -80,9 +86,13 @@ class ProjectConfigs(bc.ProjectConfigs):
         if data_set == bc.DATA_BOSTON_HOUSING:
             self.set_data_set_defaults('boston_housing')
             self.num_labels = [5, 10, 20, 40]
+        elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
+            self.set_data_set_defaults('synthetic_linear_reg500-50-1.01')
+            self.num_labels = [10, 20, 40]
         elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10_nnz4:
             self.set_data_set_defaults('synthetic_linear_reg500-10-1-nnz=4')
             self.num_labels = [10, 20, 40]
+            #self.num_labels = [10]
         elif data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
             self.set_data_set_defaults('adience_aligned_cnn_1_per_instance_id')
             self.num_labels = [10, 20, 40]
@@ -118,11 +128,12 @@ class MainConfigs(bc.MainConfigs):
             setattr(method_configs, key, getattr(pc,key))
 
         ridge = method.SKLRidgeRegression(method_configs)
+        if use_ridge:
+            self.learner = ridge
+        else:
+            method_configs.method = mixed_feature_method
+            self.learner = mixed_feature_guidance.MixedFeatureGuidanceMethod(method_configs)
 
-        #self.learner = ssl_reg
-        #self.learner = nw_reg
-        self.learner = mixed_feature_guidance.MixedFeatureGuidanceMethod(method_configs)
-        #self.learner = ridge
 
 class MethodConfigs(bc.MethodConfigs):
     def __init__(self, pc):
@@ -176,8 +187,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #self.files['NW.pkl'] = 'NW'
         self.files['SKL-RidgeReg.pkl'] = 'SKL Ridge Regression'
         self.files['Mixed-feats_method=Ridge.pkl'] = 'Mixed: Ridge'
-        self.files['Mixed-feats_method=NoRel.pkl'] = 'Mixed: No Relative'
-        self.files['Mixed-feats_method=OracleWeights.pkl'] = 'Mixed: Oracle Weights'
+        self.files['Mixed-feats_method=Rel.pkl'] = 'Mixed: Relative'
+        self.files['Mixed-feats_method=Oracle.pkl'] = 'Mixed: Oracle'
         self.files['Mixed-feats_method=OracleSparsity.pkl'] = 'Mixed: Oracle Sparsity'
         #self.files['SKL-DumReg.pkl'] = 'Predict Mean'
         sizes = []

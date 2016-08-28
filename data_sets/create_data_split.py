@@ -144,7 +144,8 @@ def run_main():
                hypothesis_transfer_configs([1,2,3,4])
     )
     '''
-    split_data('synthetic_linear_reg500-10-1-nnz=4/raw_data.pkl', regression_configs())
+    #split_data('synthetic_linear_reg500-10-1-nnz=4/raw_data.pkl', regression_configs())
+    split_data('synthetic_linear_reg500-50-1.01/raw_data.pkl', regression_configs())
     pass
 
 if __name__ == '__main__':

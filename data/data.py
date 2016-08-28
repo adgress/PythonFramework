@@ -22,6 +22,7 @@ class LabeledVector(object):
         self.instance_ids = None
         self.instance_weights = None
         self.is_regression = None
+        self.metadata = None
 
     def combine(self, o):
         d = self.__dict__

@@ -31,6 +31,8 @@ other_pc_configs = {
 }
 
 other_method_configs = {
+    'num_random_pairs': 0,
+    'num_random_signs': 10,
     'include_size_in_file_name': False,
     'num_features': -1,
     'use_test_error_for_model_selection': False,

@@ -43,6 +43,12 @@ class MixedFeatureGuidanceMethod(method.Method):
     METHODS_NO_C3 = {
         METHOD_RELATIVE, METHOD_RIDGE, METHOD_ORACLE, METHOD_ORACLE_SPARSITY, METHOD_HARD_CONSTRAINT
     }
+    METHODS_USES_PAIRS = {
+        METHOD_RELATIVE, METHOD_HARD_CONSTRAINT
+    }
+    METHODS_USES_SIGNS = {
+        METHOD_HARD_CONSTRAINT
+    }
     def __init__(self,configs=MethodConfigs()):
         super(MixedFeatureGuidanceMethod, self).__init__(configs)
         self.cv_params['C'] = self.create_cv_params(-5, 5, append_zero=True)
@@ -58,6 +64,8 @@ class MixedFeatureGuidanceMethod(method.Method):
             #self.method = MixedFeatureGuidanceMethod.METHOD_ORACLE_SPARSITY
         self.can_use_test_error_for_model_selection = True
         self.use_test_error_for_model_selection = configs.use_test_error_for_model_selection
+        self.num_random_pairs = getattr(configs, 'num_random_pairs', 0)
+        self.num_random_signs = getattr(configs, 'num_random_signs', 0)
         self.w = None
         self.b = None
         if self.method == MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT:
@@ -174,8 +182,8 @@ class MixedFeatureGuidanceMethod(method.Method):
         C2 = self.C2
         C3 = self.C3
         #C = .001
-        num_random_pairs = 0
-        num_signs = 0
+        num_random_pairs = self.num_random_pairs
+        num_signs = self.num_random_signs
         if self.method == MixedFeatureGuidanceMethod.METHOD_ORACLE:
             #Refit with standardized data to clear transform
             #Is there a better way of doing this?
@@ -272,6 +280,8 @@ class MixedFeatureGuidanceMethod(method.Method):
     @property
     def prefix(self):
         s = 'Mixed-feats'
+        use_pairs = False
+        use_signs = False
         if self.method == MixedFeatureGuidanceMethod.METHOD_RIDGE:
             s += '_method=Ridge'
         elif self.method == MixedFeatureGuidanceMethod.METHOD_RELATIVE:
@@ -282,6 +292,13 @@ class MixedFeatureGuidanceMethod(method.Method):
             s += '_method=OracleSparsity'
         elif self.method == MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT:
             s += '_method=HardConstraints'
+        num_pairs = getattr(self, 'num_random_pairs', 0)
+        num_signs = getattr(self, 'num_random_signs', 0)
+        if self.method in MixedFeatureGuidanceMethod.METHODS_USES_SIGNS and num_signs > 0:
+            s += '_pairs=' + str(num_signs)
+        if self.method in MixedFeatureGuidanceMethod.METHODS_USES_PAIRS and num_pairs > 0:
+            s += '_signs=' + str(num_pairs)
         if self.use_test_error_for_model_selection:
             s += '-TEST'
+
         return s

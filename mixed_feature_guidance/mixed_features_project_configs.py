@@ -23,7 +23,8 @@ viz_for_paper = False
 run_experiments = True
 
 use_ridge = False
-mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
+#mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
+mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT
 #mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
 
 other_pc_configs = {
@@ -32,7 +33,7 @@ other_pc_configs = {
 other_method_configs = {
     'include_size_in_file_name': False,
     'num_features': -1,
-    'use_test_error_for_model_selection': True,
+    'use_test_error_for_model_selection': False,
     'y_scale_min_max': False,
     'y_scale_standard': False,
     'scipy_opt_method': 'L-BFGS-B',
@@ -88,7 +89,7 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.num_labels = [5, 10, 20, 40]
         elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
             self.set_data_set_defaults('synthetic_linear_reg500-50-1.01')
-            self.num_labels = [10, 20, 40]
+            self.num_labels = [5, 10, 20, 40]
         elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10_nnz4:
             self.set_data_set_defaults('synthetic_linear_reg500-10-1-nnz=4')
             self.num_labels = [10, 20, 40]
@@ -190,6 +191,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files['Mixed-feats_method=Rel.pkl'] = 'Mixed: Relative'
         self.files['Mixed-feats_method=Oracle.pkl'] = 'Mixed: Oracle'
         self.files['Mixed-feats_method=OracleSparsity.pkl'] = 'Mixed: Oracle Sparsity'
+        self.files['Mixed-feats_method=HardConstraints.pkl'] = 'Mixed: Hard Constraints'
         #self.files['SKL-DumReg.pkl'] = 'Predict Mean'
         sizes = []
         suffixes = OrderedDict()

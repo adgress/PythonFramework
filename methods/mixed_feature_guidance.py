@@ -27,9 +27,10 @@ class optimize_data(object):
 
 class MixedFeatureGuidanceMethod(method.Method):
     METHOD_RELATIVE = 1
-    METHOD_RIDGE = 2
-    METHOD_ORACLE = 3
-    METHOD_ORACLE_SPARSITY = 4
+    METHOD_HARD_CONSTRAINT = 2
+    METHOD_RIDGE = 10
+    METHOD_ORACLE = 11
+    METHOD_ORACLE_SPARSITY = 12
     '''
     METHODS_UNIFORM_C = {
         METHOD_NO_RELATIVE, METHOD_ORACLE_SPARSITY
@@ -37,10 +38,10 @@ class MixedFeatureGuidanceMethod(method.Method):
     '''
     METHODS_UNIFORM_C = {}
     METHODS_NO_C2 = {
-        METHOD_RIDGE, METHOD_ORACLE
+        METHOD_RIDGE, METHOD_ORACLE, METHOD_HARD_CONSTRAINT
     }
     METHODS_NO_C3 = {
-        METHOD_RELATIVE, METHOD_RIDGE, METHOD_ORACLE, METHOD_ORACLE_SPARSITY
+        METHOD_RELATIVE, METHOD_RIDGE, METHOD_ORACLE, METHOD_ORACLE_SPARSITY, METHOD_HARD_CONSTRAINT
     }
     def __init__(self,configs=MethodConfigs()):
         super(MixedFeatureGuidanceMethod, self).__init__(configs)
@@ -59,6 +60,8 @@ class MixedFeatureGuidanceMethod(method.Method):
         self.use_test_error_for_model_selection = configs.use_test_error_for_model_selection
         self.w = None
         self.b = None
+        if self.method == MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT:
+            self.configs.scipy_opt_method = 'SLSQP'
         if self.method in MixedFeatureGuidanceMethod.METHODS_UNIFORM_C:
             self.C = 1
             del self.cv_params['C']
@@ -137,7 +140,8 @@ class MixedFeatureGuidanceMethod(method.Method):
         loss2 = 0
         for i, j in data.pairs:
             loss2 += np.log(1 + np.exp(-(w[i]-w[j])))
-        loss2 /= len(data.pairs)
+        if len(data.pairs) > 0:
+            loss2 /= len(data.pairs)
         reg = norm(w) ** 2
         return loss + C*reg + C2*loss2
 
@@ -159,6 +163,8 @@ class MixedFeatureGuidanceMethod(method.Method):
     def solve(self, data):
         is_labeled_train = data.is_train & data.is_labeled
         x = data.x[is_labeled_train, :]
+        #self.transform.with_mean = False
+        #self.transform.with_std = False
         x = self.transform.fit_transform(x)
         y = data.y[is_labeled_train]
         n = x.shape[0]
@@ -167,11 +173,9 @@ class MixedFeatureGuidanceMethod(method.Method):
         C = self.C
         C2 = self.C2
         C3 = self.C3
-
-        irrelevant_features = array_functions.false(p)
-        irrelevant_val = 0
-        irrelevant_features[4:] = True
-        num_random_pairs = 20
+        #C = .001
+        num_random_pairs = 0
+        num_signs = 0
         if self.method == MixedFeatureGuidanceMethod.METHOD_ORACLE:
             #Refit with standardized data to clear transform
             #Is there a better way of doing this?
@@ -179,7 +183,7 @@ class MixedFeatureGuidanceMethod(method.Method):
             self.w = data.metadata['true_w']
             self.b = 0
             return
-        elif C2 != 0 or C3 != 0:
+        elif (C2 != 0 or C3 != 0) or self.method == MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT:
             opt_data = optimize_data(x, y, C, C2, C3)
             '''
             opt_data.pairs = [
@@ -189,14 +193,36 @@ class MixedFeatureGuidanceMethod(method.Method):
                 (3, 6)
             ]
             '''
-            opt_data.pairs = self.create_random_pairs(data.metadata['true_w'], num_pairs=num_random_pairs)
+            opt_data.pairs = list()
+            constraints = list()
+            pairs = self.create_random_pairs(data.metadata['true_w'], num_pairs=num_random_pairs)
+            if self.method == MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT:
+                constraints = list()
+                true_w = data.metadata['true_w']
+                for j, k in pairs:
+                    constraints.append({
+                        'fun': lambda w, j=j, k=k: w[j] - w[k],
+                        'type': 'ineq'
+                    })
+                #for i in range(num_signs):
+                #    j = np.random.choice(p)
+                for j in range(p):
+                    fun = lambda w, j=j: w[j]*np.sign(true_w[j])
+                    constraints.append({
+                        'fun': fun,
+                        'type': 'ineq',
+                        'idx': j
+                    })
+            else:
+                opt_data.pairs = pairs
             eval_func = lambda a: MixedFeatureGuidanceMethod.eval(opt_data, a)
+
             w0 = np.zeros(p)
             options = dict()
             options['maxiter'] = 1000
             options['disp'] = False
             bounds = [(None, None)] * p
-            constraints = list()
+
             '''
             w1 = optimize.minimize(
                 eval_func,
@@ -209,9 +235,7 @@ class MixedFeatureGuidanceMethod(method.Method):
             ).x
             '''
             if self.method == MixedFeatureGuidanceMethod.METHOD_ORACLE_SPARSITY:
-                for i in range(p):
-                    if irrelevant_features[i]:
-                        bounds[i] = (irrelevant_val, irrelevant_val)
+                assert False
 
 
 
@@ -256,6 +280,8 @@ class MixedFeatureGuidanceMethod(method.Method):
             s += '_method=Oracle'
         elif self.method == MixedFeatureGuidanceMethod.METHOD_ORACLE_SPARSITY:
             s += '_method=OracleSparsity'
+        elif self.method == MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT:
+            s += '_method=HardConstraints'
         if self.use_test_error_for_model_selection:
             s += '-TEST'
         return s

@@ -214,7 +214,7 @@ class MixedFeatureGuidanceMethod(method.Method):
                     })
                 #for i in range(num_signs):
                 #    j = np.random.choice(p)
-                feats_to_constraint = np.random.choice(p, num_random_pairs, replace=False)
+                feats_to_constraint = np.random.choice(p, num_signs, replace=False)
                 for j in feats_to_constraint:
                     fun = lambda w, j=j: w[j]*np.sign(true_w[j])
                     constraints.append({

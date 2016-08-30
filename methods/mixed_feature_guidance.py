@@ -214,7 +214,8 @@ class MixedFeatureGuidanceMethod(method.Method):
                     })
                 #for i in range(num_signs):
                 #    j = np.random.choice(p)
-                for j in range(p):
+                feats_to_constraint = np.random.choice(p, num_random_pairs, replace=False)
+                for j in feats_to_constraint:
                     fun = lambda w, j=j: w[j]*np.sign(true_w[j])
                     constraints.append({
                         'fun': fun,
@@ -295,9 +296,9 @@ class MixedFeatureGuidanceMethod(method.Method):
         num_pairs = getattr(self, 'num_random_pairs', 0)
         num_signs = getattr(self, 'num_random_signs', 0)
         if self.method in MixedFeatureGuidanceMethod.METHODS_USES_SIGNS and num_signs > 0:
-            s += '_pairs=' + str(num_signs)
+            s += '_signs=' + str(num_signs)
         if self.method in MixedFeatureGuidanceMethod.METHODS_USES_PAIRS and num_pairs > 0:
-            s += '_signs=' + str(num_pairs)
+            s += '_pairs=' + str(num_pairs)
         if self.use_test_error_for_model_selection:
             s += '-TEST'
 

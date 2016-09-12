@@ -20,8 +20,8 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 #data_set_to_use = bc.DATA_DROSOPHILIA
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_WINE_RED
-#data_set_to_use = bc.DATA_DROSOPHILIA
-data_set_to_use = bc.DATA_CONCRETE
+data_set_to_use = bc.DATA_DROSOPHILIA
+#data_set_to_use = bc.DATA_CONCRETE
 
 viz_for_paper = False
 
@@ -29,9 +29,9 @@ run_experiments = True
 
 use_ridge = False
 use_quad_feats = False
-mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
+#mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
 #mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT
-#mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
+mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
 
 viz_w_error = False
 
@@ -40,7 +40,7 @@ other_pc_configs = {
 
 other_method_configs = {
     'num_random_pairs': 0,
-    'num_random_signs': 10,
+    'num_random_signs': 50,
     'use_nonneg': False,
     'use_corr': True,
     'include_size_in_file_name': False,
@@ -118,7 +118,8 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.num_labels = [5, 10, 20, 40]
         elif data_set == bc.DATA_DROSOPHILIA:
             self.set_data_set_defaults('drosophilia')
-            self.num_labels = [10,20,40]
+            #self.num_labels = [10,20,40]
+            self.num_labels = [10, 20, 40, 80, 160]
         '''
         if self.include_size_in_file_name:
             assert len(self.num_labels) == 1

@@ -5,8 +5,9 @@ from sklearn import metrics
 import math
 import abc
 from utility import array_functions
+from numpy.linalg import norm
 
-class LossFunction:
+class LossFunction(object):
     """
     Implements loss functions
     """
@@ -16,13 +17,25 @@ class LossFunction:
         self.name = None
         self.short_name = None
 
-
+    def compute_score(self, output):
+        y1 = output.y
+        y2 = output.true_y
+        I = ~output.is_train
+        return self._compute_score(y1[I], y2[I])
+        '''
+        return loss_function.compute_score(
+            self.y,
+            self.true_y,
+            ~self.is_train
+        )
+        '''
+    '''
     def compute_score(self, y1, y2, I=None):
         if I is not None:
             y1 = y1[I]
             y2 = y2[I]
         return self._compute_score(y1,y2)
-
+    '''
     @abc.abstractmethod
     def _compute_score(self,y1,y2):
         pass
@@ -75,3 +88,21 @@ class MeanAbsoluteError(LossFunction):
 
     def _compute_score(self,y1,y2):
         return metrics.mean_absolute_error(y1, y2)
+
+class LossFunctionParams(LossFunction):
+    def __init__(self):
+        self.name = None
+        self.short_name = None
+
+    def compute_score(self, output):
+        w1 = output.w
+        w2 = output.true_w
+        return self._compute_score(w1/norm(w1), w2/norm(w2))
+
+class LossFunctionParamsMeanAbsoluteError(LossFunctionParams):
+    def __init__(self):
+        self.name = 'w_mean_squared_error'
+        self.short_name = 'wMAE'
+
+    def _compute_score(self, w1, w2):
+        return math.sqrt(metrics.mean_squared_error(w1, w2))

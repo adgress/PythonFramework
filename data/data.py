@@ -38,6 +38,8 @@ class LabeledVector(object):
                     value = array_functions.append_rows(v_self, v_o)
                 elif v_self.ndim == 2:
                     value = array_functions.append_rows(v_self, v_o)
+                    if value.ndim == 1:
+                        value = np.expand_dims(value, 1)
                 else:
                     assert False
                 setattr(self, key, value)

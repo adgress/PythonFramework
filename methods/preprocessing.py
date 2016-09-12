@@ -1,5 +1,5 @@
 from data import data as data_lib
-from sklearn.preprocessing import LabelEncoder, LabelBinarizer
+from sklearn.preprocessing import LabelEncoder, LabelBinarizer,PolynomialFeatures
 import numpy as np
 
 class NanLabelBinarizer(LabelBinarizer):
@@ -58,6 +58,9 @@ class IdentityPreprocessor(object):
     def preprocess(self, data, configs):
         return data
 
+    def name(self):
+        return None
+
 class TargetOnlyPreprocessor(IdentityPreprocessor):
     def __init__(self):
         pass
@@ -70,4 +73,75 @@ class TargetOnlyPreprocessor(IdentityPreprocessor):
         is_target_data = data_set_ids == target_id
         target_data = data.get_subset(is_target_data)
         return target_data
+
+class BasisExpansionPreprocessor(IdentityPreprocessor):
+    BASIS_IDENTITY = 0
+    BASIS_QUADRATIC = 1
+    BASIS_QUADRATIC_FEW = 2
+
+    def __init__(self, basis_expansion_type=None):
+        super(BasisExpansionPreprocessor, self).__init__()
+        self.basis_expansion_type = basis_expansion_type
+        if self.basis_expansion_type is None:
+            self.basis_expansion_type = BasisExpansionPreprocessor.BASIS_IDENTITY
+
+    def preprocess(self, data, configs):
+        x_new = None
+        if self.basis_expansion_type == BasisExpansionPreprocessor.BASIS_IDENTITY:
+            x_new = data.x
+        elif self.basis_expansion_type == BasisExpansionPreprocessor.BASIS_QUADRATIC:
+            x_new = self._basis_quadratic(data.x)
+        elif self.basis_expansion_type == BasisExpansionPreprocessor.BASIS_QUADRATIC_FEW:
+            x_new = self._basis_quadratic_few(data.x)
+        data.x = x_new
+        return data
+
+    def _basis_quadratic_few(self, x):
+        n, p = x.shape
+        x_new = np.zeros((n, 2*p))
+        x_new[:, 0:p] = x
+        for i in range(0, p):
+            xi = x[:,i]**2
+            x_new[:,p+i] = xi
+        return x_new
+
+    def _basis_quadratic(self, x):
+        poly = PolynomialFeatures(2)
+        x_new = poly.fit_transform(x)
+        #First feature is a constant 1, so discard it
+        x_new = x_new[:, 1:]
+        return x_new
+
+    def name(self):
+        if self.basis_expansion_type == BasisExpansionPreprocessor.BASIS_QUADRATIC:
+            return 'QuadFeats'
+        elif self.basis_expansion_type == BasisExpansionPreprocessor.BASIS_QUADRATIC_FEW:
+            return 'QuadFeatsFew'
+        return None
+
+class BasisQuadraticPreprocessor(BasisExpansionPreprocessor):
+    def __init__(self):
+        super(BasisQuadraticPreprocessor, self).__init__(BasisExpansionPreprocessor.BASIS_QUADRATIC)
+
+class BasisQuadraticFewPreprocessor(BasisExpansionPreprocessor):
+    def __init__(self):
+        super(BasisQuadraticFewPreprocessor, self).__init__(BasisExpansionPreprocessor.BASIS_QUADRATIC_FEW)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

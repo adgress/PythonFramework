@@ -17,6 +17,9 @@ from sklearn import manifold
 import warnings
 import random
 
+def normalized_error(v1, v2):
+    return norm(v1/norm(v1) - v2/norm(v2))
+
 def sample_n_tuples(n_or_vector, num_samples=1, tuple_size=2, shuffle_tuples=False):
     if np.asarray(n_or_vector).size == 1:
         n_or_vector = np.asarray(range(n_or_vector))
@@ -467,6 +470,8 @@ def find_set(a,to_find):
         inds = inds | (i == a)
     return inds
 
+def find_first_element(a, to_find):
+    return np.argwhere(a == to_find)[0][0]
 
 def histogram_unique(n):
     bins = np.unique(n)

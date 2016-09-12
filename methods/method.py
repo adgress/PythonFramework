@@ -303,7 +303,8 @@ class Method(Saveable):
         if s is not None and s.size > 0:
             s = s.ravel()
             labels_to_keep = np.concatenate((labels_to_keep,s))
-            inds = array_functions.find_set(data.y,s)
+            #inds = array_functions.find_set(data.y,s)
+            inds = data.get_transfer_inds(s)
             data.type[inds] = data_lib.TYPE_SOURCE
             data.is_train[inds] = True
         if labels_to_keep.size > 0:
@@ -550,7 +551,10 @@ class ScikitLearnMethod(Method):
 
     @property
     def prefix(self):
-        return "SKL-" + ScikitLearnMethod._short_name_dict[self._skl_method_name()]
+        s = "SKL-" + ScikitLearnMethod._short_name_dict[self._skl_method_name()]
+        if self.preprocessor.name() is not None:
+            s += '-' + self.preprocessor.name()
+        return s
 
 class SKLRidgeRegression(ScikitLearnMethod):
     def __init__(self,configs=None):

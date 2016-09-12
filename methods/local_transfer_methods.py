@@ -67,11 +67,11 @@ class HypothesisTransfer(method.Method):
             y_true = array_functions.try_toarray(y_true)
         return (y_t, y_s, y_true)
 
-    def train_and_test(self, data):
+    def get_source_data(self, data):
         if data.is_regression:
-            source_data = data.get_transfer_subset(self.configs.source_labels.ravel(),include_unlabeled=False)
+            source_data = data.get_transfer_subset(self.configs.source_labels.ravel(), include_unlabeled=False)
         else:
-            source_data = data.get_transfer_subset(self.configs.source_labels.ravel(),include_unlabeled=False)
+            source_data = data.get_transfer_subset(self.configs.source_labels.ravel(), include_unlabeled=False)
         source_data.set_target()
         source_data.set_train()
         source_data.reveal_labels(~source_data.is_labeled)
@@ -79,10 +79,14 @@ class HypothesisTransfer(method.Method):
             source_data.data_set_ids[:] = self.configs.target_labels[0]
         if self.use_oracle:
             oracle_labels = self.configs.oracle_labels
-            source_data = source_data.get_transfer_subset(oracle_labels.ravel(),include_unlabeled=False)
+            source_data = source_data.get_transfer_subset(oracle_labels.ravel(), include_unlabeled=False)
         if not data.is_regression:
-            source_data.change_labels(self.configs.source_labels,self.configs.target_labels)
+            source_data.change_labels(self.configs.source_labels, self.configs.target_labels)
             source_data = source_data.rand_sample(.1)
+        return source_data
+
+    def train_and_test(self, data):
+        source_data = self.get_source_data(data)
 
         viz_mds = False
         if viz_mds:
@@ -435,6 +439,47 @@ class LocalTransfer(HypothesisTransfer):
         return s
 
 
+class OffsetTransfer(HypothesisTransfer):
+    def __init__(self, configs=None):
+        super(OffsetTransfer, self).__init__(configs)
+        self.cv_params = dict()
+        self.g_learner = method.NadarayaWatsonMethod(configs)
+        self.x_source = None
+        self.y_source_new = None
+
+
+    def train_and_test(self, data):
+        source_data = self.get_source_data(data)
+        self.source_learner.train_and_test(source_data)
+        '''
+        data_copy = self._prepare_data(data, include_unlabeled=True)
+        data_copy = data_copy.get_transfer_subset(self.configs.target_labels, include_unlabeled=True)
+        data_copy = data_copy.get_subset(data_copy.is_target)
+        '''
+        data_copy = copy.deepcopy(data)
+        return super(HypothesisTransfer, self).train_and_test(data_copy)
+
+    def train(self, data):
+        target_data = self.get_target_subset(data)
+        target_data = target_data.get_subset(target_data.is_labeled)
+        self.g_learner.train_and_test(target_data)
+        source_data = self.get_source_data(data)
+        x_source = source_data.x
+        y_source_new = source_data.y + self.g_learner.predict(source_data).y
+        source_data_new = data_lib.Data(x_source, y_source_new)
+
+        all_data = copy.deepcopy(target_data)
+        all_data.combine(source_data_new)
+        self.target_learner.train_and_test(all_data)
+
+    def predict(self, data):
+        o = self.target_learner.predict(data)
+        return o
+
+    @property
+    def prefix(self):
+        s = 'OffsetTransfer'
+        return s
 
 
 class LocalTransferDelta(LocalTransfer):
@@ -929,4 +974,7 @@ class SMSTransfer(method.Method):
     def prefix(self):
         s = 'SMS'
         return s
+
+
+
 

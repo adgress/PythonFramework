@@ -105,9 +105,9 @@ class ExperimentResults(ResultsContainer):
             I = (e <= sorted[-1])
             e = e[I]
 
-            #mean = np.percentile(errors[:,i],50)
+            mean = np.percentile(errors[:,i],50)
 
-            mean = e.mean()
+            #mean = e.mean()
             n = errors.shape[0]
             zn = 1.96
             #if self.is_regression or mean > 1:
@@ -197,11 +197,14 @@ class Output(data_lib.LabeledVector):
         )
 
     def compute_error(self,loss_function):
+        '''
         return loss_function.compute_score(
             self.y,
             self.true_y,
             ~self.is_train
         )
+        '''
+        return loss_function.compute_score(self)
 
     def assert_input(self):
         assert not array_functions.has_invalid(self.fu)

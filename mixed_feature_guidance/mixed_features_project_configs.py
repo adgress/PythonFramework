@@ -16,16 +16,24 @@ def create_project_configs():
 pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10_nnz4
-data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+#data_set_to_use = bc.DATA_DROSOPHILIA
+#data_set_to_use = bc.DATA_BOSTON_HOUSING
+#data_set_to_use = bc.DATA_WINE_RED
+#data_set_to_use = bc.DATA_DROSOPHILIA
+data_set_to_use = bc.DATA_CONCRETE
 
 viz_for_paper = False
 
 run_experiments = True
 
 use_ridge = False
-#mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
-mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT
+use_quad_feats = False
+mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
+#mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT
 #mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
+
+viz_w_error = False
 
 other_pc_configs = {
 }
@@ -33,9 +41,11 @@ other_pc_configs = {
 other_method_configs = {
     'num_random_pairs': 0,
     'num_random_signs': 10,
+    'use_nonneg': False,
+    'use_corr': True,
     'include_size_in_file_name': False,
     'num_features': -1,
-    'use_test_error_for_model_selection': False,
+    'use_test_error_for_model_selection': True,
     'y_scale_min_max': False,
     'y_scale_standard': False,
     'scipy_opt_method': 'L-BFGS-B',
@@ -88,7 +98,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.data_set = data_set
         if data_set == bc.DATA_BOSTON_HOUSING:
             self.set_data_set_defaults('boston_housing')
-            self.num_labels = [5, 10, 20, 40]
+            self.num_labels = [10, 20, 40, 80]
         elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
             self.set_data_set_defaults('synthetic_linear_reg500-50-1.01')
             self.num_labels = [5, 10, 20, 40]
@@ -101,12 +111,13 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.num_labels = [10, 20, 40]
         elif data_set == bc.DATA_WINE_RED:
             self.set_data_set_defaults('wine-red')
-            self.num_labels = [5, 10, 20, 40]
+            #self.num_labels = [10, 20, 40]
+            self.num_labels = [40]
         elif data_set == bc.DATA_CONCRETE:
             self.set_data_set_defaults('concrete')
             self.num_labels = [5, 10, 20, 40]
         elif data_set == bc.DATA_DROSOPHILIA:
-            self.set_data_set_defaults('drosophila')
+            self.set_data_set_defaults('drosophilia')
             self.num_labels = [10,20,40]
         '''
         if self.include_size_in_file_name:
@@ -124,6 +135,7 @@ class MainConfigs(bc.MainConfigs):
         from methods import method
         from methods import active_methods
         from methods import semisupervised
+        from methods import preprocessing
         from methods import mixed_feature_guidance
         method_configs = MethodConfigs(pc)
 
@@ -131,6 +143,9 @@ class MainConfigs(bc.MainConfigs):
             setattr(method_configs, key, getattr(pc,key))
 
         ridge = method.SKLRidgeRegression(method_configs)
+        if use_quad_feats:
+            ridge.preprocessor = preprocessing.BasisQuadraticPreprocessor()
+            #ridge.preprocessor = preprocessing.BasisQuadraticFewPreprocessor()
         if use_ridge:
             self.learner = ridge
         else:
@@ -161,6 +176,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.max_rows = 2
         pc = ProjectConfigs(data_set)
         self.copy_fields(pc,pc_fields_to_copy)
+        if viz_w_error:
+            self.loss_function = loss_function.LossFunctionParamsMeanAbsoluteError()
 
         self.figsize = (10,8.9)
         self.borders = (.05,.95,.95,.05)
@@ -173,7 +190,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         elif pc.data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
             self.ylims = [0,1000]
         elif pc.data_set == bc.DATA_BOSTON_HOUSING:
-            self.ylims = [0,200]
+            self.ylims = [0,100]
         elif pc.data_set == bc.DATA_CONCRETE:
             self.ylims = [0,1000]
         elif pc.data_set == bc.DATA_DROSOPHILIA:
@@ -186,14 +203,31 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         base_file_name = 'RelReg-cvx-constraints-%s=%s'
         use_test = other_method_configs['use_test_error_for_model_selection']
 
+        #self.files['Mixed-feats_QuadFeatsFew_method=HardConstraints_signs=20.pkl'] = 'Mixed: Hard Constraints, Quad Feats Few, 20 signs'
+        #self.files['SKL-RidgeReg-QuadFeatsFew.pkl'] = 'SKL Ridge Regression, Quad Feats Few'
         #self.files['SLL-NW.pkl'] = 'LLGC'
         #self.files['NW.pkl'] = 'NW'
-        self.files['SKL-RidgeReg.pkl'] = 'SKL Ridge Regression'
+
+        if other_method_configs['use_nonneg']:
+            self.files['Mixed-feats_method=Ridge_nonneg.pkl'] = 'Mixed: Ridge, nonneg'
+            self.files['Mixed-feats_method=Rel_pairs=10_corr_nonneg.pkl'] = 'Mixed: Relative, corr, 10 pairs, nonneg'
+        else:
+            self.files['SKL-RidgeReg.pkl'] = 'SKL Ridge Regression'
+            self.files['Mixed-feats_method=Ridge.pkl'] = 'Mixed: Ridge'
+            self.files['Mixed-feats_method=Rel_signs=10_corr.pkl'] = 'Mixed: Relative, corr, 10 signs'
+            self.files['Mixed-feats_method=Rel_pairs=10_corr.pkl'] = 'Mixed: Relative, corr, 10 pairs'
+        '''
         self.files['Mixed-feats_method=Ridge.pkl'] = 'Mixed: Ridge'
         self.files['Mixed-feats_method=Rel.pkl'] = 'Mixed: Relative'
         self.files['Mixed-feats_method=Oracle.pkl'] = 'Mixed: Oracle'
         self.files['Mixed-feats_method=OracleSparsity.pkl'] = 'Mixed: Oracle Sparsity'
-        self.files['Mixed-feats_method=HardConstraints.pkl'] = 'Mixed: Hard Constraints'
+        self.files['Mixed-feats_method=HardConstraints_pairs=5.pkl'] = 'Mixed: Hard Constraints, 5 pairs'
+        self.files['Mixed-feats_method=HardConstraints_pairs=10.pkl'] = 'Mixed: Hard Constraints, 10 pairs'
+        self.files['Mixed-feats_method=HardConstraints_pairs=20.pkl'] = 'Mixed: Hard Constraints, 20 pairs'
+        self.files['Mixed-feats_method=HardConstraints_signs=5.pkl'] = 'Mixed: Hard Constraints, 5 signs'
+        self.files['Mixed-feats_method=HardConstraints_signs=10.pkl'] = 'Mixed: Hard Constraints, 10 signs'
+        self.files['Mixed-feats_method=HardConstraints_signs=25.pkl'] = 'Mixed: Hard Constraints, 25 signs'
+        '''
         #self.files['SKL-DumReg.pkl'] = 'Predict Mean'
         sizes = []
         suffixes = OrderedDict()

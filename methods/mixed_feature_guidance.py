@@ -1,7 +1,9 @@
 import numpy as np
 from numpy.linalg import norm
 import cvxpy as cvx
+from utility import cvx_functions
 import method
+import scipy
 from utility import array_functions
 from configs.base_configs import MethodConfigs
 from results_class.results import Output
@@ -10,6 +12,8 @@ from sklearn import linear_model
 import logistic_difference_optimize
 import scipy.optimize as optimize
 from utility.capturing import Capturing
+from copy import deepcopy
+import preprocessing
 
 class optimize_data(object):
     def __init__(self, x, y, reg_ridge, reg_a, reg_mixed):
@@ -47,14 +51,15 @@ class MixedFeatureGuidanceMethod(method.Method):
         METHOD_RELATIVE, METHOD_HARD_CONSTRAINT
     }
     METHODS_USES_SIGNS = {
-        METHOD_HARD_CONSTRAINT
+        METHOD_RELATIVE, METHOD_HARD_CONSTRAINT
     }
     def __init__(self,configs=MethodConfigs()):
         super(MixedFeatureGuidanceMethod, self).__init__(configs)
         self.cv_params['C'] = self.create_cv_params(-5, 5, append_zero=True)
-        self.cv_params['C2'] = self.create_cv_params(-5, 5, append_zero=True)
+        self.cv_params['C2'] = self.create_cv_params(-5, 10, append_zero=True)
         self.cv_params['C3'] = self.create_cv_params(-5, 5, append_zero=True)
         self.transform = StandardScaler()
+        #self.preprocessor = preprocessing.BasisQuadraticFewPreprocessor()
         if hasattr(configs, 'method'):
             self.method = configs.method
         else:
@@ -62,6 +67,8 @@ class MixedFeatureGuidanceMethod(method.Method):
             #self.method = MixedFeatureGuidanceMethod.METHOD_RIDGE
             #self.method = MixedFeatureGuidanceMethod.METHOD_ORACLE
             #self.method = MixedFeatureGuidanceMethod.METHOD_ORACLE_SPARSITY
+        self.use_corr = getattr(configs, 'use_corr', False)
+        self.use_nonneg = getattr(configs, 'use_nonneg', False)
         self.can_use_test_error_for_model_selection = True
         self.use_test_error_for_model_selection = configs.use_test_error_for_model_selection
         self.num_random_pairs = getattr(configs, 'num_random_pairs', 0)
@@ -80,6 +87,26 @@ class MixedFeatureGuidanceMethod(method.Method):
         if self.method in MixedFeatureGuidanceMethod.METHODS_NO_C2:
             self.C2 = 0
             del self.cv_params['C2']
+
+    def train_and_test(self, data):
+        #data = deepcopy(data)
+        #data = self.preprocessor.preprocess(data, self.configs)
+        metadata = getattr(data, 'metadata', dict())
+        if not 'metadata' in metadata:
+            ridge = method.SKLRidgeRegression(self.configs)
+            ridge.preprocessor = self.preprocessor
+            data_copy = deepcopy(data)
+            data_copy.set_train()
+            data_copy.set_true_y()
+            ridge.train_and_test(data_copy)
+            metadata['true_w'] = ridge.w
+            data.metadata = metadata
+        p = data.x.shape[1]
+        corr = np.zeros(p)
+        for i in range(p):
+            corr[i] = scipy.stats.pearsonr(data.x[:,i], data.true_y)[0]
+        metadata['corr'] = corr
+        return super(MixedFeatureGuidanceMethod, self).train_and_test(data)
 
     def train(self, data):
         assert data.is_regression
@@ -182,16 +209,20 @@ class MixedFeatureGuidanceMethod(method.Method):
         C2 = self.C2
         C3 = self.C3
         #C = .001
+        #C2 = 0
         num_random_pairs = self.num_random_pairs
         num_signs = self.num_random_signs
+        use_nonneg_ridge = self.method == MixedFeatureGuidanceMethod.METHOD_RIDGE and self.use_nonneg
         if self.method == MixedFeatureGuidanceMethod.METHOD_ORACLE:
+            assert False, 'Update this'
             #Refit with standardized data to clear transform
             #Is there a better way of doing this?
             self.transform.fit_transform(x)
             self.w = data.metadata['true_w']
             self.b = 0
             return
-        elif (C2 != 0 or C3 != 0) or self.method == MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT:
+        elif self.method in {MixedFeatureGuidanceMethod.METHOD_RELATIVE, MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT}\
+                or use_nonneg_ridge:
             opt_data = optimize_data(x, y, C, C2, C3)
             '''
             opt_data.pairs = [
@@ -204,9 +235,14 @@ class MixedFeatureGuidanceMethod(method.Method):
             opt_data.pairs = list()
             constraints = list()
             pairs = self.create_random_pairs(data.metadata['true_w'], num_pairs=num_random_pairs)
+            if num_signs > p:
+                num_signs = p
+            feats_to_constraint = np.random.choice(p, num_signs, replace=False)
+            true_w = data.metadata['true_w']
             if self.method == MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT:
+                assert not self.use_corr
                 constraints = list()
-                true_w = data.metadata['true_w']
+
                 for j, k in pairs:
                     constraints.append({
                         'fun': lambda w, j=j, k=k: w[j] - w[k],
@@ -214,7 +250,7 @@ class MixedFeatureGuidanceMethod(method.Method):
                     })
                 #for i in range(num_signs):
                 #    j = np.random.choice(p)
-                feats_to_constraint = np.random.choice(p, num_signs, replace=False)
+
                 for j in feats_to_constraint:
                     fun = lambda w, j=j: w[j]*np.sign(true_w[j])
                     constraints.append({
@@ -224,46 +260,118 @@ class MixedFeatureGuidanceMethod(method.Method):
                     })
             else:
                 opt_data.pairs = pairs
-            eval_func = lambda a: MixedFeatureGuidanceMethod.eval(opt_data, a)
-
-            w0 = np.zeros(p)
-            options = dict()
-            options['maxiter'] = 1000
-            options['disp'] = False
-            bounds = [(None, None)] * p
-
-            '''
-            w1 = optimize.minimize(
-                eval_func,
-                a0,
-                method=self.configs.scipy_opt_method,
-                jac=None,
-                options=options,
-                bounds = bounds,
-                constraints=constraints
-            ).x
-            '''
-            if self.method == MixedFeatureGuidanceMethod.METHOD_ORACLE_SPARSITY:
-                assert False
 
 
+            if self.method == MixedFeatureGuidanceMethod.METHOD_RELATIVE or use_nonneg_ridge:
+                assert len(feats_to_constraint) == 0 or len(pairs) == 0
+                w = cvx.Variable(p)
+                b = cvx.Variable(1)
+                z = cvx.Variable(len(feats_to_constraint) + len(pairs))
+                loss = cvx.sum_entries(
+                    cvx.power(
+                        x*w + b - y,
+                        2
+                    )
+                )
+                loss /= n
+                constraints = list()
+                idx = 0
+                corr = data.metadata['corr']
+                if self.method != MixedFeatureGuidanceMethod.METHOD_RIDGE:
+                    for j, k in pairs:
+                        if self.use_corr:
+                            if corr[j] > corr[k]:
+                                constraints.append(w[j] - w[k] + z[idx] >= 0)
+                            else:
+                                constraints.append(w[k] - w[j] + z[idx] >= 0)
+                        else:
+                            constraints.append(w[j] - w[k] + z[idx] >= 0)
+                        idx += 1
+                    for j in feats_to_constraint:
+                        assert not self.use_nonneg
+                        if self.use_corr:
+                            constraints.append(w[j] * np.sign(corr[j]) + z[idx] >= 0)
+                        else:
+                            constraints.append(w[j]*np.sign(true_w[j]) + z[idx] >= 0)
+                        idx += 1
+                reg = cvx.norm2(w) ** 2
+                reg_guidance = cvx.norm2(z) ** 2
+                constraints.append(z >= 0)
+                if self.use_nonneg:
+                    constraints.append(w >= 0)
+                obj = cvx.Minimize(loss + C*reg + C2*reg_guidance)
+                prob = cvx.Problem(obj, constraints)
+                try:
+                    prob.solve(solver='SCS')
+                    assert w.value is not None
+                    self.w = np.squeeze(np.asarray(w.value))
+                except:
+                    self.w = np.zeros(p)
+                    '''
+                    if not self.running_cv:
+                        assert False, 'Failed to converge when done with CV!'
+                    '''
+                '''
+                if b.value is not None:
+                    assert abs(b.value - y.mean())/abs(b.value) <= 1e-3
+                '''
+            else:
+                assert not self.use_corr
+                eval_func = lambda a: MixedFeatureGuidanceMethod.eval(opt_data, a)
 
-            #with Capturing() as output:
-            results = optimize.minimize(
-                eval_func,
-                w0,
-                method=self.configs.scipy_opt_method,
-                jac=None,
-                options=options,
-                bounds = bounds,
-                constraints=constraints
-            )
-            w2 = results.x
-            self.w = results.x
+                w0 = np.zeros(p)
+                options = dict()
+                options['maxiter'] = 1000
+                options['disp'] = False
+                bounds = [(None, None)] * p
+
+                '''
+                w1 = optimize.minimize(
+                    eval_func,
+                    a0,
+                    method=self.configs.scipy_opt_method,
+                    jac=None,
+                    options=options,
+                    bounds = bounds,
+                    constraints=constraints
+                ).x
+                '''
+                if self.method == MixedFeatureGuidanceMethod.METHOD_ORACLE_SPARSITY:
+                    assert False
+
+
+
+                #with Capturing() as output:
+                results = optimize.minimize(
+                    eval_func,
+                    w0,
+                    method=self.configs.scipy_opt_method,
+                    jac=None,
+                    options=options,
+                    bounds = bounds,
+                    constraints=constraints
+                )
+                w2 = results.x
+                self.w = np.asarray(results.x)
         else:
+            #assert not self.use_corr
             self.w = self.solve_w(x, y, C)
         self.b = y.mean()
+        if not self.running_cv and self.method != MixedFeatureGuidanceMethod.METHOD_RIDGE:
+            w2 = self.solve_w(x,y,C)
+            true_w = data.metadata['true_w']
+            err1 = array_functions.normalized_error(self.w, true_w)
+            err2 = array_functions.normalized_error(w2, true_w)
+            print str(err1 - err2)
+            c2 = deepcopy(self.configs)
+            c2.method = MixedFeatureGuidanceMethod.METHOD_RIDGE
+            t2 = MixedFeatureGuidanceMethod(c2)
+            t2.train_and_test(data)
+            w = self.w
+            w2 = t2.w
+            pass
         #print self.w
+        self.true_w = data.metadata['true_w']
         pass
 
 
@@ -275,6 +383,8 @@ class MixedFeatureGuidanceMethod(method.Method):
         x = self.transform.transform(data.x)
         o.y = x.dot(self.w) + self.b
         o.fu = o.y
+        o.w = self.w
+        o.true_w = self.true_w
         return o
 
 
@@ -283,6 +393,11 @@ class MixedFeatureGuidanceMethod(method.Method):
         s = 'Mixed-feats'
         use_pairs = False
         use_signs = False
+        try:
+            if self.preprocessor.name() is not None:
+                s += '_' + self.preprocessor.name()
+        except:
+            pass
         if self.method == MixedFeatureGuidanceMethod.METHOD_RIDGE:
             s += '_method=Ridge'
         elif self.method == MixedFeatureGuidanceMethod.METHOD_RELATIVE:
@@ -299,6 +414,10 @@ class MixedFeatureGuidanceMethod(method.Method):
             s += '_signs=' + str(num_signs)
         if self.method in MixedFeatureGuidanceMethod.METHODS_USES_PAIRS and num_pairs > 0:
             s += '_pairs=' + str(num_pairs)
+        if getattr(self, 'use_corr', False) and self.method != MixedFeatureGuidanceMethod.METHOD_RIDGE:
+            s += '_corr'
+        if getattr(self, 'use_nonneg', False):
+            s += '_nonneg'
         if self.use_test_error_for_model_selection:
             s += '-TEST'
 

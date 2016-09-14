@@ -16,6 +16,15 @@ from timer.timer import toc
 from sklearn import manifold
 import warnings
 import random
+import re
+
+#There are more computationally efficient ways of doing this
+def remove_quotes(x):
+    for i, elem in enumerate(x):
+        for j, e in enumerate(elem):
+            elem[j] = re.sub('"', '', e)
+        x[i, :] = elem
+    return x
 
 def normalized_error(v1, v2):
     return norm(v1/norm(v1) - v2/norm(v2))
@@ -441,7 +450,7 @@ def plot_2d(x,y,data_set_ids=None,alpha=1,title=None):
     pl.title(title)
     pl.scatter(x,y,alpha=alpha,c=data_set_ids,s=60)
     #move_fig(fig)
-    pl.show(block=False)
+    pl.show(block=True)
     pass
 
 def spy(m, prec=.001, size=5):

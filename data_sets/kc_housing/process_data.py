@@ -8,17 +8,12 @@ file_name = 'kc_house_data.csv'
 feat_names, data = create_data_set.load_csv(file_name, True, dtype='str', delim=',')
 feats_to_clear = ['id', 'date', 'yr_renovated', 'zipcode', 'lat', 'long']
 y_name = 'price'
-y_ind =
-
-x = np.asarray(x, dtype='float')
-#x = feats[:,1:]
-#y = np.zeros((x.shape[0],1))
-for idx, i in enumerate(ids):
-    if i in id_to_y:
-        y[idx] = id_to_y[i]
-    else:
-        print 'missing id'
-        y[idx] = -1
+y_ind = array_functions.find_first_element(feat_names, y_name)
+y = data[:, y_ind].astype(np.float)
+clear_idx = array_functions.find_set(feat_names, feats_to_clear + [y_name])
+x = data[:, ~clear_idx]
+x = array_functions.remove_quotes(x)
+x = x.astype(np.float)
 
 data = (x,y)
 helper_functions.save_object('processed_data.pkl', data)

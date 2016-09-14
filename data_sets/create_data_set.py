@@ -50,6 +50,7 @@ wine_file = 'wine%s/raw_data.pkl'
 adience_aligned_cnn_file = 'adience_aligned_cnn/raw_data.pkl'
 adience_aligned_cnn_1_per_instance_id_file = 'adience_aligned_cnn_1_per_instance_id/raw_data.pkl'
 drosophila_file = 'drosophilia/raw_data.pkl'
+kc_housing_file = 'kc_housing/raw_data.pkl'
 
 def pair_file(i,j):
     s = 'pair_data_' + str(i) + '_' + str(j) + '/raw_data.pkl'
@@ -74,6 +75,7 @@ def create_and_save_data(x,y,domain_ids,file):
     data.data_set_ids = domain_ids
     helper_functions.save_object(file,data)
 
+import csv
 def load_csv(file, has_field_names=True, dtype='float', delim=',',converters=None):
     nrows = 1
     if not has_field_names:
@@ -566,6 +568,15 @@ def create_bike_sharing():
 
     pass
 
+def create_kc_housing():
+    file = 'kc_housing/processed_data.pkl'
+    x, y = helper_functions.load_object(file)
+    data = data_class.Data(x, y)
+    data.is_regression = True
+    s = kc_housing_file
+    helper_functions.save_object(s, data)
+
+
 if __name__ == "__main__":
     #create_boston_housing()
     #create_concrete()
@@ -580,6 +591,7 @@ if __name__ == "__main__":
     #create_pair_82_83()
     #create_pair(pair_target,pair_source,0)
     #create_wine()
-    create_drosophila()
+    #create_drosophila()
+    create_kc_housing()
     from data_sets import create_data_split
     create_data_split.run_main()

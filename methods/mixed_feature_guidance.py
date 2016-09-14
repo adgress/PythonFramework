@@ -69,12 +69,15 @@ class MixedFeatureGuidanceMethod(method.Method):
             #self.method = MixedFeatureGuidanceMethod.METHOD_ORACLE_SPARSITY
         self.use_corr = getattr(configs, 'use_corr', False)
         self.use_nonneg = getattr(configs, 'use_nonneg', False)
+        self.use_stacking = getattr(configs, 'use_stacking', False)
         self.can_use_test_error_for_model_selection = True
         self.use_test_error_for_model_selection = configs.use_test_error_for_model_selection
         self.num_random_pairs = getattr(configs, 'num_random_pairs', 0)
         self.num_random_signs = getattr(configs, 'num_random_signs', 0)
         self.w = None
         self.b = None
+        self.stacking_method = method.NadarayaWatsonMethod(configs)
+        self.trained_stacked_methods = list()
         if self.method == MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT:
             self.configs.scipy_opt_method = 'SLSQP'
         if self.method in MixedFeatureGuidanceMethod.METHODS_UNIFORM_C:
@@ -83,7 +86,6 @@ class MixedFeatureGuidanceMethod(method.Method):
         if self.method in MixedFeatureGuidanceMethod.METHODS_NO_C3:
             self.C3 = 0
             del self.cv_params['C3']
-
         if self.method in MixedFeatureGuidanceMethod.METHODS_NO_C2:
             self.C2 = 0
             del self.cv_params['C2']
@@ -108,9 +110,29 @@ class MixedFeatureGuidanceMethod(method.Method):
         metadata['corr'] = corr
         return super(MixedFeatureGuidanceMethod, self).train_and_test(data)
 
+    def get_stacking_x(self, data):
+        x = np.zeros(data.x.shape)
+        for i, t in enumerate(self.trained_stacked_methods):
+            data_copy = deepcopy(data)
+            data_copy.x = np.expand_dims(data_copy.x[:, i], 1)
+            x[:, i] = t.predict(data_copy).y
+        return x
+
     def train(self, data):
         assert data.is_regression
         self.is_classifier = not data.is_regression
+        if self.use_stacking:
+            self.trained_stacked_methods = list()
+            I = data.is_labeled & data.is_train
+            for i in range(data.p):
+                t = deepcopy(self.stacking_method)
+                data_copy = deepcopy(data)
+                data_copy.x = np.expand_dims(data_copy.x[:, i], 1)
+                o = t.train_and_test(data_copy)
+                self.trained_stacked_methods.append(t)
+            x_stacked = self.get_stacking_x(data)
+            data = deepcopy(data)
+            data.x = x_stacked
         return self.solve(data)
 
     @staticmethod
@@ -357,6 +379,8 @@ class MixedFeatureGuidanceMethod(method.Method):
             #assert not self.use_corr
             self.w = self.solve_w(x, y, C)
         self.b = y.mean()
+        if not self.running_cv:
+            pass
         if not self.running_cv and self.method != MixedFeatureGuidanceMethod.METHOD_RIDGE:
             w2 = self.solve_w(x,y,C)
             true_w = data.metadata['true_w']
@@ -379,8 +403,10 @@ class MixedFeatureGuidanceMethod(method.Method):
     def predict(self, data):
         o = Output(data)
         #W = pairwise.rbf_kernel(data.x,self.x,self.sigma)
-
-        x = self.transform.transform(data.x)
+        x = data.x
+        if self.use_stacking:
+            x = self.get_stacking_x(data)
+        x = self.transform.transform(x)
         o.y = x.dot(self.w) + self.b
         o.fu = o.y
         o.w = self.w
@@ -418,6 +444,8 @@ class MixedFeatureGuidanceMethod(method.Method):
             s += '_corr'
         if getattr(self, 'use_nonneg', False):
             s += '_nonneg'
+        if getattr(self, 'use_stacking', False):
+            s += '_stacked'
         if self.use_test_error_for_model_selection:
             s += '-TEST'
 

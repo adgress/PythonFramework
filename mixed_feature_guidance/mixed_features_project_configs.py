@@ -126,8 +126,8 @@ class ProjectConfigs(bc.ProjectConfigs):
             #self.num_labels = [10, 20, 40, 80, 160]
         elif data_set == bc.DATA_KC_HOUSING:
             self.set_data_set_defaults('kc_housing')
-            #self.num_labels = [10, 20, 40]
-            self.num_labels = [160]
+            self.num_labels = [10, 20, 40]
+            #self.num_labels = [160]
         '''
         if self.include_size_in_file_name:
             assert len(self.num_labels) == 1

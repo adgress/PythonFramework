@@ -5,8 +5,8 @@ from utility import array_functions
 #data_file_dir = 'boston_housing'
 #data_file_dir = 'synthetic_linear_reg500-10-1-nnz=4'
 #data_file_dir = 'kc_housing'
-#data_file_dir = 'concrete'
-data_file_dir = 'wine-red'
+data_file_dir = 'concrete'
+#data_file_dir = 'wine-red'
 def vis_data():
     s = 'data_sets/' + data_file_dir + '/raw_data.pkl'
     data = helper_functions.load_object(s)

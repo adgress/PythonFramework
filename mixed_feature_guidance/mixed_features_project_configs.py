@@ -7,6 +7,7 @@ from results_class import results as results_lib
 from sklearn import grid_search
 from utility import helper_functions
 from methods import mixed_feature_guidance
+from copy import deepcopy
 # Command line arguments for ProjectConfigs
 arguments = None
 
@@ -18,10 +19,10 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10_nnz4
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
 #data_set_to_use = bc.DATA_DROSOPHILIA
-data_set_to_use = bc.DATA_BOSTON_HOUSING
+#data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_WINE_RED
 #data_set_to_use = bc.DATA_DROSOPHILIA
-#data_set_to_use = bc.DATA_CONCRETE
+data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_KC_HOUSING
 
 viz_for_paper = False
@@ -31,9 +32,9 @@ run_experiments = True
 use_ridge = False
 use_mean = False
 use_quad_feats = False
-mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
+#mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
 #mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT
-#mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
+mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
 
 viz_w_error = False
 
@@ -162,7 +163,7 @@ class MainConfigs(bc.MainConfigs):
         elif use_ridge:
             self.learner = ridge
         else:
-            method_configs.method = mixed_feature_method
+            method_configs.method = getattr(pc, 'mixed_feature_method', mixed_feature_method)
             self.learner = mixed_feature_guidance.MixedFeatureGuidanceMethod(method_configs)
 
 
@@ -180,7 +181,20 @@ class BatchConfigs(bc.BatchConfigs):
             self.config_list = [MainConfigs(pc)]
             return
         else:
-            self.config_list = [MainConfigs(pc)]
+            #self.config_list = [MainConfigs(pc)]
+            self.config_list = []
+            p = deepcopy(pc)
+            p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
+            p.num_random_pairs = 0
+            p.num_random_signs = 10
+            self.config_list.append(MainConfigs(p))
+            p = deepcopy(p)
+            p.num_random_pairs = 10
+            p.num_random_signs = 0
+            self.config_list.append(MainConfigs(p))
+            p = deepcopy(pc)
+            p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
+            self.config_list.append(MainConfigs(p))
             #assert False, 'Not Implemented Yet'
 
 class VisualizationConfigs(bc.VisualizationConfigs):
@@ -235,8 +249,9 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['Mixed-feats_method=Rel_pairs=10_corr_CVXOPT.pkl'] = 'Mixed: Relative, corr, 10 pairs'
             self.files['Mixed-feats_method=Rel_signs=1000_corr_CVXOPT.pkl'] = 'Mixed: Relative, corr, 1000 signs'
             '''
-            self.files['Mixed-feats_method=Ridge.pkl'] = 'Mixed: Ridge'
+            self.files['Mixed-feats_method=Ridge_CVXOPT.pkl'] = 'Mixed: Ridge'
             self.files['Mixed-feats_method=Rel_signs=10_corr_CVXOPT.pkl'] = 'Mixed: Relative, corr, 10 signs'
+            self.files['Mixed-feats_method=Rel_signs=50_corr_CVXOPT.pkl'] = 'Mixed: Relative, corr, 50 signs'
             #self.files['Mixed-feats_method=Ridge_stacked.pkl'] = 'Mixed: Ridge, stacked'
             self.files['Mixed-feats_method=Rel_pairs=10_corr_CVXOPT.pkl'] = 'Mixed: Relative, corr, 10 pairs'
             #self.files['Mixed-feats_method=Rel_signs=10_corr_stacked.pkl'] = 'Mixed: Relative, corr, stacked, 10 signs'

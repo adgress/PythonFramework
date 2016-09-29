@@ -18,7 +18,7 @@ configs_lib = configs_library
 import boto
 import math
 from experiment import experiment_manager
-from utility import helper_functions
+from utility import helper_functions, array_functions
 from timer import timer
 import matplotlib.pyplot as plt
 import socket
@@ -29,6 +29,8 @@ from loss_functions.loss_function import MeanSquaredError
 from loss_functions import loss_function
 from utility import mpi_utility
 import bisect
+
+
 
 def run_experiments(configs=None):
     pc = configs_lib.ProjectConfigs()
@@ -62,6 +64,70 @@ def combine_results(results, sized_results):
             results.results_list.insert(results_idx, r.results_list[idx])
             pass
     return results
+
+def create_table():
+    vis_configs = configs_lib.VisualizationConfigs()
+    viz_params = configs_lib.viz_params
+    n = len(viz_params)
+
+    if getattr(vis_configs, 'figsize', None):
+        fig = plt.figure(figsize=vis_configs.figsize)
+    else:
+        fig = plt.figure()
+    # fig.suptitle('Results')
+    # num_rows = min(n, configs_lib.max_rows)
+    cell_text = [[np.nan]*len(vis_configs.results_files) for i in range(len(viz_params))]
+    cols = []
+    rows = []
+    size_to_vis = vis_configs.size_to_vis
+    for data_set_idx, curr_viz_params in enumerate(viz_params):
+        vis_configs = configs_lib.VisualizationConfigs(**curr_viz_params)
+        param_text = []
+        if len(rows) <= data_set_idx:
+            rows.append(vis_configs.results_dir)
+        method_idx = 0
+        for file, legend_str in vis_configs.results_files:
+            if not os.path.isfile(file):
+                print file + ' doesn''t exist - skipping'
+                assert False, 'Creating Table doesn''t work with missing files'
+                assert vis_configs.show_legend_on_all, 'Just to be safe, set show_legend_on_all=True if files are missing'
+                continue
+            results = helper_functions.load_object(file)
+            if len(cols) <= method_idx:
+                cols.append(legend_str)
+            sized_results = get_sized_results(file)
+            results = combine_results(results, sized_results)
+            # plt.plot([1,2,3], [1,2,3], 'go-', label='line 1', linewidth=2)
+            processed_results = results.compute_error_processed(vis_configs.loss_function)
+            sizes = results.sizes
+            assert size_to_vis in sizes
+            size_idx = array_functions.find_first_element(sizes, size_to_vis)
+            # sizes = sizes[0:4]
+            s = legend_str
+            if s is None:
+                s = results.configs.learner.name_string
+            highs = np.asarray(processed_results.means) + np.asarray(processed_results.highs)
+            lows = np.asarray(processed_results.means) - np.asarray(processed_results.lows)
+            mean_val = processed_results.means[size_idx]
+            var = (highs-lows)[size_idx]/2
+            str = '%.2f +/- %.2f' % (mean_val, var)
+            cell_text[data_set_idx][method_idx] = str
+            method_idx += 1
+        #cell_text.append(param_text)
+
+    fig, axs = plt.subplots()
+    axs.axis('tight')
+    axs.axis('off')
+    the_table = axs.table(
+        cellText=cell_text,
+        rowLabels=rows,
+        colLabels=cols,
+        loc='center'
+    )
+    the_table.auto_set_font_size(False)
+    the_table.set_fontsize(10)
+    plt.show()
+    print ''
 
 def run_visualization():
     vis_configs = configs_lib.VisualizationConfigs()
@@ -202,7 +268,11 @@ def run_main(num_labels=None, split_idx=None, no_viz=None, configs=None, comm=No
     if mpi_utility.is_group_master():
         timer.toc()
     if helper_functions.is_laptop() and not arguments.no_viz:
-        run_visualization()
+        vis_configs = configs_lib.VisualizationConfigs()
+        if vis_configs.vis_table:
+            create_table()
+        else:
+            run_visualization()
 
 if __name__ == "__main__":
     run_main()

@@ -78,6 +78,7 @@ class MixedFeatureGuidanceMethod(method.Method):
         self.b = None
         self.stacking_method = method.NadarayaWatsonMethod(configs)
         self.trained_stacked_methods = list()
+        self.cvx_method = getattr(configs, 'cvx_method', 'SCS')
         if self.method == MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT:
             self.configs.scipy_opt_method = 'SLSQP'
         if self.method in MixedFeatureGuidanceMethod.METHODS_UNIFORM_C:
@@ -324,7 +325,8 @@ class MixedFeatureGuidanceMethod(method.Method):
                 obj = cvx.Minimize(loss + C*reg + C2*reg_guidance)
                 prob = cvx.Problem(obj, constraints)
                 try:
-                    prob.solve(solver='SCS')
+                    #prob.solve(solver='SCS')
+                    prob.solve(solver=self.cvx_method)
                     assert w.value is not None
                     self.w = np.squeeze(np.asarray(w.value))
                 except:
@@ -380,6 +382,7 @@ class MixedFeatureGuidanceMethod(method.Method):
             self.w = self.solve_w(x, y, C)
         self.b = y.mean()
         if not self.running_cv:
+            print prob.status
             pass
         if not self.running_cv and self.method != MixedFeatureGuidanceMethod.METHOD_RIDGE:
             w2 = self.solve_w(x,y,C)
@@ -446,6 +449,8 @@ class MixedFeatureGuidanceMethod(method.Method):
             s += '_nonneg'
         if getattr(self, 'use_stacking', False):
             s += '_stacked'
+        if getattr(self, 'cvx_method', 'SCS') != 'SCS':
+            s += '_' + self.cvx_method
         if self.use_test_error_for_model_selection:
             s += '-TEST'
 

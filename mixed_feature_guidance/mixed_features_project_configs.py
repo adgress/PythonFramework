@@ -16,9 +16,9 @@ def create_project_configs():
 pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10_nnz4
-data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
 #data_set_to_use = bc.DATA_DROSOPHILIA
-#data_set_to_use = bc.DATA_BOSTON_HOUSING
+data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_WINE_RED
 #data_set_to_use = bc.DATA_DROSOPHILIA
 #data_set_to_use = bc.DATA_CONCRETE
@@ -41,8 +41,8 @@ other_pc_configs = {
 }
 
 other_method_configs = {
-    'num_random_pairs': 0,
-    'num_random_signs': 10,
+    'num_random_pairs': 10,
+    'num_random_signs': 0,
     'use_nonneg': False,
     'use_stacking': False,
     'use_corr': True,
@@ -52,6 +52,7 @@ other_method_configs = {
     'y_scale_min_max': False,
     'y_scale_standard': False,
     'scipy_opt_method': 'L-BFGS-B',
+    'cvx_method': 'CVXOPT',
     'num_cv_splits': 10,
     'eps': 1e-10,
     'use_perfect_feature_selection': True
@@ -241,9 +242,6 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             #self.files['Mixed-feats_method=Rel_signs=10_corr_stacked.pkl'] = 'Mixed: Relative, corr, stacked, 10 signs'
         '''
         self.files['Mixed-feats_method=Ridge.pkl'] = 'Mixed: Ridge'
-        self.files['Mixed-feats_method=Rel.pkl'] = 'Mixed: Relative'
-        self.files['Mixed-feats_method=Oracle.pkl'] = 'Mixed: Oracle'
-        self.files['Mixed-feats_method=OracleSparsity.pkl'] = 'Mixed: Oracle Sparsity'
         self.files['Mixed-feats_method=HardConstraints_pairs=5.pkl'] = 'Mixed: Hard Constraints, 5 pairs'
         self.files['Mixed-feats_method=HardConstraints_pairs=10.pkl'] = 'Mixed: Hard Constraints, 10 pairs'
         self.files['Mixed-feats_method=HardConstraints_pairs=20.pkl'] = 'Mixed: Hard Constraints, 20 pairs'

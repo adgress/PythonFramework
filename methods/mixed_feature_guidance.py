@@ -382,8 +382,10 @@ class MixedFeatureGuidanceMethod(method.Method):
             self.w = self.solve_w(x, y, C)
         self.b = y.mean()
         if not self.running_cv:
-            print prob.status
-            pass
+            try:
+                print prob.status
+            except:
+                pass
         if not self.running_cv and self.method != MixedFeatureGuidanceMethod.METHOD_RIDGE:
             w2 = self.solve_w(x,y,C)
             true_w = data.metadata['true_w']

@@ -112,7 +112,7 @@ class ExperimentResults(ResultsContainer):
             n = errors.shape[0]
             zn = 1.96
             #if self.is_regression or mean > 1:
-            if mean > 1:
+            if mean > 1 or True:
                 #std = errors[:,i].std()
                 std = e.std()
                 se = std / math.sqrt(n)

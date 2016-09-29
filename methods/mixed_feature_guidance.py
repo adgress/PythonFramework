@@ -56,7 +56,8 @@ class MixedFeatureGuidanceMethod(method.Method):
     def __init__(self,configs=MethodConfigs()):
         super(MixedFeatureGuidanceMethod, self).__init__(configs)
         self.cv_params['C'] = self.create_cv_params(-5, 5, append_zero=True)
-        self.cv_params['C2'] = self.create_cv_params(-5, 10, append_zero=True)
+        self.cv_params['C2'] = self.create_cv_params(-5, 10, append_zero=True, prepend_inf=True)
+        #self.cv_params['C2'] = np.asarray([np.inf])
         self.cv_params['C3'] = self.create_cv_params(-5, 5, append_zero=True)
         self.transform = StandardScaler()
         #self.preprocessor = preprocessing.BasisQuadraticFewPreprocessor()
@@ -90,6 +91,9 @@ class MixedFeatureGuidanceMethod(method.Method):
         if self.method in MixedFeatureGuidanceMethod.METHODS_NO_C2:
             self.C2 = 0
             del self.cv_params['C2']
+        self.quiet = False
+        self.pairs = None
+        self.feats_to_constrain = None
 
     def train_and_test(self, data):
         #data = deepcopy(data)
@@ -97,6 +101,7 @@ class MixedFeatureGuidanceMethod(method.Method):
         metadata = getattr(data, 'metadata', dict())
         if not 'metadata' in metadata:
             ridge = method.SKLRidgeRegression(self.configs)
+            ridge.quiet = True
             ridge.preprocessor = self.preprocessor
             data_copy = deepcopy(data)
             data_copy.set_train()
@@ -109,6 +114,12 @@ class MixedFeatureGuidanceMethod(method.Method):
         for i in range(p):
             corr[i] = scipy.stats.pearsonr(data.x[:,i], data.true_y)[0]
         metadata['corr'] = corr
+        num_random_pairs = self.num_random_pairs
+        num_signs = self.num_random_signs
+        self.pairs = self.create_random_pairs(data.metadata['true_w'], num_pairs=num_random_pairs)
+        if num_signs > p:
+            num_signs = p
+        self.feats_to_constrain = np.random.choice(p, num_signs, replace=False)
         return super(MixedFeatureGuidanceMethod, self).train_and_test(data)
 
     def get_stacking_x(self, data):
@@ -233,8 +244,6 @@ class MixedFeatureGuidanceMethod(method.Method):
         C3 = self.C3
         #C = .001
         #C2 = 0
-        num_random_pairs = self.num_random_pairs
-        num_signs = self.num_random_signs
         use_nonneg_ridge = self.method == MixedFeatureGuidanceMethod.METHOD_RIDGE and self.use_nonneg
         if self.method == MixedFeatureGuidanceMethod.METHOD_ORACLE:
             assert False, 'Update this'
@@ -257,10 +266,8 @@ class MixedFeatureGuidanceMethod(method.Method):
             '''
             opt_data.pairs = list()
             constraints = list()
-            pairs = self.create_random_pairs(data.metadata['true_w'], num_pairs=num_random_pairs)
-            if num_signs > p:
-                num_signs = p
-            feats_to_constraint = np.random.choice(p, num_signs, replace=False)
+            pairs = self.pairs
+            feats_to_constraint = self.feats_to_constrain
             true_w = data.metadata['true_w']
             if self.method == MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT:
                 assert not self.use_corr
@@ -319,6 +326,9 @@ class MixedFeatureGuidanceMethod(method.Method):
                         idx += 1
                 reg = cvx.norm2(w) ** 2
                 reg_guidance = cvx.norm2(z) ** 2
+                if np.isinf(C2):
+                    constraints = []
+                    C2 = 0
                 constraints.append(z >= 0)
                 if self.use_nonneg:
                     constraints.append(w >= 0)
@@ -395,6 +405,7 @@ class MixedFeatureGuidanceMethod(method.Method):
             c2 = deepcopy(self.configs)
             c2.method = MixedFeatureGuidanceMethod.METHOD_RIDGE
             t2 = MixedFeatureGuidanceMethod(c2)
+            t2.quiet = True
             t2.train_and_test(data)
             w = self.w
             w2 = t2.w

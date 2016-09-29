@@ -128,10 +128,12 @@ class Method(Saveable):
     def can_use_instance_weights(self):
         return False
 
-    def create_cv_params(self, i_low, i_high, append_zero=False):
+    def create_cv_params(self, i_low, i_high, append_zero=False, prepend_inf=False):
         a = 10**np.asarray(list(reversed(range(i_low,i_high))),dtype='float64')
         if append_zero:
-            a = np.append(a,0)
+            a = np.append(a, 0)
+        if prepend_inf:
+            a = np.insert(a, 0, np.inf)
         return a
 
     def run_pre_experiment_setup(self, data_and_splits):
@@ -285,12 +287,15 @@ class Method(Saveable):
 
         min_error = errors.min()
         best_params = param_grid[errors.argmin()]
-        if not self.quiet and mpi_utility.is_group_master():
-            print best_params
-        self.best_params = best_params
         performance_on_test_data = None
         if aggregate_test_results:
             performance_on_test_data = errors_on_test_data[errors.argmin()]
+        if not self.quiet and mpi_utility.is_group_master():
+            print best_params
+            print 'CV Error: ' + str(errors.min())
+            print 'Test Error: ' + str(errors_on_test_data[errors.argmin()])
+        self.best_params = best_params
+
         return [best_params, min_error, performance_on_test_data]
 
     def process_data(self, data):

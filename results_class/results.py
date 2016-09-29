@@ -102,12 +102,13 @@ class ExperimentResults(ResultsContainer):
             e = errors[:,i]
 
             sorted = np.sort(e)
+            #I = (e <= sorted[-3])
             I = (e <= sorted[-1])
             e = e[I]
 
-            mean = np.percentile(errors[:,i],50)
+            #mean = np.percentile(errors[:,i],50)
 
-            #mean = e.mean()
+            mean = e.mean()
             n = errors.shape[0]
             zn = 1.96
             #if self.is_regression or mean > 1:

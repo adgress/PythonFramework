@@ -14,6 +14,8 @@ import scipy.optimize as optimize
 from utility.capturing import Capturing
 from copy import deepcopy
 import preprocessing
+from sklearn.feature_selection import SelectKBest, f_regression
+
 
 class optimize_data(object):
     def __init__(self, x, y, reg_ridge, reg_a, reg_mixed):
@@ -80,6 +82,7 @@ class MixedFeatureGuidanceMethod(method.Method):
         self.stacking_method = method.NadarayaWatsonMethod(configs)
         self.trained_stacked_methods = list()
         self.cvx_method = getattr(configs, 'cvx_method', 'SCS')
+        self.num_features = getattr(configs, 'num_features', None)
         if self.method == MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT:
             self.configs.scipy_opt_method = 'SLSQP'
         if self.method in MixedFeatureGuidanceMethod.METHODS_UNIFORM_C:
@@ -98,6 +101,10 @@ class MixedFeatureGuidanceMethod(method.Method):
     def train_and_test(self, data):
         #data = deepcopy(data)
         #data = self.preprocessor.preprocess(data, self.configs)
+        data = deepcopy(data)
+        if self.num_features is not None:
+            select_k_best = SelectKBest(f_regression, self.num_features)
+            data.x = select_k_best.fit_transform(data.x, data.true_y)
         metadata = getattr(data, 'metadata', dict())
         if not 'metadata' in metadata:
             ridge = method.SKLRidgeRegression(self.configs)
@@ -464,6 +471,8 @@ class MixedFeatureGuidanceMethod(method.Method):
             s += '_stacked'
         if getattr(self, 'cvx_method', 'SCS') != 'SCS':
             s += '_' + self.cvx_method
+        if getattr(self, 'num_features', None) is not None:
+            s += '_' + str(self.num_features)
         if self.use_test_error_for_model_selection:
             s += '-TEST'
 

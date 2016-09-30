@@ -562,7 +562,7 @@ class ScikitLearnMethod(Method):
         return s
 
 class SKLRidgeRegression(ScikitLearnMethod):
-    def __init__(self,configs=None):
+    def __init__(self,configs=MethodConfigs()):
         super(SKLRidgeRegression, self).__init__(configs, linear_model.Ridge())
         self.cv_params['alpha'] = 10**np.asarray(range(-8,8),dtype='float64')
         self.set_params(alpha=0,fit_intercept=True,normalize=True,tol=1e-12)

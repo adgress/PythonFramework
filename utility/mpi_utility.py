@@ -22,7 +22,10 @@ def mpi_split_even_odd():
 
 def get_comm():
     import main
-    comm = main.configs_lib.comm
+    try:
+        comm = main.configs_lib.comm
+    except:
+        comm = None
     if comm is None:
         comm = MPI.COMM_WORLD
     return comm

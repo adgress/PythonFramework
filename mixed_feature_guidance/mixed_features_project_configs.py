@@ -18,11 +18,11 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10_nnz4
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-#data_set_to_use = bc.DATA_DROSOPHILIA
+data_set_to_use = bc.DATA_DROSOPHILIA
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_WINE_RED
 #data_set_to_use = bc.DATA_DROSOPHILIA
-data_set_to_use = bc.DATA_CONCRETE
+#data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_KC_HOUSING
 
 viz_for_paper = False
@@ -44,12 +44,13 @@ other_pc_configs = {
 other_method_configs = {
     'num_random_pairs': 10,
     'num_random_signs': 0,
+    'num_features': None,
     'use_nonneg': False,
     'use_stacking': False,
     'use_corr': True,
     'include_size_in_file_name': False,
     'num_features': -1,
-    'use_test_error_for_model_selection': True,
+    'use_test_error_for_model_selection': False,
     'y_scale_min_max': False,
     'y_scale_standard': False,
     'scipy_opt_method': 'L-BFGS-B',
@@ -58,6 +59,9 @@ other_method_configs = {
     'eps': 1e-10,
     'use_perfect_feature_selection': True
 }
+
+if data_set_to_use == bc.DATA_DROSOPHILIA:
+    other_method_configs['num_features'] = 50
 
 run_batch = True
 if helper_functions.is_laptop():

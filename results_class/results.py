@@ -103,7 +103,7 @@ class ExperimentResults(ResultsContainer):
 
             sorted = np.sort(e)
             #I = (e <= sorted[-3])
-            I = (e <= sorted[-3])
+            I = (e <= sorted[-1])
             e = e[I]
 
             #mean = np.percentile(errors[:,i],50)

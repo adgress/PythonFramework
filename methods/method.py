@@ -200,11 +200,13 @@ class Method(Saveable):
         train_data = deepcopy(data)
         #test_data = data.get_subset(data.is_test)
         test_data = data.get_test_data()
+        train_data = train_data.get_subset(train_data.is_train)
         if self.configs.use_validation:
-            I = train_data.is_labeled
-            train_data.reveal_labels(array_functions.true(train_data.n))
+            I = train_data.is_labeled & train_data.is_train
+            #train_data.reveal_labels(array_functions.true(train_data.n))
             ds = create_data_split.DataSplitter()
             splits = ds.generate_identity_split(I)
+            #assert not hasattr(data, 'is_train_pairwise')
         elif self.use_test_error_for_model_selection:
             I = train_data.is_train
             ds = create_data_split.DataSplitter()

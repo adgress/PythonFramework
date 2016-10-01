@@ -202,7 +202,7 @@ class Method(Saveable):
         test_data = data.get_test_data()
         if self.configs.use_validation:
             I = train_data.is_labeled
-            train_data.reveal_labels()
+            train_data.reveal_labels(array_functions.true(train_data.n))
             ds = create_data_split.DataSplitter()
             splits = ds.generate_identity_split(I)
         elif self.use_test_error_for_model_selection:

@@ -33,9 +33,9 @@ run_experiments = True
 use_ridge = False
 use_mean = False
 use_quad_feats = False
-mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
+#mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
 #mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT
-#mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
+mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
 
 viz_w_error = False
 
@@ -52,6 +52,7 @@ other_method_configs = {
     'use_corr': True,
     'include_size_in_file_name': False,
     'num_features': -1,
+    'use_validation': True,
     'use_test_error_for_model_selection': False,
     'y_scale_min_max': False,
     'y_scale_standard': False,
@@ -238,6 +239,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files = OrderedDict()
         base_file_name = 'RelReg-cvx-constraints-%s=%s'
         use_test = other_method_configs['use_test_error_for_model_selection']
+        use_val = other_method_configs['use_validation']
 
         #self.files['Mixed-feats_QuadFeatsFew_method=HardConstraints_signs=20.pkl'] = 'Mixed: Hard Constraints, Quad Feats Few, 20 signs'
         #self.files['SKL-RidgeReg-QuadFeatsFew.pkl'] = 'SKL Ridge Regression, Quad Feats Few'
@@ -288,12 +290,16 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             'nCV',
         ]
 
-        if use_test:
+        if use_test or use_val:
             test_files = {}
             for f, leg in self.files.iteritems():
                 f = helper_functions.remove_suffix(f, '.pkl')
-                f += '-TEST.pkl'
-                leg = 'TEST: ' + leg
+                if use_test:
+                    f += '-TEST.pkl'
+                    leg = 'TEST: ' + leg
+                else:
+                    f += '-VAL.pkl'
+                    leg = 'VALIDATION: ' + leg
                 test_files[f] = leg
             self.files = test_files
 

@@ -75,6 +75,7 @@ class MixedFeatureGuidanceMethod(method.Method):
         self.use_stacking = getattr(configs, 'use_stacking', False)
         self.can_use_test_error_for_model_selection = True
         self.use_test_error_for_model_selection = configs.use_test_error_for_model_selection
+        self.use_validation = configs.use_validation
         self.num_random_pairs = getattr(configs, 'num_random_pairs', 0)
         self.num_random_signs = getattr(configs, 'num_random_signs', 0)
         self.w = None
@@ -479,7 +480,8 @@ class MixedFeatureGuidanceMethod(method.Method):
             s += '_l1'
         if getattr(self, 'num_features', -1) > 0:
             s += '_' + str(self.num_features)
-        if self.use_test_error_for_model_selection:
+        if self.use_validation:
+            s += '-VAL'
+        elif self.use_test_error_for_model_selection:
             s += '-TEST'
-
         return s

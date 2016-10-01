@@ -108,7 +108,6 @@ class MixedFeatureGuidanceMethod(method.Method):
             select_k_best = SelectKBest(f_regression, self.num_features)
             data.x = select_k_best.fit_transform(data.x, data.true_y)
         metadata = getattr(data, 'metadata', dict())
-        '''
         if not 'metadata' in metadata:
             ridge = method.SKLRidgeRegression(self.configs)
             ridge.quiet = True
@@ -118,8 +117,6 @@ class MixedFeatureGuidanceMethod(method.Method):
             data_copy.set_true_y()
             ridge.train_and_test(data_copy)
             metadata['true_w'] = ridge.w
-            data.metadata = metadata
-        '''
         data.metadata = metadata
         p = data.x.shape[1]
         corr = np.zeros(p)

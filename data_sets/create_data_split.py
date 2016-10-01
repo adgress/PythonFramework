@@ -146,7 +146,8 @@ def run_main():
     '''
     #split_data('synthetic_linear_reg500-10-1-nnz=4/raw_data.pkl', regression_configs())
     #split_data('synthetic_linear_reg500-50-1.01/raw_data.pkl', regression_configs())
-    split_data(create_data_set.kc_housing_file, regression_configs())
+    #split_data(create_data_set.kc_housing_file, regression_configs())
+    split_data('synthetic_linear_reg500-10-1.01/raw_data.pkl', regression_configs())
     pass
 
 if __name__ == '__main__':

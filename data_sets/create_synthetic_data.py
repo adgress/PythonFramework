@@ -239,6 +239,6 @@ def create_synthetic_hypothesis_transfer(n=500, p=50, kt=1, ks=1, sigma=1.0, sig
 
 
 if __name__ == '__main__':
-    create_synthetic_linear_regression(sigma=1.01)
+    create_synthetic_linear_regression(p=10, sigma=1.01)
     #create_synthetic_hypothesis_transfer(kt=2, ks=2)
     #create_synthetic_linear_regression(p=10, num_non_zero=4)

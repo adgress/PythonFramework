@@ -18,7 +18,8 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10_nnz4
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-data_set_to_use = bc.DATA_DROSOPHILIA
+data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
+#data_set_to_use = bc.DATA_DROSOPHILIA
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_WINE_RED
 #data_set_to_use = bc.DATA_DROSOPHILIA
@@ -32,9 +33,9 @@ run_experiments = True
 use_ridge = False
 use_mean = False
 use_quad_feats = False
-#mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
+mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
 #mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT
-mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
+#mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
 
 viz_w_error = False
 
@@ -42,8 +43,9 @@ other_pc_configs = {
 }
 
 other_method_configs = {
-    'num_random_pairs': 10,
-    'num_random_signs': 0,
+    'num_random_pairs': 0,
+    'num_random_signs': 10,
+    'use_l1': False,
     'num_features': None,
     'use_nonneg': False,
     'use_stacking': False,
@@ -111,6 +113,9 @@ class ProjectConfigs(bc.ProjectConfigs):
             #self.num_labels = [80]
         elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
             self.set_data_set_defaults('synthetic_linear_reg500-50-1.01')
+            self.num_labels = [5, 10, 20, 40]
+        elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10:
+            self.set_data_set_defaults('synthetic_linear_reg500-10-1.01')
             self.num_labels = [5, 10, 20, 40]
         elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10_nnz4:
             self.set_data_set_defaults('synthetic_linear_reg500-10-1-nnz=4')
@@ -258,6 +263,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['Mixed-feats_method=Rel_signs=50_corr_CVXOPT.pkl'] = 'Mixed: Relative, corr, 50 signs'
             #self.files['Mixed-feats_method=Ridge_stacked.pkl'] = 'Mixed: Ridge, stacked'
             self.files['Mixed-feats_method=Rel_pairs=10_corr_CVXOPT.pkl'] = 'Mixed: Relative, corr, 10 pairs'
+            self.files['Mixed-feats_method=Rel_pairs=10_corr_CVXOPT_l1.pkl'] = 'Mixed: Relative, corr, 10 pairs, l1'
+            self.files['Mixed-feats_method=Rel_signs=10_corr_CVXOPT_l1.pkl'] = 'Mixed: Relative, corr, 10 signs, l1'
             #self.files['Mixed-feats_method=Rel_signs=10_corr_stacked.pkl'] = 'Mixed: Relative, corr, stacked, 10 signs'
         '''
         self.files['Mixed-feats_method=Ridge.pkl'] = 'Mixed: Ridge'

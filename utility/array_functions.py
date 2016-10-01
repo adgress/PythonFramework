@@ -17,6 +17,15 @@ from sklearn import manifold
 import warnings
 import random
 import re
+from sklearn.feature_selection import SelectKBest, f_regression
+
+
+def select_k_features(x, y, num_features):
+    assert num_features <= x.shape[1]
+    select_k_best = SelectKBest(f_regression, num_features)
+    x = select_k_best.fit_transform(x, y)
+    return x
+
 
 #There are more computationally efficient ways of doing this
 def remove_quotes(x):

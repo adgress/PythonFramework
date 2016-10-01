@@ -82,7 +82,8 @@ class MixedFeatureGuidanceMethod(method.Method):
         self.stacking_method = method.NadarayaWatsonMethod(configs)
         self.trained_stacked_methods = list()
         self.cvx_method = getattr(configs, 'cvx_method', 'SCS')
-        self.num_features = getattr(configs, 'num_features', None)
+        self.num_features = getattr(configs, 'num_features', -1)
+        self.use_l1 = getattr(configs, 'use_l1', False)
         if self.method == MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT:
             self.configs.scipy_opt_method = 'SLSQP'
         if self.method in MixedFeatureGuidanceMethod.METHODS_UNIFORM_C:
@@ -102,7 +103,7 @@ class MixedFeatureGuidanceMethod(method.Method):
         #data = deepcopy(data)
         #data = self.preprocessor.preprocess(data, self.configs)
         data = deepcopy(data)
-        if self.num_features is not None:
+        if self.num_features > 0:
             select_k_best = SelectKBest(f_regression, self.num_features)
             data.x = select_k_best.fit_transform(data.x, data.true_y)
         metadata = getattr(data, 'metadata', dict())
@@ -332,7 +333,10 @@ class MixedFeatureGuidanceMethod(method.Method):
                             constraints.append(w[j]*np.sign(true_w[j]) + z[idx] >= 0)
                         idx += 1
                 reg = cvx.norm2(w) ** 2
-                reg_guidance = cvx.norm2(z) ** 2
+                if self.use_l1:
+                    reg_guidance = cvx.norm1(z)
+                else:
+                    reg_guidance = cvx.norm2(z) ** 2
                 if np.isinf(C2):
                     constraints = []
                     C2 = 0
@@ -471,7 +475,9 @@ class MixedFeatureGuidanceMethod(method.Method):
             s += '_stacked'
         if getattr(self, 'cvx_method', 'SCS') != 'SCS':
             s += '_' + self.cvx_method
-        if getattr(self, 'num_features', None) is not None:
+        if getattr(self, 'use_l1', False) and self.method == MixedFeatureGuidanceMethod.METHOD_RELATIVE:
+            s += '_l1'
+        if getattr(self, 'num_features', -1) > 0:
             s += '_' + str(self.num_features)
         if self.use_test_error_for_model_selection:
             s += '-TEST'

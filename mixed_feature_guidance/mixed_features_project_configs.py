@@ -17,8 +17,8 @@ def create_project_configs():
 pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10_nnz4
-#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
+data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
 #data_set_to_use = bc.DATA_DROSOPHILIA
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_WINE_RED
@@ -33,9 +33,9 @@ run_experiments = True
 use_ridge = False
 use_mean = False
 use_quad_feats = False
-#mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
+mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
 #mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT
-mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
+#mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
 
 viz_w_error = False
 
@@ -198,6 +198,11 @@ class BatchConfigs(bc.BatchConfigs):
             p.num_random_pairs = 0
             p.num_random_signs = 10
             self.config_list.append(MainConfigs(p))
+            if data_set_to_use in {bc.DATA_SYNTHETIC_LINEAR_REGRESSION, bc.DATA_DROSOPHILIA}:
+                p = deepcopy(p)
+                p.num_random_pairs = 0
+                p.num_random_signs = 50
+                self.config_list.append(MainConfigs(p))
             p = deepcopy(p)
             p.num_random_pairs = 10
             p.num_random_signs = 0

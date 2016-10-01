@@ -120,6 +120,7 @@ class MixedFeatureGuidanceMethod(method.Method):
             metadata['true_w'] = ridge.w
             data.metadata = metadata
         '''
+        data.metadata = metadata
         p = data.x.shape[1]
         corr = np.zeros(p)
         for i in range(p):

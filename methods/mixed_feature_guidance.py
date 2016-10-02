@@ -104,8 +104,6 @@ class MixedFeatureGuidanceMethod(method.Method):
         #data = deepcopy(data)
         #data = self.preprocessor.preprocess(data, self.configs)
         data = deepcopy(data)
-        m = data.y[np.isfinite(data.y)]
-        data.y /= data.y[np.isfinite(data.y)].sum()
         if self.num_features > 0:
             select_k_best = SelectKBest(f_regression, self.num_features)
             data.x = select_k_best.fit_transform(data.x, data.true_y)
@@ -308,7 +306,6 @@ class MixedFeatureGuidanceMethod(method.Method):
                 w = cvx.Variable(p)
                 b = cvx.Variable(1)
                 z = cvx.Variable(len(feats_to_constraint) + len(pairs))
-
                 loss = cvx.sum_entries(
                     cvx.power(
                         x*w + b - y,
@@ -341,18 +338,14 @@ class MixedFeatureGuidanceMethod(method.Method):
                     reg_guidance = cvx.norm1(z)
                 else:
                     reg_guidance = cvx.norm2(z) ** 2
-                C2 = 1
                 if np.isinf(C2):
                     constraints = []
                     C2 = 0
-
                 constraints.append(z >= 0)
                 if self.use_nonneg:
                     constraints.append(w >= 0)
                 obj = cvx.Minimize(loss + C*reg + C2*reg_guidance)
                 prob = cvx.Problem(obj, constraints)
-
-                prob.solve(solver=self.cvx_method, verbose=True)
                 try:
                     #prob.solve(solver='SCS')
                     prob.solve(solver=self.cvx_method)
@@ -413,7 +406,6 @@ class MixedFeatureGuidanceMethod(method.Method):
         if not self.running_cv:
             try:
                 print prob.status
-                print ''
             except:
                 pass
         if not self.running_cv and self.method != MixedFeatureGuidanceMethod.METHOD_RIDGE:

@@ -55,9 +55,13 @@ PLOT_PARAMETRIC = 1
 PLOT_VALIDATION = 2
 PLOT_CONSTRAINED = 3
 PLOT_SMS = 4
-plot_idx = PLOT_PARAMETRIC
+PLOT_TABLE = 5
+plot_idx = PLOT_TABLE
 max_rows = 1
 fontsize = 10
+
+vis_table = plot_idx == PLOT_TABLE
+size_to_vis = 20
 
 run_experiments = True
 show_legend_on_all = True
@@ -129,7 +133,7 @@ def apply_arguments(configs):
         configs.split_idx = arguments.split_idx
 
 class ProjectConfigs(bc.ProjectConfigs):
-    def __init__(self, data_set=None, use_arguments=True):
+    def __init__(self, data_set=None, use_arguments=True, **kwargs):
         super(ProjectConfigs, self).__init__()
         self.target_labels = np.empty(0)
         self.source_labels = np.empty(0)
@@ -140,7 +144,11 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.pool_size = pool_size
         if data_set is None:
             data_set = data_set_to_use
-        self.set_data_set(data_set, use_1d_data)
+        for key, value in kwargs.iteritems():
+            setattr(self, key, value)
+        if 'use_1d_data' not in kwargs:
+            self.use_1d_data = use_1d_data
+        self.set_data_set(data_set, self.use_1d_data)
         if use_arguments and arguments is not None:
             apply_arguments(self)
 
@@ -497,10 +505,10 @@ class MainConfigs(bc.MainConfigs):
         #self.learner = iwl_transfer
         #self.learner = sms_transfer
         #self.learner = dt_local_transfer
-        #self.learner = dt_sms
+        self.learner = dt_sms
         #self.learner = ssl_regression
         #self.learner = cov_shift
-        self.learner = offset_transfer
+        #self.learner = offset_transfer
         self.learner.configs.use_validation = use_validation
 
 
@@ -514,9 +522,13 @@ class MethodConfigs(bc.MethodConfigs):
 class VisualizationConfigs(bc.VisualizationConfigs):
     def __init__(self, data_set=None, **kwargs):
         super(VisualizationConfigs, self).__init__()
-        pc = ProjectConfigs(data_set)
+        pc = ProjectConfigs(data_set, **kwargs)
         self.copy_fields(pc,pc_fields_to_copy)
         self.max_rows = 2
+        self.vis_table = vis_table
+        self.size_to_vis = size_to_vis
+        for key, value in kwargs.iteritems():
+            setattr(self, key, value)
         '''
         self.files = [
             'TargetTransfer+NW.pkl',
@@ -569,6 +581,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files = OrderedDict()
             self.files['TargetTransfer+NW.pkl'] = 'Target Only'
             self.files['SLL-NW.pkl'] = 'LLGC'
+            self.files['CovShift.pkl'] = 'Reweighting'
+            self.files['OffsetTransfer.pkl'] = 'Offset'
             '''
             self.files.append(('LocalTransferDelta_radius_l2_constant-b.pkl','Ours: Constant'))
             self.files.append(('LocalTransferDelta_radius_l2_linear-b_clip-b.pkl','Ours: Linear'))
@@ -576,31 +590,20 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             '''
             self.files['LocalTransferDelta_radius_l2_linear-b_clip-b.pkl'] = 'Ours: Linear'
             self.files['LocalTransferDelta_C3=0_radius_l2_linear-b.pkl'] = 'Ours: Linear, alpha=0'
-            self.files['CovShift.pkl'] = 'Reweighting'
-            self.files['OffsetTransfer.pkl'] = 'Offset'
         elif plot_idx == PLOT_VALIDATION:
             self.files = OrderedDict()
             self.files['TargetTransfer+NW.pkl'] = 'Target Only'
             self.files['SLL-NW.pkl'] = 'LLGC'
-            #self.files.append(('LocalTransferDelta_radius_l2_use-val.pkl', 'Nonparametric b, validation'))
             self.files['LocalTransferDelta_radius_l2_linear-b_clip-b_use-val.pkl'] = 'Ours: Linear, validation'
             self.files['LocalTransferDelta_radius_l2_use-val_lap-reg.pkl'] = 'Ours: Nonparametric, validation'
         elif plot_idx == PLOT_CONSTRAINED:
             self.files = OrderedDict()
             self.files['TargetTransfer+NW.pkl'] = 'Target Only'
-            self.files['SLL-NW.pkl'] = 'LLGC'
-            #self.files.append(('LocalTransferDelta_radius_l2.pkl','Nonparametric b'))
-            #self.files.append(('LocalTransferDelta_radius_cons_l2.pkl', 'Nonparametric b, constrained'))
+            #self.files['SLL-NW.pkl'] = 'LLGC'
 
-            self.files['LocalTransferDelta_radius_l2_linear-b_clip-b.pkl'] = 'Ours: Linear'
+            #self.files['LocalTransferDelta_radius_l2_linear-b_clip-b.pkl'] = 'Ours: Linear'
             self.files['LocalTransferDelta_radius_l2_lap-reg.pkl'] = 'Ours: Nonparametric'
             self.files['LocalTransferDelta_radius_cons_l2_lap-reg.pkl'] = 'Ours: Nonparametric, constrained'
-
-            #self.files.append(('LocalTransferDelta_radius_l2_constant-b.pkl','Constant b'))
-            #self.files.append(('LocalTransferDelta_radius_cons_l2_linear-b_clip-b.pkl', 'Linear b, clipped, constrained'))
-
-            #self.files.append(('LocalTransferDelta_radius_l2_linear-b_clip-b.pkl','Linear b, clipped'))
-            #self.files.append(('LocalTransferDelta_radius_cons_l2_linear-b_clip-b.pkl', 'Linear b, clipped, constrained'))
 
         elif plot_idx == PLOT_SMS:
             self.files = OrderedDict()
@@ -608,7 +611,16 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['SLL-NW.pkl'] = 'LLGC'
             self.files['LocalTransferDeltaSMS_scale.pkl'] ='SMS scale'
             self.files['LocalTransferDeltaSMS.pkl'] = 'SMS no scale'
-            self.files['LocalTransferDelta_C3=0_radius_l2_constant-b.pkl'] = 'Constant b, alpha=0'
+            #self.files['LocalTransferDelta_C3=0_radius_l2_constant-b.pkl'] = 'Constant b, alpha=0'
+        elif plot_idx == PLOT_TABLE:
+            self.files = OrderedDict()
+            self.files['LocalTransferDelta_radius_l2_linear-b_clip-b.pkl'] = 'Ours: Linear'
+            self.files['TargetTransfer+NW.pkl'] = 'Target Only'
+            self.files['SLL-NW.pkl'] = 'LLGC'
+            self.files['CovShift.pkl'] = 'Reweighting'
+            self.files['OffsetTransfer.pkl'] = 'Offset'
+            #self.files['LocalTransferDeltaSMS.pkl'] = 'SMS no scale'
+            self.files['LocalTransferDeltaSMS_scale.pkl'] = 'SMS scale'
 
         if use_sms_plot_data_sets:
             if max_rows == 3:
@@ -704,7 +716,11 @@ class BatchConfigs(bc.BatchConfigs):
 #data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
 #data_set_to_use = bc.DATA_SYNTHETIC_CROSS
 
-if use_1d_data:
+if vis_table:
+    viz_params = [{'data_set': d, 'use_1d_data': True} for d in all_1d] + \
+                 [{'data_set': d, 'use_1d_data': False} for d in real_data_sets_full]
+    pass
+elif use_1d_data:
     viz_params = [{'data_set': d} for d in all_1d]
 else:
     viz_params = [{'data_set': d} for d in real_data_sets_full]

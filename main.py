@@ -9,10 +9,10 @@ import importlib
 #import base.project_configs as configs_lib
 
 #import hypothesis_transfer.hypothesis_project_configs as configs_library
-#import base.transfer_project_configs as configs_library
+import base.transfer_project_configs as configs_library
 #import active.active_project_configs as configs_library
 #import new_project.new_project_configs as configs_library
-import mixed_feature_guidance.mixed_features_project_configs as configs_library
+#import mixed_feature_guidance.mixed_features_project_configs as configs_library
 
 configs_lib = configs_library
 import boto
@@ -89,7 +89,8 @@ def create_table():
         for file, legend_str in vis_configs.results_files:
             if not os.path.isfile(file):
                 print file + ' doesn''t exist - skipping'
-                assert False, 'Creating Table doesn''t work with missing files'
+                #assert False, 'Creating Table doesn''t work with missing files'
+
                 assert vis_configs.show_legend_on_all, 'Just to be safe, set show_legend_on_all=True if files are missing'
                 continue
             results = helper_functions.load_object(file)
@@ -110,10 +111,23 @@ def create_table():
             lows = np.asarray(processed_results.means) - np.asarray(processed_results.lows)
             mean_val = processed_results.means[size_idx]
             var = (highs-lows)[size_idx]/2
-            str = '%.2f +/- %.2f' % (mean_val, var)
+            str = '%.2f \\pm %.2f' % (mean_val, var)
             cell_text[data_set_idx][method_idx] = str
             method_idx += 1
         #cell_text.append(param_text)
+    latex_text = ' & Ours: Linear & Target Only & LLGC & Reweigting & Offset \\\\ \hline \n'
+    data_names = [
+        'Curve', 'Step', 'Delta', 'Cross', 'Slant', 'Boston Housing 1D', 'Concrete 1D', 'Bike Sharing 1D',
+        'Wine 1D', 'Bostong Housing', 'Concrete', 'Wine'
+    ]
+    for row_idx, row_str in enumerate(cell_text):
+        latex_text += data_names[row_idx] + ' & '
+        for i, cell_str in enumerate(row_str):
+            latex_text += ' $' + cell_str + '$'
+            if i != len(row_str) - 1:
+                latex_text += ' &'
+        latex_text += ' \\\\ \\hline\n'
+    print latex_text
 
     fig, axs = plt.subplots()
     axs.axis('tight')
@@ -170,6 +184,8 @@ def run_visualization():
             s = legend_str
             if s is None:
                 s = results.configs.learner.name_string
+            print 'Plotting: ' + file
+            print 'Mean Errors: ' + str(processed_results.means)
             plt.errorbar(sizes,
                          processed_results.means,
                          yerr=[processed_results.lows, processed_results.highs],

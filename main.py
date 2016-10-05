@@ -9,10 +9,11 @@ import importlib
 #import base.project_configs as configs_lib
 
 #import hypothesis_transfer.hypothesis_project_configs as configs_library
-import base.transfer_project_configs as configs_library
+#import base.transfer_project_configs as configs_library
 #import active.active_project_configs as configs_library
 #import new_project.new_project_configs as configs_library
 #import mixed_feature_guidance.mixed_features_project_configs as configs_library
+import far_transfer.far_transfer_project_configs as configs_library
 
 configs_lib = configs_library
 import boto
@@ -115,7 +116,7 @@ def create_table():
             cell_text[data_set_idx][method_idx] = str
             method_idx += 1
         #cell_text.append(param_text)
-    latex_text = ' & Ours: Linear & Target Only & LLGC & Reweigting & Offset \\\\ \hline \n'
+    latex_text = ' & Ours: Linear & Target Only & LLGC & Reweigting & Offset & SMS \\\\ \hline \n'
     data_names = [
         'Curve', 'Step', 'Delta', 'Cross', 'Slant', 'Boston Housing 1D', 'Concrete 1D', 'Bike Sharing 1D',
         'Wine 1D', 'Bostong Housing', 'Concrete', 'Wine'
@@ -158,10 +159,10 @@ def run_visualization():
     #num_rows = min(n, configs_lib.max_rows)
     num_rows = min(n, vis_configs.max_rows)
     num_cols = math.ceil(float(n) / num_rows)
-    for i, curr_viz_params in enumerate(viz_params):
-        subplot_idx = i + 1
+    for config_idx, curr_viz_params in enumerate(viz_params):
+        subplot_idx = config_idx + 1
         plt.subplot(num_rows,num_cols,subplot_idx)
-        axis = [0, 1, 0, .2]
+        axis = [0, 1, 0, .01]
         vis_configs = configs_lib.VisualizationConfigs(**curr_viz_params)
         sizes = None
         min_x = np.inf
@@ -173,7 +174,20 @@ def run_visualization():
                 continue
             results = helper_functions.load_object(file)
             sized_results = get_sized_results(file)
+            sizes_to_plot = vis_configs.sizes_to_use
+            if sizes_to_plot is not None:
+                sizes_to_plot = set(sizes_to_plot)
             results = combine_results(results, sized_results)
+            to_remove = list()
+            for j, s in enumerate(results.sizes):
+                if sizes_to_plot is not None and s not in sizes_to_plot:
+                    to_remove.append(j)
+            for j in reversed(to_remove):
+                del results.results_list[j]
+            #results.results_list = results.results_list[~to_remove]
+            if len(results.sizes) == 0:
+                print file + ' has no results for sizes ' + str(sizes_to_plot) + ', skipping'
+
             #plt.plot([1,2,3], [1,2,3], 'go-', label='line 1', linewidth=2)
             processed_results = results.compute_error_processed(vis_configs.loss_function)
             sizes = results.sizes
@@ -203,8 +217,8 @@ def run_visualization():
         axis[0] = min_x - .1*axis_range
         #show_x_label = num_rows == 1 or subplot_idx > (num_rows-1)*num_cols
         #show_x_label = num_rows == 1 or subplot_idx == 8
-        #show_x_label = subplot_idx == 2
-        show_x_label = True
+        show_x_label = subplot_idx == 9
+        #show_x_label = True
         show_y_label = num_cols == 1 or subplot_idx % num_cols == 1
 
         if show_x_label:
@@ -218,7 +232,7 @@ def run_visualization():
             axis[2] = ylims[0]
             axis[3] = ylims[1]
         plt.axis(axis)
-        if i == 0 or vis_configs.show_legend_on_all:
+        if config_idx == 2 or vis_configs.show_legend_on_all:
             plt.legend(loc='upper right', fontsize=vis_configs.fontsize)
     #fig.tight_layout(rect=[.05,.05,.95,.95])
     if getattr(vis_configs,'borders',None):

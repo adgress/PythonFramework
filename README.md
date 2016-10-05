@@ -53,17 +53,33 @@ sudo apt-get -y install git libatlas-base-dev gfortran python-dev python-pip pyt
 #Note that this DOES NOT use sudo
 pip install cvxpy
 
-#Note: I think this can be installed before cvxpy, not sure though
-#sudo apt-get -y install python-nose
-
 nosetests cvxpy
 git clone https://github.com/adgress/PythonFramework.git
+
+#Note: you may need to run this - https://github.com/ContinuumIO/anaconda-issues/issues/445
+conda install libgfortran
+#Note: you may also need to do this:
+conda install numpy
+conda install scipy
+#Depending on various fortran/blas/lapack issues you may need to do this:
+conda install [VARIOUS BLAS LAPACK STUFF]
+pip install --upgrade cvxpy
+
+#May also need to do this - https://github.com/conda/conda/issues/1051
+apt-get install libsm6 libxrender1 libfontconfig1
+
+#May need to do this
+conda reinstall cvxopt
+conda reinstall cvxpy
 
 #You may need to do the following if you get an error message about libgfortran missing
 #From: https://github.com/ContinuumIO/anaconda-issues/issues/686
 export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libgfortran.so.3
 
 3) Install mpi4py
+
+#NOTE: it seems like just running the following will suffice:
+conda install mpi4py
 
 You may need to install openmpi and update LD_LIBRARY_PATH
 

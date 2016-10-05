@@ -17,11 +17,11 @@ def create_project_configs():
 pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10_nnz4
-data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
 #data_set_to_use = bc.DATA_DROSOPHILIA
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
-#data_set_to_use = bc.DATA_WINE_RED
+data_set_to_use = bc.DATA_WINE_RED
 #data_set_to_use = bc.DATA_DROSOPHILIA
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_KC_HOUSING
@@ -43,8 +43,8 @@ other_pc_configs = {
 }
 
 other_method_configs = {
-    'num_random_pairs': 0,
-    'num_random_signs': 10,
+    'num_random_pairs': 10,
+    'num_random_signs': 0,
     'use_l1': False,
     'num_features': None,
     'use_nonneg': False,
@@ -270,8 +270,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['Mixed-feats_method=Rel_signs=50_corr_CVXOPT.pkl'] = 'Mixed: Relative, corr, 50 signs'
             #self.files['Mixed-feats_method=Ridge_stacked.pkl'] = 'Mixed: Ridge, stacked'
             self.files['Mixed-feats_method=Rel_pairs=10_corr_CVXOPT.pkl'] = 'Mixed: Relative, corr, 10 pairs'
-            self.files['Mixed-feats_method=Rel_pairs=10_corr_CVXOPT_l1.pkl'] = 'Mixed: Relative, corr, 10 pairs, l1'
-            self.files['Mixed-feats_method=Rel_signs=10_corr_CVXOPT_l1.pkl'] = 'Mixed: Relative, corr, 10 signs, l1'
+            #self.files['Mixed-feats_method=Rel_pairs=10_corr_CVXOPT_l1.pkl'] = 'Mixed: Relative, corr, 10 pairs, l1'
+            #self.files['Mixed-feats_method=Rel_signs=10_corr_CVXOPT_l1.pkl'] = 'Mixed: Relative, corr, 10 signs, l1'
             #self.files['Mixed-feats_method=Rel_signs=10_corr_stacked.pkl'] = 'Mixed: Relative, corr, stacked, 10 signs'
         '''
         self.files['Mixed-feats_method=Ridge.pkl'] = 'Mixed: Ridge'
@@ -299,6 +299,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             test_files = {}
             for f, leg in self.files.iteritems():
                 f = helper_functions.remove_suffix(f, '.pkl')
+                if data_set_to_use == bc.DATA_DROSOPHILIA:
+                    f += '_50'
                 if use_test:
                     f += '-TEST.pkl'
                     leg = 'TEST: ' + leg

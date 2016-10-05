@@ -58,13 +58,14 @@ PLOT_SMS = 4
 PLOT_TABLE = 5
 plot_idx = PLOT_TABLE
 max_rows = 1
-fontsize = 10
+fontsize = 8
 
 vis_table = plot_idx == PLOT_TABLE
 size_to_vis = 20
+sizes_to_use = [5, 10, 20, 30]
 
 run_experiments = True
-show_legend_on_all = True
+show_legend_on_all = False
 
 run_batch_exps = True
 use_1d_data = True
@@ -527,6 +528,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.max_rows = 2
         self.vis_table = vis_table
         self.size_to_vis = size_to_vis
+        self.sizes_to_use = sizes_to_use
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
         '''
@@ -580,16 +582,17 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         if plot_idx == PLOT_PARAMETRIC:
             self.files = OrderedDict()
             self.files['TargetTransfer+NW.pkl'] = 'Target Only'
-            self.files['SLL-NW.pkl'] = 'LLGC'
-            self.files['CovShift.pkl'] = 'Reweighting'
-            self.files['OffsetTransfer.pkl'] = 'Offset'
+            #self.files['SLL-NW.pkl'] = 'LLGC'
+            #self.files['CovShift.pkl'] = 'Reweighting'
+            #self.files['OffsetTransfer.pkl'] = 'Offset'
             '''
             self.files.append(('LocalTransferDelta_radius_l2_constant-b.pkl','Ours: Constant'))
             self.files.append(('LocalTransferDelta_radius_l2_linear-b_clip-b.pkl','Ours: Linear'))
             self.files.append(('LocalTransferDelta_radius_l2_lap-reg.pkl','Ours: Nonparametric'))
             '''
+            self.files['LocalTransferDelta_radius_l2_constant-b.pkl'] = 'Ours: Constant'
             self.files['LocalTransferDelta_radius_l2_linear-b_clip-b.pkl'] = 'Ours: Linear'
-            self.files['LocalTransferDelta_C3=0_radius_l2_linear-b.pkl'] = 'Ours: Linear, alpha=0'
+            #self.files['LocalTransferDelta_C3=0_radius_l2_linear-b.pkl'] = 'Ours: Linear, alpha=0'
         elif plot_idx == PLOT_VALIDATION:
             self.files = OrderedDict()
             self.files['TargetTransfer+NW.pkl'] = 'Target Only'
@@ -719,8 +722,12 @@ class BatchConfigs(bc.BatchConfigs):
 if vis_table:
     viz_params = [{'data_set': d, 'use_1d_data': True} for d in all_1d] + \
                  [{'data_set': d, 'use_1d_data': False} for d in real_data_sets_full]
-    pass
+else:
+    viz_params = [{'data_set': d, 'use_1d_data': True} for d in all_1d] + \
+                 [{'data_set': d, 'use_1d_data': False} for d in real_data_sets_full]
+'''
 elif use_1d_data:
     viz_params = [{'data_set': d} for d in all_1d]
 else:
     viz_params = [{'data_set': d} for d in real_data_sets_full]
+'''

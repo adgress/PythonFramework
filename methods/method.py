@@ -301,6 +301,7 @@ class Method(Saveable):
         return [best_params, min_error, performance_on_test_data]
 
     def process_data(self, data):
+        data_orig = data
         data = self.preprocessor.preprocess(data, self.configs)
         labels_to_keep = np.empty(0)
         t = getattr(self.configs,'target_labels',None)
@@ -315,7 +316,9 @@ class Method(Saveable):
             data.type[inds] = data_lib.TYPE_SOURCE
             data.is_train[inds] = True
         if labels_to_keep.size > 0:
+            data_old = data
             data = data.get_transfer_subset(labels_to_keep,include_unlabeled=True)
+        assert data.n > 0
         return data
 
 

@@ -295,6 +295,8 @@ class VisualizationConfigs(Configs):
         self.max_rows = 3
         self.vis_table = False
         self.size_to_vis = None
+        self.sizes_to_use = None
+        self.title = 'Title not set'
 
         self.files = [
             'SKL-RidgeReg.pkl'

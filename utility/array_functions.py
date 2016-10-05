@@ -489,7 +489,10 @@ def find_set(a,to_find):
     return inds
 
 def find_first_element(a, to_find):
-    return np.argwhere(a == to_find)[0][0]
+    I = np.argwhere(a == to_find)
+    if I.size == 0:
+        return None
+    return I[0][0]
 
 def histogram_unique(n):
     bins = np.unique(n)

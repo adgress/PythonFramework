@@ -25,14 +25,8 @@ class TargetTranfer(method.Method):
         self.base_learner.train_and_test(data)
 
     def train_and_test(self, data):
-        #data_copy2 = self._prepare_data(data,include_unlabeled=True)
-        #results2 = super(TargetTranfer, self).train_and_test(data_copy2)
         data_copy = self._prepare_data(data,include_unlabeled=True)
-        #data_copy = data_copy.get_with_labels(self.configs.target_labels)
-        #data_copy = data_copy.get_transfer_subset(self.configs.target_labels, include_unlabeled=True)
         results = super(TargetTranfer, self).train_and_test(data_copy)
-        #a = results.prediction.fu - results2.prediction.fu[data_copy2.is_labeled,:]
-        #print str(a.any())
         return results
 
     def _prepare_data(self, data, include_unlabeled=True):
@@ -40,9 +34,11 @@ class TargetTranfer(method.Method):
         data_copy = data.get_transfer_subset(target_labels,include_unlabeled=include_unlabeled)
 
         data_copy = data_copy.get_subset(data_copy.is_target)
-        is_source = ~data_copy.has_true_label(target_labels)
-        data_copy.type[is_source] = data_lib.TYPE_SOURCE
-        data_copy.is_train[is_source] = True
+
+        #TODO: Not sure why I was doing this before
+        #is_source = ~data_copy.has_true_label(target_labels)
+        #data_copy.type[is_source] = data_lib.TYPE_SOURCE
+        #data_copy.is_train[is_source] = True
         #data_copy = data.get_with_labels(target_labels)
         return data_copy
 

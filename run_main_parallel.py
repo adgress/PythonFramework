@@ -69,7 +69,6 @@ if __name__ == '__main__':
     #num_labels_list = num_labels_list[0:10]
     if use_mpi:
         mpi_rollcall()
-        num_labels_list = [i + (True,) for i in num_labels_list]
         '''
         from mpipool import core as mpipool
         pool = mpipool.MPIPool(debug=debug_mpi_pool, loadbalance=True)        

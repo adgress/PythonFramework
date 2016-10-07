@@ -2,9 +2,9 @@ from subprocess import call, Popen
 from timer.timer import tic, toc
 import sys
 #import active.active_project_configs as configs_lib
-#import base.transfer_project_configs as configs_lib
+import base.transfer_project_configs as configs_lib
 #import hypothesis_transfer.hypothesis_project_configs as configs_lib
-import mixed_feature_guidance.mixed_features_project_configs as configs_lib
+#import mixed_feature_guidance.mixed_features_project_configs as configs_lib
 import itertools
 from utility import multiprocessing_utility
 from utility import helper_functions
@@ -66,7 +66,6 @@ def results_exist(configs):
 if __name__ == '__main__':
     timer.tic()
     pc = configs_lib.create_project_configs()
-    num_labels_list = list(itertools.product(pc.num_labels, range(pc.num_splits)))
     #num_labels_list = num_labels_list[0:10]
     if use_mpi:
         mpi_rollcall()
@@ -93,6 +92,7 @@ if __name__ == '__main__':
                 continue
             if comm.Get_rank() == 0:
                 timer.tic()
+            num_labels_list = list(itertools.product(pc.num_labels, range(c.num_splits)))
             pool.map(mpi_run_main_args, [n + (c,) for n in num_labels_list])
             pool.close()
 

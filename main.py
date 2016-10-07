@@ -9,11 +9,12 @@ import importlib
 #import base.project_configs as configs_lib
 
 #import hypothesis_transfer.hypothesis_project_configs as configs_library
-#import base.transfer_project_configs as configs_library
+import base.transfer_project_configs as configs_library
 #import active.active_project_configs as configs_library
 #import new_project.new_project_configs as configs_library
 #import mixed_feature_guidance.mixed_features_project_configs as configs_library
-import far_transfer.far_transfer_project_configs as configs_library
+#import far_transfer.far_transfer_project_configs as configs_library
+#import active_base.active_base_project_configs as configs_library
 
 configs_lib = configs_library
 import boto
@@ -93,6 +94,7 @@ def create_table():
                 #assert False, 'Creating Table doesn''t work with missing files'
 
                 assert vis_configs.show_legend_on_all, 'Just to be safe, set show_legend_on_all=True if files are missing'
+                cell_text[data_set_idx][method_idx] = 'Missing'
                 continue
             results = helper_functions.load_object(file)
             if len(cols) <= method_idx:

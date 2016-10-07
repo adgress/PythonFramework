@@ -99,7 +99,7 @@ class Configs(object):
 
     def get(self,key,default_value):
         if ~self.has(key):
-            assert default_value in locals()
+            #assert default_value in locals()
             return default_value
         return getattr(key)
 

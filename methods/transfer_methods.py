@@ -86,9 +86,11 @@ class FuseTransfer(TargetTranfer):
         target_labels = self.configs.target_labels
         data_copy = copy.deepcopy(data)
         if data.data_set_ids is not None:
-            assert source_labels is None
-            assert target_labels is None
-            data_copy.type[data_copy.data_set_ids > 0] = data_lib.TYPE_SOURCE
+            #assert source_labels is None
+            #assert target_labels is None
+            #data_copy.type[data_copy.data_set_ids > 0] = data_lib.TYPE_SOURCE
+            for i in source_labels:
+                data_copy.type[data_copy.data_set_ids == i] = data_lib.TYPE_SOURCE
             return data_copy
         #source_inds = array_functions.find_set(data_copy.true_y,source_labels)
         if self.use_oracle:
@@ -115,6 +117,44 @@ class FuseTransfer(TargetTranfer):
             s += '-tws=' + str(self.target_weight_scale)
         if 'use_oracle' in self.__dict__ and self.use_oracle:
             s += '-Oracle'
+        return s
+
+class StackingTransfer(FuseTransfer):
+    def __init__(self, configs=None):
+        super(StackingTransfer, self).__init__(configs)
+        self.cv_params = {}
+        self.base_learner = method.SKLRidgeRegression(configs)
+        self.source_learner = method.NadarayaWatsonMethod(configs)
+        self.target_learner = method.NadarayaWatsonMethod(configs)
+
+    def _get_stacked_data(self, data):
+        y_source = np.expand_dims(self.source_learner.predict(data).y, 1)
+        y_target = np.expand_dims(self.target_learner.predict(data).y, 1)
+        x = np.hstack((y_target, y_source))
+        data_stacked = deepcopy(data)
+        data_stacked.x = x
+        return data_stacked
+
+    def train(self, data):
+        self.target_learner.train_and_test(data)
+        I = data.is_labeled & data.is_target
+        stacked_data = self._get_stacked_data(data).get_subset(I)
+        self.base_learner.train_and_test(stacked_data)
+
+    def predict(self, data):
+        stacked_data = self._get_stacked_data(data)
+        return self.base_learner.predict(stacked_data)
+
+    def _prepare_data(self, data, include_unlabeled=True):
+        data = super(StackingTransfer, self)._prepare_data(data, include_unlabeled)
+        source_data = data.get_subset(data.is_source)
+        self.source_learner.train_and_test(source_data)
+        target_data = data.get_subset(data.is_target)
+        return target_data
+
+    @property
+    def prefix(self):
+        s = 'StackTransfer+' + self.base_learner.prefix
         return s
 
 

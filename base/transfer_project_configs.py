@@ -65,17 +65,17 @@ size_to_vis = 20
 sizes_to_use = [5, 10, 20, 30]
 
 run_experiments = True
-show_legend_on_all = False
+show_legend_on_all = True
 
 run_batch_exps = True
-use_1d_data = True
+use_1d_data = False
 use_sms_plot_data_sets = plot_idx == PLOT_SMS
 
-use_constraints = True
-use_fused_lasso = True
+use_constraints = False
+use_fused_lasso = False
 no_C3 = False
 use_radius = True
-include_scale = True
+include_scale = False
 constant_b = False
 linear_b = True
 use_validation = False
@@ -493,7 +493,7 @@ class MainConfigs(bc.MainConfigs):
         dt_sms = methods.local_transfer_methods.LocalTransferDeltaSMS(method_configs)
         cov_shift = transfer_methods.ReweightedTransfer(method_configs)
         offset_transfer = methods.local_transfer_methods.OffsetTransfer(method_configs)
-
+        stacked_transfer = methods.transfer_methods.StackingTransfer(method_configs)
 
         from methods import semisupervised
         from methods import preprocessing
@@ -505,11 +505,12 @@ class MainConfigs(bc.MainConfigs):
         #self.learner = local_transfer
         #self.learner = iwl_transfer
         #self.learner = sms_transfer
-        #self.learner = dt_local_transfer
-        self.learner = dt_sms
+        self.learner = dt_local_transfer
+        #self.learner = dt_sms
         #self.learner = ssl_regression
         #self.learner = cov_shift
         #self.learner = offset_transfer
+        #self.learner = stacked_transfer
         self.learner.configs.use_validation = use_validation
 
 
@@ -624,6 +625,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['OffsetTransfer.pkl'] = 'Offset'
             #self.files['LocalTransferDeltaSMS.pkl'] = 'SMS no scale'
             self.files['LocalTransferDeltaSMS_scale.pkl'] = 'SMS scale'
+            self.files['StackTransfer+SKL-RidgeReg.pkl'] = 'Stacking'
+            self.files['LocalTransferDelta_radius_l2_linear-b_clip-b-stacking.pkl'] = 'Our: Linear, Stacking'
 
         if use_sms_plot_data_sets:
             if max_rows == 3:

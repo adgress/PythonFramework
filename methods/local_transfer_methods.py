@@ -16,6 +16,7 @@ from utility import helper_functions
 from scipy import optimize
 from methods import delta_transfer
 import scipy
+import transfer_methods
 
 if helper_functions.is_laptop():
     enable_plotting = False
@@ -33,6 +34,8 @@ class HypothesisTransfer(method.Method):
         self.source_learner.quiet = True
         self.base_learner = None
         self.use_oracle = False
+        self.train_source_learner = True
+        self.source_loo = False
 
     def _prepare_data(self, data, include_unlabeled=True):
         target_labels = self.configs.target_labels
@@ -49,7 +52,10 @@ class HypothesisTransfer(method.Method):
 
     def get_predictions(self, target_data):
         o = self.target_learner.predict_loo(target_data)
-        o_source = self.source_learner.predict(target_data)
+        if self.source_loo:
+            o_source = self.source_learner.train_predict_loo(target_data)
+        else:
+            o_source = self.source_learner.predict(target_data)
         is_labeled = target_data.is_labeled
 
         target_labels = self.configs.target_labels
@@ -57,9 +63,13 @@ class HypothesisTransfer(method.Method):
             o = self.target_learner.predict_loo(target_data.get_subset(is_labeled))
         if target_data.is_regression:
             y_t = array_functions.vec_to_2d(o.fu)
-            y_s = array_functions.vec_to_2d(o_source.fu[is_labeled])
+            if self.source_loo:
+                y_s = array_functions.vec_to_2d(o_source.fu)
+            else:
+                y_s = array_functions.vec_to_2d(o_source.fu[is_labeled])
             y_true = array_functions.vec_to_2d(o.true_y)
         else:
+            assert False, 'Update this?'
             y_t = o.fu[:,target_labels]
             y_s = o_source.fu[:,target_labels]
             y_s = y_s[is_labeled,:]
@@ -98,7 +108,11 @@ class HypothesisTransfer(method.Method):
             data.change_labels(source_labels,target_labels)
             array_functions.plot_MDS(data.x,data.true_y,data.data_set_ids)
 
-        self.source_learner.train_and_test(source_data)
+        if self.train_source_learner:
+            if self.use_stacking:
+                self.source_learner.train_and_test(data)
+            else:
+                self.source_learner.train_and_test(source_data)
 
         data_copy = self._prepare_data(data,include_unlabeled=True)
         data_copy = data_copy.get_transfer_subset(self.configs.target_labels, include_unlabeled=True)
@@ -159,8 +173,6 @@ class LocalTransfer(HypothesisTransfer):
             self.cv_params['C'] = np.asarray([1,3,5,10,20])
             #self.cv_params['C'] = np.asarray([1,5,10,50,100,500,1000000])
         self.cv_params['C'] = np.insert(self.cv_params['C'],0,0)
-
-
         self.cv_params['C2'] = np.asarray([0,.001,.01,.1,1,10,100,1000])
         if not self.configs.use_reg2:
             self.cv_params['C2'] = np.asarray([0])
@@ -169,8 +181,8 @@ class LocalTransfer(HypothesisTransfer):
         #self.cv_params['k'] = np.asarray([1,2,4])
         #self.cv_params['radius'] = np.asarray([.05, .1, .2])
 
+
         self.target_learner = method.NadarayaWatsonMethod(configs)
-        self.source_learner = method.NadarayaWatsonMethod(configs)
         self.base_learner = None
         self.learn_g_just_labeled = True
         self.should_plot_g = False
@@ -318,6 +330,8 @@ class LocalTransfer(HypothesisTransfer):
         target_data = data.get_transfer_subset(target_labels,include_unlabeled=True)
         assert target_data.n > 0
         self.target_learner.train_and_test(target_data)
+        if self.use_stacking:
+            self.source_learner.train_and_test(data)
         results =  super(LocalTransfer, self).train_and_test(data)
         #print self.g_learner.g
         return results
@@ -378,8 +392,8 @@ class LocalTransfer(HypothesisTransfer):
         if not data.is_regression:
             assert o.fu.ndim == 2
         else:
-            assert o.fu.ndim == 1
-            assert o_source.fu.ndim == 1
+            assert np.squeeze(o.fu).ndim == 1
+            assert np.squeeze(o_source.fu).ndim == 1
             o.fu = o.fu.reshape((o.fu.size,1))
             o_source.fu = o_source.fu.reshape((o_source.fu.size,1))
         for i in range(o.fu.shape[1]):
@@ -436,6 +450,8 @@ class LocalTransfer(HypothesisTransfer):
             s += '-g_sup'
         if 'include_bias' in self.__dict__ and self.include_bias:
             s += '-bias'
+        if getattr(self, 'use_stacking', False):
+            s += '-stacking'
         return s
 
 
@@ -500,6 +516,14 @@ class LocalTransferDelta(LocalTransfer):
 
         self.use_l2 = True
 
+        self.source_loo = True
+        self.use_stacking = True
+        if self.use_stacking:
+            self.train_source_learner = True
+            self.source_learner = transfer_methods.StackingTransfer(configs)
+        else:
+            self.source_learner = method.NadarayaWatsonMethod(configs)
+
         self.g_learner = delta_transfer.CombinePredictionsDelta(configs)
         self.g_learner.quiet = True
         self.g_learner.use_l2 = self.use_l2
@@ -518,7 +542,8 @@ class LocalTransferDelta(LocalTransfer):
         if self.linear_b:
             del self.cv_params['radius']
         if not self.use_radius:
-            del self.cv_params['radius']
+            if 'radius' in self.cv_params:
+                del self.cv_params['radius']
         if self.no_C3:
             del self.cv_params['C3']
             self.C3 = 0
@@ -571,6 +596,10 @@ class LocalTransferDelta(LocalTransfer):
             s += '_use-val'
         if not self.use_fused_lasso and is_nonparametric:
             s += '_lap-reg'
+        if getattr(self, 'use_stacking', False):
+            s += '-stacking'
+        if getattr(self, 'source_loo', False):
+            s += '-sourceLOO'
         return s
 
 

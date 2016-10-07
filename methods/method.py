@@ -207,6 +207,7 @@ class Method(Saveable):
             ds = create_data_split.DataSplitter()
             splits = ds.generate_identity_split(I)
             #assert not hasattr(data, 'is_train_pairwise')
+            splits[0].is_train_pairwise = getattr(data, 'is_train_pairwise', None)
         elif self.use_test_error_for_model_selection:
             I = train_data.is_train
             ds = create_data_split.DataSplitter()
@@ -363,6 +364,21 @@ class Method(Saveable):
 
     def predict_loo(self, data):
         assert False, 'Not implemented!'
+
+
+    def train_predict_loo(self, data):
+        data = data.get_subset(data.is_labeled)
+        o = Output(data)
+        for i in range(data.n):
+            I = array_functions.true(data.n)
+            I[i] = False
+            data_i = data.get_subset(I)
+            self.train(data_i)
+            yi = self.predict(data).y[i]
+            o.y[i] = yi
+            o.fu[i] = yi
+        return o
+
 
 class ModelSelectionMethod(Method):
     def __init__(self, configs=None):
@@ -758,59 +774,59 @@ class RelativeRegressionMethod(Method):
                 ('z-score', self.transform),
             ])
             #self.transform = PCA(self.pca_dim,whiten=True)
-        self.use_mixed_cv = configs.use_mixed_cv
-        self.use_baseline = configs.use_baseline
-        self.ridge_on_fail = configs.ridge_on_fail
-        self.tune_scale = configs.tune_scale
-        self.scipy_opt_method = configs.scipy_opt_method
-        self.num_cv_splits = configs.num_cv_splits
+        self.use_mixed_cv = configs.get('use_mixed_cv', False)
+        self.use_baseline = configs.get('use_baseline', False)
+        self.ridge_on_fail = configs.get('ridge_on_fail', True)
+        self.tune_scale = configs.get('tune_scale', False)
+        self.scipy_opt_method = configs.get('scipy_opt_method', 'L-BFGS-B')
+        self.num_cv_splits = configs.get('num_cv_splits', 10)
 
-        self.eps = configs.eps
+        self.eps = configs.get('eps', 1e-6)
         self.y_transform = None
-        self.y_scale_min_max = configs.y_scale_min_max
-        self.y_scale_standard = configs.y_scale_standard
+        self.y_scale_min_max = configs.get('y_scale_min_max', False)
+        self.y_scale_standard = configs.get('y_scale_standard', False)
         if self.y_scale_min_max:
             self.y_transform = MinMaxScaler()
         elif self.y_scale_standard:
             self.y_transform = StandardScaler()
 
 
-        self.add_random_pairwise = configs.use_pairwise
-        self.use_pairwise = configs.use_pairwise
-        self.num_pairwise = configs.num_pairwise
-        self.pair_bound = configs.pair_bound
-        self.use_hinge = configs.use_hinge
-        self.noise_rate = configs.noise_rate
-        self.logistic_noise = configs.logistic_noise
-        self.use_logistic_fix = configs.use_logistic_fix
-        self.pairwise_use_scipy = configs.pairwise_use_scipy
+        self.add_random_pairwise = configs.get('use_pairwise', True)
+        self.use_pairwise = self.add_random_pairwise
+        self.num_pairwise = configs.get('num_pairwise', 10)
+        self.pair_bound = configs.get('pair_bound', [])
+        self.use_hinge = configs.get('use_hinge', False)
+        self.noise_rate = configs.get('noise_rate', 0)
+        self.logistic_noise = configs.get('logistic_noise', 0)
+        self.use_logistic_fix = configs.get('use_logistic_fix', True)
+        self.pairwise_use_scipy = configs.get('pairwise_use_scipy', True)
 
-        self.add_random_bound = configs.use_bound
-        self.use_bound = configs.use_bound
-        self.num_bound = configs.num_bound
-        self.use_quartiles = configs.use_quartiles
-        self.bound_logistic = configs.bound_logistic
+        self.add_random_bound = configs.get('use_bound', False)
+        self.use_bound = self.add_random_bound
+        self.num_bound = configs.get('num_bound', 10)
+        self.use_quartiles = configs.get('use_quartiles', True)
+        self.bound_logistic = configs.get('bound_logistic', True)
 
-        self.add_random_neighbor = configs.use_neighbor
-        self.use_neighbor = configs.use_neighbor
-        self.num_neighbor = configs.num_neighbor
-        self.use_min_pair_neighbor = configs.use_min_pair_neighbor
-        self.fast_dccp = configs.fast_dccp
-        self.init_ridge = configs.init_ridge
-        self.init_ideal = configs.init_ideal
-        self.init_ridge_train = configs.init_ridge_train
-        self.use_neighbor_logistic = configs.use_neighbor_logistic
-        self.neighbor_convex = configs.neighbor_convex
-        self.neighbor_hinge = configs.neighbor_hinge
-        self.neighbor_exp = configs.neighbor_exp
+        self.add_random_neighbor = configs.get('use_neighbor', False)
+        self.use_neighbor = self.add_random_neighbor
+        self.num_neighbor = configs.get('num_neighbor', 10)
+        self.use_min_pair_neighbor = configs.get('use_min_pair_neighbor', False)
+        self.fast_dccp = configs.get('fast_dccp', True)
+        self.init_ridge = configs.get('init_ridge', False)
+        self.init_ideal = configs.get('init_ideal', False)
+        self.init_ridge_train = configs.get('init_ridge_train', False)
+        self.use_neighbor_logistic = configs.get('use_neighbor_logistic', False)
+        self.neighbor_convex = configs.get('neighbor_convex', False)
+        self.neighbor_hinge = configs.get('neighbor_hinge', False)
+        self.neighbor_exp = configs.get('neighbor_exp', True)
 
-        self.add_random_similar = configs.use_similar
-        self.use_similar = configs.use_similar
-        self.num_similar = configs.num_similar
-        self.use_similar_hinge = configs.use_similar_hinge
-        self.similar_use_scipy = configs.similar_use_scipy
+        self.add_random_similar = configs.get('use_similar', False)
+        self.use_similar = self.add_random_similar
+        self.num_similar = configs.get('num_similar', False)
+        self.use_similar_hinge = configs.get('use_similar_hinge', False)
+        self.similar_use_scipy = configs.get('similar_use_scipy', True)
 
-        self.use_test_error_for_model_selection = configs.use_test_error_for_model_selection
+        self.use_test_error_for_model_selection = configs.get('use_test_error_for_model_selection', False)
         self.no_linear_term = True
         self.neg_log = False
         self.prob = None

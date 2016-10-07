@@ -9,7 +9,7 @@ from loss_functions import loss_function
 from utility import helper_functions
 from results_class import results as results_lib
 from sklearn import grid_search
-
+from copy import deepcopy
 # Command line arguments for ProjectConfigs
 arguments = None
 
@@ -20,10 +20,10 @@ def create_project_configs():
 pc_fields_to_copy = bc.pc_fields_to_copy + [
     'include_size_in_file_name'
 ]
-#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
-data_set_to_use = bc.DATA_DROSOPHILIA
+#data_set_to_use = bc.DATA_DROSOPHILIA
 
 #data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 
@@ -31,8 +31,10 @@ data_sets_for_exps = [data_set_to_use]
 
 viz_for_paper = True
 
-run_experiments = False
+run_experiments = True
 use_test_error_for_model_selection = False
+
+use_relative = True
 
 include_size_in_file_name = False
 
@@ -42,14 +44,18 @@ other_method_configs = {
     'scipy_opt_method': 'L-BFGS-B',
     'num_cv_splits': 10,
     'eps': 1e-10,
-    'use_perfect_feature_selection': True
+    'use_perfect_feature_selection': True,
+    'use_test_error_for_model_selection': False,
+    'use_validation': True,
+    'use_oed': True,
+    'num_features': 50
 }
 
 run_batch = True
 if helper_functions.is_laptop():
-    run_batch = False
+    run_batch = True
 
-active_iterations = 2
+active_iterations = 5
 active_items_per_iteration = 10
 
 show_legend_on_all = True
@@ -86,49 +92,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         for key, value in other_method_configs.items():
             setattr(self, key, value)
 
-        self.use_mixed_cv = use_mixed_cv
-        self.use_ssl = use_ssl
-        self.use_mean = use_mean
-        self.use_baseline = use_baseline
-        self.ridge_on_fail = ridge_on_fail
-        self.tune_scale = tune_scale
-        self.small_param_range = small_param_range
-
-        self.use_pairwise = use_pairwise
-        self.num_pairwise = num_pairwise
-        self.pair_bound = pair_bound
-        self.use_hinge = use_hinge
-        self.noise_rate = noise_rate
-        self.logistic_noise = logistic_noise
-        self.pairwise_use_scipy = pairwise_use_scipy
-
-        self.use_bound = use_bound
-        self.num_bound = num_bound
-        self.use_quartiles = use_quartiles
-        self.bound_logistic = bound_logistic
-
-        self.use_neighbor = use_neighbor
-        self.num_neighbor = num_neighbor
-        self.use_min_pair_neighbor = use_min_pair_neighbor
-        self.fast_dccp = fast_dccp
-        self.init_ridge = init_ridge
-        self.init_ideal = init_ideal
-        self.init_ridge_train = init_ridge_train
-        self.use_neighbor_logistic = use_neighbor_logistic
-        self.use_logistic_fix = use_logistic_fix
-        self.neighbor_convex = neighbor_convex
-        self.neighbor_hinge = neighbor_hinge
-        self.neighbor_exp = neighbor_exp
-
-        self.num_features = num_features
-
-        self.use_similar = use_similar
-        self.num_similar = num_similar
-        self.use_similar_hinge = use_similar_hinge
-        self.similar_use_scipy = similar_use_scipy
-
         self.use_test_error_for_model_selection = use_test_error_for_model_selection
-        self.use_aic = use_aic
 
         self.include_size_in_file_name = include_size_in_file_name
 
@@ -139,7 +103,7 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.num_labels = [5]
         elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
             self.set_synthetic_linear_reg()
-            self.num_labels = [20]
+            self.num_labels = [10]
         elif data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
             self.set_adience_aligned_cnn_1()
             self.num_labels = [20]
@@ -215,6 +179,11 @@ class MainConfigs(bc.MainConfigs):
         method_configs.active_iterations = active_iterations
         method_configs.active_items_per_iteration = active_items_per_iteration
         method_configs.metric = 'euclidean'
+        method_configs.small_param_range = False
+        method_configs.num_features = -1
+        method_configs.use_perfect_feature_selection = False
+        method_configs.use_mixed_cv = False
+        method_configs.use_baseline = False
 
         for key in other_method_configs.keys():
             setattr(method_configs, key, getattr(pc,key))
@@ -222,12 +191,18 @@ class MainConfigs(bc.MainConfigs):
 
         method_configs.use_test_error_for_model_selection = pc.use_test_error_for_model_selection
 
-        active = active_methods.ActiveMethod(method_configs)
+        if pc.use_oed:
+            active = active_methods.OEDLinearActiveMethod(method_configs)
+        else:
+            active = active_methods.ActiveMethod(method_configs)
         relative_reg = methods.method.RelativeRegressionMethod(method_configs)
         ridge_reg = method.SKLRidgeRegression(method_configs)
         mean_reg = method.SKLMeanRegressor(method_configs)
+        if use_relative:
+            active.base_learner = relative_reg
+        else:
+            active.base_learner = ridge_reg
 
-        active.base_learner = ridge_reg
 
         self.learner = active
 
@@ -241,7 +216,20 @@ class BatchConfigs(bc.BatchConfigs):
         super(BatchConfigs, self).__init__()
         from experiment.experiment_manager import MethodExperimentManager
         self.method_experiment_manager_class = MethodExperimentManager
-        self.config_list = [MainConfigs(pc)]
+        new_params = [
+            {'use_oed': False},
+            {'use_oed': True}
+        ]
+        if use_relative:
+            new_params = [
+                {'use_oed': False},
+            ]
+        self.config_list = list()
+        for params in new_params:
+            p = deepcopy(pc)
+            p.set(**params)
+            self.config_list.append(MainConfigs(p))
+
 
 class VisualizationConfigs(bc.VisualizationConfigs):
     PLOT_PAIRWISE = 1
@@ -274,5 +262,9 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.ylims = [0,3]
 
         self.files = OrderedDict()
+        self.files['ActiveRandom+SKL-RidgeReg.pkl'] = 'Random, Ridge'
+        self.files['OED+SKL-RidgeReg.pkl'] = 'OED, Ridge'
+        self.files['OED+SKL-RidgeReg_use-labeled.pkl'] = 'OED, Ridge, use_labeled'
+        self.files['ActiveRandom+RelReg-cvx-constraints-numRandPairs=10-scipy-logFix-solver=SCS-numFeatsPerfect=50-L-BFGS-B-nCV=10.pkl'] = 'Random, pointwise, Relative=10'
 
-viz_params = []
+viz_params = [dict()]

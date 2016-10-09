@@ -155,6 +155,8 @@ class StackingTransfer(FuseTransfer):
     @property
     def prefix(self):
         s = 'StackTransfer+' + self.base_learner.prefix
+        if getattr(self, 'use_validation', False):
+            s += '-VAL'
         return s
 
 

@@ -91,7 +91,7 @@ if __name__ == '__main__':
                 continue
             if comm.Get_rank() == 0:
                 timer.tic()
-            num_labels_list = list(itertools.product(pc.num_labels, range(c.num_splits)))
+            num_labels_list = list(itertools.product(c.num_labels, range(c.num_splits)))
             pool.map(mpi_run_main_args, [n + (c,) for n in num_labels_list])
             pool.close()
 

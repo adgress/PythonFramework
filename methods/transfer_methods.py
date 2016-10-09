@@ -126,6 +126,7 @@ class StackingTransfer(FuseTransfer):
         self.base_learner = method.SKLRidgeRegression(configs)
         self.source_learner = method.NadarayaWatsonMethod(configs)
         self.target_learner = method.NadarayaWatsonMethod(configs)
+        self.use_validation = configs.use_validation
 
     def _get_stacked_data(self, data):
         y_source = np.expand_dims(self.source_learner.predict(data).y, 1)

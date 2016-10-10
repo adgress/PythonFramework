@@ -826,6 +826,8 @@ class RelativeRegressionMethod(Method):
         self.use_similar_hinge = configs.get('use_similar_hinge', False)
         self.similar_use_scipy = configs.get('similar_use_scipy', True)
 
+        self.keep_random_guidance = True
+
         self.use_test_error_for_model_selection = configs.get('use_test_error_for_model_selection', False)
         self.no_linear_term = True
         self.neg_log = False
@@ -905,6 +907,7 @@ class RelativeRegressionMethod(Method):
             self.b_initial = new_instance.b
         d = deepcopy(data)
         if self.num_features > 0 and self.use_perfect_feature_selection:
+            assert self.num_features >= data.p, "This won't work if we already have constraints!"
             select_k_best = SelectKBest(f_regression, self.num_features)
             d.x = select_k_best.fit_transform(d.x, d.true_y)
         self.add_random_guidance(d)

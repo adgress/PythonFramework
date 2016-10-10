@@ -48,7 +48,8 @@ other_method_configs = {
     'use_test_error_for_model_selection': False,
     'use_validation': True,
     'use_oed': True,
-    'num_features': 50
+    'num_features': 50,
+    'num_pairwise': 5
 }
 
 run_batch = True
@@ -194,11 +195,13 @@ class MainConfigs(bc.MainConfigs):
         if pc.use_oed:
             active = active_methods.OEDLinearActiveMethod(method_configs)
         else:
-            active = active_methods.ActiveMethod(method_configs)
+            #active = active_methods.ActiveMethod(method_configs)
+            active = active_methods.RelativeActiveMethod(method_configs)
         relative_reg = methods.method.RelativeRegressionMethod(method_configs)
         ridge_reg = method.SKLRidgeRegression(method_configs)
         mean_reg = method.SKLMeanRegressor(method_configs)
         if use_relative:
+            relative_reg.add_random_pairwise = False
             active.base_learner = relative_reg
         else:
             active.base_learner = ridge_reg

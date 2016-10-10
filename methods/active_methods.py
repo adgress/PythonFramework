@@ -29,6 +29,7 @@ from scipy import optimize
 from sklearn.preprocessing import StandardScaler
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import f_regression
+import constrained_methods
 
 class ActiveMethod(method.Method):
     def __init__(self,configs=MethodConfigs()):
@@ -42,6 +43,10 @@ class ActiveMethod(method.Method):
         num_items_per_iteration = self.configs.active_items_per_iteration
         active_iterations = self.configs.active_iterations
         curr_data = deepcopy(data)
+        if hasattr(self.base_learner, 'add_random_guidance'):
+            self.base_learner.add_random_pairwise = True
+            self.base_learner.add_random_guidance(curr_data)
+            self.base_learner.add_random_pairwise = False
         active_fold_results = results_lib.ActiveFoldResults(active_iterations)
         for iter_idx in range(active_iterations):
             I = np.empty(0)
@@ -53,13 +58,26 @@ class ActiveMethod(method.Method):
                                            num_items_per_iteration,
                                            sampling_distribution)
                 try:
-                    all_inds = helper_functions.flatten_list_of_lists(I)
-                    assert curr_data.is_train[all_inds].all()
+                    if self.is_pairwise:
+                        if not hasattr(data, 'pairwise_relationships'):
+                            data.pairwise_relationships = []
+
+                        for i, j in I:
+                            xi = data.x[i,:]
+                            xj = data.x[j,:]
+                            curr_data.pairwise_relationships = np.append(
+                                curr_data.pairwise_relationships,
+                                constrained_methods.PairwiseConstraint(xi, xj)
+                            )
+                    else:
+                        all_inds = helper_functions.flatten_list_of_lists(I)
+                        assert curr_data.is_train[all_inds].all()
+                        curr_data.reveal_labels(I)
                 except AssertionError as error:
                     assert False, 'Pairwise labeling of test data isn''t implemented yet!'
-                except:
+
+                except Exception as err:
                     assert not curr_data.is_labeled[I].any()
-                curr_data.reveal_labels(I)
             fold_results = self.base_learner.train_and_test(curr_data)
             active_iteration_results = results_lib.ActiveIterationResults(fold_results,I)
             active_fold_results.set(active_iteration_results, iter_idx)
@@ -72,6 +90,9 @@ class ActiveMethod(method.Method):
         d = d / d.sum()
         return d, d.size
 
+    @property
+    def is_pairwise(self):
+        return False
 
     def run_method(self, data):
         assert False, 'Not implemented for ActiveMethod'
@@ -184,17 +205,23 @@ class RelativeActiveMethod(ActiveMethod):
         return d, all_pairs
 
     def create_pairs(self, data):
-        assert False, 'Use PairwiseConstraint instead of tuples'
-        if not hasattr(data, 'pairwise_relationships'):
-            data.pairwise_relationships = set()
+        #assert False, 'Use PairwiseConstraint instead of tuples'
+
         I = data.is_train.nonzero()[0]
+        I = I[:50]
         all_pairs = set()
-        for x1 in I:
-            for x2 in I:
-                if x1 <= x2 or (x1,x2) in data.pairwise_relationships or (x2,x1) in data.pairwise_relationships:
+        for i in I:
+            for j in I:
+                if data.true_y[i] >= data.true_y[j]:
                     continue
-                all_pairs.add((x1,x2))
+                #TODO: Don't add redundant pairs
+                all_pairs.add((i, j))
         all_pairs = np.asarray(list(all_pairs))
+        return all_pairs
+
+    @property
+    def is_pairwise(self):
+        return True
 
     @property
     def prefix(self):

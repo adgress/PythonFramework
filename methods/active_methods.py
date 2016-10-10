@@ -70,7 +70,8 @@ class ActiveMethod(method.Method):
                                 constrained_methods.PairwiseConstraint(xi, xj)
                             )
                     else:
-                        all_inds = helper_functions.flatten_list_of_lists(I)
+                        #all_inds = helper_functions.flatten_list_of_lists(I)
+                        all_inds = I
                         assert curr_data.is_train[all_inds].all()
                         curr_data.reveal_labels(I)
                 except AssertionError as error:

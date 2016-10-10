@@ -49,7 +49,7 @@ other_method_configs = {
     'use_validation': True,
     'use_oed': True,
     'num_features': 50,
-    'num_pairwise': 5
+    'num_pairwise': 10
 }
 
 run_batch = True
@@ -195,13 +195,12 @@ class MainConfigs(bc.MainConfigs):
         if pc.use_oed:
             active = active_methods.OEDLinearActiveMethod(method_configs)
         else:
-            #active = active_methods.ActiveMethod(method_configs)
-            active = active_methods.RelativeActiveMethod(method_configs)
+            active = active_methods.ActiveMethod(method_configs)
+            #active = active_methods.RelativeActiveMethod(method_configs)
         relative_reg = methods.method.RelativeRegressionMethod(method_configs)
         ridge_reg = method.SKLRidgeRegression(method_configs)
         mean_reg = method.SKLMeanRegressor(method_configs)
         if use_relative:
-            relative_reg.add_random_pairwise = False
             active.base_learner = relative_reg
         else:
             active.base_learner = ridge_reg
@@ -269,5 +268,6 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files['OED+SKL-RidgeReg.pkl'] = 'OED, Ridge'
         self.files['OED+SKL-RidgeReg_use-labeled.pkl'] = 'OED, Ridge, use_labeled'
         self.files['ActiveRandom+RelReg-cvx-constraints-numRandPairs=10-scipy-logFix-solver=SCS-numFeatsPerfect=50-L-BFGS-B-nCV=10.pkl'] = 'Random, pointwise, Relative=10'
+        self.files['RelActiveRandom+RelReg-cvx-constraints-numRandPairs=5-scipy-logFix-solver=SCS-numFeatsPerfect=50-L-BFGS-B-nCV=10.pkl'] = 'Random, pairwise, Relative=5'
 
 viz_params = [dict()]

@@ -2,9 +2,10 @@ from subprocess import call, Popen
 from timer.timer import tic, toc
 import sys
 #import active.active_project_configs as configs_lib
-import base.transfer_project_configs as configs_lib
+#import base.transfer_project_configs as configs_lib
 #import hypothesis_transfer.hypothesis_project_configs as configs_lib
 #import mixed_feature_guidance.mixed_features_project_configs as configs_lib
+import active_base.active_base_project_configs as configs_lib
 import itertools
 from utility import multiprocessing_utility
 from utility import helper_functions

@@ -35,6 +35,7 @@ run_experiments = True
 use_test_error_for_model_selection = False
 
 use_relative = True
+use_pairwise_active = True
 
 include_size_in_file_name = False
 
@@ -195,8 +196,10 @@ class MainConfigs(bc.MainConfigs):
         if pc.use_oed:
             active = active_methods.OEDLinearActiveMethod(method_configs)
         else:
-            active = active_methods.ActiveMethod(method_configs)
-            #active = active_methods.RelativeActiveMethod(method_configs)
+            if use_pairwise_active:
+                active = active_methods.RelativeActiveMethod(method_configs)
+            else:
+                active = active_methods.ActiveMethod(method_configs)
         relative_reg = methods.method.RelativeRegressionMethod(method_configs)
         ridge_reg = method.SKLRidgeRegression(method_configs)
         mean_reg = method.SKLMeanRegressor(method_configs)

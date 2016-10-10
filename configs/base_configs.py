@@ -98,10 +98,9 @@ class Configs(object):
         return hasattr(self,key)
 
     def get(self,key,default_value):
-        if ~self.has(key):
-            #assert default_value in locals()
+        if not self.has(key):
             return default_value
-        return getattr(key)
+        return getattr(self, key)
 
     def stringify_fields(self,fields):
         assert False

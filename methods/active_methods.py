@@ -193,19 +193,18 @@ class OEDLinearActiveMethod(ActiveMethod):
             s += '_use-labeled'
         return s
 
-
 class RelativeActiveMethod(ActiveMethod):
     def __init__(self,configs=MethodConfigs()):
         super(RelativeActiveMethod, self).__init__(configs)
 
     def create_sampling_distribution(self, base_learner, data, fold_results):
-        all_pairs = self.create_pairs(data)
+        all_pairs = self.create_pairs(data, base_learner)
         d = np.zeros(all_pairs.shape[0])
         d[:] = 1
         d = d / d.sum()
         return d, all_pairs
 
-    def create_pairs(self, data):
+    def create_pairs(self, data, base_learner):
         #assert False, 'Use PairwiseConstraint instead of tuples'
 
         I = data.is_train.nonzero()[0]
@@ -227,6 +226,38 @@ class RelativeActiveMethod(ActiveMethod):
     @property
     def prefix(self):
         return 'RelActiveRandom+' + self.base_learner.prefix
+
+
+class RelativeActiveUncertaintyMethod(RelativeActiveMethod):
+    def create_pairs(self, data, base_learner):
+        # assert False, 'Use PairwiseConstraint instead of tuples'
+
+        min_pairs_to_keep = 50
+
+        I = data.is_train.nonzero()[0]
+        I = I[:50]
+        all_pairs = list()
+        diffs = np.zeros(100000)
+        y_pred = base_learner.predict(data).y
+        diff_idx = 0
+        for i in I:
+            for j in I:
+                if data.true_y[i] >= data.true_y[j]:
+                    continue
+                # TODO: Don't add redundant pairs
+                diff_idx += 1
+                all_pairs.append((i, j))
+                diffs[diff_idx] = np.abs(y_pred[i] - y_pred[j])
+        diffs = diffs[0:diff_idx]
+        inds = np.argsort(diffs)
+        all_pairs = np.asarray(list(all_pairs))
+        all_pairs = all_pairs[inds[:50], :]
+        return all_pairs
+
+    @property
+    def prefix(self):
+        return 'RelActiveUncer+' + self.base_learner.prefix
+
 
 class IGRelativeActiveMethod(RelativeActiveMethod):
     def __init__(self,configs=MethodConfigs()):

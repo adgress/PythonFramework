@@ -305,7 +305,9 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
                 # TODO: Don't add redundant pairs
                 diff_idx += 1
                 all_pairs.append((i, j))
-                weights[diff_idx] = expit(y_pred[i] - y_pred[j])
+                #weights[diff_idx] = expit(y_pred[i] - y_pred[j])
+                s = expit(y_pred[i] - y_pred[j])
+                weights[diff_idx ] = s*(1-s)
                 deltas.append(x[i,:] - x[j,:])
                 #fisher_pairwise += diffs[diff_idx] * np.outer(delta, delta)
 

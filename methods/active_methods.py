@@ -251,12 +251,137 @@ class RelativeActiveUncertaintyMethod(RelativeActiveMethod):
         diffs = diffs[0:diff_idx]
         inds = np.argsort(diffs)
         all_pairs = np.asarray(list(all_pairs))
-        all_pairs = all_pairs[inds[:50], :]
+        all_pairs = all_pairs[inds[:min_pairs_to_keep], :]
         return all_pairs
 
     @property
     def prefix(self):
         return 'RelActiveUncer+' + self.base_learner.prefix
+
+from scipy.special import expit
+
+
+class OptimizationDataRelative(object):
+    def __init__(self, fim_x, fim_reg, weights, deltas, reg_pairwise):
+        self.fim_x = fim_x
+        self.fim_reg = fim_reg
+        self.weights = weights
+        self.deltas = deltas
+        self.reg_pairwise = reg_pairwise
+
+
+def eval_pairwise_oed(t, opt_data):
+    idx = 0
+    fim = np.zeros(opt_data.fim_x.shape)
+    for ti, w, d in zip(t, opt_data.weights, opt_data.deltas):
+        fim += ti*w*np.outer(d, d)
+        idx += 1
+    fim *= opt_data.reg_pairwise
+    fim += opt_data.fim_x + opt_data.fim_reg
+    return np.trace(inv(fim))
+
+class RelativeActiveOEDMethod(RelativeActiveMethod):
+    def create_sampling_distribution(self, base_learner, data, fold_results):
+        # assert False, 'Use PairwiseConstraint instead of tuples'
+
+        min_pairs_to_keep = 50
+
+        I = data.is_train.nonzero()[0]
+        I = I[:20]
+        p = data.p
+        all_pairs = list()
+        weights = np.zeros(100000)
+        y_pred = base_learner.predict(data).y
+        diff_idx = 0
+        x = self.base_learner.transform.transform(data.x)
+        fisher_x = x.T.dot(x)
+        fisher_reg = self.base_learner.C*np.eye(p)
+        deltas = list()
+        #fisher_pairwise = np.zeros((p,p))
+        for i in I:
+            for j in I:
+                if data.true_y[i] >= data.true_y[j]:
+                    continue
+                # TODO: Don't add redundant pairs
+                diff_idx += 1
+                all_pairs.append((i, j))
+                weights[diff_idx] = expit(y_pred[i] - y_pred[j])
+                deltas.append(x[i,:] - x[j,:])
+                #fisher_pairwise += diffs[diff_idx] * np.outer(delta, delta)
+
+        weights = weights[0:diff_idx]
+        opt_data = OptimizationDataRelative(fisher_x, fisher_reg, weights, deltas, self.base_learner.C2)
+        all_pairs = np.asarray(list(all_pairs))
+
+        n = weights.size
+        t0 = np.zeros((n, 1))
+        constraints = [
+            {
+                'type': 'eq',
+                'fun': lambda t: t.sum() - 1
+            },
+            {
+                'type': 'ineq',
+                'fun': lambda t: t
+            }
+        ]
+        options = {}
+        results = optimize.minimize(
+            lambda t: eval_pairwise_oed(t, opt_data),
+            t0,
+            method='SLSQP',
+            jac=None,
+            options=options,
+            constraints=constraints
+        )
+        if results.success:
+            t = results.x
+        else:
+            print 'OED Optimization failed'
+            t = np.ones(n)
+        t[t < 0] = 0
+        t += 1e-4
+        t /= t.sum()
+
+
+
+        return t, all_pairs
+
+    @property
+    def prefix(self):
+        return 'RelActiveOED+' + self.base_learner.prefix
+
+class RelativeActiveErrorMinMethod(RelativeActiveMethod):
+    def create_pairs(self, data, base_learner):
+        # assert False, 'Use PairwiseConstraint instead of tuples'
+
+        min_pairs_to_keep = 50
+
+        I = data.is_train.nonzero()[0]
+        I = I[:50]
+        all_pairs = list()
+        diffs = np.zeros(100000)
+        y_pred = base_learner.predict(data).y
+        diff_idx = 0
+        for i in I:
+            for j in I:
+                if data.true_y[i] >= data.true_y[j]:
+                    continue
+                # TODO: Don't add redundant pairs
+                diff_idx += 1
+                all_pairs.append((i, j))
+                diffs[diff_idx] = np.abs(y_pred[i] - y_pred[j])
+        diffs = diffs[0:diff_idx]
+        inds = np.argsort(diffs)
+        all_pairs = np.asarray(list(all_pairs))
+        all_pairs = all_pairs[inds[:50], :]
+        return all_pairs
+
+    @property
+    def prefix(self):
+        return 'RelActiveErrorMin+' + self.base_learner.prefix
+
+
 
 
 class IGRelativeActiveMethod(RelativeActiveMethod):

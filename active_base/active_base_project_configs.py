@@ -275,5 +275,6 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files['ActiveRandom+RelReg-cvx-constraints-numRandPairs=10-scipy-logFix-solver=SCS-numFeatsPerfect=50-L-BFGS-B-nCV=10.pkl'] = 'Random, pointwise, Relative=10'
         self.files['RelActiveRandom+RelReg-cvx-constraints-numRandPairs=10-scipy-logFix-solver=SCS-numFeatsPerfect=50-L-BFGS-B-nCV=10.pkl'] = 'Random, pairwise, Relative=10'
         self.files['RelActiveUncer+RelReg-cvx-constraints-numRandPairs=10-scipy-logFix-solver=SCS-numFeatsPerfect=50-L-BFGS-B-nCV=10.pkl'] = 'Uncertainty, pairwise, Relative=10'
+        self.files['RelActiveOED+RelReg-cvx-constraints-numRandPairs=10-scipy-logFix-solver=SCS-numFeatsPerfect=50-L-BFGS-B-nCV=10.pkl'] = 'OED, pairwise, Relative=10'
 
 viz_params = [dict()]

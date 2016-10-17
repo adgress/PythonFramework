@@ -316,7 +316,8 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
         all_pairs = np.asarray(list(all_pairs))
 
         n = weights.size
-        t0 = np.zeros((n, 1))
+        t0 = np.ones((n, 1))
+        t0 /= t0.sum()
         constraints = [
             {
                 'type': 'eq',

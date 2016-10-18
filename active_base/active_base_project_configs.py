@@ -50,15 +50,15 @@ other_method_configs = {
     'use_validation': True,
     'use_oed': True,
     'num_features': 50,
-    'num_pairwise': 10
+    'num_pairwise': 1
 }
 
 run_batch = True
 if helper_functions.is_laptop():
     run_batch = True
 
-active_iterations = 5
-active_items_per_iteration = 10
+active_iterations = 1
+active_items_per_iteration = 50
 
 show_legend_on_all = True
 
@@ -273,8 +273,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #self.files['OED+SKL-RidgeReg.pkl'] = 'OED, Ridge'
         #self.files['OED+SKL-RidgeReg_use-labeled.pkl'] = 'OED, Ridge, use_labeled'
         self.files['ActiveRandom+RelReg-cvx-constraints-numRandPairs=10-scipy-logFix-solver=SCS-numFeatsPerfect=50-L-BFGS-B-nCV=10.pkl'] = 'Random, pointwise, Relative=10'
-        self.files['RelActiveRandom+RelReg-cvx-constraints-numRandPairs=10-scipy-logFix-solver=SCS-numFeatsPerfect=50-L-BFGS-B-nCV=10.pkl'] = 'Random, pairwise, Relative=10'
-        self.files['RelActiveUncer+RelReg-cvx-constraints-numRandPairs=10-scipy-logFix-solver=SCS-numFeatsPerfect=50-L-BFGS-B-nCV=10.pkl'] = 'Uncertainty, pairwise, Relative=10'
-        self.files['RelActiveOED+RelReg-cvx-constraints-numRandPairs=10-scipy-logFix-solver=SCS-numFeatsPerfect=50-L-BFGS-B-nCV=10.pkl'] = 'OED, pairwise, Relative=10'
+        self.files['RelActiveRandom+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS-numFeatsPerfect=50-L-BFGS-B-nCV=10.pkl'] = 'Random, pairwise, Relative=10'
+        self.files['RelActiveUncer+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS-numFeatsPerfect=50-L-BFGS-B-nCV=10.pkl'] = 'Uncertainty, pairwise, Relative=10'
+        self.files['RelActiveOED+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS-numFeatsPerfect=50-L-BFGS-B-nCV=10.pkl'] = 'OED, pairwise, Relative=10'
 
 viz_params = [dict()]

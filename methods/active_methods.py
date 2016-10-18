@@ -349,7 +349,7 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
         constraints = [
             {
                 'type': 'eq',
-                'fun': lambda t: t.sum() - 1
+                'fun': lambda t: t.sum() - self.configs.active_items_per_iteration
             },
             {
                 'type': 'ineq',

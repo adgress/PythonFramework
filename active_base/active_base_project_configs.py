@@ -58,8 +58,8 @@ run_batch = True
 if helper_functions.is_laptop():
     run_batch = True
 
-active_iterations = 2
-active_items_per_iteration = 30
+active_iterations = 5
+active_items_per_iteration = 5
 
 show_legend_on_all = True
 

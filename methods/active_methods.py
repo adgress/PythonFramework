@@ -222,13 +222,20 @@ class RelativeActiveMethod(ActiveMethod):
         all_pairs = np.asarray(list(all_pairs))
         return all_pairs
 
+    def active_options_suffix(self):
+        n = str(self.num_labels[0])
+        iterations = str(self.configs.active_iterations)
+        items_per_iteration = str(self.configs.active_items_per_iteration)
+        s = n + '-' + iterations + '-' + items_per_iteration
+        return s
+
     @property
     def is_pairwise(self):
         return True
 
     @property
     def prefix(self):
-        return 'RelActiveRandom+' + self.base_learner.prefix
+        return 'RelActiveRandom-' + self.active_options_suffix() + '+' + self.base_learner.prefix
 
 
 class RelativeActiveUncertaintyMethod(RelativeActiveMethod):
@@ -275,6 +282,7 @@ class RelativeActiveUncertaintyMethod(RelativeActiveMethod):
             s += '-largest'
         if getattr(self, 'use_oracle', False):
             s += '-oracle'
+        s += '-' + self.active_options_suffix()
         s += '+' + self.base_learner.prefix
         return s
 
@@ -374,7 +382,8 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
             }
         ]
         options = {
-            'disp': True
+            'disp': True,
+            'maxiter': 20
         }
         if self.use_grad:
             results = optimize.minimize(
@@ -420,6 +429,7 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
         s = 'RelActiveOED'
         if getattr(self, 'use_grad'):
             s += '-grad'
+        s += '-' + self.active_options_suffix()
         s += '+' + self.base_learner.prefix
         return s
 
@@ -451,7 +461,10 @@ class RelativeActiveErrorMinMethod(RelativeActiveMethod):
 
     @property
     def prefix(self):
-        return 'RelActiveErrorMin+' + self.base_learner.prefix
+        s = 'RelActiveErrorMin'
+        s += '-' + self.active_options_suffix()
+        s += '+' +self.base_learner.prefix
+        return s
 
 
 

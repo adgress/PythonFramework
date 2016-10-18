@@ -288,12 +288,14 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             num_feats = ''
         else:
             num_feats = '-numFeatsPerfect=' + str(other_method_configs['num_features'])
-        self.files['ActiveRandom+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS' + num_feats + '-L-BFGS-B-nCV=10.pkl'] = 'Random, pointwise, Relative=10'
-        self.files['RelActiveRandom+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS' + num_feats + '-L-BFGS-B-nCV=10.pkl'] = 'Random, pairwise, Relative=10'
-        self.files['RelActiveUncer+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS' + num_feats + '-L-BFGS-B-nCV=10.pkl'] = 'Uncertainty, pairwise, Relative=10'
-        self.files['RelActiveOED+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS' + num_feats + '-L-BFGS-B-nCV=10.pkl'] = 'OED, pairwise, Relative=10'
-        #self.files['RelActiveUncer-oracle+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS-numFeatsPerfect=50-L-BFGS-B-nCV=10.pkl'] = 'Uncertainty, pairwise-oracle, Relative=10'
-        #self.files['RelActiveUncer-largest-oracle+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS-numFeatsPerfect=50-L-BFGS-B-nCV=10.pkl'] = 'Uncertainty, pairwise-largest-oracle, Relative=10'
-        #self.files['RelActiveUncer-largest+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS-numFeatsPerfect=50-L-BFGS-B-nCV=10.pkl'] = 'Uncertainty, pairwise-largest, Relative=10'
+        active_opts_stf = '-10-5-5'
+        files = [
+            ('RelActiveRandom%s+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'Random, pairwise, Relative=10'),
+            ('RelActiveUncer%s+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'Uncertainty, pairwise, Relative=10'),
+            ('RelActiveOED%s+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'OED, pairwise, Relative=10'),
+        ]
+        for file, legend in files:
+            file = file % (active_opts_stf, num_feats)
+            self.files[file] = legend
 
 viz_params = [dict()]

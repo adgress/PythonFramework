@@ -32,6 +32,8 @@ from sklearn.feature_selection import f_regression
 import constrained_methods
 from utility import array_functions
 
+num_instances_for_pairs = 30
+
 class ActiveMethod(method.Method):
     def __init__(self,configs=MethodConfigs()):
         super(ActiveMethod, self).__init__(configs)
@@ -209,7 +211,7 @@ class RelativeActiveMethod(ActiveMethod):
         #assert False, 'Use PairwiseConstraint instead of tuples'
 
         I = data.is_train.nonzero()[0]
-        I = I[:50]
+        I = np.random.choice(I, num_instances_for_pairs, False)
         all_pairs = set()
         for i in I:
             for j in I:
@@ -236,7 +238,7 @@ class RelativeActiveUncertaintyMethod(RelativeActiveMethod):
         min_pairs_to_keep = 50
 
         I = data.is_train.nonzero()[0]
-        I = I[:50]
+        I = np.random.choice(I, num_instances_for_pairs, False)
         all_pairs = list()
         diffs = np.zeros(100000)
         y_pred = base_learner.predict(data).y
@@ -306,7 +308,7 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
         min_pairs_to_keep = 50
 
         I = data.is_train.nonzero()[0]
-        I = np.random.choice(I, 20, False)
+        I = np.random.choice(I, num_instances_for_pairs, False)
         #I = I[:20]
         p = data.p
         all_pairs = list()
@@ -411,7 +413,7 @@ class RelativeActiveErrorMinMethod(RelativeActiveMethod):
         min_pairs_to_keep = 50
 
         I = data.is_train.nonzero()[0]
-        I = I[:50]
+        I = np.random.choice(I, num_instances_for_pairs, False)
         all_pairs = list()
         diffs = np.zeros(100000)
         y_pred = base_learner.predict(data).y

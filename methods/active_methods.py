@@ -386,7 +386,7 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
         ]
         options = {
             'disp': True,
-            'maxiter': 1000
+            'maxiter': 100
         }
         if self.use_grad:
             results = optimize.minimize(

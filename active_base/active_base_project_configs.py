@@ -20,7 +20,8 @@ def create_project_configs():
 pc_fields_to_copy = bc.pc_fields_to_copy + [
     'include_size_in_file_name'
 ]
-data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_DROSOPHILIA
@@ -48,8 +49,8 @@ other_method_configs = {
     'use_perfect_feature_selection': True,
     'use_test_error_for_model_selection': False,
     'use_validation': True,
-    'use_oed': True,
-    'num_features': 50,
+    'use_oed': False,
+    'num_features': None,
     'num_pairwise': 1
 }
 
@@ -58,7 +59,7 @@ if helper_functions.is_laptop():
     run_batch = True
 
 active_iterations = 2
-active_items_per_iteration = 50
+active_items_per_iteration = 30
 
 show_legend_on_all = True
 
@@ -103,6 +104,9 @@ class ProjectConfigs(bc.ProjectConfigs):
         if data_set == bc.DATA_BOSTON_HOUSING:
             self.set_boston_housing()
             self.num_labels = [5]
+        elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10:
+            self.set_synthetic_linear_reg_10()
+            self.num_labels = [10]
         elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
             self.set_synthetic_linear_reg()
             self.num_labels = [10]
@@ -141,6 +145,14 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.data_dir = 'data_sets/boston_housing'
         self.data_name = 'boston_housing'
         self.results_dir = 'boston_housing'
+        self.data_set_file_name = 'split_data.pkl'
+
+    def set_synthetic_linear_reg_10(self):
+        self.loss_function = loss_function.MeanSquaredError()
+        self.cv_loss_function = loss_function.MeanSquaredError()
+        self.data_dir = 'data_sets/synthetic_linear_reg500-10-1.01'
+        self.data_name = 'synthetic_linear_reg500-10-1.01'
+        self.results_dir = 'synthetic_linear_reg500-10-1.01'
         self.data_set_file_name = 'split_data.pkl'
 
     def set_synthetic_linear_reg(self):
@@ -198,8 +210,8 @@ class MainConfigs(bc.MainConfigs):
         else:
             if use_pairwise_active:
                 #active = active_methods.RelativeActiveMethod(method_configs)
-                active = active_methods.RelativeActiveUncertaintyMethod(method_configs)
-                #active = active_methods.RelativeActiveOEDMethod(method_configs)
+                #active = active_methods.RelativeActiveUncertaintyMethod(method_configs)
+                active = active_methods.RelativeActiveOEDMethod(method_configs)
             else:
                 active = active_methods.ActiveMethod(method_configs)
         relative_reg = methods.method.RelativeRegressionMethod(method_configs)
@@ -272,9 +284,16 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #self.files['ActiveRandom+SKL-RidgeReg.pkl'] = 'Random, Ridge'
         #self.files['OED+SKL-RidgeReg.pkl'] = 'OED, Ridge'
         #self.files['OED+SKL-RidgeReg_use-labeled.pkl'] = 'OED, Ridge, use_labeled'
-        self.files['ActiveRandom+RelReg-cvx-constraints-numRandPairs=10-scipy-logFix-solver=SCS-numFeatsPerfect=50-L-BFGS-B-nCV=10.pkl'] = 'Random, pointwise, Relative=10'
-        self.files['RelActiveRandom+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS-numFeatsPerfect=50-L-BFGS-B-nCV=10.pkl'] = 'Random, pairwise, Relative=10'
-        self.files['RelActiveUncer+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS-numFeatsPerfect=50-L-BFGS-B-nCV=10.pkl'] = 'Uncertainty, pairwise, Relative=10'
-        self.files['RelActiveOED+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS-numFeatsPerfect=50-L-BFGS-B-nCV=10.pkl'] = 'OED, pairwise, Relative=10'
+        if other_method_configs['num_features'] is None:
+            num_feats = ''
+        else:
+            num_feats = '-numFeatsPerfect=' + str(other_method_configs['num_features'])
+        self.files['ActiveRandom+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS' + num_feats + '-L-BFGS-B-nCV=10.pkl'] = 'Random, pointwise, Relative=10'
+        self.files['RelActiveRandom+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS' + num_feats + '-L-BFGS-B-nCV=10.pkl'] = 'Random, pairwise, Relative=10'
+        self.files['RelActiveUncer+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS' + num_feats + '-L-BFGS-B-nCV=10.pkl'] = 'Uncertainty, pairwise, Relative=10'
+        self.files['RelActiveOED+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS' + num_feats + '-L-BFGS-B-nCV=10.pkl'] = 'OED, pairwise, Relative=10'
+        #self.files['RelActiveUncer-oracle+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS-numFeatsPerfect=50-L-BFGS-B-nCV=10.pkl'] = 'Uncertainty, pairwise-oracle, Relative=10'
+        #self.files['RelActiveUncer-largest-oracle+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS-numFeatsPerfect=50-L-BFGS-B-nCV=10.pkl'] = 'Uncertainty, pairwise-largest-oracle, Relative=10'
+        #self.files['RelActiveUncer-largest+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS-numFeatsPerfect=50-L-BFGS-B-nCV=10.pkl'] = 'Uncertainty, pairwise-largest, Relative=10'
 
 viz_params = [dict()]

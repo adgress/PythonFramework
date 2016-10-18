@@ -40,7 +40,7 @@ class ActiveMethod(method.Method):
         self.base_learner = method.SKLRidgeRegression(configs)
 
     def train_and_test(self, data):
-        if self.configs.num_features < data.p:
+        if self.configs.num_features is not None and self.configs.num_features < data.p:
             select_k_best = SelectKBest(f_regression, self.configs.num_features)
             data.x = select_k_best.fit_transform(data.x, data.true_y)
         num_items_per_iteration = self.configs.active_items_per_iteration
@@ -235,7 +235,8 @@ class RelativeActiveUncertaintyMethod(RelativeActiveMethod):
     def __init__(self, configs=MethodConfigs()):
         super(RelativeActiveUncertaintyMethod, self).__init__(configs)
         self.use_grad = False
-        self.use_oracle = True
+        self.use_oracle = False
+        self.use_largest_delta = False
 
     def create_pairs(self, data, base_learner):
         # assert False, 'Use PairwiseConstraint instead of tuples'
@@ -261,6 +262,8 @@ class RelativeActiveUncertaintyMethod(RelativeActiveMethod):
                 diffs[diff_idx] = np.abs(y_pred[i] - y_pred[j])
         diffs = diffs[0:diff_idx]
         inds = np.argsort(diffs)
+        if self.use_largest_delta:
+            inds = inds[::-1]
         all_pairs = np.asarray(list(all_pairs))
         all_pairs = all_pairs[inds[:min_pairs_to_keep], :]
         return all_pairs
@@ -268,6 +271,8 @@ class RelativeActiveUncertaintyMethod(RelativeActiveMethod):
     @property
     def prefix(self):
         s = 'RelActiveUncer'
+        if getattr(self, 'use_largest_delta', False):
+            s += '-largest'
         if getattr(self, 'use_oracle', False):
             s += '-oracle'
         s += '+' + self.base_learner.prefix

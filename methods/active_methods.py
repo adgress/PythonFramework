@@ -306,7 +306,8 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
         min_pairs_to_keep = 50
 
         I = data.is_train.nonzero()[0]
-        I = I[:20]
+        I = np.random.choice(I, 20, False)
+        #I = I[:20]
         p = data.p
         all_pairs = list()
         weights = np.zeros(100000)

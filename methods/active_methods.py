@@ -232,6 +232,11 @@ class RelativeActiveMethod(ActiveMethod):
 
 
 class RelativeActiveUncertaintyMethod(RelativeActiveMethod):
+    def __init__(self, configs=MethodConfigs()):
+        super(RelativeActiveUncertaintyMethod, self).__init__(configs)
+        self.use_grad = False
+        self.use_oracle = True
+
     def create_pairs(self, data, base_learner):
         # assert False, 'Use PairwiseConstraint instead of tuples'
 
@@ -241,7 +246,10 @@ class RelativeActiveUncertaintyMethod(RelativeActiveMethod):
         I = np.random.choice(I, num_instances_for_pairs, False)
         all_pairs = list()
         diffs = np.zeros(100000)
-        y_pred = base_learner.predict(data).y
+        if self.use_oracle:
+            y_pred = data.true_y
+        else:
+            y_pred = base_learner.predict(data).y
         diff_idx = 0
         for i in I:
             for j in I:
@@ -259,7 +267,11 @@ class RelativeActiveUncertaintyMethod(RelativeActiveMethod):
 
     @property
     def prefix(self):
-        return 'RelActiveUncer+' + self.base_learner.prefix
+        s = 'RelActiveUncer'
+        if getattr(self, 'use_oracle', False):
+            s += '-oracle'
+        s += '+' + self.base_learner.prefix
+        return s
 
 from scipy.special import expit
 

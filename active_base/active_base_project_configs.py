@@ -57,7 +57,7 @@ run_batch = True
 if helper_functions.is_laptop():
     run_batch = True
 
-active_iterations = 1
+active_iterations = 2
 active_items_per_iteration = 50
 
 show_legend_on_all = True
@@ -198,8 +198,8 @@ class MainConfigs(bc.MainConfigs):
         else:
             if use_pairwise_active:
                 #active = active_methods.RelativeActiveMethod(method_configs)
-                #active = active_methods.RelativeActiveUncertaintyMethod(method_configs)
-                active = active_methods.RelativeActiveOEDMethod(method_configs)
+                active = active_methods.RelativeActiveUncertaintyMethod(method_configs)
+                #active = active_methods.RelativeActiveOEDMethod(method_configs)
             else:
                 active = active_methods.ActiveMethod(method_configs)
         relative_reg = methods.method.RelativeRegressionMethod(method_configs)

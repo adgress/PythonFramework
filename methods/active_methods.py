@@ -241,7 +241,6 @@ class RelativeActiveMethod(ActiveMethod):
 class RelativeActiveUncertaintyMethod(RelativeActiveMethod):
     def __init__(self, configs=MethodConfigs()):
         super(RelativeActiveUncertaintyMethod, self).__init__(configs)
-        self.use_grad = False
         self.use_oracle = False
         self.use_largest_delta = False
 
@@ -310,6 +309,7 @@ def pairwise_fim(t, opt_data):
 def eval_pairwise_oed(t, opt_data):
     fim = pairwise_fim(t, opt_data)
     return np.trace(inv(fim))
+    #return np.trace(fim)
 
 def grad_pairwise_oed(t, opt_data):
     fim = pairwise_fim(t, opt_data)
@@ -317,15 +317,18 @@ def grad_pairwise_oed(t, opt_data):
     AA = A.dot(A)
     g = np.zeros(t.shape)
     idx = 0
-    for wi, di in zip(opt_data.weights_grad, opt_data.deltas):
+    for wi, di in zip(opt_data.weights, opt_data.deltas):
         g[idx] = - wi*di.T.dot(AA).dot(di)
+        #g[idx] = wi*di.T.dot(di)
         idx += 1
+    C = opt_data.reg_pairwise
+    g *= C
     return g
 
 class RelativeActiveOEDMethod(RelativeActiveMethod):
     def __init__(self, configs=MethodConfigs()):
         super(RelativeActiveOEDMethod, self).__init__(configs)
-        self.use_grad = False
+        self.use_grad = True
 
     def create_sampling_distribution(self, base_learner, data, fold_results):
         # assert False, 'Use PairwiseConstraint instead of tuples'
@@ -368,7 +371,7 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
         all_pairs = np.asarray(list(all_pairs))
 
         n = weights.size
-        t0 = np.ones((n, 1))
+        t0 = np.ones(n)
         t0 /= t0.sum()
         #t0[:] = 0
         constraints = [
@@ -394,6 +397,15 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
                 options=options,
                 constraints=constraints
             )
+            grad_err = scipy.optimize.check_grad(
+                lambda t: eval_pairwise_oed(t, opt_data),
+                lambda t: grad_pairwise_oed(t, opt_data),
+                t0
+            )
+            g = grad_pairwise_oed(t0, opt_data)
+            g_approx = optimize.approx_fprime(t0, lambda t: eval_pairwise_oed(t, opt_data), 1e-6)
+            print grad_err
+            '''
             results_eval = optimize.minimize(
                 lambda t: eval_pairwise_oed(t, opt_data),
                 t0,
@@ -402,7 +414,14 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
                 options=options,
                 constraints=constraints
             )
-            print 'error: ' + str(array_functions.relative_error(results.x, results_eval.x))
+            t_vals = [results.x, results_eval.x]
+            for v in t_vals:
+                v[v < 0] = 0
+                v /= v.sum()
+            v0 = t_vals[0]
+            v1 = t_vals[1]
+            print 'error: ' + str(array_functions.relative_error(v[0], v[1]))
+            '''
         else:
             results = optimize.minimize(
                 lambda t: eval_pairwise_oed(t, opt_data),

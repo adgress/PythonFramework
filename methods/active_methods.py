@@ -30,6 +30,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import f_regression
 import constrained_methods
+from utility import array_functions
 
 class ActiveMethod(method.Method):
     def __init__(self,configs=MethodConfigs()):
@@ -269,32 +270,52 @@ class OptimizationDataRelative(object):
         self.deltas = deltas
         self.reg_pairwise = reg_pairwise
 
-
-def eval_pairwise_oed(t, opt_data):
+def pairwise_fim(t, opt_data):
     idx = 0
     fim = np.zeros(opt_data.fim_x.shape)
     for ti, w, d in zip(t, opt_data.weights, opt_data.deltas):
-        fim += ti*w*np.outer(d, d)
+        fim += ti * w * np.outer(d, d)
         idx += 1
     fim *= opt_data.reg_pairwise
     fim += opt_data.fim_x + opt_data.fim_reg
+    return fim
+
+def eval_pairwise_oed(t, opt_data):
+    fim = pairwise_fim(t, opt_data)
     return np.trace(inv(fim))
 
+def grad_pairwise_oed(t, opt_data):
+    fim = pairwise_fim(t, opt_data)
+    A = inv(fim)
+    AA = A.dot(A)
+    g = np.zeros(t.shape)
+    idx = 0
+    for wi, di in zip(opt_data.weights_grad, opt_data.deltas):
+        g[idx] = - wi*di.T.dot(AA).dot(di)
+        idx += 1
+    return g
+
 class RelativeActiveOEDMethod(RelativeActiveMethod):
+    def __init__(self, configs=MethodConfigs()):
+        super(RelativeActiveOEDMethod, self).__init__(configs)
+        self.use_grad = False
+
     def create_sampling_distribution(self, base_learner, data, fold_results):
         # assert False, 'Use PairwiseConstraint instead of tuples'
 
         min_pairs_to_keep = 50
 
         I = data.is_train.nonzero()[0]
-        I = I[:50]
+        I = I[:20]
         p = data.p
         all_pairs = list()
         weights = np.zeros(100000)
+        weights_grad = np.zeros(100000)
         y_pred = base_learner.predict(data).y
         diff_idx = 0
         x = self.base_learner.transform.transform(data.x)
-        fisher_x = x.T.dot(x)
+        x_labeled = self.base_learner.transform.transform(data.x[data.is_labeled & data.is_train])
+        fisher_x = x_labeled.T.dot(x_labeled)
         fisher_reg = self.base_learner.C*np.eye(p)
         deltas = list()
         #fisher_pairwise = np.zeros((p,p))
@@ -308,16 +329,20 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
                 #weights[diff_idx] = expit(y_pred[i] - y_pred[j])
                 s = expit(y_pred[i] - y_pred[j])
                 weights[diff_idx ] = s*(1-s)
+                weights_grad[diff_idx] = 1-s
                 deltas.append(x[i,:] - x[j,:])
                 #fisher_pairwise += diffs[diff_idx] * np.outer(delta, delta)
 
-        weights = weights[0:diff_idx]
+        weights = weights[:diff_idx]
+        weights_grad = weights_grad[:diff_idx]
         opt_data = OptimizationDataRelative(fisher_x, fisher_reg, weights, deltas, self.base_learner.C2)
+        opt_data.weights_grad = weights_grad
         all_pairs = np.asarray(list(all_pairs))
 
         n = weights.size
         t0 = np.ones((n, 1))
         t0 /= t0.sum()
+        #t0[:] = 0
         constraints = [
             {
                 'type': 'eq',
@@ -328,31 +353,55 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
                 'fun': lambda t: t
             }
         ]
-        options = {}
-        results = optimize.minimize(
-            lambda t: eval_pairwise_oed(t, opt_data),
-            t0,
-            method='SLSQP',
-            jac=None,
-            options=options,
-            constraints=constraints
-        )
+        options = {
+            'disp': True
+        }
+        if self.use_grad:
+            results = optimize.minimize(
+                lambda t: eval_pairwise_oed(t, opt_data),
+                t0,
+                method='SLSQP',
+                jac=lambda t: grad_pairwise_oed(t, opt_data),
+                options=options,
+                constraints=constraints
+            )
+            results_eval = optimize.minimize(
+                lambda t: eval_pairwise_oed(t, opt_data),
+                t0,
+                method='SLSQP',
+                jac=None,
+                options=options,
+                constraints=constraints
+            )
+            print 'error: ' + str(array_functions.relative_error(results.x, results_eval.x))
+        else:
+            results = optimize.minimize(
+                lambda t: eval_pairwise_oed(t, opt_data),
+                t0,
+                method='SLSQP',
+                jac=None,
+                options=options,
+                constraints=constraints
+            )
+
         if results.success:
             t = results.x
+            #print 'error: ' + str(array_functions.relative_error(results.x, results_grad.x))
         else:
             print 'OED Optimization failed'
             t = np.ones(n)
         t[t < 0] = 0
         t += 1e-4
         t /= t.sum()
-
-
-
         return t, all_pairs
 
     @property
     def prefix(self):
-        return 'RelActiveOED+' + self.base_learner.prefix
+        s = 'RelActiveOED'
+        if getattr(self, 'use_grad'):
+            s += '-grad'
+        s += '+' + self.base_learner.prefix
+        return s
 
 class RelativeActiveErrorMinMethod(RelativeActiveMethod):
     def create_pairs(self, data, base_learner):

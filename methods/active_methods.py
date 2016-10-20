@@ -317,7 +317,11 @@ def eval_pairwise_oed(t, opt_data):
 
 def grad_pairwise_oed(t, opt_data):
     fim = pairwise_fim(t, opt_data)
-    A = inv(fim)
+    try:
+        A = inv(fim)
+    except:
+        A = inv(fim + 1e-4 * np.eye(fim.shape[0]))
+
     AA = A.dot(A)
     g = np.zeros(t.shape)
     idx = 0

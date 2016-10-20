@@ -341,7 +341,6 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
         p = data.p
         all_pairs = list()
         weights = np.zeros(100000)
-        weights_grad = np.zeros(100000)
         y_pred = base_learner.predict(data).y
         diff_idx = 0
         x = self.base_learner.transform.transform(data.x)
@@ -360,19 +359,17 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
                 #weights[diff_idx] = expit(y_pred[i] - y_pred[j])
                 s = expit(y_pred[i] - y_pred[j])
                 weights[diff_idx ] = s*(1-s)
-                weights_grad[diff_idx] = 1-s
                 deltas.append(x[i,:] - x[j,:])
                 #fisher_pairwise += diffs[diff_idx] * np.outer(delta, delta)
 
         weights = weights[:diff_idx]
-        weights_grad = weights_grad[:diff_idx]
         opt_data = OptimizationDataRelative(fisher_x, fisher_reg, weights, deltas, self.base_learner.C2)
-        opt_data.weights_grad = weights_grad
         all_pairs = np.asarray(list(all_pairs))
 
         n = weights.size
         t0 = np.ones(n)
         t0 /= t0.sum()
+        t0 *= self.configs.active_items_per_iteration
         #t0[:] = 0
         constraints = [
             {
@@ -438,9 +435,11 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
         else:
             print 'OED Optimization failed'
             t = np.ones(n)
+        #print t.sum()
         t[t < 0] = 0
         t += 1e-4
         t /= t.sum()
+        #print np.sort(t)[-40:]
         return t, all_pairs
 
     @property

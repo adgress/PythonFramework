@@ -20,8 +20,8 @@ def create_project_configs():
 pc_fields_to_copy = bc.pc_fields_to_copy + [
     'include_size_in_file_name'
 ]
-#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
+data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_DROSOPHILIA
@@ -54,9 +54,9 @@ other_method_configs = {
     'num_pairwise': 1
 }
 
-run_batch = True
+run_batch = False
 if helper_functions.is_laptop():
-    run_batch = True
+    run_batch = False
 
 active_iterations = 5
 active_items_per_iteration = 5
@@ -237,7 +237,6 @@ class BatchConfigs(bc.BatchConfigs):
         self.method_experiment_manager_class = MethodExperimentManager
         new_params = [
             {'use_oed': False},
-            {'use_oed': True}
         ]
         if use_relative:
             new_params = [
@@ -281,7 +280,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.ylims = [0,3]
 
         self.files = OrderedDict()
-        #self.files['ActiveRandom+SKL-RidgeReg.pkl'] = 'Random, Ridge'
+        self.files['ActiveRandom+SKL-RidgeReg.pkl'] = 'Random, Ridge'
         #self.files['OED+SKL-RidgeReg.pkl'] = 'OED, Ridge'
         #self.files['OED+SKL-RidgeReg_use-labeled.pkl'] = 'OED, Ridge, use_labeled'
         if other_method_configs['num_features'] is None:
@@ -293,6 +292,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             ('RelActiveRandom%s+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'Random, pairwise, Relative=10'),
             ('RelActiveUncer%s+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'Uncertainty, pairwise, Relative=10'),
             ('RelActiveOED%s+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'OED, pairwise, Relative=10'),
+            ('RelActiveOED-grad%s+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad, pairwise, Relative=10'),
         ]
         for file, legend in files:
             file = file % (active_opts_stf, num_feats)

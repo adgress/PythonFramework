@@ -308,7 +308,11 @@ def pairwise_fim(t, opt_data):
 
 def eval_pairwise_oed(t, opt_data):
     fim = pairwise_fim(t, opt_data)
-    return np.trace(inv(fim))
+    try:
+        v = np.trace(inv(fim))
+    except:
+        v = np.trace(inv(fim + 1e-4*np.eye(fim.size[0])))
+    return
     #return np.trace(fim)
 
 def grad_pairwise_oed(t, opt_data):

@@ -198,6 +198,8 @@ class logistic_pairwise(logistic_optimize):
     def eval_mixed_guidance(data, v):
         x_low = data.x_low
         x_high = data.x_high
+        if x_low is None:
+            return 0
         scale = data.scale
         yj = apply_linear(x_low, v)
         yi = apply_linear(x_high, v)
@@ -219,6 +221,8 @@ class logistic_pairwise(logistic_optimize):
     def grad_mixed_guidance(data, v):
         x_low = data.x_low
         x_high = data.x_high
+        if x_low is None:
+            return 0
         scale = data.scale
         n = x_low.shape[0]
         d = (apply_linear(x_high, v) - apply_linear(x_low, v))/scale

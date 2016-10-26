@@ -240,6 +240,8 @@ class PairwiseConstraint(CVXConstraint):
 
     @staticmethod
     def generate_pairs_for_scipy_optimize(constraints, transform = None):
+        if constraints.size == 0:
+            return None, None
         p = constraints[0].x[0].size
         x_low = None
         x_high = None

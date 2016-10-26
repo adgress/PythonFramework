@@ -20,8 +20,8 @@ def create_project_configs():
 pc_fields_to_copy = bc.pc_fields_to_copy + [
     'include_size_in_file_name'
 ]
-data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
+#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_DROSOPHILIA
@@ -51,14 +51,14 @@ other_method_configs = {
     'use_validation': True,
     'use_oed': False,
     'num_features': None,
-    'num_pairwise': 1
+    'num_pairwise': 0
 }
 
 run_batch = False
 if helper_functions.is_laptop():
     run_batch = False
 
-active_iterations = 5
+active_iterations = 10
 active_items_per_iteration = 5
 
 show_legend_on_all = True
@@ -209,9 +209,9 @@ class MainConfigs(bc.MainConfigs):
             active = active_methods.OEDLinearActiveMethod(method_configs)
         else:
             if use_pairwise_active:
-                #active = active_methods.RelativeActiveMethod(method_configs)
+                active = active_methods.RelativeActiveMethod(method_configs)
                 #active = active_methods.RelativeActiveUncertaintyMethod(method_configs)
-                active = active_methods.RelativeActiveOEDMethod(method_configs)
+                #active = active_methods.RelativeActiveOEDMethod(method_configs)
             else:
                 active = active_methods.ActiveMethod(method_configs)
         relative_reg = methods.method.RelativeRegressionMethod(method_configs)
@@ -297,5 +297,6 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         for file, legend in files:
             file = file % (active_opts_stf, num_feats)
             self.files[file] = legend
+        self.files['RelActiveRandom-10-5-10+RelReg-cvx-constraints-numRandPairs=50-scipy-logFix-solver=SCS-numFeatsPerfect=50-L-BFGS-B-nCV=10.pkl'] = ';;'
 
 viz_params = [dict()]

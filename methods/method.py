@@ -1552,7 +1552,8 @@ class RelativeRegressionMethod(Method):
             s += '-noPairwiseReg'
         else:
             if use_pairwise:
-                if self.num_pairwise > 0 and self.use_pairwise:
+                #if self.num_pairwise > 0 and self.use_pairwise:
+                if self.use_pairwise:
                     if getattr(self, 'use_hinge', False):
                         s += '-numRandPairsHinge=' + str(int(self.num_pairwise))
                         using_cvx = True

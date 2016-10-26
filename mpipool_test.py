@@ -11,7 +11,7 @@ if __name__ == '__main__':
     comm = MPI.COMM_WORLD
     for i in range(10):
         args = list(range(20))
-        pool.map(mpipool_test_func, [n + (i,) for n in args])
+        pool.map(mpipool_test_func, [(i, n) for n in args])
         pool.close()
 
         if comm.Get_rank() == 0:

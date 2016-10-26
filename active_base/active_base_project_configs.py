@@ -20,8 +20,8 @@ def create_project_configs():
 pc_fields_to_copy = bc.pc_fields_to_copy + [
     'include_size_in_file_name'
 ]
-#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
+data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_DROSOPHILIA
@@ -49,6 +49,7 @@ other_method_configs = {
     'use_perfect_feature_selection': True,
     'use_test_error_for_model_selection': False,
     'use_validation': True,
+    'use_uncertainty': False,
     'use_oed': False,
     'num_features': None,
     'num_pairwise': 0
@@ -205,15 +206,20 @@ class MainConfigs(bc.MainConfigs):
 
         method_configs.use_test_error_for_model_selection = pc.use_test_error_for_model_selection
 
-        if pc.use_oed:
-            active = active_methods.OEDLinearActiveMethod(method_configs)
-        else:
-            if use_pairwise_active:
+        if use_pairwise_active:
+            if pc.use_oed:
+                active = active_methods.RelativeActiveOEDMethod(method_configs)
+            elif pc.use_uncertainty:
+                active = active_methods.RelativeActiveUncertaintyMethod(method_configs)
+            else:
                 active = active_methods.RelativeActiveMethod(method_configs)
-                #active = active_methods.RelativeActiveUncertaintyMethod(method_configs)
-                #active = active_methods.RelativeActiveOEDMethod(method_configs)
+
+        else:
+            if pc.use_oed:
+                active = active_methods.OEDLinearActiveMethod(method_configs)
             else:
                 active = active_methods.ActiveMethod(method_configs)
+
         relative_reg = methods.method.RelativeRegressionMethod(method_configs)
         ridge_reg = method.SKLRidgeRegression(method_configs)
         mean_reg = method.SKLMeanRegressor(method_configs)
@@ -287,12 +293,14 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             num_feats = ''
         else:
             num_feats = '-numFeatsPerfect=' + str(other_method_configs['num_features'])
-        active_opts_stf = '-10-5-5'
+        active_opts_stf = '-10-10-5'
+        rand_pairs_str = '-numRandPairs=1'
+        rand_pairs_str = '-numRandPairs=0'
         files = [
-            ('RelActiveRandom%s+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'Random, pairwise, Relative=10'),
-            ('RelActiveUncer%s+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'Uncertainty, pairwise, Relative=10'),
-            ('RelActiveOED%s+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'OED, pairwise, Relative=10'),
-            ('RelActiveOED-grad%s+RelReg-cvx-constraints-numRandPairs=1-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad, pairwise, Relative=10'),
+            ('RelActiveRandom%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'Random, pairwise, Relative=10'),
+            ('RelActiveUncer%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'Uncertainty, pairwise, Relative=10'),
+            ('RelActiveOED%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'OED, pairwise, Relative=10'),
+            ('RelActiveOED-grad%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad, pairwise, Relative=10'),
         ]
         for file, legend in files:
             file = file % (active_opts_stf, num_feats)

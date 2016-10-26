@@ -20,8 +20,8 @@ def create_project_configs():
 pc_fields_to_copy = bc.pc_fields_to_copy + [
     'include_size_in_file_name'
 ]
-data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
+#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_DROSOPHILIA
@@ -203,19 +203,20 @@ class MainConfigs(bc.MainConfigs):
         for key in other_method_configs.keys():
             setattr(method_configs, key, getattr(pc,key))
 
-
+        use_oed = method_configs.use_oed
+        use_uncertainty = method_configs.use_uncertainty
         method_configs.use_test_error_for_model_selection = pc.use_test_error_for_model_selection
 
         if use_pairwise_active:
-            if pc.use_oed:
+            if use_oed:
                 active = active_methods.RelativeActiveOEDMethod(method_configs)
-            elif pc.use_uncertainty:
+            elif use_uncertainty:
                 active = active_methods.RelativeActiveUncertaintyMethod(method_configs)
             else:
                 active = active_methods.RelativeActiveMethod(method_configs)
 
         else:
-            if pc.use_oed:
+            if use_oed:
                 active = active_methods.OEDLinearActiveMethod(method_configs)
             else:
                 active = active_methods.ActiveMethod(method_configs)

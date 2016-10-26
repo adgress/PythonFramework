@@ -21,8 +21,8 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
     'include_size_in_file_name'
 ]
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
-#data_set_to_use = bc.DATA_BOSTON_HOUSING
+#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
+data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_DROSOPHILIA
 
@@ -55,7 +55,7 @@ other_method_configs = {
     'num_pairwise': 0
 }
 
-run_batch = False
+run_batch = True
 if helper_functions.is_laptop():
     run_batch = False
 
@@ -247,7 +247,9 @@ class BatchConfigs(bc.BatchConfigs):
         ]
         if use_relative:
             new_params = [
-                {'use_oed': False},
+                {'use_oed': False, 'use_uncertainty': False},
+                {'use_oed': True, 'use_uncertainty': False},
+                {'use_oed': False, 'use_uncertainty': True},
             ]
         self.config_list = list()
         for params in new_params:

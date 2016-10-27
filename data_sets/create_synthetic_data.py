@@ -22,6 +22,7 @@ synthetic_slant_file = 'synthetic_slant/raw_data.pkl'
 synthetic_curve_file = 'synthetic_curve/raw_data.pkl'
 synthetic_linear_reg_file = 'synthetic_linear_reg%s/raw_data.pkl'
 synthetic_hypothesis_transfer_class_file = 'synthetic_hyp_trans_class%s/raw_data.pkl'
+synthetic_flip_file = 'synthetic_flip/raw_data.pkl'
 
 def create_synthetic_classification(file_dir='',local=True):
     dim = 1
@@ -67,6 +68,33 @@ def create_synthetic_classification(file_dir='',local=True):
     if file_dir != '':
         s = file_dir + '/' + s
     helper_functions.save_object(s,data)
+
+def create_synthetic_flip_transfer(file_dir='', dim=1):
+    n_target = 100
+    n_source = 100
+    n = n_target + n_source
+    sigma = .2
+    data = data_class.Data()
+    data.x = np.random.uniform(0, 1, (n, dim))
+    data.data_set_ids = np.zeros(n)
+    data.data_set_ids[n_target:] = 1
+    data.y = np.zeros(n)
+    data.y[(data.data_set_ids == 0) & (data.x[:, 0] >= .5)] = 2
+    data.y[(data.data_set_ids == 1) & (data.x[:, 0] >= .5)] = 1
+    data.y[(data.data_set_ids == 0) & (data.x[:, 0] <= .5)] = 1
+    data.y[(data.data_set_ids == 1) & (data.x[:, 0] <= .5)] = 2
+    data.y += np.random.normal(0, sigma, n)
+    data.set_train()
+    data.set_true_y()
+    data.is_regression = True
+    if dim == 1:
+        array_functions.plot_2d(data.x, data.y, data.data_set_ids)
+    s = synthetic_flip_file
+    if dim > 1:
+        s = synthetic_step_kd_transfer_file % dim
+    if file_dir != '':
+        s = file_dir + '/' + s
+    helper_functions.save_object(s, data)
 
 def create_synthetic_step_transfer(file_dir='', dim=1):
     n_target = 100
@@ -239,6 +267,7 @@ def create_synthetic_hypothesis_transfer(n=500, p=50, kt=1, ks=1, sigma=1.0, sig
 
 
 if __name__ == '__main__':
-    create_synthetic_linear_regression(p=10, sigma=1.01)
+    #create_synthetic_linear_regression(p=10, sigma=1.01)
     #create_synthetic_hypothesis_transfer(kt=2, ks=2)
     #create_synthetic_linear_regression(p=10, num_non_zero=4)
+    create_synthetic_flip_transfer()

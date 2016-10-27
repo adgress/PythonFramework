@@ -217,7 +217,7 @@ class RelativeRegressionOutput(Output):
     def __init__(self,data=None,y=None,pairwise_results=None):
         super(RelativeRegressionOutput, self).__init__(data, y)
         self.is_pairwise_correct = pairwise_results
-        self.is_train_pairwise = data.is_train_pairwise
+        self.is_train_pairwise = getattr(data, 'is_train_pairwise', None)
 
     def compute_error_train(self,loss_function):
         loss = super(RelativeRegressionOutput, self).compute_error_train(loss_function)

@@ -362,6 +362,12 @@ class Method(Saveable):
     def predict(self, data):
         pass
 
+    def predict_x(self, x):
+        y = np.zeros(x.shape[0])
+        y[:] = np.nan
+        d = data_lib.Data(x, y)
+        return self.predict(d)
+
     def predict_loo(self, data):
         assert False, 'Not implemented!'
 
@@ -1523,7 +1529,7 @@ class RelativeRegressionMethod(Method):
             o.y = y
             #f = lambda x: x.dot(self.w)[0,0] + self.b
             f = lambda x: x.dot(self.w)+ self.b
-            n = data.pairwise_relationships.size
+            n = len(data.pairwise_relationships)
             is_pairwise_correct = array_functions.false(n)
             for i, c in enumerate(data.pairwise_relationships):
                 c2 = deepcopy(c)

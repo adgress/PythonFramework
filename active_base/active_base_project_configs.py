@@ -21,8 +21,8 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
     'include_size_in_file_name'
 ]
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
-data_set_to_use = bc.DATA_BOSTON_HOUSING
+data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
+#data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_DROSOPHILIA
 
@@ -50,12 +50,14 @@ other_method_configs = {
     'use_test_error_for_model_selection': False,
     'use_validation': True,
     'use_uncertainty': False,
-    'use_oed': False,
+    'use_oed': True,
     'num_features': None,
     'num_pairwise': 0
 }
+if data_set_to_use in {bc.DATA_DROSOPHILIA, bc.DATA_ADIENCE_ALIGNED_CNN_1}:
+    other_method_configs['num_features'] = 50
 
-run_batch = True
+run_batch = False
 if helper_functions.is_laptop():
     run_batch = False
 
@@ -113,7 +115,7 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.num_labels = [10]
         elif data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
             self.set_adience_aligned_cnn_1()
-            self.num_labels = [20]
+            self.num_labels = [10]
         elif data_set == bc.DATA_WINE_RED:
             self.set_wine_red()
             self.num_labels = [20]
@@ -308,6 +310,5 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         for file, legend in files:
             file = file % (active_opts_stf, num_feats)
             self.files[file] = legend
-        self.files['RelActiveRandom-10-5-10+RelReg-cvx-constraints-numRandPairs=50-scipy-logFix-solver=SCS-numFeatsPerfect=50-L-BFGS-B-nCV=10.pkl'] = ';;'
 
 viz_params = [dict()]

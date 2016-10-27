@@ -309,34 +309,43 @@ def pairwise_fim(t, opt_data):
 def eval_pairwise_oed(t, opt_data):
     fim = pairwise_fim(t, opt_data)
     try:
-        v = np.trace(inv(fim))
-    except:
+        if opt_data.oed_method == 'E':
+            vals, vecs = eigh(fim)
+            v = vals.max()
+        else:
+            v = np.trace(inv(fim))
+    except Exception as e:
+        assert opt_data.oed_method != 'E'
         v = np.trace(inv(fim + 1e-4*np.eye(fim.shape[0])))
     return v
     #return np.trace(fim)
 
 def grad_pairwise_oed(t, opt_data):
     fim = pairwise_fim(t, opt_data)
-    try:
-        A = inv(fim)
-    except:
-        A = inv(fim + 1e-4 * np.eye(fim.shape[0]))
+    if opt_data.oed_method == 'E':
+        assert False
+    else:
+        try:
+            A = inv(fim)
+        except:
+            A = inv(fim + 1e-4 * np.eye(fim.shape[0]))
 
-    AA = A.dot(A)
-    g = np.zeros(t.shape)
-    idx = 0
-    for wi, di in zip(opt_data.weights, opt_data.deltas):
-        g[idx] = - wi*di.T.dot(AA).dot(di)
-        #g[idx] = wi*di.T.dot(di)
-        idx += 1
-    C = opt_data.reg_pairwise
-    g *= C
-    return g
+        AA = A.dot(A)
+        g = np.zeros(t.shape)
+        idx = 0
+        for wi, di in zip(opt_data.weights, opt_data.deltas):
+            g[idx] = - wi*di.T.dot(AA).dot(di)
+            #g[idx] = wi*di.T.dot(di)
+            idx += 1
+        C = opt_data.reg_pairwise
+        g *= C
+        return g
 
 class RelativeActiveOEDMethod(RelativeActiveMethod):
     def __init__(self, configs=MethodConfigs()):
         super(RelativeActiveOEDMethod, self).__init__(configs)
-        self.use_grad = True
+        self.use_grad = False
+        self.oed_method = 'E'
 
     def create_sampling_distribution(self, base_learner, data, fold_results):
         # assert False, 'Use PairwiseConstraint instead of tuples'
@@ -372,6 +381,7 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
 
         weights = weights[:diff_idx]
         opt_data = OptimizationDataRelative(fisher_x, fisher_reg, weights, deltas, self.base_learner.C2)
+        opt_data.oed_method = self.oed_method
         all_pairs = np.asarray(list(all_pairs))
 
         n = weights.size
@@ -453,6 +463,8 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
     @property
     def prefix(self):
         s = 'RelActiveOED'
+        if getattr(self, 'oed_method', None) is not None:
+            s += '-' + self.oed_method
         if getattr(self, 'use_grad'):
             s += '-grad'
         s += '-' + self.active_options_suffix()

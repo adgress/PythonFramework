@@ -30,6 +30,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import f_regression
 import constrained_methods
+from constrained_methods import PairwiseConstraint
 from utility import array_functions
 
 num_instances_for_pairs = 30
@@ -302,6 +303,9 @@ def pairwise_fim(t, opt_data):
     for ti, w, d in zip(t, opt_data.weights, opt_data.deltas):
         fim += ti * w * np.outer(d, d)
         idx += 1
+    if opt_data.weights_labeled is not None:
+        for w, d in zip(opt_data.weights_labeled, opt_data.deltas_labeled):
+            fim += w * np.outer(d,d)
     fim *= opt_data.reg_pairwise
     fim += opt_data.fim_x + opt_data.fim_reg
     return fim
@@ -344,8 +348,10 @@ def grad_pairwise_oed(t, opt_data):
 class RelativeActiveOEDMethod(RelativeActiveMethod):
     def __init__(self, configs=MethodConfigs()):
         super(RelativeActiveOEDMethod, self).__init__(configs)
-        self.use_grad = False
-        self.oed_method = 'E'
+        self.use_grad = True
+        #self.oed_method = 'E'
+        self.oed_method = None
+        self.use_labeled = True
 
     def create_sampling_distribution(self, base_learner, data, fold_results):
         # assert False, 'Use PairwiseConstraint instead of tuples'
@@ -378,9 +384,20 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
                 weights[diff_idx ] = s*(1-s)
                 deltas.append(x[i,:] - x[j,:])
                 #fisher_pairwise += diffs[diff_idx] * np.outer(delta, delta)
-
+        weights_labeled = None
+        deltas_labeled = None
+        if self.use_labeled and len(data.pairwise_relationships) > 0:
+            transform = self.base_learner.transform
+            x_low, x_high = PairwiseConstraint.generate_pairs_for_scipy_optimize(data.pairwise_relationships)
+            y_low = self.base_learner.predict_x(x_low).y
+            y_high = self.base_learner.predict_x(x_high).y
+            deltas_labeled = transform.transform(x_low) - transform.transform(x_high)
+            s_labeled = expit(y_low - y_high)
+            weights_labeled = s_labeled*(1-s_labeled)
         weights = weights[:diff_idx]
         opt_data = OptimizationDataRelative(fisher_x, fisher_reg, weights, deltas, self.base_learner.C2)
+        opt_data.weights_labeled = weights_labeled
+        opt_data.deltas_labeled = deltas_labeled
         opt_data.oed_method = self.oed_method
         all_pairs = np.asarray(list(all_pairs))
 
@@ -419,7 +436,7 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
             )
             g = grad_pairwise_oed(t0, opt_data)
             g_approx = optimize.approx_fprime(t0, lambda t: eval_pairwise_oed(t, opt_data), 1e-6)
-            print grad_err
+            print 'RelativeOED grad err: ' + str(grad_err)
             '''
             results_eval = optimize.minimize(
                 lambda t: eval_pairwise_oed(t, opt_data),
@@ -467,6 +484,8 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
             s += '-' + self.oed_method
         if getattr(self, 'use_grad'):
             s += '-grad'
+        if getattr(self, 'use_labeled'):
+            s += '-labeled'
         s += '-' + self.active_options_suffix()
         s += '+' + self.base_learner.prefix
         return s

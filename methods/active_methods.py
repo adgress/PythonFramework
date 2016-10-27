@@ -309,14 +309,14 @@ def pairwise_fim(t, opt_data):
 def eval_pairwise_oed(t, opt_data):
     fim = pairwise_fim(t, opt_data)
     try:
-        if opt_data.oed_method == 'E':
-            vals, vecs = eigh(fim)
-            v = vals.max()
-        else:
-            v = np.trace(inv(fim))
+        inv_fim = inv(fim)
     except Exception as e:
-        assert opt_data.oed_method != 'E'
-        v = np.trace(inv(fim + 1e-4*np.eye(fim.shape[0])))
+        inv_fim = inv(fim + 1e-4 * np.eye(fim.shape[0]))
+    if opt_data.oed_method == 'E':
+        vals, vecs = eigh(inv_fim)
+        v = vals.max()
+    else:
+        v = np.trace(inv_fim)
     return v
     #return np.trace(fim)
 

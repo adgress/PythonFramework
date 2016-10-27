@@ -261,7 +261,7 @@ def make_laplacian_uniform(x,radius,metric):
     return L
 
 def make_laplacian(x, sigma, metric='euclidean'):
-    assert False, 'Normalize by 1/sigma?'
+    #assert False, 'Normalize by 1/sigma?'
     W = make_rbf(x,sigma,metric)
     D = W.sum(1)
     L = np.diag(D) - W

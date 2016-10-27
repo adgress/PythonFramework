@@ -38,20 +38,20 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 data_set_to_use = None
 #data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION
 #data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION_LOCAL
-#data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
 #data_set_to_use = bc.DATA_NG
 
-data_set_to_use = bc.DATA_BOSTON_HOUSING
+#data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_WINE
 #data_set_to_use = bc.DATA_BIKE_SHARING
-#data_set_to_use = bc.DATA_PAIR_82_83
 
 #data_set_to_use = bc.DATA_SYNTHETIC_CURVE
 #data_set_to_use = bc.DATA_SYNTHETIC_SLANT
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
 #data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
 #data_set_to_use = bc.DATA_SYNTHETIC_CROSS
+#data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
+data_set_to_use = bc.DATA_SYNTHETIC_FLIP
 
 use_1d_data = True
 
@@ -99,8 +99,7 @@ class ProjectConfigs(bc.ProjectConfigs):
             #self.num_labels = range(20,61,20)
         elif data_set == bc.DATA_SYNTHETIC_STEP_TRANSFER:
             self.set_synthetic_step_transfer()
-            #self.num_labels = range(10,31,10)
-            self.num_labels = [20]
+            self.num_labels = range(10,31,10)
         elif data_set == bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER:
             self.set_synthetic_step_linear_transfer()
             #self.num_labels = [30]
@@ -142,6 +141,9 @@ class ProjectConfigs(bc.ProjectConfigs):
         elif data_set == bc.DATA_PAIR_13_14:
             self.set_synthetic_regression('pair_data_13_14')
             self.num_labels = np.asarray([10,20,30])
+        elif data_set == bc.DATA_SYNTHETIC_FLIP:
+            self.set_synthetic_regression('synthetic_flip')
+            self.num_labels = np.asarray([10, 20, 30])
         else:
             assert False
         assert self.source_labels.size > 0
@@ -272,6 +274,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.data_dir = 'data_sets/synthetic_step_transfer'
         self.data_name = 'synthetic_step_transfer'
         self.results_dir = 'synthetic_step_transfer'
+        synthetic_dim = 1
         if synthetic_dim > 1:
             s = '_' + str(synthetic_dim)
             self.data_dir += s
@@ -345,8 +348,11 @@ class MainConfigs(bc.MainConfigs):
         ssl_regression = semisupervised.SemisupervisedRegressionMethod(method_configs)
         ssl_regression.preprocessor = preprocessing.TargetOnlyPreprocessor()
 
+        graph_transfer_nw = far_transfer_methods.GraphTransferNW(method_configs)
+
         #self.learner = target_nw
-        self.learner = graph_transfer
+        #self.learner = graph_transfer
+        self.learner = graph_transfer_nw
         self.learner.configs.use_validation = use_validation
 
 

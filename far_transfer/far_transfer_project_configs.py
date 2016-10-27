@@ -60,6 +60,12 @@ show_legend_on_all = False
 arguments = None
 use_validation = False
 
+run_batch_just_graph_nw = True
+
+other_method_configs = {
+    'use_graph_nw': False
+}
+
 def apply_arguments(configs):
     if arguments.num_labels is not None:
         configs.overwrite_num_labels = arguments.num_labels
@@ -77,6 +83,8 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.use_1d_data = use_1d_data
         if data_set is None:
             data_set = data_set_to_use
+        for key, value in other_method_configs.items():
+            setattr(self, key, value)
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
         self.set_data_set(data_set)
@@ -351,8 +359,10 @@ class MainConfigs(bc.MainConfigs):
         graph_transfer_nw = far_transfer_methods.GraphTransferNW(method_configs)
 
         #self.learner = target_nw
-        #self.learner = graph_transfer
-        self.learner = graph_transfer_nw
+        if pc.use_graph_nw:
+            self.learner = graph_transfer_nw
+        else:
+            self.learner = graph_transfer
         self.learner.configs.use_validation = use_validation
 
 
@@ -376,6 +386,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files['GraphTransfer.pkl'] = 'Graph Transfer'
         self.files['GraphTransfer_tr.pkl'] = 'Graph Transfer: Just transfer'
         self.files['GraphTransfer_ta.pkl'] = 'Graph Transfer: Just target'
+        self.files['GraphTransferNW.pkl'] = 'Graph Transfer NW'
         self.title = self.results_dir
 
 
@@ -383,7 +394,6 @@ class BatchConfigs(bc.BatchConfigs):
     def __init__(self, pc):
         super(BatchConfigs, self).__init__()
         self.config_list = []
-        m = MainConfigs(ProjectConfigs(data_set_to_use))
         '''
         configs_updates = [
             {'just_transfer': False, 'just_target': False},
@@ -391,19 +401,26 @@ class BatchConfigs(bc.BatchConfigs):
             {'just_transfer': False, 'just_target': True},
         ]
         '''
-        m.learner.just_transfer = False
-        m.learner.just_target = False
-        self.config_list.append(m)
-        m = deepcopy(m)
-        m.learner.just_transfer = True
-        self.config_list.append(m)
-        m = deepcopy(m)
-        m.learner.just_transfer = False
-        m.learner.just_target = True
-        self.config_list.append(m)
-        m = deepcopy(m)
-        m.learner.just_transfer = True
-        m.learner.just_target = False
+        if not run_batch_just_graph_nw:
+            m = MainConfigs(ProjectConfigs(data_set_to_use))
+            m.learner.just_transfer = False
+            m.learner.just_target = False
+            self.config_list.append(m)
+            m = deepcopy(m)
+            m.learner.just_transfer = True
+            self.config_list.append(m)
+            m = deepcopy(m)
+            m.learner.just_transfer = False
+            m.learner.just_target = True
+            self.config_list.append(m)
+            m = deepcopy(m)
+            m.learner.just_transfer = True
+            m.learner.just_target = False
+            self.config_list.append(m)
+
+        pc2 = ProjectConfigs(data_set_to_use)
+        pc2.use_graph_nw = True
+        m = MainConfigs(pc2)
         self.config_list.append(m)
 
 viz_params = [{}]

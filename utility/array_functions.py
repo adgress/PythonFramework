@@ -268,6 +268,8 @@ def make_laplacian(x, sigma, metric='euclidean'):
     return L
 
 def make_rbf(x,sigma,metric='euclidean', x2=None):
+    if x.ndim == 1:
+        x = np.expand_dims(x, 1)
     if x2 is None:
         x2 = x
     if metric == 'cosine':

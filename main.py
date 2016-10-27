@@ -13,8 +13,8 @@ import importlib
 #import active.active_project_configs as configs_library
 #import new_project.new_project_configs as configs_library
 #import mixed_feature_guidance.mixed_features_project_configs as configs_library
-#import far_transfer.far_transfer_project_configs as configs_library
-import active_base.active_base_project_configs as configs_library
+import far_transfer.far_transfer_project_configs as configs_library
+#import active_base.active_base_project_configs as configs_library
 
 configs_lib = configs_library
 import boto
@@ -212,10 +212,11 @@ def run_visualization():
             highs = np.asarray(processed_results.means) + np.asarray(processed_results.highs)
             lows = np.asarray(processed_results.means) - np.asarray(processed_results.lows)
             axis[3] = max(axis[3], highs.max() +  .2*lows.min())
+            axis[2] = min(axis[2], .9*lows.min())
         if sizes is None:
             print 'Empty plot - skipping'
             continue
-        plt.title(vis_configs.title)
+        plt.title(vis_configs.title, fontsize=vis_configs.fontsize)
         axis_range = max_x - min_x
         axis[1] = max_x + .1*axis_range
         axis[0] = min_x - .1*axis_range
@@ -230,7 +231,7 @@ def run_visualization():
         if show_y_label:
             plt.ylabel(vis_configs.y_axis_string)
         #axis[1] *= 2
-        axis[3] *= 1.5
+        axis[3] *= 1.
         ylims = getattr(vis_configs,'ylims',None)
         if ylims is not None:
             axis[2] = ylims[0]

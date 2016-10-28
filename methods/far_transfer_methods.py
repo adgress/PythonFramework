@@ -90,13 +90,15 @@ class GraphTransfer(method.Method):
             s += '_tr'
         if getattr(self, 'just_target', False):
             s += '_ta'
+        if getattr(self, 'use_validation', False):
+            s += '-VAL'
         return s
 
 class GraphTransferNW(GraphTransfer):
     def __init__(self, configs=None):
         super(GraphTransferNW, self).__init__(configs)
         self.cv_params = dict()
-        self.cv_params['C'] = self.create_cv_params(-5, 5)
+        self.cv_params['C'] = self.create_cv_params(-5, 5, append_zero=True)
         self.cv_params['sigma_nw'] = self.create_cv_params(-5, 5)
         self.cv_params['sigma_tr'] = self.create_cv_params(-5, 5)
         self.sigma_nw = None
@@ -105,6 +107,7 @@ class GraphTransferNW(GraphTransfer):
         configs = deepcopy(configs)
         self.source_learner = method.NadarayaWatsonMethod(deepcopy(configs))
         self.transform = StandardScaler()
+        self.use_validation = getattr(configs, 'use_validation', False)
 
     def train_and_test(self, data):
         is_source = data.data_set_ids == self.configs.source_labels[0]
@@ -134,11 +137,11 @@ class GraphTransferNW(GraphTransfer):
         y_pred_source = data.source_y_pred
 
         L = array_functions.make_laplacian(y_pred_source, self.sigma_tr)
-        W = array_functions.make_rbf(self.transform.transform(self.x), self.sigma_nw, x2=self.transform.transform(data.x))
+        W = array_functions.make_rbf(self.transform.transform(self.x), self.sigma_nw, x2=self.transform.transform(data.x)).T
         S = array_functions.make_smoothing_matrix(W)
 
         A = np.eye(y_pred_source.size) + self.C*L
-        f = np.linalg.lstsq(A, S.T.dot(self.y))[0]
+        f = np.linalg.lstsq(A, S.dot(self.y))[0]
         o = results.Output(data)
         o.y = f
         o.fu = f
@@ -150,4 +153,6 @@ class GraphTransferNW(GraphTransfer):
     @property
     def prefix(self):
         s = 'GraphTransferNW'
+        if getattr(self, 'use_validation', False):
+            s += '-VAL'
         return s

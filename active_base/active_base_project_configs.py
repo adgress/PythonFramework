@@ -58,12 +58,12 @@ other_method_configs = {
 if data_set_to_use in {bc.DATA_DROSOPHILIA, bc.DATA_ADIENCE_ALIGNED_CNN_1}:
     other_method_configs['num_features'] = 50
 
-run_batch = False
+run_batch = True
 if helper_functions.is_laptop():
     run_batch = False
 
-active_iterations = 10
-active_items_per_iteration = 5
+active_iterations = 2
+active_items_per_iteration = 50
 
 show_legend_on_all = True
 
@@ -253,7 +253,6 @@ class BatchConfigs(bc.BatchConfigs):
                 new_params = [
                     {'use_oed': False, 'use_uncertainty': False},
                     {'use_oed': True, 'use_uncertainty': False},
-                    {'use_oed': False, 'use_uncertainty': True},
                 ]
         else:
             new_params = [{'unused': None}]
@@ -311,6 +310,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             ('RelActiveOED%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'OED, pairwise, Relative=0'),
             ('RelActiveOED-grad%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad, pairwise, Relative=0'),
             ('RelActiveOED-grad-labeled-%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad-labeled, pairwise, Relative=0'),
+            ('RelActiveOED-grad-labeled-trueY%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad-labeled-trueY, pairwise, Relative=0'),
             ('RelActiveOED-labeled%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-labeled, pairwise, Relative=0'),
             ('RelActiveOED-E%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-E-grad, pairwise, Relative=0'),
         ]

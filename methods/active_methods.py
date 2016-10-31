@@ -403,6 +403,8 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
         opt_data.weights_labeled = weights_labeled
         opt_data.deltas_labeled = deltas_labeled
         opt_data.oed_method = self.oed_method
+        if data.pairwise_relationships.size == 0:
+            opt_data.C2 = 1
         all_pairs = np.asarray(list(all_pairs))
 
         n = weights.size

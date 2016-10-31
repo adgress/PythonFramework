@@ -20,8 +20,8 @@ def create_project_configs():
 pc_fields_to_copy = bc.pc_fields_to_copy + [
     'include_size_in_file_name'
 ]
-#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
+data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_DROSOPHILIA
@@ -52,7 +52,8 @@ other_method_configs = {
     'use_uncertainty': False,
     'use_oed': True,
     'num_features': None,
-    'num_pairwise': 0
+    'num_pairwise': 0,
+    'use_true_y': True
 }
 if data_set_to_use in {bc.DATA_DROSOPHILIA, bc.DATA_ADIENCE_ALIGNED_CNN_1}:
     other_method_configs['num_features'] = 50
@@ -244,15 +245,18 @@ class BatchConfigs(bc.BatchConfigs):
         super(BatchConfigs, self).__init__()
         from experiment.experiment_manager import MethodExperimentManager
         self.method_experiment_manager_class = MethodExperimentManager
-        new_params = [
-            {'use_oed': False},
-        ]
-        if use_relative:
+        if run_batch:
             new_params = [
-                {'use_oed': False, 'use_uncertainty': False},
-                {'use_oed': True, 'use_uncertainty': False},
-                {'use_oed': False, 'use_uncertainty': True},
+                {'use_oed': False},
             ]
+            if use_relative:
+                new_params = [
+                    {'use_oed': False, 'use_uncertainty': False},
+                    {'use_oed': True, 'use_uncertainty': False},
+                    {'use_oed': False, 'use_uncertainty': True},
+                ]
+        else:
+            new_params = [{'unused': None}]
         self.config_list = list()
         for params in new_params:
             p = deepcopy(pc)
@@ -302,10 +306,13 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         rand_pairs_str = '-numRandPairs=1'
         rand_pairs_str = '-numRandPairs=0'
         files = [
-            ('RelActiveRandom%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'Random, pairwise, Relative=10'),
-            ('RelActiveUncer%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'Uncertainty, pairwise, Relative=10'),
-            ('RelActiveOED%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'OED, pairwise, Relative=10'),
-            ('RelActiveOED-grad%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad, pairwise, Relative=10'),
+            ('RelActiveRandom%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'Random, pairwise, Relative=0'),
+            ('RelActiveUncer%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'Uncertainty, pairwise, Relative=0'),
+            ('RelActiveOED%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'OED, pairwise, Relative=0'),
+            ('RelActiveOED-grad%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad, pairwise, Relative=0'),
+            ('RelActiveOED-grad-labeled-%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad-labeled, pairwise, Relative=0'),
+            ('RelActiveOED-labeled%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-labeled, pairwise, Relative=0'),
+            ('RelActiveOED-E%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-E-grad, pairwise, Relative=0'),
         ]
         for file, legend in files:
             file = file % (active_opts_stf, num_feats)

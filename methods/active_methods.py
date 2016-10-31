@@ -352,6 +352,7 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
         #self.oed_method = 'E'
         self.oed_method = None
         self.use_labeled = True
+        self.use_true_y = getattr(configs, 'use_true_y', False)
 
     def create_sampling_distribution(self, base_learner, data, fold_results):
         # assert False, 'Use PairwiseConstraint instead of tuples'
@@ -380,7 +381,10 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
                 diff_idx += 1
                 all_pairs.append((i, j))
                 #weights[diff_idx] = expit(y_pred[i] - y_pred[j])
-                s = expit(y_pred[i] - y_pred[j])
+                diff = y_pred[i] - y_pred[j]
+                if self.use_true_y:
+                    diff = data.true_y[i] - data.true_y[j]
+                s = expit(diff)
                 weights[diff_idx ] = s*(1-s)
                 deltas.append(x[i,:] - x[j,:])
                 #fisher_pairwise += diffs[diff_idx] * np.outer(delta, delta)
@@ -486,6 +490,8 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
             s += '-grad'
         if getattr(self, 'use_labeled'):
             s += '-labeled'
+        if getattr(self, 'use_true_y'):
+            s += '-trueY'
         s += '-' + self.active_options_suffix()
         s += '+' + self.base_learner.prefix
         return s

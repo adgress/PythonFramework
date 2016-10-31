@@ -406,7 +406,7 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
         opt_data.deltas_labeled = deltas_labeled
         opt_data.oed_method = self.oed_method
         if data.pairwise_relationships.size == 0:
-            opt_data.C2 = 1
+            opt_data.reg_pairwise = 1
         all_pairs = np.asarray(list(all_pairs))
 
         n = weights.size
@@ -426,7 +426,7 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
         ]
         options = {
             'disp': True,
-            'maxiter': 100
+            'maxiter': 1000
         }
         if self.use_grad:
             results = optimize.minimize(
@@ -479,8 +479,9 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
             print 'OED Optimization failed'
             t = np.ones(n)
         #print t.sum()
+        t_old = t
         t[t < 0] = 0
-        t += 1e-4
+        t += 1e-16
         t /= t.sum()
         #print np.sort(t)[-40:]
         return t, all_pairs

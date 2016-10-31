@@ -20,8 +20,8 @@ def create_project_configs():
 pc_fields_to_copy = bc.pc_fields_to_copy + [
     'include_size_in_file_name'
 ]
-data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
+#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_DROSOPHILIA
@@ -53,7 +53,7 @@ other_method_configs = {
     'use_oed': True,
     'num_features': None,
     'num_pairwise': 0,
-    'use_true_y': True
+    'use_true_y': False
 }
 if data_set_to_use in {bc.DATA_DROSOPHILIA, bc.DATA_ADIENCE_ALIGNED_CNN_1}:
     other_method_configs['num_features'] = 50
@@ -301,7 +301,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             num_feats = ''
         else:
             num_feats = '-numFeatsPerfect=' + str(other_method_configs['num_features'])
-        active_opts_stf = '-10-10-5'
+        active_opts_stf = '-10-2-50'
         rand_pairs_str = '-numRandPairs=1'
         rand_pairs_str = '-numRandPairs=0'
         files = [
@@ -309,7 +309,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             ('RelActiveUncer%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'Uncertainty, pairwise, Relative=0'),
             ('RelActiveOED%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'OED, pairwise, Relative=0'),
             ('RelActiveOED-grad%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad, pairwise, Relative=0'),
-            ('RelActiveOED-grad-labeled-%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad-labeled, pairwise, Relative=0'),
+            ('RelActiveOED-grad-labeled%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad-labeled, pairwise, Relative=0'),
             ('RelActiveOED-grad-labeled-trueY%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad-labeled-trueY, pairwise, Relative=0'),
             ('RelActiveOED-labeled%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-labeled, pairwise, Relative=0'),
             ('RelActiveOED-E%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-E-grad, pairwise, Relative=0'),

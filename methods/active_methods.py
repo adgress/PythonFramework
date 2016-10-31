@@ -251,7 +251,8 @@ class RelativeActiveUncertaintyMethod(RelativeActiveMethod):
         min_pairs_to_keep = 50
 
         I = data.is_train.nonzero()[0]
-        I = np.random.choice(I, num_instances_for_pairs, False)
+        #I = np.random.choice(I, num_instances_for_pairs, False)
+        I = I[:num_instances_for_pairs]
         all_pairs = list()
         diffs = np.zeros(100000)
         if self.use_oracle:
@@ -360,7 +361,8 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
         min_pairs_to_keep = 50
 
         I = data.is_train.nonzero()[0]
-        I = np.random.choice(I, num_instances_for_pairs, False)
+        #I = np.random.choice(I, num_instances_for_pairs, False)
+        I = I[:num_instances_for_pairs]
         #I = I[:20]
         p = data.p
         all_pairs = list()

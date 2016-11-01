@@ -425,7 +425,7 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
             }
         ]
         options = {
-            'disp': True,
+            'disp': False,
             'maxiter': 1000
         }
         if self.use_grad:
@@ -444,7 +444,7 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
             )
             g = grad_pairwise_oed(t0, opt_data)
             g_approx = optimize.approx_fprime(t0, lambda t: eval_pairwise_oed(t, opt_data), 1e-6)
-            print 'RelativeOED grad err: ' + str(grad_err)
+            #print 'RelativeOED grad err: ' + str(grad_err)
             '''
             results_eval = optimize.minimize(
                 lambda t: eval_pairwise_oed(t, opt_data),

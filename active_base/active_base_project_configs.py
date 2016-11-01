@@ -21,8 +21,8 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
     'include_size_in_file_name'
 ]
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
-#data_set_to_use = bc.DATA_BOSTON_HOUSING
+#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
+data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_DROSOPHILIA
 
@@ -56,14 +56,14 @@ other_method_configs = {
     'use_true_y': False
 }
 if data_set_to_use in {bc.DATA_DROSOPHILIA, bc.DATA_ADIENCE_ALIGNED_CNN_1}:
-    other_method_configs['num_features'] = 20
+    other_method_configs['num_features'] = 11
 
 run_batch = True
 if helper_functions.is_laptop():
     run_batch = False
 
 active_iterations = 10
-active_items_per_iteration = 5
+active_items_per_iteration = 10
 
 show_legend_on_all = True
 
@@ -231,6 +231,7 @@ class MainConfigs(bc.MainConfigs):
             active.base_learner = relative_reg
         else:
             active.base_learner = ridge_reg
+        active.base_learner.quiet = False
 
 
         self.learner = active
@@ -302,7 +303,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             num_feats = ''
         else:
             num_feats = '-numFeatsPerfect=' + str(other_method_configs['num_features'])
-        active_opts_stf = '-10-2-50'
+        active_opts_stf = '-10-' + str(active_iterations) + '-' + str(active_items_per_iteration)
         rand_pairs_str = '-numRandPairs=1'
         rand_pairs_str = '-numRandPairs=0'
         files = [

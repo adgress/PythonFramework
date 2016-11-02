@@ -58,7 +58,7 @@ use_1d_data = True
 run_experiments = True
 show_legend_on_all = False
 arguments = None
-use_validation = True
+use_validation = False
 
 run_batch_graph = True
 run_batch_graph_nw = True
@@ -353,7 +353,7 @@ class MainConfigs(bc.MainConfigs):
         from methods import scipy_opt_methods
         method_configs = MethodConfigs(pc)
         method_configs.metric = 'euclidean'
-        method_configs.use_validation = False
+        method_configs.use_validation = use_validation
 
         if self.data_set == bc.DATA_NG:
             method_configs.metric = 'cosine'
@@ -387,7 +387,6 @@ class MainConfigs(bc.MainConfigs):
         method_configs.metric = 'euclidean'
         method_configs.no_reg = False
         method_configs.use_g_learner = True
-        method_configs.use_validation = True
         method_configs.use_reg2 = True
         method_configs.use_fused_lasso = False
         method_configs.no_C3 = False

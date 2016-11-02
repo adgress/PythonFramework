@@ -95,7 +95,7 @@ if __name__ == '__main__':
                 timer.tic()
             num_labels_list = list(itertools.product(c.num_labels, range(c.num_splits)))
             no_viz = False
-            pool.map(mpi_run_main_args, [n + (c, no_viz) for n in num_labels_list])
+            pool.map(mpi_run_main_args, [n + (no_viz, c, ) for n in num_labels_list])
             pool.close()
 
             if comm.Get_rank() == 0:

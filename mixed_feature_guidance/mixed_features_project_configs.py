@@ -21,9 +21,8 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
 #data_set_to_use = bc.DATA_DROSOPHILIA
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
-data_set_to_use = bc.DATA_WINE_RED
-#data_set_to_use = bc.DATA_DROSOPHILIA
-#data_set_to_use = bc.DATA_CONCRETE
+#data_set_to_use = bc.DATA_WINE_RED
+data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_KC_HOUSING
 
 viz_for_paper = False
@@ -52,7 +51,7 @@ other_method_configs = {
     'use_corr': True,
     'include_size_in_file_name': False,
     'num_features': -1,
-    'use_validation': True,
+    'use_validation': False,
     'use_test_error_for_model_selection': False,
     'y_scale_min_max': False,
     'y_scale_standard': False,

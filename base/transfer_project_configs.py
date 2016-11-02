@@ -39,7 +39,7 @@ data_set_to_use = None
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
 #data_set_to_use = bc.DATA_NG
 
-#data_set_to_use = bc.DATA_BOSTON_HOUSING
+data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_WINE
 #data_set_to_use = bc.DATA_BIKE_SHARING
@@ -48,7 +48,7 @@ data_set_to_use = None
 #data_set_to_use = bc.DATA_SYNTHETIC_CURVE
 #data_set_to_use = bc.DATA_SYNTHETIC_SLANT
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
-data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
+#data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
 #data_set_to_use = bc.DATA_SYNTHETIC_CROSS
 
 PLOT_PARAMETRIC = 1
@@ -56,16 +56,18 @@ PLOT_VALIDATION = 2
 PLOT_CONSTRAINED = 3
 PLOT_SMS = 4
 PLOT_TABLE = 5
-plot_idx = PLOT_TABLE
+PLOT_TABLE_VAL = 6
+PLOT_ALPHA = 7
+plot_idx = PLOT_PARAMETRIC
 max_rows = 1
-fontsize = 8
+fontsize = 20
 
-vis_table = plot_idx == PLOT_TABLE
-size_to_vis = 20
+vis_table = plot_idx in {PLOT_TABLE, PLOT_TABLE_VAL}
+size_to_vis = 10
 sizes_to_use = [5, 10, 20, 30]
 
 run_experiments = True
-show_legend_on_all = True
+show_legend_on_all = False
 
 run_batch_exps = True
 use_1d_data = False
@@ -78,7 +80,7 @@ use_radius = True
 include_scale = False
 constant_b = False
 linear_b = True
-use_validation = False
+use_validation = True
 clip_b = True
 
 synthetic_data_sets = [
@@ -471,7 +473,7 @@ class MainConfigs(bc.MainConfigs):
                 else:
                     assert False
 
-
+        method_configs.use_validation = use_validation
         fuse_log_reg = transfer_methods.FuseTransfer(method_configs)
         fuse_nw = transfer_methods.FuseTransfer(method_configs)
         fuse_nw.base_learner = method.NadarayaWatsonMethod(method_configs)
@@ -505,13 +507,12 @@ class MainConfigs(bc.MainConfigs):
         #self.learner = local_transfer
         #self.learner = iwl_transfer
         #self.learner = sms_transfer
-        self.learner = dt_local_transfer
+        #self.learner = dt_local_transfer
         #self.learner = dt_sms
         #self.learner = ssl_regression
         #self.learner = cov_shift
         #self.learner = offset_transfer
-        #self.learner = stacked_transfer
-        self.learner.configs.use_validation = use_validation
+        self.learner = stacked_transfer
 
 
 class MethodConfigs(bc.MethodConfigs):
@@ -532,6 +533,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.sizes_to_use = sizes_to_use
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
+        self.fontsize = fontsize
         '''
         self.files = [
             'TargetTransfer+NW.pkl',
@@ -627,6 +629,15 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['LocalTransferDeltaSMS_scale.pkl'] = 'SMS scale'
             self.files['StackTransfer+SKL-RidgeReg.pkl'] = 'Stacking'
             self.files['LocalTransferDelta_radius_l2_linear-b_clip-b-stacking.pkl'] = 'Our: Linear, Stacking'
+        elif plot_idx == PLOT_TABLE_VAL:
+            self.files = OrderedDict()
+            self.files['LocalTransferDelta_radius_l2_linear-b_clip-b_use-val-stacking.pkl'] = 'Ours: Linear, Stacking, VAL'
+            self.files['LocalTransferDelta_radius_l2_linear-b_clip-b_use-val-stacking-sourceLOO.pkl'] = 'Ours: Linear, Stacking, LOO, VAL'
+            self.files['StackTransfer+SKL-RidgeReg-VAL.pkl'] = 'Stacking, VAL'
+        elif plot_idx == PLOT_ALPHA:
+            self.files = OrderedDict()
+            self.files['LocalTransferDelta_radius_l2_linear-b_clip-b.pkl'] = 'Ours: Linear'
+            self.files['LocalTransferDelta_C3=0_radius_l2_linear-b.pkl'] = 'Ours: Linear, alpha=0'
 
         if use_sms_plot_data_sets:
             if max_rows == 3:

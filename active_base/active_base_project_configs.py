@@ -21,8 +21,8 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
     'include_size_in_file_name'
 ]
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
-data_set_to_use = bc.DATA_BOSTON_HOUSING
+data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
+#data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_DROSOPHILIA
 

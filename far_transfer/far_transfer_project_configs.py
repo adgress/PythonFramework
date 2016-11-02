@@ -48,22 +48,45 @@ data_set_to_use = None
 #data_set_to_use = bc.DATA_SYNTHETIC_CURVE
 #data_set_to_use = bc.DATA_SYNTHETIC_SLANT
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
-#data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
+data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
 #data_set_to_use = bc.DATA_SYNTHETIC_CROSS
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
-data_set_to_use = bc.DATA_SYNTHETIC_FLIP
+#data_set_to_use = bc.DATA_SYNTHETIC_FLIP
 
 use_1d_data = True
 
 run_experiments = True
 show_legend_on_all = False
 arguments = None
-use_validation = False
+use_validation = True
 
-run_batch_just_graph_nw = True
+run_batch_graph = True
+run_batch_graph_nw = True
+run_batch_baseline = True
+run_batch_datasets = True
+
+all_data_sets = [data_set_to_use]
+if run_batch_datasets:
+    all_data_sets = [
+        bc.DATA_SYNTHETIC_CURVE,
+        bc.DATA_SYNTHETIC_SLANT,
+        bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER,
+        bc.DATA_SYNTHETIC_CROSS,
+        bc.DATA_SYNTHETIC_STEP_TRANSFER,
+        bc.DATA_SYNTHETIC_FLIP,
+        bc.DATA_CONCRETE,
+        bc.DATA_WINE,
+        bc.DATA_BIKE_SHARING,
+        bc.DATA_BOSTON_HOUSING
+    ]
+
+FT_METHOD_GRAPH = 0
+FT_METHOD_GRAPH_NW = 1
+FT_METHOD_STACKING = 2
+FT_METHOD_LOCAL = 3
 
 other_method_configs = {
-    'use_graph_nw': False
+    'ft_method': FT_METHOD_GRAPH
 }
 
 def apply_arguments(configs):
@@ -357,13 +380,36 @@ class MainConfigs(bc.MainConfigs):
         ssl_regression.preprocessor = preprocessing.TargetOnlyPreprocessor()
 
         graph_transfer_nw = far_transfer_methods.GraphTransferNW(method_configs)
-
         #self.learner = target_nw
-        if pc.use_graph_nw:
-            self.learner = graph_transfer_nw
-        else:
+        offset_transfer = methods.local_transfer_methods.OffsetTransfer(method_configs)
+        stacked_transfer = methods.transfer_methods.StackingTransfer(method_configs)
+
+        method_configs.metric = 'euclidean'
+        method_configs.no_reg = False
+        method_configs.use_g_learner = True
+        method_configs.use_validation = True
+        method_configs.use_reg2 = True
+        method_configs.use_fused_lasso = False
+        method_configs.no_C3 = False
+        method_configs.use_radius = False
+        method_configs.include_scale = False
+        method_configs.constant_b = False
+        method_configs.linear_b = True
+        method_configs.clip_b = True
+
+        dt_local_transfer = methods.local_transfer_methods.LocalTransferDelta(method_configs)
+        if pc.ft_method == FT_METHOD_GRAPH:
             self.learner = graph_transfer
+        elif pc.ft_method == FT_METHOD_GRAPH_NW:
+            self.learner = graph_transfer_nw
+        elif pc.ft_method == FT_METHOD_STACKING:
+            self.learner = stacked_transfer
+        elif pc.ft_method == FT_METHOD_LOCAL:
+            self.learner = dt_local_transfer
+        else:
+            assert False, 'Unknown ft_method'
         self.learner.configs.use_validation = use_validation
+        self.learner.use_validation = use_validation
 
 
 class MethodConfigs(bc.MethodConfigs):
@@ -372,6 +418,17 @@ class MethodConfigs(bc.MethodConfigs):
         self.copy_fields(pc,pc_fields_to_copy)
         self.target_labels = pc.target_labels
         self.source_labels = pc.source_labels
+
+
+def append_suffix_to_files(dict, suffix, legend_suffix):
+    d = OrderedDict()
+    for key,value in dict.iteritems():
+        f = helper_functions.remove_suffix(key, '.pkl')
+        f += suffix + '.pkl'
+        d[f] = value + legend_suffix
+    return d
+
+
 
 class VisualizationConfigs(bc.VisualizationConfigs):
     def __init__(self, data_set=None, **kwargs):
@@ -387,6 +444,10 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files['GraphTransfer_tr.pkl'] = 'Graph Transfer: Just transfer'
         self.files['GraphTransfer_ta.pkl'] = 'Graph Transfer: Just target'
         self.files['GraphTransferNW.pkl'] = 'Graph Transfer NW'
+        self.files['StackTransfer+SKL-RidgeReg.pkl'] = 'Stacked'
+        if use_validation:
+            self.files = append_suffix_to_files(self.files, '-VAL', ', VAL')
+        self.files['LocalTransferDelta_l2_linear-b_clip-b_use-val.pkl'] = 'Local Transfer VAL'
         self.title = self.results_dir
 
 
@@ -401,26 +462,37 @@ class BatchConfigs(bc.BatchConfigs):
             {'just_transfer': False, 'just_target': True},
         ]
         '''
-        if not run_batch_just_graph_nw:
-            m = MainConfigs(ProjectConfigs(data_set_to_use))
-            m.learner.just_transfer = False
-            m.learner.just_target = False
-            self.config_list.append(m)
-            m = deepcopy(m)
-            m.learner.just_transfer = True
-            self.config_list.append(m)
-            m = deepcopy(m)
-            m.learner.just_transfer = False
-            m.learner.just_target = True
-            self.config_list.append(m)
-            m = deepcopy(m)
-            m.learner.just_transfer = True
-            m.learner.just_target = False
-            self.config_list.append(m)
+        for d in all_data_sets:
+            if run_batch_graph:
+                m = MainConfigs(ProjectConfigs(d))
+                m.learner.just_transfer = False
+                m.learner.just_target = False
+                self.config_list.append(m)
+                m = deepcopy(m)
+                m.learner.just_transfer = True
+                self.config_list.append(m)
+                m = deepcopy(m)
+                m.learner.just_transfer = False
+                m.learner.just_target = True
+                self.config_list.append(m)
+                m = deepcopy(m)
+                m.learner.just_transfer = True
+                m.learner.just_target = False
+                self.config_list.append(m)
+            if run_batch_graph_nw:
+                pc2 = ProjectConfigs(d)
+                pc2.ft_method = FT_METHOD_GRAPH_NW
+                m = MainConfigs(pc2)
+                self.config_list.append(m)
+            if run_batch_baseline:
+                pc2 = ProjectConfigs(d)
+                pc2.ft_method = FT_METHOD_STACKING
+                m = MainConfigs(pc2)
+                self.config_list.append(m)
+                pc2.ft_method = FT_METHOD_LOCAL
+                m = MainConfigs(pc2)
+                self.config_list.append(m)
 
-        pc2 = ProjectConfigs(data_set_to_use)
-        pc2.use_graph_nw = True
-        m = MainConfigs(pc2)
-        self.config_list.append(m)
-
-viz_params = [{}]
+viz_params = [
+    {'data_set': d} for d in all_data_sets
+]

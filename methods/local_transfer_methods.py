@@ -163,6 +163,8 @@ class LocalTransfer(HypothesisTransfer):
     def __init__(self, configs=None):
         super(LocalTransfer, self).__init__(configs)
         self.cv_params = {}
+        self.configs.use_reg2 = False
+        self.configs.use_fused_lasso = False
         #self.cv_params['sigma'] = 10**np.asarray(range(-4,4),dtype='float64')
         self.sigma = 100
         #self.cv_params['radius'] = np.asarray([.01, .05, .1, .15, .2],dtype='float64')
@@ -516,8 +518,8 @@ class LocalTransferDelta(LocalTransfer):
 
         self.use_l2 = True
 
-        self.source_loo = True
-        self.use_stacking = True
+        self.source_loo = False
+        self.use_stacking = False
         if self.use_stacking:
             self.train_source_learner = True
             self.source_learner = transfer_methods.StackingTransfer(configs)

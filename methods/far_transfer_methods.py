@@ -39,6 +39,9 @@ class GraphTransfer(method.Method):
 
 
     def train_and_test(self, data):
+        self.source_learner.use_validation = self.use_validation
+        self.nw_transfer.use_validation = self.use_validation
+        self.nw_target.use_validation = self.use_validation
         if self.just_transfer:
             del self.cv_params['alpha']
             self.alpha = 0

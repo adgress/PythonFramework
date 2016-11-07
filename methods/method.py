@@ -200,7 +200,8 @@ class Method(Saveable):
         train_data = deepcopy(data)
         #test_data = data.get_subset(data.is_test)
         test_data = data.get_test_data()
-        train_data = train_data.get_subset(train_data.is_train)
+        #Is this necessary?
+        #train_data = train_data.get_subset(train_data.is_train)
         if self.configs.use_validation:
             I = train_data.is_labeled & train_data.is_train
             #train_data.reveal_labels(array_functions.true(train_data.n))
@@ -717,6 +718,7 @@ class RelativeRegressionMethod(Method):
     METHOD_CVX_LOGISTIC_WITH_LOG_NEG = 7
     METHOD_CVX_LOGISTIC_WITH_LOG_SCALE = 8
     METHOD_CVX_NEW_CONSTRAINTS = 9
+    METHOD_NONPARAMETRIC = 10
     CVX_METHODS = {
         METHOD_CVX,
         METHOD_CVX_LOGISTIC,
@@ -745,7 +747,8 @@ class RelativeRegressionMethod(Method):
         METHOD_CVX_LOGISTIC_WITH_LOG: 'cvx-log-with-log',
         METHOD_CVX_LOGISTIC_WITH_LOG_NEG: 'cvx-log-with-log-neg',
         METHOD_CVX_LOGISTIC_WITH_LOG_SCALE: 'cvx-log-with-log-scale',
-        METHOD_CVX_NEW_CONSTRAINTS: 'cvx-constraints'
+        METHOD_CVX_NEW_CONSTRAINTS: 'cvx-constraints',
+        METHOD_NONPARAMETRIC: 'NW',
     }
     def __init__(self,configs=MethodConfigs()):
         super(RelativeRegressionMethod, self).__init__(configs)
@@ -795,7 +798,6 @@ class RelativeRegressionMethod(Method):
             self.y_transform = MinMaxScaler()
         elif self.y_scale_standard:
             self.y_transform = StandardScaler()
-
 
         self.add_random_pairwise = configs.get('use_pairwise', True)
         self.use_pairwise = self.add_random_pairwise
@@ -1010,6 +1012,8 @@ class RelativeRegressionMethod(Method):
             data.pairwise_relationships = set()
             #I = data.is_train & ~data.is_labeled
             I = data.is_train
+            train_inds = I.nonzero()[0]
+            ind_to_train_ind = {j: i for i,j in enumerate(train_inds)}
             test_func = lambda ij: True
             max_diff = data.true_y.max() - data.true_y.min()
             diff_func = lambda ij: abs(data.true_y[ij[0]] - data.true_y[ij[1]]) / max_diff
@@ -1043,7 +1047,7 @@ class RelativeRegressionMethod(Method):
                     if self.use_hinge:
                         constraint = HingePairwiseConstraint(x1,x2)
                     else:
-                        constraint = PairwiseConstraint(x1,x2)
+                        constraint = PairwiseConstraint(x1,x2,pair[0], pair[1])
                 else:
                     if self.use_similar_hinge:
                         constraint = SimilarConstraintHinge(x1,x2,max_diff)
@@ -1259,7 +1263,7 @@ class RelativeRegressionMethod(Method):
                 w0 = w0_feasible
                 '''
             elif self.use_pairwise and self.pairwise_use_scipy and not self.use_hinge:
-                x_low,x_high = PairwiseConstraint.generate_pairs_for_scipy_optimize(
+                x_low,x_high,_,_ = PairwiseConstraint.generate_pairs_for_scipy_optimize(
                     data.pairwise_relationships,
                     self.transform
                 )
@@ -1553,6 +1557,8 @@ class RelativeRegressionMethod(Method):
         use_baseline = getattr(self, 'use_baseline', False)
         use_similar = getattr(self, 'use_similar', False)
         using_cvx = False
+        if getattr(self, 'use_nw', False):
+            s += '-NW'
         if not use_pairwise and not use_bound and not use_neighbor and not use_similar:
             using_cvx = True
             s += '-noPairwiseReg'
@@ -1673,3 +1679,87 @@ class RelativeRegressionMethod(Method):
             assert len(self.num_labels) == 1
             s += '-num_labels=' + str(self.num_labels)
         return s
+
+
+class NonparametricRelativeRegressionMethod(RelativeRegressionMethod):
+    def __init__(self, configs=MethodConfigs()):
+        super(NonparametricRelativeRegressionMethod, self).__init__(configs)
+        self.cv_params = dict()
+        self.cv_params['C2'] =  10 ** np.asarray(list(reversed(range(-8, 10))), dtype='float64')
+        self.cv_params['C2'][-1] = 0
+        self.cv_params['sigma'] = 10 ** np.asarray(list(reversed(range(-5, 5))), dtype='float64')
+        self.method = RelativeRegressionMethod.METHOD_NONPARAMETRIC
+        self.ridge_on_fail = False
+        self.f = None
+        self.nw_learner = NadarayaWatsonMethod(configs)
+        assert self.use_pairwise
+
+    def train_and_test(self, data):
+        return super(NonparametricRelativeRegressionMethod, self).train_and_test(data)
+
+
+    def train(self, data):
+        labeled_train = data.labeled_training_data()
+        x = labeled_train.x
+        y = labeled_train.y
+        x = self.transform.fit_transform(x, y)
+        if self.num_features > 0:
+            dim_to_use = min(self.num_features, x.shape[0] - 1)
+
+        x_low, x_high, inds_low, inds_high = PairwiseConstraint.generate_pairs_for_scipy_optimize(
+            data.pairwise_relationships,
+            self.transform
+        )
+
+        x_all = self.transform.transform(data.x)
+        for i, j in enumerate(inds_low):
+            assert (x_low[i] == x_all[j]).all()
+        for i, j in enumerate(inds_high):
+            assert (x_high[i] == x_all[j]).all()
+
+        C2 = self.C2
+        sigma = self.sigma
+
+        S = array_functions.make_rbf(x_all, sigma, x2=x)
+
+        opt_data = logistic_difference_optimize.optimize_data(
+            None, y, 0, C2
+        )
+        opt_data.S = S
+        opt_data.inds_low = inds_low
+        opt_data.inds_high = inds_high
+
+        eval = logistic_difference_optimize.logistic_pairwise_nonparametric.create_eval(opt_data)
+        #grad = logistic_difference_optimize.logistic_pairwise_nonparametric.create_grad(opt_data)
+        grad = None
+
+        options = {
+            'disp': False,
+            'maxfun': np.inf
+        }
+        if not self.use_grad:
+            grad = None
+        options['maxiter'] = 1000
+        constraints = []
+        f0 = np.zeros((x_all.shape[0], 1))
+        #with Capturing() as output:
+        if not self.running_cv:
+            pass
+        results = optimize.minimize(eval, f0, method=self.scipy_opt_method, jac=grad, options=options, constraints=constraints)
+        data_copy = deepcopy(data)
+        data_copy.pairwise_relationships = None
+        if results.success:
+            self.f = results.x
+            data_copy.y = self.f
+            data_copy.true_y = self.f
+            self.nw_learner.train_and_test(data_copy)
+        else:
+            print 'Error'
+        self.nw_learner.train_and_test(data_copy)
+
+    def predict(self, data):
+        o = RelativeRegressionOutput(data)
+        o.y = o.fu = self.nw_learner.predict(data).y
+        return o
+
+

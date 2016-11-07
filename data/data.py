@@ -320,6 +320,11 @@ class LabeledData(LabeledVector):
             setattr(self, key, new_v)
 
         self.is_train_pairwise = getattr(split, 'is_train_pairwise', None)
+        if getattr(self, 'pairwise_relationships', None) is not None:
+            p = self.pairwise_relationships
+            for constraint in self.pairwise_relationships:
+                constraint.x_inds = [split_mapping[ind] for ind in constraint.x_inds]
+            #assert len(p) == 0
 
     def set_defaults(self):
         assert False, 'This function is dangerous!'

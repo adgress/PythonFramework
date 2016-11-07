@@ -50,9 +50,9 @@ other_method_configs = {
     'use_test_error_for_model_selection': False,
     'use_validation': True,
     'use_uncertainty': False,
-    'use_oed': True,
+    'use_oed': False,
     'num_features': None,
-    'num_pairwise': 0,
+    'num_pairwise': 10,
     'use_true_y': False
 }
 if data_set_to_use in {bc.DATA_DROSOPHILIA, bc.DATA_ADIENCE_ALIGNED_CNN_1}:
@@ -60,10 +60,10 @@ if data_set_to_use in {bc.DATA_DROSOPHILIA, bc.DATA_ADIENCE_ALIGNED_CNN_1}:
 
 run_batch = True
 if helper_functions.is_laptop():
-    run_batch = False
+    run_batch = True
 
 active_iterations = 10
-active_items_per_iteration = 10
+active_items_per_iteration = 5
 
 show_legend_on_all = True
 
@@ -227,10 +227,12 @@ class MainConfigs(bc.MainConfigs):
         relative_reg = methods.method.RelativeRegressionMethod(method_configs)
         ridge_reg = method.SKLRidgeRegression(method_configs)
         mean_reg = method.SKLMeanRegressor(method_configs)
+        relative_reg_nw = methods.method.NonparametricRelativeRegressionMethod(method_configs)
         if use_relative:
             active.base_learner = relative_reg
         else:
             active.base_learner = ridge_reg
+        #active.base_learner = relative_reg_nw
         active.base_learner.quiet = False
 
 
@@ -254,7 +256,7 @@ class BatchConfigs(bc.BatchConfigs):
                 new_params = [
                     {'use_oed': False, 'use_uncertainty': False},
                     {'use_oed': True, 'use_uncertainty': False},
-                    {'use_oed': False, 'use_uncertainty': True},
+                    #{'use_oed': False, 'use_uncertainty': True},
                 ]
         else:
             new_params = [{'unused': None}]

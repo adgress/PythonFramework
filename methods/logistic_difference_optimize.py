@@ -26,7 +26,9 @@ def grad_reg_l2(w):
     return 2*w
 
 def loss_l2(y1, y2):
-    return norm(y1-y2)**2
+    v = norm(y1-y2)**2
+    v_n = v / y1.size
+    return v_n
 
 def grad_linear_loss_l2(x, y, v):
     w,b = unpack_linear(v)
@@ -40,7 +42,10 @@ def grad_linear_loss_l2(x, y, v):
     error_w = norm(grad_w-grad_w_old)/norm(grad_w)
     error_b = np.abs(grad_b-grad_b_old)/np.abs(grad_b)
     '''
-    return pack_linear(grad_w, grad_b)
+    grad_w_n = grad_w/n
+    grad_b_n = grad_b/n
+    #return pack_linear(grad_w, grad_b)
+    return pack_linear(grad_w_n, grad_b_n)
 
 def apply_linear(x, w, b=None):
     if b is None:
@@ -215,7 +220,9 @@ class logistic_pairwise(logistic_optimize):
             #print 'logistic_pairwise eval: inf! ' + str(I.mean())
             #vals[np.isinf(vals)] = 1e16
             pass
-        return vals.sum()
+        vals_mean = vals.mean()
+        vals_sum = vals.sum()
+        return vals_mean
 
     @staticmethod
     def grad_mixed_guidance(data, v):
@@ -242,7 +249,52 @@ class logistic_pairwise(logistic_optimize):
         #rel_err =  array_functions.relative_error(g,g_fast)
         g *= -1
         g[-1] *= 0
-        return g
+        g_m = g / n
+        return g_m
+
+class logistic_pairwise_nonparametric(logistic_optimize):
+    @staticmethod
+    def eval_mixed_guidance(data, v):
+        assert False, "TODO: Normalize by amount of guidance"
+        inds_low = data.inds_low
+        inds_high = data.inds_high
+
+        f_low = v[inds_low]
+        f_high = v[inds_high]
+        d = (f_low - f_high)
+        vals = np.log(1 + np.exp(d))
+        I = np.isinf(vals) | np.isnan(vals)
+        if I.any():
+            # print 'logistic_pairwise eval: inf! ' + str(I.mean())
+            # vals[np.isinf(vals)] = 1e16
+            pass
+        if vals.size == 0:
+            return 0
+        v = vals.mean()
+        #print v
+        return v
+
+    @staticmethod
+    def grad_mixed_guidance(data, v):
+        assert False
+
+    @staticmethod
+    def eval_loss(data, v):
+        f = data.S.dot(data.y)
+        loss = (f-v)**2
+        return loss.mean()
+
+    @staticmethod
+    def grad_loss(data, v):
+        assert False
+
+    @staticmethod
+    def eval_reg(data, v):
+        return 0
+
+    @staticmethod
+    def grad_reg(data, v):
+        assert False
 
 eps = 1e-2
 
@@ -250,6 +302,7 @@ class logistic_neighbor(logistic_optimize):
 
     @staticmethod
     def eval_mixed_guidance(data, v):
+        assert False, "TODO: Normalize by amount of guidance"
         x = data.x_neighbor
         x_low = data.x_low
         x_high = data.x_high
@@ -280,6 +333,7 @@ class logistic_neighbor(logistic_optimize):
 
     @staticmethod
     def grad_mixed_guidance(data, v):
+        assert False, "TODO: Normalize by amount of guidance"
         x = data.x_neighbor
         x_low = data.x_low
         x_high = data.x_high
@@ -373,6 +427,7 @@ class logistic_neighbor(logistic_optimize):
 class logistic_bound(logistic_optimize):
     @staticmethod
     def eval_mixed_guidance(data, v):
+        assert False, "TODO: Normalize by amount of guidance"
         w, b = unpack_linear(v)
         x = data.x_bound
         bounds = data.bounds

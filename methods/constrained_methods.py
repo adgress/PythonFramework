@@ -10,7 +10,8 @@ import numpy as np
 class CVXConstraint(Constraint):
     def __init__(self):
         super(CVXConstraint, self).__init__()
-        self.true_y = []
+        self.x_inds = list()
+        self.true_y = list()
 
     def is_pairwise(self):
         return False
@@ -208,10 +209,11 @@ class NeighborConstraint(CVXConstraint):
 
 #y1 <= y2
 class PairwiseConstraint(CVXConstraint):
-    def __init__(self, x1, x2):
+    def __init__(self, x1, x2, ind1, ind2):
         super(PairwiseConstraint, self).__init__()
         self.x.append(x1)
         self.x.append(x2)
+        self.x_inds = [ind1, ind2]
 
     def predict(self, f):
         y0 = f(self.x[0])
@@ -241,10 +243,12 @@ class PairwiseConstraint(CVXConstraint):
     @staticmethod
     def generate_pairs_for_scipy_optimize(constraints, transform = None):
         if constraints.size == 0:
-            return None, None
+            return None, None, [], []
         p = constraints[0].x[0].size
         x_low = None
         x_high = None
+        inds_low = [c.x_inds[0] for c in constraints]
+        inds_high = [c.x_inds[1] for c in constraints]
         for idx, c in enumerate(constraints):
             assert len(c.x) == 2
             x_curr = np.vstack(c.x)
@@ -257,7 +261,7 @@ class PairwiseConstraint(CVXConstraint):
                 x_high = np.zeros((len(constraints),p))
             x_low[idx,:] = x_curr[0,:]
             x_high[idx,:] = x_curr[1,:]
-        return x_low, x_high
+        return x_low, x_high, inds_low, inds_high
 
 class HingePairwiseConstraint(PairwiseConstraint):
     def __init__(self, x1, x2):

@@ -39,6 +39,7 @@ class ActiveMethod(method.Method):
     def __init__(self,configs=MethodConfigs()):
         super(ActiveMethod, self).__init__(configs)
         self.base_learner = method.SKLRidgeRegression(configs)
+        self.fix_model = True
 
     def train_and_test(self, data):
         if self.configs.num_features is not None and self.configs.num_features < data.p:
@@ -71,7 +72,7 @@ class ActiveMethod(method.Method):
                             xj = data.x[j,:]
                             curr_data.pairwise_relationships = np.append(
                                 curr_data.pairwise_relationships,
-                                constrained_methods.PairwiseConstraint(xi, xj)
+                                constrained_methods.PairwiseConstraint(xi, xj, i, j)
                             )
                     else:
                         #all_inds = helper_functions.flatten_list_of_lists(I)
@@ -82,8 +83,12 @@ class ActiveMethod(method.Method):
                     assert False, 'Pairwise labeling of test data isn''t implemented yet!'
 
                 except Exception as err:
+                    assert False, 'Other Error'
                     assert not curr_data.is_labeled[I].any()
-            fold_results = self.base_learner.train_and_test(curr_data)
+            if iter_idx == 0 or not self.fix_model:
+                fold_results = self.base_learner.train_and_test(curr_data)
+            else:
+                fold_results = self.base_learner.run_method(curr_data)
             active_iteration_results = results_lib.ActiveIterationResults(fold_results,I)
             active_fold_results.set(active_iteration_results, iter_idx)
         return active_fold_results
@@ -112,7 +117,12 @@ class ActiveMethod(method.Method):
 
     @property
     def prefix(self):
-        return 'ActiveRandom+' + self.base_learner.prefix
+        s = 'ActiveRandom'
+        if getattr(self, 'fix_model', False):
+            s += '_fixed-model'
+        s += '+' + self.base_learner.prefix
+        return s
+
 
 class OptimizationData(object):
     def __init__(self, x, C):
@@ -195,6 +205,8 @@ class OEDLinearActiveMethod(ActiveMethod):
         s = 'OED+' + self.base_learner.prefix
         if self.use_labeled:
             s += '_use-labeled'
+        if getattr(self, 'fix_model', False):
+            s += '_fixed-model'
         return s
 
 class RelativeActiveMethod(ActiveMethod):
@@ -236,7 +248,12 @@ class RelativeActiveMethod(ActiveMethod):
 
     @property
     def prefix(self):
-        return 'RelActiveRandom-' + self.active_options_suffix() + '+' + self.base_learner.prefix
+        s = 'RelActiveRandom'
+        if getattr(self, 'fix_model', False):
+            s += '_fixed-model'
+        s += '-' + self.active_options_suffix()
+        s += '+' + self.base_learner.prefix
+        return s
 
 
 class RelativeActiveUncertaintyMethod(RelativeActiveMethod):
@@ -283,6 +300,8 @@ class RelativeActiveUncertaintyMethod(RelativeActiveMethod):
             s += '-largest'
         if getattr(self, 'use_oracle', False):
             s += '-oracle'
+        if getattr(self, 'fix_model', False):
+            s += '_fixed-model'
         s += '-' + self.active_options_suffix()
         s += '+' + self.base_learner.prefix
         return s
@@ -394,7 +413,7 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
         deltas_labeled = None
         if self.use_labeled and len(data.pairwise_relationships) > 0:
             transform = self.base_learner.transform
-            x_low, x_high = PairwiseConstraint.generate_pairs_for_scipy_optimize(data.pairwise_relationships)
+            x_low, x_high, _, _ = PairwiseConstraint.generate_pairs_for_scipy_optimize(data.pairwise_relationships)
             y_low = self.base_learner.predict_x(x_low).y
             y_high = self.base_learner.predict_x(x_high).y
             deltas_labeled = transform.transform(x_low) - transform.transform(x_high)
@@ -497,6 +516,8 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
             s += '-labeled'
         if getattr(self, 'use_true_y'):
             s += '-trueY'
+        if getattr(self, 'fix_model', False):
+            s += '_fixed-model'
         s += '-' + self.active_options_suffix()
         s += '+' + self.base_learner.prefix
         return s
@@ -530,6 +551,8 @@ class RelativeActiveErrorMinMethod(RelativeActiveMethod):
     @property
     def prefix(self):
         s = 'RelActiveErrorMin'
+        if getattr(self, 'fix_model', False):
+            s += '_fixed-model'
         s += '-' + self.active_options_suffix()
         s += '+' +self.base_learner.prefix
         return s
@@ -552,41 +575,4 @@ class IGRelativeActiveMethod(RelativeActiveMethod):
     @property
     def prefix(self):
         return 'RelActiveRandom+' + self.base_learner.prefix
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

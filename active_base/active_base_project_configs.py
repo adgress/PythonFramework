@@ -308,6 +308,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         active_opts_stf = '-10-' + str(active_iterations) + '-' + str(active_items_per_iteration)
         rand_pairs_str = '-numRandPairs=1'
         rand_pairs_str = '-numRandPairs=0'
+
         files = [
             ('RelActiveRandom%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'Random, pairwise, Relative=0'),
             ('RelActiveUncer%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'Uncertainty, pairwise, Relative=0'),
@@ -318,6 +319,17 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             ('RelActiveOED-labeled%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-labeled, pairwise, Relative=0'),
             ('RelActiveOED-E%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-E-grad, pairwise, Relative=0'),
         ]
+
+        '''
+        files = [
+            (
+            'RelActiveRandom_fixed-model%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl',
+            'Random, pairwise, Relative=0'),
+            (
+            'RelActiveOED-grad-labeled_fixed-model%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl',
+            'OED-grad-labeled, pairwise, Relative=0'),
+        ]
+        '''
         for file, legend in files:
             file = file % (active_opts_stf, num_feats)
             self.files[file] = legend

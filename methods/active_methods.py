@@ -39,7 +39,7 @@ class ActiveMethod(method.Method):
     def __init__(self,configs=MethodConfigs()):
         super(ActiveMethod, self).__init__(configs)
         self.base_learner = method.SKLRidgeRegression(configs)
-        self.fix_model = True
+        self.fix_model = False
 
     def train_and_test(self, data):
         if self.configs.num_features is not None and self.configs.num_features < data.p:
@@ -323,15 +323,21 @@ def pairwise_fim(t, opt_data):
     for ti, w, d in zip(t, opt_data.weights, opt_data.deltas):
         fim += ti * w * np.outer(d, d)
         idx += 1
+    n = opt_data.num_items
     if opt_data.weights_labeled is not None:
         for w, d in zip(opt_data.weights_labeled, opt_data.deltas_labeled):
             fim += w * np.outer(d,d)
-    fim *= opt_data.reg_pairwise
+        n += len(opt_data.weights_labeled)
+    #n = 1
+    fim *= (opt_data.reg_pairwise/n)
     fim += opt_data.fim_x + opt_data.fim_reg
     return fim
 
 def eval_pairwise_oed(t, opt_data):
     fim = pairwise_fim(t, opt_data)
+    n = opt_data.num_items
+    if opt_data.weights_labeled is not None:
+        n += len(opt_data.weights_labeled)
     try:
         inv_fim = inv(fim)
     except Exception as e:
@@ -346,6 +352,9 @@ def eval_pairwise_oed(t, opt_data):
 
 def grad_pairwise_oed(t, opt_data):
     fim = pairwise_fim(t, opt_data)
+    n = opt_data.num_items
+    if opt_data.weights_labeled is not None:
+        n += len(opt_data.weights_labeled)
     if opt_data.oed_method == 'E':
         assert False
     else:
@@ -361,7 +370,7 @@ def grad_pairwise_oed(t, opt_data):
             g[idx] = - wi*di.T.dot(AA).dot(di)
             #g[idx] = wi*di.T.dot(di)
             idx += 1
-        C = opt_data.reg_pairwise
+        C = (opt_data.reg_pairwise/n)
         g *= C
         return g
 
@@ -390,7 +399,7 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
         diff_idx = 0
         x = self.base_learner.transform.transform(data.x)
         x_labeled = self.base_learner.transform.transform(data.x[data.is_labeled & data.is_train])
-        fisher_x = x_labeled.T.dot(x_labeled)
+        fisher_x = x_labeled.T.dot(x_labeled) / x_labeled.shape[0]
         fisher_reg = self.base_learner.C*np.eye(p)
         deltas = list()
         #fisher_pairwise = np.zeros((p,p))
@@ -424,6 +433,7 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
         opt_data.weights_labeled = weights_labeled
         opt_data.deltas_labeled = deltas_labeled
         opt_data.oed_method = self.oed_method
+        opt_data.num_items = self.configs.active_items_per_iteration
         if data.pairwise_relationships.size == 0:
             opt_data.reg_pairwise = 1
         all_pairs = np.asarray(list(all_pairs))
@@ -463,7 +473,7 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
             )
             g = grad_pairwise_oed(t0, opt_data)
             g_approx = optimize.approx_fprime(t0, lambda t: eval_pairwise_oed(t, opt_data), 1e-6)
-            #print 'RelativeOED grad err: ' + str(grad_err)
+            print 'RelativeOED grad err: ' + str(grad_err)
             '''
             results_eval = optimize.minimize(
                 lambda t: eval_pairwise_oed(t, opt_data),

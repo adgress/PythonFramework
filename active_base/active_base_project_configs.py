@@ -20,8 +20,8 @@ def create_project_configs():
 pc_fields_to_copy = bc.pc_fields_to_copy + [
     'include_size_in_file_name'
 ]
-#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
+data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_DROSOPHILIA
@@ -52,7 +52,7 @@ other_method_configs = {
     'use_uncertainty': False,
     'use_oed': False,
     'num_features': None,
-    'num_pairwise': 10,
+    'num_pairwise': 0,
     'use_true_y': False
 }
 if data_set_to_use in {bc.DATA_DROSOPHILIA, bc.DATA_ADIENCE_ALIGNED_CNN_1}:
@@ -230,6 +230,13 @@ class MainConfigs(bc.MainConfigs):
         relative_reg_nw = methods.method.NonparametricRelativeRegressionMethod(method_configs)
         if use_relative:
             active.base_learner = relative_reg
+            del active.base_learner.cv_params['C2']
+            if data_set_to_use == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
+                active.base_learner.C2 = 1
+            elif data_set_to_use == bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10:
+                active.base_learner.C2 = 1e-3
+            else:
+                assert False
         else:
             active.base_learner = ridge_reg
         #active.base_learner = relative_reg_nw
@@ -256,7 +263,7 @@ class BatchConfigs(bc.BatchConfigs):
                 new_params = [
                     {'use_oed': False, 'use_uncertainty': False},
                     {'use_oed': True, 'use_uncertainty': False},
-                    #{'use_oed': False, 'use_uncertainty': True},
+                    {'use_oed': False, 'use_uncertainty': True},
                 ]
         else:
             new_params = [{'unused': None}]
@@ -308,28 +315,27 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         active_opts_stf = '-10-' + str(active_iterations) + '-' + str(active_items_per_iteration)
         rand_pairs_str = '-numRandPairs=1'
         rand_pairs_str = '-numRandPairs=0'
-
-        files = [
-            ('RelActiveRandom%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'Random, pairwise, Relative=0'),
-            ('RelActiveUncer%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'Uncertainty, pairwise, Relative=0'),
-            ('RelActiveOED%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'OED, pairwise, Relative=0'),
-            ('RelActiveOED-grad%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad, pairwise, Relative=0'),
-            ('RelActiveOED-grad-labeled%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad-labeled, pairwise, Relative=0'),
-            ('RelActiveOED-grad-labeled-trueY%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad-labeled-trueY, pairwise, Relative=0'),
-            ('RelActiveOED-labeled%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-labeled, pairwise, Relative=0'),
-            ('RelActiveOED-E%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-E-grad, pairwise, Relative=0'),
-        ]
-
-        '''
-        files = [
-            (
-            'RelActiveRandom_fixed-model%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl',
-            'Random, pairwise, Relative=0'),
-            (
-            'RelActiveOED-grad-labeled_fixed-model%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl',
-            'OED-grad-labeled, pairwise, Relative=0'),
-        ]
-        '''
+        fixed_model_exps = False
+        if not fixed_model_exps:
+            files = [
+                ('RelActiveRandom%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'Random, pairwise, Relative=0'),
+                ('RelActiveUncer%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'Uncertainty, pairwise, Relative=0'),
+                ('RelActiveOED%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'OED, pairwise, Relative=0'),
+                ('RelActiveOED-grad%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad, pairwise, Relative=0'),
+                ('RelActiveOED-grad-labeled%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad-labeled, pairwise, Relative=0'),
+                ('RelActiveOED-grad-labeled-trueY%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad-labeled-trueY, pairwise, Relative=0'),
+                ('RelActiveOED-labeled%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-labeled, pairwise, Relative=0'),
+                ('RelActiveOED-E%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-E-grad, pairwise, Relative=0'),
+            ]
+        else:
+            files = [
+                (
+                'RelActiveRandom_fixed-model%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl',
+                'Random, pairwise, Relative=0'),
+                (
+                'RelActiveOED-grad-labeled_fixed-model%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl',
+                'OED-grad-labeled, pairwise, Relative=0'),
+            ]
         for file, legend in files:
             file = file % (active_opts_stf, num_feats)
             self.files[file] = legend

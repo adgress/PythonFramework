@@ -20,8 +20,8 @@ def create_project_configs():
 pc_fields_to_copy = bc.pc_fields_to_copy + [
     'include_size_in_file_name'
 ]
-data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
+#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_DROSOPHILIA
@@ -230,11 +230,11 @@ class MainConfigs(bc.MainConfigs):
         relative_reg_nw = methods.method.NonparametricRelativeRegressionMethod(method_configs)
         if use_relative:
             active.base_learner = relative_reg
-            del active.base_learner.cv_params['C2']
+            del active.base_learner.cv_params['C']
             if data_set_to_use == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
-                active.base_learner.C2 = 1
+                active.base_learner.C = 1
             elif data_set_to_use == bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10:
-                active.base_learner.C2 = 1e-3
+                active.base_learner.C = 1e-3
             else:
                 assert False
         else:

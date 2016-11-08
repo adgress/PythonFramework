@@ -21,8 +21,8 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
     'include_size_in_file_name'
 ]
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
-#data_set_to_use = bc.DATA_BOSTON_HOUSING
+#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
+data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_DROSOPHILIA
 
@@ -235,6 +235,14 @@ class MainConfigs(bc.MainConfigs):
                 active.base_learner.C = 1
             elif data_set_to_use == bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10:
                 active.base_learner.C = 1e-3
+            elif data_set_to_use == bc.DATA_BOSTON_HOUSING:
+                active.base_learner.C = 1e-3
+            elif data_set_to_use == bc.DATA_CONCRETE:
+                active.base_learner.C = 1e-3
+            elif data_set_to_use == bc.DATA_DROSOPHILIA:
+                active.base_learner.C = 1e-1
+            elif data_set_to_use == bc.DATA_ADIENCE_ALIGNED_CNN_1:
+                active.base_learner.C = 1
             else:
                 assert False
         else:

@@ -242,7 +242,7 @@ class MainConfigs(bc.MainConfigs):
             elif data_set_to_use == bc.DATA_DROSOPHILIA:
                 active.base_learner.C = 1e-1
             elif data_set_to_use == bc.DATA_ADIENCE_ALIGNED_CNN_1:
-                active.base_learner.C = 1
+                active.base_learner.C = 1e-1
             else:
                 assert False
         else:

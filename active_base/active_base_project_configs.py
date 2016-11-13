@@ -22,11 +22,11 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 ]
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
-data_set_to_use = bc.DATA_BOSTON_HOUSING
+#data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_DROSOPHILIA
 
-#data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
+data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 
 data_sets_for_exps = [data_set_to_use]
 
@@ -107,7 +107,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.data_set = data_set
         if data_set == bc.DATA_BOSTON_HOUSING:
             self.set_boston_housing()
-            self.num_labels = [5]
+            self.num_labels = [10]
         elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10:
             self.set_synthetic_linear_reg_10()
             self.num_labels = [10]
@@ -236,7 +236,7 @@ class MainConfigs(bc.MainConfigs):
             elif data_set_to_use == bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10:
                 active.base_learner.C = 1e-3
             elif data_set_to_use == bc.DATA_BOSTON_HOUSING:
-                active.base_learner.C = 1e-3
+                active.base_learner.C = 1e-2
             elif data_set_to_use == bc.DATA_CONCRETE:
                 active.base_learner.C = 1e-3
             elif data_set_to_use == bc.DATA_DROSOPHILIA:
@@ -321,6 +321,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         else:
             num_feats = '-numFeatsPerfect=' + str(other_method_configs['num_features'])
         active_opts_stf = '-10-' + str(active_iterations) + '-' + str(active_items_per_iteration)
+        if data_set_to_use == bc.DATA_BOSTON_HOUSING:
+            active_opts_stf = '-10-' + str(active_iterations) + '-' + str(active_items_per_iteration)
         rand_pairs_str = '-numRandPairs=1'
         rand_pairs_str = '-numRandPairs=0'
         fixed_model_exps = False

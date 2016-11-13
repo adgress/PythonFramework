@@ -14,8 +14,8 @@ import importlib
 #import new_project.new_project_configs as configs_library
 #import mixed_feature_guidance.mixed_features_project_configs as configs_library
 
-#import far_transfer.far_transfer_project_configs as configs_library
-import active_base.active_base_project_configs as configs_library
+import far_transfer.far_transfer_project_configs as configs_library
+#import active_base.active_base_project_configs as configs_library
 
 configs_lib = configs_library
 import boto

@@ -220,12 +220,10 @@ class LabeledData(LabeledVector):
     def n_train_labeled(self):
         return np.sum(self.is_labeled & self.is_train)
 
-
-
     def get_subset(self,to_select):
         assert to_select.size > 0
         d = self.__dict__
-        new_data = Data()
+        new_data = copy.deepcopy(self)
         for key,value in d.items():
             if array_functions.is_matrix(value) and value.shape[0] == self.n:
                 setattr(new_data,key,value[to_select])
@@ -412,6 +410,91 @@ class Data(LabeledData):
 
     def combine(self, d):
         super(Data, self).combine(d)
+
+class TimeSeriesData(Data):
+    def __init__(self, y, ids):
+        super(TimeSeriesData, self).__init__(x=np.arange(y.shape[0]), y=y)
+        self.series_ids = ids
+        self.set_train()
+        self.set_target()
+        self.set_true_y()
+
+    @property
+    def num_series(self):
+        return self.y.shape[1]
+
+    def get_series_range(self):
+        #y_i = self.y[:,:,y_idx]
+        y_i = self.y
+        I = ~np.isnan(y_i)
+        range = np.zeros((y_i.shape[1], 2), dtype=np.int)
+        for j, y_ij in enumerate(I.T):
+            inds = y_ij.nonzero()[0]
+            range[j,:] = (inds.min(), inds.max())
+        return range
+
+    def keep_series(self, to_keep):
+        self.y = self.y[:,to_keep]
+        if self.y.ndim == 1:
+            self.y = np.expand_dims(self.y, 1)
+        self.set_true_y()
+
+    def get_min_range(self):
+        ranges = self.get_series_range()
+        min_range = ranges[:,0].max()
+        max_range = ranges[:,1].min()
+        I = array_functions.false(self.n)
+        I[min_range:max_range+1] = True
+        return self.get_subset(I)
+
+    def keep_range(self, y_range):
+        self.y = self.y[y_range[0]:y_range[1],:]
+        self.x = np.arange(self.y.shape[0])
+        if self.y.ndim == 1:
+            self.y = np.expand_dims(self.y, 0)
+        self.set_true_y()
+
+    def get_perc_used(self, y_range=None, y_idx=0):
+        y_i = self.y
+        I = ~np.isnan(y_i)
+        used = np.zeros(self.num_series)
+        for j in range(self.num_series):
+            I_ij = I[:,j]
+            if y_range is not None:
+                I_ij = I_ij[y_range[j, 0]:(y_range[j, 1]+1)]
+            used[j] = I_ij.mean()
+            pass
+        return used
+
+    def create_data_instance(self):
+        assert self.y.shape[1] == 2
+        x = np.hstack((self.x, self.x))
+        x = np.expand_dims(x, 1)
+        y = np.hstack((self.y[:, 0], self.y[:, 1]))
+        data_set_ids = 0 * np.ones(y.shape)
+        data_set_ids[self.y.shape[0] + 1:] = 1
+        data = Data(x, y)
+        data.data_set_ids = data_set_ids
+        data.is_regression = self.is_regression
+        return data
+
+    def smooth_missing(self, y_range=None):
+        y_new = self.y.copy()
+        y_k = y_new
+        y_orig = self.y
+        for i in range(y_k.shape[1]):
+            y_ik = y_k[:,i]
+            y_orig_i = y_orig[i,:]
+            I = np.isfinite(y_ik).nonzero()[0]
+            for j, elem in enumerate(y_ik):
+                if np.isfinite(elem):
+                    continue
+                closest_idx = array_functions.find_closest(I, j)
+                closest_idx = closest_idx[np.isfinite(closest_idx)]
+                y_ik[j] = y_ik[closest_idx.astype(np.int)].mean()
+        self.y = y_new
+        self.set_true_y()
+        print ''
 
 class Split(object):
     def __init__(self,n=0):

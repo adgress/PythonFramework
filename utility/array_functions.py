@@ -19,6 +19,19 @@ import random
 import re
 from sklearn.feature_selection import SelectKBest, f_regression
 
+def find_closest(x, val):
+    vals = np.zeros(2)
+    less_than = x[x <= val]
+    if less_than.size == 0:
+        vals[0] = np.nan
+    else:
+        vals[0] = less_than.max()
+    greater_than = x[x >= val]
+    if greater_than.size == 0:
+        vals[1] = np.nan
+    else:
+        vals[1] = greater_than.min()
+    return vals
 
 def select_k_features(x, y, num_features):
     assert num_features <= x.shape[1]
@@ -330,10 +343,14 @@ def try_toarray(x):
         pass
     return x
 
-def move_fig(fig):
+def move_fig(fig, width=None, height=None):
     manager = fig.canvas.manager
     w = manager.canvas.width()
     h = manager.canvas.height()
+    if width is not None:
+        w = width
+    if height is not None:
+        h = height
     manager.window.setGeometry(2000,100,w,h)
 
 
@@ -428,6 +445,28 @@ def plot_line_sub(x_list, y_list, title=None, y_axes = None,fig=None,show=True):
     if show:
         move_fig(fig)
         pl.show(block=True)
+
+def plot_2d_sub_multiple_y(x,y_mat,alpha=1,title=None,sizes=None,share_axis=False):
+    if sizes is None:
+        sizes = 60
+    if y_mat.ndim == 1:
+        y_mat = np.expand_dims(y_mat, 1)
+    pl.close()
+    fig = pl.figure(4)
+    fig.suptitle(title)
+    for index, y in enumerate(y_mat.T):
+        if index == 0:
+            ax1 = pl.subplot(y_mat.shape[1], 1, index + 1)
+        else:
+            if share_axis:
+                pl.subplot(y_mat.shape[1], 1, index + 1, sharex=ax1, sharey=ax1)
+            else:
+                pl.subplot(y_mat.shape[1], 1, index + 1)
+        pl.ylabel(str(index))
+        pl.scatter(x, y, alpha=alpha, c='r', s=sizes)
+    move_fig(fig, 1000, 1000)
+    pl.show(block=True)
+    pass
 
 def plot_2d_sub(x,y,data_set_ids=None,alpha=1,title=None,sizes=None):
     if sizes is None:

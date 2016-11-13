@@ -45,10 +45,12 @@ data_set_to_use = None
 #data_set_to_use = bc.DATA_WINE
 #data_set_to_use = bc.DATA_BIKE_SHARING
 
+data_set_to_use = bc.DATA_POLLUTION_2
+
 #data_set_to_use = bc.DATA_SYNTHETIC_CURVE
 #data_set_to_use = bc.DATA_SYNTHETIC_SLANT
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
-data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
+#data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
 #data_set_to_use = bc.DATA_SYNTHETIC_CROSS
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
 #data_set_to_use = bc.DATA_SYNTHETIC_FLIP
@@ -58,12 +60,12 @@ use_1d_data = True
 run_experiments = True
 show_legend_on_all = False
 arguments = None
-use_validation = False
+use_validation = True
 
 run_batch_graph = True
 run_batch_graph_nw = True
 run_batch_baseline = True
-run_batch_datasets = True
+run_batch_datasets = False
 
 all_data_sets = [data_set_to_use]
 if run_batch_datasets:
@@ -175,6 +177,9 @@ class ProjectConfigs(bc.ProjectConfigs):
         elif data_set == bc.DATA_SYNTHETIC_FLIP:
             self.set_synthetic_regression('synthetic_flip')
             self.num_labels = np.asarray([10, 20, 30])
+        elif data_set == bc.DATA_POLLUTION_2:
+            self.set_pollution(2)
+            self.num_labels = np.asarray([100, 200, 400])
         else:
             assert False
         assert self.source_labels.size > 0
@@ -227,6 +232,17 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.target_labels = np.asarray([1])
         self.source_labels = np.asarray([0])
 
+    def set_pollution(self, id):
+        self.loss_function = loss_function.MeanSquaredError()
+        self.cv_loss_function = loss_function.MeanSquaredError()
+        #assert self.use_1d_data == True
+        s = 'pollution-%d' % id
+        self.data_dir = 'data_sets/' + s
+        self.data_name = s
+        self.results_dir = s
+        self.data_set_file_name = 'split_data.pkl'
+        self.target_labels = np.asarray([0])
+        self.source_labels = np.asarray([1])
 
     def set_concrete_transfer(self):
         self.loss_function = loss_function.MeanSquaredError()
@@ -446,7 +462,9 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files['StackTransfer+SKL-RidgeReg.pkl'] = 'Stacked'
         if use_validation:
             self.files = append_suffix_to_files(self.files, '-VAL', ', VAL')
-        self.files['LocalTransferDelta_l2_linear-b_clip-b_use-val.pkl'] = 'Local Transfer VAL'
+            self.files['LocalTransferDelta_l2_linear-b_clip-b_use-val.pkl'] = 'Local Transfer VAL'
+        else:
+            self.files['LocalTransferDelta_l2_linear-b_clip-b.pkl'] = 'Local Transfer'
         self.title = self.results_dir
 
 

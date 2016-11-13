@@ -16,7 +16,7 @@ import math
 from PyMTL_master.src import PyMTL
 from viz_data import viz_features
 from PyMTL_master.src.PyMTL import data as PyMTL_data
-
+from copy import deepcopy
 from create_synthetic_data import *
 
 ng_a = np.asarray(0)
@@ -51,6 +51,7 @@ adience_aligned_cnn_file = 'adience_aligned_cnn/raw_data.pkl'
 adience_aligned_cnn_1_per_instance_id_file = 'adience_aligned_cnn_1_per_instance_id/raw_data.pkl'
 drosophila_file = 'drosophilia/raw_data.pkl'
 kc_housing_file = 'kc_housing/raw_data.pkl'
+pollution_file = 'pollution/raw_data.pkl'
 
 def pair_file(i,j):
     s = 'pair_data_' + str(i) + '_' + str(j) + '/raw_data.pkl'
@@ -76,7 +77,8 @@ def create_and_save_data(x,y,domain_ids,file):
     helper_functions.save_object(file,data)
 
 import csv
-def load_csv(file, has_field_names=True, dtype='float', delim=',',converters=None):
+def load_csv(file, has_field_names=True, dtype='float', delim=',',converters=None,
+             num_rows=None):
     nrows = 1
     if not has_field_names:
         nrows = 0
@@ -84,14 +86,24 @@ def load_csv(file, has_field_names=True, dtype='float', delim=',',converters=Non
     else:
         all_field_names = pd.read_csv(file,nrows=nrows,dtype='string',sep=delim)
         all_field_names = np.asarray(all_field_names.keys())
-    data = np.loadtxt(
-        file,
-        skiprows=nrows,
-        delimiter=delim,
-        usecols=None,
-        dtype=dtype,
-        converters=converters
-    )
+    if num_rows is not None:
+        data = pd.read_csv(
+            file,
+            skiprows=0,
+            dtype='string',
+            sep=delim,
+            nrows=num_rows
+        )
+        data = data.values
+    else:
+        data = np.loadtxt(
+            file,
+            skiprows=nrows,
+            delimiter=delim,
+            usecols=None,
+            dtype=dtype,
+            converters=converters,
+        )
     return all_field_names, data
 
 def create_uci_yeast():
@@ -576,6 +588,23 @@ def create_kc_housing():
     s = kc_housing_file
     helper_functions.save_object(s, data)
 
+def create_pollution(labels_to_use=np.arange(2), series_to_use=0):
+    file = 'pollution/processed_data.pkl'
+    y, ids = helper_functions.load_object(file)
+    y_to_use = y[:,series_to_use, :]
+    print str(series_to_use) + ': ' + ids[series_to_use]
+    data = data_class.TimeSeriesData(y_to_use, np.asarray([ids[series_to_use]]))
+    data.is_regression = True
+    data.keep_series(labels_to_use)
+    data = data.get_min_range()
+    data.smooth_missing()
+    data = data.create_data_instance()
+    #perc_used = data.get_perc_used()
+    s = 'pollution-%d/raw_data.pkl' % series_to_use
+    #array_functions.plot_2d_sub_multiple_y(data.x, data.y, title=None, sizes=10)
+    helper_functions.save_object(s, data)
+
+
 
 if __name__ == "__main__":
     #create_boston_housing()
@@ -592,6 +621,7 @@ if __name__ == "__main__":
     #create_pair(pair_target,pair_source,0)
     #create_wine()
     #create_drosophila()
-    create_kc_housing()
+    #create_kc_housing()
+    create_pollution(series_to_use=2)
     from data_sets import create_data_split
     create_data_split.run_main()

@@ -489,7 +489,7 @@ def plot_2d_sub(x,y,data_set_ids=None,alpha=1,title=None,sizes=None):
         pl.ylabel(str(val))
         pl.scatter(x[inds],y[inds],alpha=alpha,c='r',s=sizes,)
     move_fig(fig)
-    pl.show(block=False)
+    pl.show(block=True)
     pass
 
 def plot_2d(x,y,data_set_ids=None,alpha=1,title=None):

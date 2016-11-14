@@ -602,6 +602,7 @@ def create_pollution(labels_to_use=np.arange(2), series_to_use=0):
     #perc_used = data.get_perc_used()
     s = 'pollution-%d/raw_data.pkl' % series_to_use
     #array_functions.plot_2d_sub_multiple_y(data.x, data.y, title=None, sizes=10)
+    array_functions.plot_2d_sub(data.x, data.y, data_set_ids=data.data_set_ids, title=None, sizes=10)
     helper_functions.save_object(s, data)
 
 

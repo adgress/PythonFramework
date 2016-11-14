@@ -29,6 +29,7 @@ class GraphTransfer(method.Method):
 
         self.nw_transfer = method.NadarayaWatsonMethod(deepcopy(configs))
         self.nw_target = method.NadarayaWatsonMethod(deepcopy(configs))
+        self.nw_target.quiet = True
         assert not (self.just_transfer and self.just_target)
         if self.just_transfer:
             del self.cv_params['alpha']
@@ -61,18 +62,24 @@ class GraphTransfer(method.Method):
         return super(GraphTransfer, self).train_and_test(target_data)
 
     def train(self, data):
+        assert data.is_target.all()
         I = data.is_labeled
+        #Need unlabeled data if using validation for hyperparameter tuning
+        I[:] = True
         y_pred_source = data.source_y_pred[I]
 
         transfer_data = data.get_subset(I)
         transfer_data.x = np.expand_dims(y_pred_source, 1)
         self.nw_transfer.train_and_test(transfer_data)
-
         target_data = data.get_subset(I)
         self.nw_target.train_and_test(target_data)
+        x = 0
 
     def predict(self, data):
         #d = data_lib.Data(np.expand_dims(data.source_y_pred, 1), data.y)
+        if not self.running_cv:
+            #array_functions.plot_2d_sub(data.x, data.true_y, data_set_ids=data.data_set_ids, title=None, sizes=10)
+            x = 0
         transfer_data = deepcopy(data)
         transfer_data.x = np.expand_dims(data.source_y_pred, 1)
         transfer_pred =  self.nw_transfer.predict(transfer_data)

@@ -87,6 +87,8 @@ class MeanAbsoluteError(LossFunction):
         self.short_name = 'MAE'
 
     def _compute_score(self,y1,y2):
+        if y1.size == 0 or not np.isfinite(y1).all() or not np.isfinite(y2).all():
+            return np.inf
         return metrics.mean_absolute_error(y1, y2)
 
 class LossFunctionParams(LossFunction):

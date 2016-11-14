@@ -204,6 +204,7 @@ class Method(Saveable):
         #train_data = train_data.get_subset(train_data.is_train)
         if self.configs.use_validation:
             I = train_data.is_labeled & train_data.is_train
+            assert (~I).any()
             #train_data.reveal_labels(array_functions.true(train_data.n))
             ds = create_data_split.DataSplitter()
             splits = ds.generate_identity_split(I)

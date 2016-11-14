@@ -179,7 +179,7 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.num_labels = np.asarray([10, 20, 30])
         elif data_set == bc.DATA_POLLUTION_2:
             self.set_pollution(2)
-            self.num_labels = np.asarray([100, 200, 400])
+            self.num_labels = np.asarray([100, 200, 400, 800, 1600])
         else:
             assert False
         assert self.source_labels.size > 0

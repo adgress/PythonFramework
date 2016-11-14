@@ -478,11 +478,14 @@ def plot_2d_sub(x,y,data_set_ids=None,alpha=1,title=None,sizes=None):
     u = np.unique(data_set_ids)
     fig.suptitle(title)
     for index, val in enumerate(u):
+        '''
         if index == 0:
             ax1 = pl.subplot(len(u),1,index+1)
 
         else:
             pl.subplot(len(u),1,index+1,sharex=ax1,sharey=ax1)
+        '''
+        pl.subplot(len(u), 1, index + 1)
         #pl.title(title)
         inds = data_set_ids == val
         inds = inds.squeeze()

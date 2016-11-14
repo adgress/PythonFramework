@@ -64,7 +64,7 @@ use_validation = True
 
 run_batch_graph = True
 run_batch_graph_nw = True
-run_batch_baseline = False
+run_batch_baseline = True
 run_batch_datasets = False
 
 all_data_sets = [data_set_to_use]
@@ -237,7 +237,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.loss_function = loss_function.MeanSquaredError()
         self.cv_loss_function = loss_function.MeanSquaredError()
         #assert self.use_1d_data == True
-        s = 'pollution-%d-%d' % (id, size)
+        s = 'pollution-%d-%d-norm' % (id, size)
         self.data_dir = 'data_sets/' + s
         self.data_name = s
         self.results_dir = s
@@ -506,7 +506,7 @@ class BatchConfigs(bc.BatchConfigs):
                 pc2 = ProjectConfigs(d)
                 pc2.ft_method = FT_METHOD_STACKING
                 m = MainConfigs(pc2)
-                self.config_list.append(m)
+                #self.config_list.append(m)
                 pc2.ft_method = FT_METHOD_LOCAL
                 m = MainConfigs(pc2)
                 self.config_list.append(m)

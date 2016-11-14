@@ -179,8 +179,8 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.set_synthetic_regression('synthetic_flip')
             self.num_labels = np.asarray([10, 20, 30])
         elif data_set == bc.DATA_POLLUTION_2:
-            self.set_pollution(2, 800)
-            self.num_labels = np.asarray([25, 50, 100, 200])
+            self.set_pollution(2, 500)
+            self.num_labels = np.asarray([20, 40, 80, 160])
         else:
             assert False
         assert self.source_labels.size > 0

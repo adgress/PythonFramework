@@ -636,6 +636,6 @@ if __name__ == "__main__":
     #create_wine()
     #create_drosophila()
     #create_kc_housing()
-    create_pollution(series_to_use=2, num_instances=800)
+    create_pollution(series_to_use=2, num_instances=500)
     from data_sets import create_data_split
     create_data_split.run_main()

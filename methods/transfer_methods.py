@@ -138,7 +138,9 @@ class StackingTransfer(FuseTransfer):
 
     def train(self, data):
         self.target_learner.train_and_test(data)
-        I = data.is_labeled & data.is_target
+        #Need unlabeled data if using validation data for parameter tuning
+        #I = data.is_labeled & data.is_target
+        I = data.is_target
         stacked_data = self._get_stacked_data(data).get_subset(I)
         self.base_learner.train_and_test(stacked_data)
 

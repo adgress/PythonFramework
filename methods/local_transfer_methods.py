@@ -98,6 +98,8 @@ class HypothesisTransfer(method.Method):
     def train_and_test(self, data):
         source_data = self.get_source_data(data)
 
+        #Because source learner is probably fully labeled, make sure we're not using validation parameter tuning
+        self.source_learner.configs.use_validation = False
         viz_mds = False
         if viz_mds:
             source_labels = self.configs.source_labels

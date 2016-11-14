@@ -447,12 +447,10 @@ class TimeSeriesData(Data):
         I[min_range:max_range+1] = True
         return self.get_subset(I)
 
-    def keep_range(self, y_range):
-        self.y = self.y[y_range[0]:y_range[1],:]
-        self.x = np.arange(self.y.shape[0])
-        if self.y.ndim == 1:
-            self.y = np.expand_dims(self.y, 0)
-        self.set_true_y()
+    def get_range(self, y_range):
+        I = array_functions.false(self.n)
+        I[y_range[0]:y_range[1]] = True
+        return self.get_subset(I)
 
     def get_perc_used(self, y_range=None, y_idx=0):
         y_i = self.y

@@ -64,7 +64,7 @@ use_validation = True
 
 run_batch_graph = True
 run_batch_graph_nw = True
-run_batch_baseline = True
+run_batch_baseline = False
 run_batch_datasets = False
 
 all_data_sets = [data_set_to_use]
@@ -79,7 +79,8 @@ if run_batch_datasets:
         bc.DATA_CONCRETE,
         bc.DATA_WINE,
         bc.DATA_BIKE_SHARING,
-        bc.DATA_BOSTON_HOUSING
+        bc.DATA_BOSTON_HOUSING,
+        bc.DATA_POLLUTION_2
     ]
 
 FT_METHOD_GRAPH = 0
@@ -178,8 +179,8 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.set_synthetic_regression('synthetic_flip')
             self.num_labels = np.asarray([10, 20, 30])
         elif data_set == bc.DATA_POLLUTION_2:
-            self.set_pollution(2)
-            self.num_labels = np.asarray([100, 200, 400, 800, 1600])
+            self.set_pollution(2, 800)
+            self.num_labels = np.asarray([25, 50, 100, 200])
         else:
             assert False
         assert self.source_labels.size > 0
@@ -232,11 +233,11 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.target_labels = np.asarray([1])
         self.source_labels = np.asarray([0])
 
-    def set_pollution(self, id):
+    def set_pollution(self, id, size):
         self.loss_function = loss_function.MeanSquaredError()
         self.cv_loss_function = loss_function.MeanSquaredError()
         #assert self.use_1d_data == True
-        s = 'pollution-%d' % id
+        s = 'pollution-%d-%d' % (id, size)
         self.data_dir = 'data_sets/' + s
         self.data_name = s
         self.results_dir = s

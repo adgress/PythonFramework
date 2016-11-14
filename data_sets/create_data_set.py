@@ -588,7 +588,7 @@ def create_kc_housing():
     s = kc_housing_file
     helper_functions.save_object(s, data)
 
-def create_pollution(labels_to_use=np.arange(2), series_to_use=0):
+def create_pollution(labels_to_use=np.arange(2), series_to_use=0, num_instances=None):
     file = 'pollution/processed_data.pkl'
     y, ids = helper_functions.load_object(file)
     y_to_use = y[:,series_to_use, :]
@@ -598,9 +598,15 @@ def create_pollution(labels_to_use=np.arange(2), series_to_use=0):
     data.keep_series(labels_to_use)
     data = data.get_min_range()
     data.smooth_missing()
+    if num_instances is not None:
+        data = data.get_range([0, 800])
     data = data.create_data_instance()
     #perc_used = data.get_perc_used()
-    s = 'pollution-%d/raw_data.pkl' % series_to_use
+    if num_instances is not None:
+        pass
+        s = 'pollution-%d-%d/raw_data.pkl' % (series_to_use, num_instances)
+    else:
+        s = 'pollution-%d/raw_data.pkl' % series_to_use
     #array_functions.plot_2d_sub_multiple_y(data.x, data.y, title=None, sizes=10)
     array_functions.plot_2d_sub(data.x, data.y, data_set_ids=data.data_set_ids, title=None, sizes=10)
     helper_functions.save_object(s, data)
@@ -623,6 +629,6 @@ if __name__ == "__main__":
     #create_wine()
     #create_drosophila()
     #create_kc_housing()
-    create_pollution(series_to_use=2)
+    create_pollution(series_to_use=2, num_instances=800)
     from data_sets import create_data_split
     create_data_split.run_main()

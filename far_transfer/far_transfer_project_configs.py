@@ -506,7 +506,7 @@ class BatchConfigs(bc.BatchConfigs):
                 pc2 = ProjectConfigs(d)
                 pc2.ft_method = FT_METHOD_STACKING
                 m = MainConfigs(pc2)
-                #self.config_list.append(m)
+                self.config_list.append(m)
                 pc2.ft_method = FT_METHOD_LOCAL
                 m = MainConfigs(pc2)
                 self.config_list.append(m)

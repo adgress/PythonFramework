@@ -414,6 +414,8 @@ class Data(LabeledData):
 class TimeSeriesData(Data):
     def __init__(self, y, ids):
         super(TimeSeriesData, self).__init__(x=np.arange(y.shape[0]), y=y)
+        if self.y.ndim == 1:
+            self.y = np.expand_dims(self.y, 1)
         self.series_ids = ids
         self.set_train()
         self.set_target()
@@ -422,6 +424,13 @@ class TimeSeriesData(Data):
     @property
     def num_series(self):
         return self.y.shape[1]
+
+    def normalize_y(self):
+        for i in range(self.y.shape[1]):
+            yi = self.y[:,i]
+            yi -= yi.min()
+            yi /= yi.max()
+            self.y[:,i] = yi
 
     def get_series_range(self):
         #y_i = self.y[:,:,y_idx]
@@ -447,6 +456,16 @@ class TimeSeriesData(Data):
         I[min_range:max_range+1] = True
         return self.get_subset(I)
 
+    def reset_x(self):
+        self.x = np.arange(self.n).astype(np.float)
+        if self.x.ndim == 1:
+            self.x = np.expand_dims(self.x, 1)
+
+    def get_nth(self, n):
+        I = array_functions.false(self.n)
+        I[::n] = True
+        return self.get_subset(I)
+
     def get_range(self, y_range):
         I = array_functions.false(self.n)
         I[y_range[0]:y_range[1]] = True
@@ -465,12 +484,12 @@ class TimeSeriesData(Data):
         return used
 
     def create_data_instance(self):
-        assert self.y.shape[1] == 2
-        x = np.hstack((self.x, self.x))
-        x = np.expand_dims(x, 1)
-        y = np.hstack((self.y[:, 0], self.y[:, 1]))
-        data_set_ids = 0 * np.ones(y.shape)
-        data_set_ids[self.y.shape[0] + 1:] = 1
+        x = self.x
+        n = self.y.shape[0]
+        k = self.y.shape[1]
+        x = np.vstack([x for i in range(k)])
+        y = np.hstack([self.y[:,i] for i in range(k)])
+        data_set_ids = np.hstack([i*np.ones(n) for i in range(k)])
         data = Data(x, y)
         data.data_set_ids = data_set_ids
         data.is_regression = self.is_regression

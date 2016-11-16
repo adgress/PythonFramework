@@ -4,7 +4,7 @@ from utility import array_functions
 from utility import helper_functions
 from utility.array_functions import find_first_element
 import datetime
-file_name = 'pollution_us_2000_2016.csv'
+file_name = 'us-droughts.csv'
 
 def to_date(date_str):
     a = date_str.split('-')
@@ -20,12 +20,11 @@ feat_names, data = create_data_set.load_csv(
     #num_rows=40000
     num_rows=100000000000
 )
-y_names = [s + ' Mean' for s in ['NO2', 'O3', 'SO2', 'CO', ]]
+y_names = ['NONE'] + ['D%d' % i for i in range(5)]
 y_inds = []
 for name in y_names:
     y_inds.append(array_functions.find_first_element(feat_names, name))
-to_keep = array_functions.false(data.shape[0])
-date_strs = data[:, find_first_element(feat_names, 'Date Local')]
+date_strs = data[:, find_first_element(feat_names, 'validStart')]
 prev = ''
 date_str_to_idx = dict()
 date_ids = np.zeros(data.shape[0])
@@ -33,22 +32,14 @@ for i, date_str in enumerate(date_strs):
     date_obj = to_date(date_str)
     date_str_to_idx[date_str] = date_obj.toordinal()
     date_ids[i] = date_obj.toordinal()
-    if prev != date_str:
-        to_keep[i] = True
-        prev = date_str
-data = data[to_keep, :]
-date_strs = date_strs[to_keep]
 date_ids = date_ids.astype(np.int)
-date_ids = date_ids[to_keep]
 y = data[:, y_inds].astype(np.float)
 
 #y_sub = y[I, :]
 
 #series_id = data[:, find_first_element(feat_names, 'Site Num')].astype(np.int)
-series_id = data[:, find_first_element(feat_names, 'State')] + '-' + \
-            data[:, find_first_element(feat_names, 'Site Num')] + '-' + \
-            data[:, find_first_element(feat_names, 'City')] + '-' + \
-            data[:, find_first_element(feat_names, 'County')]
+series_id = data[:, find_first_element(feat_names, 'state')] + '-' + \
+            data[:, find_first_element(feat_names, 'county')]
 
 states = data[:, find_first_element(feat_names, 'State')]
 unique_states = np.unique(states)
@@ -57,8 +48,10 @@ min_date_id = date_ids.min()
 max_date_id = date_ids.max()
 num_days = max_date_id-min_date_id+1
 unique_series_ids = np.unique(series_id)
+unique_series_ids = unique_series_ids[:500]
 #times_series_vals = [np.zeros((unique_series_ids.size, num_days)) for i in range(y.shape[1])]
 times_series_vals = -1*np.ones((num_days, unique_series_ids.size, y.shape[1]))
+#times_series_vals = -1*np.ones((num_days, unique_series_ids.size))
 for i, name in enumerate(unique_series_ids):
     I = (series_id==name).nonzero()[0]
     dates_idx = date_ids[I] - min_date_id
@@ -71,9 +64,11 @@ for i, name in enumerate(unique_series_ids):
     for j in I:
         print date_strs[j]
     '''
+    '''
     print 'num_items: ' + str(I.size)
     print 'start: ' + date_strs[I[0]]
     print 'end: ' + date_strs[I[-1]]
+    '''
 
 times_series_vals[times_series_vals < 0] = np.nan
 '''

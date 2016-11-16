@@ -588,7 +588,85 @@ def create_kc_housing():
     s = kc_housing_file
     helper_functions.save_object(s, data)
 
-def create_pollution(labels_to_use=np.arange(2), series_to_use=0, num_instances=None, normalize_x=True):
+def create_time_series(label_to_use=0, series_to_use=0, num_instances=None, normalize_x=False, save_data=True, name='CO2_emissions'):
+    file = name + '/processed_data.pkl'
+    all_data = []
+    for i in series_to_use:
+        y, ids = helper_functions.load_object(file)
+        y_to_use = y[:, i, :]
+        print str(i) + ': ' + ids[i]
+        data = data_class.TimeSeriesData(y_to_use, np.asarray([ids[i]]))
+        data.is_regression = True
+        data.keep_series(label_to_use)
+        data = data.get_min_range()
+        data.smooth_missing()
+        data = data.get_nth(7)
+        data.reset_x()
+        data.x = data.x.astype(np.float)
+        if num_instances is not None:
+            data = data.get_range([0, num_instances])
+        data = data.get_range([1000, 1500])
+        if normalize_x:
+            data.x -= data.x.min()
+            data.x /= data.x.max()
+        data = data.create_data_instance()
+        try:
+            if len(series_to_use) > 1:
+                data.data_set_ids[:] = i
+        except:
+            pass
+        all_data.append(data)
+        # perc_used = data.get_perc_used()
+    data = all_data[0]
+    del all_data[0]
+    for di in all_data:
+        data.combine(di)
+    if num_instances is not None:
+        pass
+        s = name + '-%s-%d' % (str(series_to_use), num_instances)
+    else:
+        s = name + '-%s' % str(series_to_use)
+    if normalize_x:
+        s += '-norm'
+    s += '/raw_data.pkl'
+    # array_functions.plot_2d_sub_multiple_y(data.x, data.y, title=None, sizes=10)
+    array_functions.plot_2d_sub(data.x, data.y, data_set_ids=data.data_set_ids, title=None, sizes=10)
+    if save_data:
+        helper_functions.save_object(s, data)
+
+def create_drought(label_to_use=0, series_to_use=0, num_instances=None, normalize_x=False, save_data=True):
+    file = 'drought/processed_data.pkl'
+    y, ids = helper_functions.load_object(file)
+    y_to_use = y[:, series_to_use, :]
+    print str(series_to_use) + ': ' + ids[series_to_use]
+    data = data_class.TimeSeriesData(y_to_use, np.asarray([ids[series_to_use]]))
+    data.is_regression = True
+    data.keep_series(label_to_use)
+    data = data.get_min_range()
+    data.smooth_missing()
+    data.x = data.x.astype(np.float)
+    if num_instances is not None:
+        data = data.get_range([0, num_instances])
+    if normalize_x:
+        data.x -= data.x.min()
+        data.x /= data.x.max()
+    data = data.create_data_instance()
+    # perc_used = data.get_perc_used()
+    if num_instances is not None:
+        pass
+        s = 'drought-%d-%d' % (series_to_use, num_instances)
+    else:
+        s = 'drought-%d' % series_to_use
+    if normalize_x:
+        s += '-norm'
+    s += '/raw_data.pkl'
+    # array_functions.plot_2d_sub_multiple_y(data.x, data.y, title=None, sizes=10)
+    array_functions.plot_2d_sub(data.x, data.y, data_set_ids=data.data_set_ids, title=None, sizes=10)
+    if save_data:
+        helper_functions.save_object(s, data)
+
+
+def create_pollution(labels_to_use=np.arange(2), series_to_use=0, num_instances=None, normalize_xy=True, save_data=True):
     file = 'pollution/processed_data.pkl'
     y, ids = helper_functions.load_object(file)
     y_to_use = y[:,series_to_use, :]
@@ -599,11 +677,12 @@ def create_pollution(labels_to_use=np.arange(2), series_to_use=0, num_instances=
     data = data.get_min_range()
     data.smooth_missing()
     data.x = data.x.astype(np.float)
-    if normalize_x:
-        data.x -= data.x.min()
-        data.x /= data.x.max()
     if num_instances is not None:
-        data = data.get_range([0, 800])
+        data = data.get_range([0, num_instances])
+    if normalize_xy:
+        data.reset_x()
+        data.normalize_y()
+
     data = data.create_data_instance()
     #perc_used = data.get_perc_used()
     if num_instances is not None:
@@ -611,12 +690,13 @@ def create_pollution(labels_to_use=np.arange(2), series_to_use=0, num_instances=
         s = 'pollution-%d-%d' % (series_to_use, num_instances)
     else:
         s = 'pollution-%d' % series_to_use
-    if normalize_x:
+    if normalize_xy:
         s+= '-norm'
     s += '/raw_data.pkl'
     #array_functions.plot_2d_sub_multiple_y(data.x, data.y, title=None, sizes=10)
     array_functions.plot_2d_sub(data.x, data.y, data_set_ids=data.data_set_ids, title=None, sizes=10)
-    helper_functions.save_object(s, data)
+    if save_data:
+        helper_functions.save_object(s, data)
 
 
 
@@ -636,6 +716,12 @@ if __name__ == "__main__":
     #create_wine()
     #create_drosophila()
     #create_kc_housing()
-    create_pollution(series_to_use=2, num_instances=500)
+    create_pollution(series_to_use=2, num_instances=500, save_data=True)
+    '''
+    for i in range(200):
+        create_pollution(labels_to_use=[0, 1], series_to_use=i, num_instances=500, save_data=False)
+    '''
+    #create_time_series(label_to_use=0, series_to_use=range(8), save_data=False)
+    #create_time_series(label_to_use=0, series_to_use=[0,3], save_data=False)
     from data_sets import create_data_split
     create_data_split.run_main()

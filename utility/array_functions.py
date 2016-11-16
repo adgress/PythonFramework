@@ -477,6 +477,8 @@ def plot_2d_sub(x,y,data_set_ids=None,alpha=1,title=None,sizes=None):
         data_set_ids = np.zeros(y.size)
     u = np.unique(data_set_ids)
     fig.suptitle(title)
+    min_x = x.min()
+    max_x = x.max()
     for index, val in enumerate(u):
         '''
         if index == 0:
@@ -485,12 +487,13 @@ def plot_2d_sub(x,y,data_set_ids=None,alpha=1,title=None,sizes=None):
         else:
             pl.subplot(len(u),1,index+1,sharex=ax1,sharey=ax1)
         '''
-        pl.subplot(len(u), 1, index + 1)
+        ax = pl.subplot(len(u), 1, index + 1)
         #pl.title(title)
         inds = data_set_ids == val
         inds = inds.squeeze()
         pl.ylabel(str(val))
         pl.scatter(x[inds],y[inds],alpha=alpha,c='r',s=sizes,)
+        ax.set_xlim([min_x, max_x])
     move_fig(fig)
     pl.show(block=True)
     pass

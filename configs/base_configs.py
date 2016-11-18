@@ -2,6 +2,7 @@ from loss_functions import loss_function
 from results_class import results as results_lib
 from copy import deepcopy
 from sklearn import grid_search
+import numpy as np
 
 DATA_NG = 1
 DATA_BOSTON_HOUSING = 2
@@ -13,6 +14,7 @@ DATA_WINE_RED = 7
 DATA_DROSOPHILIA = 8
 DATA_KC_HOUSING = 9
 DATA_POLLUTION_2 = 10
+DATA_CLIMATE_MONTH = 11
 
 DATA_PAIR_START = 100
 DATA_PAIR_82_83 = 101
@@ -180,13 +182,33 @@ class ProjectConfigs(Configs):
     def set_data_set(self, data_set):
         assert False
 
-    def set_data_set_defaults(self, data_set_name):
+    def set_data_set_defaults(self, data_set_name, target_labels=None, source_labels=None, is_regression=True):
+        assert is_regression
         self.loss_function = loss_function.MeanSquaredError()
         self.cv_loss_function = loss_function.MeanSquaredError()
         self.data_dir = 'data_sets/' + data_set_name
         self.data_name = data_set_name
         self.results_dir = data_set_name
         self.data_set_file_name = 'split_data.pkl'
+        self.target_labels = target_labels
+        self.source_labels = source_labels
+        if target_labels is not None:
+            self.target_labels = np.asarray(target_labels)
+        if source_labels is not None:
+            self.source_labels = np.asarray(source_labels)
+
+    def set_data_set(self, name, target_labels, source_labels, is_regression):
+        assert is_regression
+        self.loss_function = loss_function.MeanSquaredError()
+        self.cv_loss_function = loss_function.MeanSquaredError()
+
+        self.data_dir = 'data_sets/' + name
+        self.data_name = name
+        self.results_dir = name
+
+        self.data_set_file_name = 'split_data.pkl'
+        self.target_labels = np.asarray(target_labels)
+        self.source_labels = np.asarray(source_labels)
 
 
 

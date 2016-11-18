@@ -387,6 +387,7 @@ class Data(LabeledData):
             self.set_true_y()
         self.feature_names = None
         self.label_names = None
+        self.is_regression = True
 
     @property
     def p(self):
@@ -410,6 +411,25 @@ class Data(LabeledData):
 
     def combine(self, d):
         super(Data, self).combine(d)
+
+    def multilabel_to_multisource(self):
+        x_multilabel = np.zeros((0, self.x.shape[1]))
+        y_multilabel = np.zeros((0))
+        ids = np.zeros((0))
+        for i in range(self.y.shape[1]):
+            yi = self.y[:,i]
+            I = np.isfinite(yi)
+            yi = yi[I]
+            xi =  self.x[I,:]
+            x_multilabel = np.vstack((x_multilabel, xi))
+            y_multilabel = np.hstack((y_multilabel, yi))
+            ids = np.hstack((ids, i*np.ones(yi.size)))
+        self.x = x_multilabel
+        self.y = y_multilabel
+        self.set_target()
+        self.set_true_y()
+        self.set_train()
+        self.data_set_ids = ids
 
 class TimeSeriesData(Data):
     def __init__(self, y, ids):

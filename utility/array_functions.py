@@ -176,12 +176,16 @@ def standardize(x):
     return x
 
 def normalize(x):
-    x_min = x.min()
-    x_max = x.max()
-    delta = x_max-x_min
-    if delta == 0:
-        delta = 1
-    x = (x - x_min).astype('float') / delta
+    x = x.copy()
+    I = ~np.isfinite(x)
+    if (~I).size > 0:
+        x_min = x[~I].min()
+        x_max = x[~I].max()
+        delta = x_max-x_min
+        if delta == 0:
+            delta = 1
+        x = (x - x_min).astype('float') / delta
+    x[I] = 0
     return x
 
 def vec_to_2d(x):
@@ -445,6 +449,35 @@ def plot_line_sub(x_list, y_list, title=None, y_axes = None,fig=None,show=True):
     if show:
         move_fig(fig)
         pl.show(block=True)
+
+def plot_heatmap(x, y_mat, alpha=1,title=None,sizes=None,share_axis=False):
+    if sizes is None:
+        sizes = 60
+    if y_mat.ndim == 1:
+        y_mat = np.expand_dims(y_mat, 1)
+    pl.close()
+    fig = pl.figure(4)
+    fig.suptitle(title)
+    for index, y in enumerate(y_mat.T):
+        if index == 0:
+            ax1 = pl.subplot(y_mat.shape[1], 1, index + 1)
+        else:
+            if share_axis:
+                pl.subplot(y_mat.shape[1], 1, index + 1, sharex=ax1, sharey=ax1)
+            else:
+                pl.subplot(y_mat.shape[1], 1, index + 1)
+        red_values = normalize(y)
+        I = np.isfinite(y) & np.isfinite(x[:,0]) & np.isfinite(x[:,1])
+        colors = np.zeros((red_values.size, 3))
+        colors[:,0] = red_values
+        pl.ylabel(str(index))
+        if I.mean > 0:
+            print 'Percent skipped due to nans: ' + str(1-I.mean())
+        pl.scatter(x[I,0], x[I,1], alpha=alpha, c=colors[I,:], s=sizes)
+    move_fig(fig, 1000, 1000)
+    pl.show(block=True)
+    pass
+
 
 def plot_2d_sub_multiple_y(x,y_mat,alpha=1,title=None,sizes=None,share_axis=False):
     if sizes is None:

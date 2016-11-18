@@ -698,7 +698,18 @@ def create_pollution(labels_to_use=np.arange(2), series_to_use=0, num_instances=
     if save_data:
         helper_functions.save_object(s, data)
 
-
+def create_climate(dir='climate-month'):
+    file = dir + '/processed_data.pkl'
+    locs, y, ids = helper_functions.load_object(file)
+    y = y.T
+    is_missing_loc = (~np.isfinite(locs)).any(1)
+    locs = locs[~is_missing_loc]
+    y = y[~is_missing_loc,:]
+    ids = ids[is_missing_loc]
+    data = data_class.Data(locs, y)
+    data.multilabel_to_multisource()
+    s = dir + '/raw_data.pkl'
+    helper_functions.save_object(s, data)
 
 if __name__ == "__main__":
     #create_boston_housing()
@@ -716,7 +727,8 @@ if __name__ == "__main__":
     #create_wine()
     #create_drosophila()
     #create_kc_housing()
-    create_pollution(series_to_use=2, num_instances=500, save_data=True)
+    #create_pollution(series_to_use=2, num_instances=500, save_data=True)
+    create_climate()
     '''
     for i in range(200):
         create_pollution(labels_to_use=[0, 1], series_to_use=i, num_instances=500, save_data=False)

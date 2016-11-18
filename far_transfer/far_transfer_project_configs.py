@@ -45,7 +45,8 @@ data_set_to_use = None
 #data_set_to_use = bc.DATA_WINE
 #data_set_to_use = bc.DATA_BIKE_SHARING
 
-data_set_to_use = bc.DATA_POLLUTION_2
+#data_set_to_use = bc.DATA_POLLUTION_2
+data_set_to_use = bc.DATA_CLIMATE_MONTH
 
 #data_set_to_use = bc.DATA_SYNTHETIC_CURVE
 #data_set_to_use = bc.DATA_SYNTHETIC_SLANT
@@ -62,8 +63,8 @@ show_legend_on_all = False
 arguments = None
 use_validation = True
 
-run_batch_graph = True
-run_batch_graph_nw = True
+run_batch_graph = False
+run_batch_graph_nw = False
 run_batch_baseline = True
 run_batch_datasets = False
 
@@ -181,6 +182,9 @@ class ProjectConfigs(bc.ProjectConfigs):
         elif data_set == bc.DATA_POLLUTION_2:
             self.set_pollution(2, 500)
             self.num_labels = np.asarray([20, 40, 80, 160])
+        elif data_set == bc.DATA_CLIMATE_MONTH:
+            self.set_data_set_defaults('climate-month', source_labels=[0], target_labels=[4], is_regression=True)
+            self.num_labels = np.asarray([20, 40, 80, 160])
         else:
             assert False
         assert self.source_labels.size > 0
@@ -205,6 +209,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.data_set_file_name = 'split_data.pkl'
         self.target_labels = np.asarray([0])
         self.source_labels = np.asarray([1])
+
 
     def set_boston_housing_transfer(self):
         self.loss_function = loss_function.MeanSquaredError()

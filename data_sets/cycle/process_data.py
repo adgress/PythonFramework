@@ -4,11 +4,12 @@ from utility import array_functions
 from utility import helper_functions
 from utility.array_functions import find_first_element
 import datetime
-file_name = 'us-droughts.csv'
+file_name = 'trip.csv'
 
 def to_date(date_str):
-    a = date_str.split('-')
-    year, month, day = [int(s) for s in a]
+    a = date_str.split(' ')[0]
+    a = a.split('/')
+    month, day, year = [int(s) for s in a]
     d = datetime.date(year, month, day)
     return d
 
@@ -17,14 +18,13 @@ feat_names, data = create_data_set.load_csv(
     True,
     dtype='str',
     delim=',',
-    #num_rows=40000
-    num_rows=100000000000
+    num_rows=1000000000
 )
-y_names = ['NONE'] + ['D%d' % i for i in range(5)]
+y_names = ['tripduration']
 y_inds = []
 for name in y_names:
     y_inds.append(array_functions.find_first_element(feat_names, name))
-date_strs = data[:, find_first_element(feat_names, 'validStart')]
+date_strs = data[:, find_first_element(feat_names, 'starttime')]
 prev = ''
 date_str_to_idx = dict()
 date_ids = np.zeros(data.shape[0])
@@ -38,28 +38,31 @@ y = data[:, y_inds].astype(np.float)
 #y_sub = y[I, :]
 
 #series_id = data[:, find_first_element(feat_names, 'Site Num')].astype(np.int)
-series_id = data[:, find_first_element(feat_names, 'state')] + '-' + \
-            data[:, find_first_element(feat_names, 'county')]
-
-states = data[:, find_first_element(feat_names, 'state')]
-unique_states = np.unique(states)
+a1 = data[:, find_first_element(feat_names, 'from_station_id')].astype(np.str)
+a2 = data[:, find_first_element(feat_names, 'to_station_id')].astype(np.str)
+#series_id = np.asarray([a + '-' + b for a,b in zip(a1,a2)])
+series_id = a1
 
 min_date_id = date_ids.min()
 max_date_id = date_ids.max()
 num_days = max_date_id-min_date_id+1
 unique_series_ids = np.unique(series_id)
-unique_series_ids = unique_series_ids[:500]
 #times_series_vals = [np.zeros((unique_series_ids.size, num_days)) for i in range(y.shape[1])]
-times_series_vals = -1*np.ones((num_days, unique_series_ids.size, y.shape[1]))
+times_series_vals = -1*np.ones((num_days, unique_series_ids.size))
 #times_series_vals = -1*np.ones((num_days, unique_series_ids.size))
 for i, name in enumerate(unique_series_ids):
     I = (series_id==name).nonzero()[0]
     dates_idx = date_ids[I] - min_date_id
-    unique_dates = np.unique(dates_idx)
+    unique_dates, counts = np.unique(dates_idx, return_counts=True)
     if dates_idx.size != unique_dates.size:
         print 'repeats: ' + str(dates_idx.size) + ', ' + str(unique_dates.size)
-    times_series_vals[dates_idx, i, :] = y[I, :]
+    #times_series_vals[dates_idx, i, :] = y[I, :]
+    times_series_vals[unique_dates, i] = counts
+    '''
+    for d in unique_dates:
+        times_series_vals[d,i] = y[I[dates_idx == d]].mean()
     pass
+    '''
     '''
     for j in I:
         print date_strs[j]
@@ -72,14 +75,10 @@ for i, name in enumerate(unique_series_ids):
 
 times_series_vals[times_series_vals < 0] = np.nan
 
-for state in unique_states:
-#for state in unique_series_ids:
-    is_in_state = np.asarray([s.find(state) == 0 for s in unique_series_ids])
-    is_in_state = is_in_state.nonzero()[0]
-    if is_in_state.size > 8:
-        is_in_state = is_in_state[:8]
+for i in range(0,400, 10):
+    is_in_state = np.arange(i,i+10)
     #y_val = times_series_vals[is_in_state, :800, 1].T
-    y_val = times_series_vals[:,is_in_state[:], 2]
+    y_val = times_series_vals[:,is_in_state[:]]
     x_val = range(y_val.shape[0])
     #print unique_series_ids[to_use]
     for i, s in enumerate(unique_series_ids[is_in_state]):

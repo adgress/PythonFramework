@@ -396,7 +396,7 @@ class Data(LabeledData):
     def labeled_training_data(self):
         I = self.is_train & self.is_labeled
         weights = None
-        if self.instance_weights is not None:
+        if hasattr(self, 'instance_weights') and self.instance_weights is not None:
             weights = self.instance_weights[I]
         return data_subset(x=self.x[I,:],y=self.y[I],instance_weights=weights)
 

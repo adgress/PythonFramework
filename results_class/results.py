@@ -180,7 +180,7 @@ class Output(data_lib.LabeledVector):
             self.is_train = data.is_train
             self.true_y = data.true_y
             self.type = data.type
-            self.fu = np.zeros(data.y.shape)
+            self.fu = np.zeros(data.x.shape[0])
         else:
             self.y = np.empty(0)
             self.is_train = np.empty(0)

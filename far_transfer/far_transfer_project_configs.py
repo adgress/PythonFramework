@@ -81,16 +81,18 @@ if run_batch_datasets:
         bc.DATA_WINE,
         bc.DATA_BIKE_SHARING,
         bc.DATA_BOSTON_HOUSING,
-        bc.DATA_POLLUTION_2
+        bc.DATA_POLLUTION_2,
+        bc.DATA_CLIMATE_MONTH
     ]
 
 FT_METHOD_GRAPH = 0
 FT_METHOD_GRAPH_NW = 1
 FT_METHOD_STACKING = 2
 FT_METHOD_LOCAL = 3
+FT_METHOD_LOCAL_NONPARAMETRIC = 4
 
 other_method_configs = {
-    'ft_method': FT_METHOD_GRAPH
+    'ft_method': FT_METHOD_LOCAL_NONPARAMETRIC
 }
 
 def apply_arguments(configs):
@@ -417,6 +419,11 @@ class MainConfigs(bc.MainConfigs):
         method_configs.constant_b = False
         method_configs.linear_b = True
         method_configs.clip_b = True
+        if pc.ft_method == FT_METHOD_LOCAL_NONPARAMETRIC:
+            method_configs.linear_b = False
+            method_configs.clip_b = False
+            method_configs.use_radius = True
+
 
         dt_local_transfer = methods.local_transfer_methods.LocalTransferDelta(method_configs)
         if pc.ft_method == FT_METHOD_GRAPH:
@@ -425,7 +432,7 @@ class MainConfigs(bc.MainConfigs):
             self.learner = graph_transfer_nw
         elif pc.ft_method == FT_METHOD_STACKING:
             self.learner = stacked_transfer
-        elif pc.ft_method == FT_METHOD_LOCAL:
+        elif pc.ft_method in {FT_METHOD_LOCAL,FT_METHOD_LOCAL_NONPARAMETRIC}:
             self.learner = dt_local_transfer
         else:
             assert False, 'Unknown ft_method'
@@ -513,6 +520,9 @@ class BatchConfigs(bc.BatchConfigs):
                 m = MainConfigs(pc2)
                 self.config_list.append(m)
                 pc2.ft_method = FT_METHOD_LOCAL
+                m = MainConfigs(pc2)
+                self.config_list.append(m)
+                pc2.ft_method = FT_METHOD_LOCAL_NONPARAMETRIC
                 m = MainConfigs(pc2)
                 self.config_list.append(m)
 

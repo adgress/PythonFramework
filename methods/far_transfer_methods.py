@@ -151,7 +151,12 @@ class GraphTransferNW(GraphTransfer):
         S = array_functions.make_smoothing_matrix(W)
 
         A = np.eye(y_pred_source.size) + self.C*L
-        f = np.linalg.lstsq(A, S.dot(self.y))[0]
+        try:
+            f = np.linalg.lstsq(A, S.dot(self.y))[0]
+        except:
+            print 'GraphTransferNW:predict failed, returning mean'
+            f = self.y.mean() * np.ones(data.true_y.shape)
+
         o = results.Output(data)
         o.y = f
         o.fu = f

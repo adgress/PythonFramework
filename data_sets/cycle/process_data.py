@@ -4,7 +4,10 @@ from utility import array_functions
 from utility import helper_functions
 from utility.array_functions import find_first_element
 import datetime
+import math
+
 file_name = 'trip.csv'
+station_file_name = 'station.csv'
 
 def to_date(date_str):
     a = date_str.split(' ')[0]
@@ -12,6 +15,20 @@ def to_date(date_str):
     month, day, year = [int(s) for s in a]
     d = datetime.date(year, month, day)
     return d
+
+def create_stations(file):
+    feat_names, data = create_data_set.load_csv(
+        file,
+        True,
+        dtype='str',
+        delim=',',
+        num_rows=1000000000
+    )
+    names = data[:, array_functions.find_first_element(feat_names, 'station_id')]
+    locs = data[:, array_functions.find_set(feat_names, ['long', 'lat'])]
+    return names, locs.astype(np.float)
+
+station_names, station_locs = create_stations(station_file_name)
 
 feat_names, data = create_data_set.load_csv(
     file_name,
@@ -21,11 +38,8 @@ feat_names, data = create_data_set.load_csv(
     num_rows=1000000000
 )
 y_names = ['tripduration']
-y_inds = []
-for name in y_names:
-    y_inds.append(array_functions.find_first_element(feat_names, name))
+y_inds = array_functions.find_set(feat_names, y_names).nonzero()[0]
 date_strs = data[:, find_first_element(feat_names, 'starttime')]
-prev = ''
 date_str_to_idx = dict()
 date_ids = np.zeros(data.shape[0])
 for i, date_str in enumerate(date_strs):
@@ -48,7 +62,7 @@ max_date_id = date_ids.max()
 num_days = max_date_id-min_date_id+1
 unique_series_ids = np.unique(series_id)
 #times_series_vals = [np.zeros((unique_series_ids.size, num_days)) for i in range(y.shape[1])]
-times_series_vals = -1*np.ones((num_days, unique_series_ids.size))
+times_series_vals = 0*np.ones((num_days, unique_series_ids.size))
 #times_series_vals = -1*np.ones((num_days, unique_series_ids.size))
 for i, name in enumerate(unique_series_ids):
     I = (series_id==name).nonzero()[0]
@@ -56,8 +70,11 @@ for i, name in enumerate(unique_series_ids):
     unique_dates, counts = np.unique(dates_idx, return_counts=True)
     if dates_idx.size != unique_dates.size:
         print 'repeats: ' + str(dates_idx.size) + ', ' + str(unique_dates.size)
-    #times_series_vals[dates_idx, i, :] = y[I, :]
-    times_series_vals[unique_dates, i] = counts
+    #times_series_vals[dates_idx, i, :] = y[I, :]    ]
+    for d in unique_dates:
+        is_date = dates_idx == d
+        times_series_vals[d, i] = math.log(y[I[is_date]].sum())
+    #times_series_vals[unique_dates, i] = counts
     '''
     for d in unique_dates:
         times_series_vals[d,i] = y[I[dates_idx == d]].mean()
@@ -73,17 +90,16 @@ for i, name in enumerate(unique_series_ids):
     print 'end: ' + date_strs[I[-1]]
     '''
 
-times_series_vals[times_series_vals < 0] = np.nan
-
-for i in range(0,400, 10):
-    is_in_state = np.arange(i,i+10)
-    #y_val = times_series_vals[is_in_state, :800, 1].T
-    y_val = times_series_vals[:,is_in_state[:]]
-    x_val = range(y_val.shape[0])
-    #print unique_series_ids[to_use]
-    for i, s in enumerate(unique_series_ids[is_in_state]):
-        print str(i) + ': ' + s
-    array_functions.plot_2d_sub_multiple_y(np.asarray(x_val), y_val, title=None, sizes=10)
+has_loc = array_functions.false(unique_series_ids.size)
+for i, id in enumerate(unique_series_ids):
+    has_loc[i] = id in station_names
+times_series_vals = times_series_vals[:, has_loc]
+unique_series_ids = unique_series_ids[has_loc]
+date_idx = 0
+for i in range(0,num_days, 5):
+    x = station_locs
+    y = times_series_vals[i:120:28,:]
+    array_functions.plot_heatmap(x, y.T, title=None, sizes=30)
 
 
 data = (times_series_vals,unique_series_ids)

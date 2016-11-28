@@ -18,6 +18,7 @@ from viz_data import viz_features
 from PyMTL_master.src.PyMTL import data as PyMTL_data
 from copy import deepcopy
 from create_synthetic_data import *
+import itertools
 
 ng_a = np.asarray(0)
 ng_c = np.asarray(range(1,6))
@@ -75,6 +76,106 @@ def create_and_save_data(x,y,domain_ids,file):
     data.is_regression = True
     data.data_set_ids = domain_ids
     helper_functions.save_object(file,data)
+
+import datetime
+from utility import array_functions
+from utility.array_functions import find_first_element
+
+def to_date(date_str):
+    a = date_str.split(' ')[0]
+    a = a.split('/')
+    month, day, year = [int(s) for s in a]
+    d = datetime.date(year, month, day)
+    return d
+
+def quantize_loc(locs, num_bins):
+    bins = np.linspace(locs.min(), locs.max(), num_bins)
+    idx = np.digitize(locs, bins)
+    idx -= 1
+    return idx
+
+
+def bin_to_idx(bin_loc, resolution):
+    return np.ravel_multi_index((bin_loc[0], bin_loc[1]), resolution)
+
+def load_trip_data(file_names, y_names, time_name, loc_names, resolution=np.asarray([20,20]), plot_data=True):
+    resolution = np.asarray(resolution)
+    feat_names = None
+    data = None
+    for file_name in file_names:
+        curr_feat_names, curr_data = load_csv(
+            file_name,
+            True,
+            dtype='str',
+            delim=',',
+            num_rows=1000000000
+        )
+        if feat_names is None:
+            feat_names = curr_feat_names
+            data = curr_data
+            continue
+        assert (feat_names == curr_feat_names).all()
+        data = np.vstack((data, curr_data))
+    locs = data[:, array_functions.find_set(feat_names, loc_names)]
+    y_inds = None
+    if y_names is not None:
+        y_inds = array_functions.find_set(feat_names, y_names).nonzero()[0]
+        y = data[:, y_inds].astype(np.float)
+    else:
+        y = np.ones(data.shape[0])
+    date_strs = data[:, find_first_element(feat_names, time_name)]
+    date_str_to_idx = dict()
+    date_ids = np.zeros(data.shape[0])
+    for i, date_str in enumerate(date_strs):
+        date_obj = to_date(date_str)
+        date_str_to_idx[date_str] = date_obj.toordinal()
+        date_ids[i] = date_obj.toordinal()
+    date_ids = date_ids.astype(np.int)
+
+
+
+    min_date_id = date_ids.min()
+    max_date_id = date_ids.max()
+    num_days = max_date_id - min_date_id + 1
+    dates_idx = date_ids - min_date_id
+    num_locations = np.prod(resolution)
+    trip_counts = 0 * np.ones((num_days, num_locations))
+    locs = locs.astype(np.float)
+    p_min = .1
+    p_max = .9
+    is_in_range = array_functions.is_in_percentile(locs[:, 0], p_min, p_max) & array_functions.is_in_percentile(locs[:, 1], p_min, p_max)
+    locs = locs[is_in_range, :]
+    dates_idx = dates_idx[is_in_range]
+    x_bins = quantize_loc(locs[:, 0], resolution[0])
+    y_bins = quantize_loc(locs[:, 1], resolution[1])
+    #array_functions.plot_2d(locs[I,0],locs[I,1])
+    xy_bins = list(itertools.product(range(resolution[0]), range(resolution[1])))
+    for x_idx,y_idx in xy_bins:
+        is_in_cell = (x_bins == x_idx) & (y_bins == y_idx)
+        trips_in_cell = dates_idx[is_in_cell]
+        trip_dates, trips_per_date = np.unique(trips_in_cell, return_counts=True)
+        bin_idx = bin_to_idx([x_idx, y_idx], resolution)
+        trip_counts[trip_dates, bin_idx] = trips_per_date
+    #y = trip_counts[[0, 3], :].T
+    tuesday_saturday_idx = np.asarray([0, 4])
+    first_tuesday_idx = np.asarray([0, 154])
+
+    #y = trip_counts[first_tuesday_idx + 0, :].T
+    '''
+    y1 = trip_counts[:30,:].sum(0)
+    y2 = trip_counts[154:, :].sum(0)
+    '''
+    y1 = trip_counts[:30:7, :].mean(0)
+    y2 = trip_counts[3:30:7, :].mean(0)
+    y = np.stack((y1,y2), 1)
+
+    #y[y > 100] = 0
+    #y[y > 5000] = 0
+    #y[y == y.max()] == 0
+    #y = np.log(y)
+    if plot_data:
+        array_functions.plot_heatmap(np.asarray(xy_bins), y, sizes=50)
+    return locs, y, np.asarray([str(xy) for xy in xy_bins])
 
 import csv
 def load_csv(file, has_field_names=True, dtype='float', delim=',',converters=None,
@@ -698,10 +799,10 @@ def create_pollution(labels_to_use=np.arange(2), series_to_use=0, num_instances=
     if save_data:
         helper_functions.save_object(s, data)
 
-def create_climate(dir='climate-month'):
+def create_spatial_data(dir='climate-month'):
     file = dir + '/processed_data.pkl'
     locs, y, ids = helper_functions.load_object(file)
-    y = y.T
+    #y = y.T
     is_missing_loc = (~np.isfinite(locs)).any(1)
     locs = locs[~is_missing_loc]
     y = y[~is_missing_loc,:]
@@ -728,7 +829,8 @@ if __name__ == "__main__":
     #create_drosophila()
     #create_kc_housing()
     #create_pollution(series_to_use=2, num_instances=500, save_data=True)
-    create_climate()
+    #create_spatial_data()
+    create_spatial_data('uber')
     '''
     for i in range(200):
         create_pollution(labels_to_use=[0, 1], series_to_use=i, num_instances=500, save_data=False)

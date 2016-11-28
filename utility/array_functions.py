@@ -18,6 +18,18 @@ import warnings
 import random
 import re
 from sklearn.feature_selection import SelectKBest, f_regression
+import math
+
+def is_in_percentile(v, p_min, p_max):
+    assert np.squeeze(v).ndim == 1
+    I = np.argsort(v)
+    #v_sorted = v[I]
+    i_min = int(math.floor(p_min*v.size))
+    i_max = int(math.ceil(p_max*v.size))
+    is_in_range = false(v.size)
+    is_in_range[I[i_min:i_max]] = True
+    return is_in_range
+
 
 def find_closest(x, val):
     vals = np.zeros(2)

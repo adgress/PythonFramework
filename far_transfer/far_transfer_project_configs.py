@@ -500,6 +500,7 @@ class BatchConfigs(bc.BatchConfigs):
         for d in all_data_sets:
             if run_batch_graph:
                 m = MainConfigs(ProjectConfigs(d))
+                m.ft_method = FT_METHOD_GRAPH
                 m.learner.just_transfer = False
                 m.learner.just_target = False
                 self.config_list.append(m)

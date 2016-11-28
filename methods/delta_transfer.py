@@ -107,13 +107,14 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
             self.g_min = g_pred.min()
             self.g_max = g_pred.max()
             return
-        labeled_train_data = data.get_subset(labeled_inds)
-        assert labeled_train_data.y.shape == g_value.shape
-        labeled_train_data.is_regression = True
-        labeled_train_data.y = g_value
-        labeled_train_data.true_y = g_value
+        #labeled_train_data = data.get_subset(labeled_inds)
+        training_data = data.get_subset(data.is_train)
+        assert training_data.y.shape == g_value.shape
+        training_data.is_regression = True
+        training_data.y = g_value
+        training_data.true_y = g_value
 
-        self.g_nw.train_and_test(labeled_train_data)
+        self.g_nw.train_and_test(training_data)
 
     def combine_predictions(self,x,y_source,y_target):
         data = data_lib.Data()

@@ -93,7 +93,7 @@ FT_METHOD_LOCAL = 3
 FT_METHOD_LOCAL_NONPARAMETRIC = 4
 
 other_method_configs = {
-    'ft_method': FT_METHOD_LOCAL
+    'ft_method': FT_METHOD_LOCAL,
     'predict_sample': 100
 }
 

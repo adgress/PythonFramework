@@ -117,7 +117,11 @@ class GraphTransferNW(GraphTransfer):
         configs = deepcopy(configs)
         self.source_learner = method.NadarayaWatsonMethod(deepcopy(configs))
         self.transform = StandardScaler()
+        self.predict_sample = None
         self.use_validation = getattr(configs, 'use_validation', False)
+        self.nw_learner = method.NadarayaWatsonMethod(deepcopy(configs))
+        self.source_learner.configs.use_validation = False
+        self.nw_learner.configs.use_validation = False
 
     def train_and_test(self, data):
         is_source = data.data_set_ids == self.configs.source_labels[0]
@@ -145,12 +149,14 @@ class GraphTransferNW(GraphTransfer):
     def predict(self, data):
         # d = data_lib.Data(np.expand_dims(data.source_y_pred, 1), data.y)
         y_pred_source = data.source_y_pred
-
-        L = array_functions.make_laplacian(y_pred_source, self.sigma_tr)
-        W = array_functions.make_rbf(self.transform.transform(self.x), self.sigma_nw, x2=self.transform.transform(data.x)).T
+        I = np.arange(y_pred_source.size)
+        if self.predict_sample is not None and self.predict_sample < y_pred_source.size:
+            I = np.random.choice(y_pred_source.size, self.predict_sample, replace=False)
+        L = array_functions.make_laplacian(y_pred_source[I], self.sigma_tr)
+        W = array_functions.make_rbf(self.transform.transform(self.x), self.sigma_nw, x2=self.transform.transform(data.x[I,:])).T
         S = array_functions.make_smoothing_matrix(W)
 
-        A = np.eye(y_pred_source.size) + self.C*L
+        A = np.eye(I.size) + self.C*L
         try:
             f = np.linalg.lstsq(A, S.dot(self.y))[0]
         except:
@@ -158,16 +164,23 @@ class GraphTransferNW(GraphTransfer):
             f = self.y.mean() * np.ones(data.true_y.shape)
 
         o = results.Output(data)
-        o.y = f
-        o.fu = f
+        if self.predict_sample is not None:
+            nw_data = data_lib.Data(data.x[I,:], f)
+            self.nw_learner.train_and_test(nw_data)
+            nw_output = self.nw_learner.predict(data)
+            o.y = nw_output.y
+            o.fu = nw_output.y
+        else:
+            o.y = f
+            o.fu = f
+
         return o
-        #transfer_pred.y = (1 - alpha) * transfer_pred.y + alpha * target_pred.y
-        #transfer_pred.fu = (1 - alpha) * transfer_pred.fu + alpha * target_pred.fu
-        #return transfer_pred
 
     @property
     def prefix(self):
         s = 'GraphTransferNW'
+        if getattr(self, 'predict_sample', None) is not None:
+            s += '-sample=' + str(self.predict_sample)
         if getattr(self, 'use_validation', False):
             s += '-VAL'
         return s

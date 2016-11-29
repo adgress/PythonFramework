@@ -94,6 +94,7 @@ FT_METHOD_LOCAL_NONPARAMETRIC = 4
 
 other_method_configs = {
     'ft_method': FT_METHOD_LOCAL
+    'predict_sample': 100
 }
 
 def apply_arguments(configs):
@@ -408,6 +409,7 @@ class MainConfigs(bc.MainConfigs):
         ssl_regression.preprocessor = preprocessing.TargetOnlyPreprocessor()
 
         graph_transfer_nw = far_transfer_methods.GraphTransferNW(method_configs)
+        graph_transfer_nw.predict_sample = pc.predict_sample
         #self.learner = target_nw
         offset_transfer = methods.local_transfer_methods.OffsetTransfer(method_configs)
         stacked_transfer = methods.transfer_methods.StackingTransfer(method_configs)

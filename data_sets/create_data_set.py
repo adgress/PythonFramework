@@ -175,7 +175,7 @@ def load_trip_data(file_names, y_names, time_name, loc_names, resolution=np.asar
     #y = np.log(y)
     if plot_data:
         array_functions.plot_heatmap(np.asarray(xy_bins), y, sizes=50)
-    return locs, y, np.asarray([str(xy) for xy in xy_bins])
+    return np.asarray(xy_bins, dtype=np.float), y, np.asarray([str(xy) for xy in xy_bins])
 
 import csv
 def load_csv(file, has_field_names=True, dtype='float', delim=',',converters=None,
@@ -804,7 +804,7 @@ def create_spatial_data(dir='climate-month'):
     locs, y, ids = helper_functions.load_object(file)
     #y = y.T
     is_missing_loc = (~np.isfinite(locs)).any(1)
-    locs = locs[~is_missing_loc]
+    locs = locs[~is_missing_loc,:]
     y = y[~is_missing_loc,:]
     ids = ids[is_missing_loc]
     data = data_class.Data(locs, y)

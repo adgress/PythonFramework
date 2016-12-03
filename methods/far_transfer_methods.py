@@ -116,12 +116,17 @@ class GraphTransferNW(GraphTransfer):
         self.sigma_tr = None
         configs = deepcopy(configs)
         self.source_learner = method.NadarayaWatsonMethod(deepcopy(configs))
+        self.source_learner.configs.source_labels = None
+        self.source_learner.configs.target_labels = None
         self.transform = StandardScaler()
         self.predict_sample = None
         self.use_validation = getattr(configs, 'use_validation', False)
         self.nw_learner = method.NadarayaWatsonMethod(deepcopy(configs))
+        self.nw_learner.configs.source_labels = None
+        self.nw_learner.configs.target_labels = None
         self.source_learner.configs.use_validation = False
         self.nw_learner.configs.use_validation = False
+        self.sampled_inds = None
 
     def train_and_test(self, data):
         is_source = data.data_set_ids == self.configs.source_labels[0]

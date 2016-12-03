@@ -218,6 +218,7 @@ class Method(Saveable):
         else:
             train_data = data.get_subset(data.is_train)
             splits = self._create_cv_splits(train_data)
+        assert splits[0].is_train.mean() < 1, 'No test data in CV splits!'
         data_and_splits = data_lib.SplitData(train_data,splits)
         param_grid = list(grid_search.ParameterGrid(self.cv_params))
         if not self.cv_params:

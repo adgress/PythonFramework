@@ -128,8 +128,8 @@ class Method(Saveable):
     def can_use_instance_weights(self):
         return False
 
-    def create_cv_params(self, i_low, i_high, append_zero=False, prepend_inf=False):
-        a = 10**np.asarray(list(reversed(range(i_low,i_high))),dtype='float64')
+    def create_cv_params(self, i_low, i_high, step=1, append_zero=False, prepend_inf=False):
+        a = 10**np.asarray(list(reversed(range(i_low,i_high, step))),dtype='float64')
         if append_zero:
             a = np.append(a, 0)
         if prepend_inf:

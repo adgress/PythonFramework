@@ -64,9 +64,9 @@ show_legend_on_all = False
 arguments = None
 use_validation = True
 
-run_batch_graph = True
+run_batch_graph = False
 run_batch_graph_nw = True
-run_batch_baseline = True
+run_batch_baseline = False
 run_batch_datasets = False
 
 all_data_sets = [data_set_to_use]
@@ -84,6 +84,20 @@ if run_batch_datasets:
         bc.DATA_BOSTON_HOUSING,
         bc.DATA_POLLUTION_2,
         bc.DATA_CLIMATE_MONTH
+    ]
+    '''
+    all_data_sets = [
+        bc.DATA_SYNTHETIC_FLIP,
+        bc.DATA_CLIMATE_MONTH
+    ]
+    '''
+    all_data_sets = [
+        bc.DATA_SYNTHETIC_CROSS,
+        bc.DATA_SYNTHETIC_SLANT,
+        bc.DATA_SYNTHETIC_CURVE,
+        bc.DATA_BIKE_SHARING,
+        bc.DATA_BOSTON_HOUSING,
+        bc.DATA_POLLUTION_2,
     ]
 
 FT_METHOD_GRAPH = 0
@@ -474,10 +488,13 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             setattr(self, key, value)
         self.files = OrderedDict()
         self.files['TargetTransfer+NW.pkl'] = 'Target Only'
-        self.files['GraphTransfer.pkl'] = 'Graph Transfer'
-        self.files['GraphTransfer_tr.pkl'] = 'Graph Transfer: Just transfer'
-        self.files['GraphTransfer_ta.pkl'] = 'Graph Transfer: Just target'
+        #self.files['GraphTransfer.pkl'] = 'Graph Transfer'
+        #self.files['GraphTransfer_tr.pkl'] = 'Graph Transfer: Just transfer'
+        #self.files['GraphTransfer_ta.pkl'] = 'Graph Transfer: Just target'
         self.files['GraphTransferNW.pkl'] = 'Graph Transfer NW'
+        self.files['GraphTransferNW-sample=1600.pkl'] = 'Graph Transfer NW sample 1600'
+        self.files['GraphTransferNW-sample=300.pkl'] = 'Graph Transfer NW sample 300'
+        self.files['GraphTransferNW-sample=150.pkl'] = 'Graph Transfer NW sample 150'
         self.files['StackTransfer+SKL-RidgeReg.pkl'] = 'Stacked'
         self.files['LocalTransferDelta_radius_l2_lap-reg.pkl'] = 'Local Transfer: Nonparametric'
         if use_validation:

@@ -41,19 +41,19 @@ def get_zipcode_wages():
     '''
 
     mean_income = agi / num_returns
-    d = dict(zip(zipcode, mean_income))
+    I = num_returns > 50
+    d = dict(zip(zipcode[I], mean_income[I]))
     return d
 
 def get_zipcode_housing():
     housing_fields, housing_data = create_data_set.load_csv(file_name_house_size, dtype='string', return_data_frame=True)
     zipcodes = housing_data.ZIP.values.astype(np.float)
     totals = housing_data.Total.values.astype(np.float)
-    I = totals > 100
     households = housing_data.values[:,4:].astype(np.float)
     weight_vec = np.arange(1,8)
     sums = households.dot(weight_vec)
     mean_househoulds = sums / totals
-    I = np.isfinite(mean_househoulds)
+    I = np.isfinite(mean_househoulds) & (totals > 100)
     d = dict(zip(zipcodes[I], mean_househoulds[I]))
     return d
 
@@ -87,14 +87,15 @@ locs[:,1] = array_functions.normalize(locs[:,1])
 #array_functions.plot_heatmap(locs, 10*income_array, sizes=50)
 #array_functions.plot_heatmap(locs, households, sizes=50)
 y = np.stack((income_array, households), 1)
+print 'Num Used: ' + str(y.shape[0])
 array_functions.plot_heatmap(
     locs,
     y,
     sizes=100,
     share_axis=True
 )
-
-data = (locs, y, zipcode_array)
+I = np.random.choice(y.shape[0], 400, replace=False)
+data = (locs[I,:], y[I], zipcode_array[I])
 helper_functions.save_object('processed_data.pkl', data)
 
 pass

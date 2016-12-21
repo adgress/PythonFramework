@@ -262,7 +262,8 @@ def make_laplacian_with_W(W):
     L = scipy.sparse.csc_matrix(L)
     return L
 
-def make_laplacian_kNN(x,k,metric):
+def make_laplacian_kNN(x,k,metric='euclidean'):
+    '''
     dists = pairwise.pairwise_distances(x,x,metric)
     dists[np.diag(true(x.shape[0]))] = np.inf
     inds = dists.argsort()
@@ -276,6 +277,12 @@ def make_laplacian_kNN(x,k,metric):
     #Make symmetric for quad_form
     #W = .5*(W + W.T)
     L = make_laplacian_with_W(W)
+    return L
+    '''
+    # assert False, 'Normalize by 1/sigma?'
+    W = make_knn(x, k, metric)
+    D = W.sum(1)
+    L = np.diag(D) - W
     return L
 
 def make_laplacian_uniform(x,radius,metric):
@@ -295,6 +302,43 @@ def make_laplacian(x, sigma, metric='euclidean'):
     D = W.sum(1)
     L = np.diag(D) - W
     return L
+
+def make_knn(x, k, metric='euclidean', x2=None):
+    if x.ndim == 1:
+        x = np.expand_dims(x, 1)
+    if x2 is None:
+        x2 = x
+    if metric == 'cosine':
+        #This code may be faster for some matrices
+        # Code from http://stackoverflow.com/questions/17627219/whats-the-fastest-way-in-python-to-calculate-cosine-similarity-given-sparse-mat
+        '''
+        tic()
+        #x = x.toarray()
+        #similarity = np.dot(x, x.T)
+        similarity = (x.dot(x.T)).toarray()
+        square_mag = np.diag(similarity)
+        inv_square_mag = 1 / square_mag
+        inv_square_mag[np.isinf(inv_square_mag)] = 0
+        inv_mag = np.sqrt(inv_square_mag)
+        W = similarity * inv_mag
+        W = W.T * inv_mag
+        W = 1 - W
+        toc()
+        tic()
+        W2 = pairwise.pairwise_distances(x,x,metric)
+        toc()
+        '''
+        W = pairwise.pairwise_distances(x,x2,metric)
+    else:
+        #tic()
+        W = pairwise.pairwise_distances(x,x2,metric)
+        #toc()
+    I = np.argsort(W)
+    Z = np.zeros(W.shape)
+    n = W.shape[0]
+    for i in range(k):
+        Z[(np.arange(n), I[:, i+1])] = 1
+    return Z
 
 def make_rbf(x,sigma,metric='euclidean', x2=None):
     if x.ndim == 1:

@@ -110,8 +110,12 @@ class GraphTransferNW(GraphTransfer):
         self.cv_params = dict()
         step = 2
         self.cv_params['C'] = self.create_cv_params(-5, 6, step, append_zero=True)
+        '''
         self.cv_params['sigma_nw'] = self.create_cv_params(-5, 6, 1)
         self.cv_params['sigma_tr'] = self.create_cv_params(-9, 6, 1)
+        '''
+        self.cv_params['sigma_nw'] = np.asarray([20, 10, 5, 3])
+        self.cv_params['sigma_tr'] = np.asarray([20, 10, 5, 3])
         self.sigma_nw = None
         self.C = None
         self.sigma_tr = None
@@ -158,8 +162,10 @@ class GraphTransferNW(GraphTransfer):
         I = np.arange(y_pred_source.size)
         if self.predict_sample is not None and self.predict_sample < y_pred_source.size:
             I = np.random.choice(y_pred_source.size, self.predict_sample, replace=False)
-        L = array_functions.make_laplacian(y_pred_source[I], self.sigma_tr)
-        W = array_functions.make_rbf(self.transform.transform(self.x), self.sigma_nw, x2=self.transform.transform(data.x[I,:])).T
+        #L = array_functions.make_laplacian(y_pred_source[I], self.sigma_tr)
+        #W = array_functions.make_rbf(self.transform.transform(self.x), self.sigma_nw, x2=self.transform.transform(data.x[I,:])).T
+        L = array_functions.make_laplacian_kNN(y_pred_source[I], self.sigma_tr)
+        W = array_functions.make_knn(self.transform.transform(self.x), self.sigma_nw, x2=self.transform.transform(data.x[I,:])).T
         S = array_functions.make_smoothing_matrix(W)
 
         A = np.eye(I.size) + self.C*L

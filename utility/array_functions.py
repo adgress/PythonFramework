@@ -485,7 +485,7 @@ def plot_heatmap(x, y_mat, alpha=1,title=None,sizes=None,share_axis=False):
         pl.ylabel(str(index))
         if I.mean > 0:
             print 'Percent skipped due to nans: ' + str(1-I.mean())
-        pl.scatter(x[I,0], x[I,1], alpha=alpha, c=colors[I,:], s=sizes)
+        pl.scatter(x[I,0], x[I,1], alpha=alpha, c=colors[I,:], edgecolors='none', s=sizes)
     move_fig(fig, 1000, 1000)
     pl.show(block=True)
     pass

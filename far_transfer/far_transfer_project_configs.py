@@ -47,7 +47,8 @@ data_set_to_use = None
 
 #data_set_to_use = bc.DATA_POLLUTION_2
 #data_set_to_use = bc.DATA_CLIMATE_MONTH
-data_set_to_use = bc.DATA_UBER
+#data_set_to_use = bc.DATA_UBER
+data_set_to_use = bc.DATA_IRS
 
 #data_set_to_use = bc.DATA_SYNTHETIC_CURVE
 #data_set_to_use = bc.DATA_SYNTHETIC_SLANT
@@ -66,7 +67,7 @@ use_validation = True
 
 run_batch_graph = False
 run_batch_graph_nw = True
-run_batch_baseline = False
+run_batch_baseline = True
 run_batch_datasets = False
 
 all_data_sets = [data_set_to_use]
@@ -107,7 +108,7 @@ FT_METHOD_LOCAL = 3
 FT_METHOD_LOCAL_NONPARAMETRIC = 4
 
 other_method_configs = {
-    'ft_method': FT_METHOD_LOCAL,
+    'ft_method': FT_METHOD_STACKING,
     'predict_sample': 100
 }
 
@@ -205,6 +206,9 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.num_labels = np.asarray([20, 40, 80, 160])
         elif data_set == bc.DATA_UBER:
             self.set_data_set_defaults('uber', source_labels=[0], target_labels=[1], is_regression=True)
+            self.num_labels = np.asarray([20, 40, 80, 160])
+        elif data_set == bc.DATA_IRS:
+            self.set_data_set_defaults('irs-income', source_labels=[0], target_labels=[1], is_regression=True)
             self.num_labels = np.asarray([20, 40, 80, 160])
         else:
             assert False
@@ -424,6 +428,7 @@ class MainConfigs(bc.MainConfigs):
 
         graph_transfer_nw = far_transfer_methods.GraphTransferNW(method_configs)
         graph_transfer_nw.predict_sample = pc.predict_sample
+        graph_transfer_nw.quiet = False
         #self.learner = target_nw
         offset_transfer = methods.local_transfer_methods.OffsetTransfer(method_configs)
         stacked_transfer = methods.transfer_methods.StackingTransfer(method_configs)
@@ -495,6 +500,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files['GraphTransferNW-sample=1600.pkl'] = 'Graph Transfer NW sample 1600'
         self.files['GraphTransferNW-sample=300.pkl'] = 'Graph Transfer NW sample 300'
         self.files['GraphTransferNW-sample=150.pkl'] = 'Graph Transfer NW sample 150'
+        self.files['GraphTransferNW-sample=100.pkl'] = 'Graph Transfer NW sample 100'
         self.files['StackTransfer+SKL-RidgeReg.pkl'] = 'Stacked'
         self.files['LocalTransferDelta_radius_l2_lap-reg.pkl'] = 'Local Transfer: Nonparametric'
         if use_validation:

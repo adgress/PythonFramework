@@ -141,8 +141,8 @@ def load_trip_data(file_names, y_names, time_name, loc_names, resolution=np.asar
     num_locations = np.prod(resolution)
     trip_counts = 0 * np.ones((num_days, num_locations))
     locs = locs.astype(np.float)
-    p_min = .1
-    p_max = .9
+    p_min = .3
+    p_max = .7
     is_in_range = array_functions.is_in_percentile(locs[:, 0], p_min, p_max) & array_functions.is_in_percentile(locs[:, 1], p_min, p_max)
     locs = locs[is_in_range, :]
     dates_idx = dates_idx[is_in_range]
@@ -166,20 +166,20 @@ def load_trip_data(file_names, y_names, time_name, loc_names, resolution=np.asar
     y2 = trip_counts[154:, :].sum(0)
     '''
     y1 = trip_counts[:30:7, :].mean(0)
-    y2 = trip_counts[3:30:7, :].mean(0)
+    y2 = trip_counts[4:30:7, :].mean(0)
     y = np.stack((y1,y2), 1)
 
     #y[y > 100] = 0
     #y[y > 5000] = 0
     #y[y == y.max()] == 0
-    #y = np.log(y)
+    y = np.log(y)
     if plot_data:
         array_functions.plot_heatmap(np.asarray(xy_bins), y, sizes=50)
     return np.asarray(xy_bins, dtype=np.float), y, np.asarray([str(xy) for xy in xy_bins])
 
 import csv
 def load_csv(file, has_field_names=True, dtype='float', delim=',',converters=None,
-             num_rows=None):
+             num_rows=None, return_data_frame=False):
     nrows = 1
     if not has_field_names:
         nrows = 0
@@ -187,7 +187,8 @@ def load_csv(file, has_field_names=True, dtype='float', delim=',',converters=Non
     else:
         all_field_names = pd.read_csv(file,nrows=nrows,dtype='string',sep=delim)
         all_field_names = np.asarray(all_field_names.keys())
-    if num_rows is not None:
+    if num_rows is not None or return_data_frame:
+        assert converters is None
         data = pd.read_csv(
             file,
             skiprows=0,
@@ -195,7 +196,8 @@ def load_csv(file, has_field_names=True, dtype='float', delim=',',converters=Non
             sep=delim,
             nrows=num_rows
         )
-        data = data.values
+        if not return_data_frame:
+            data = data.values
     else:
         data = np.loadtxt(
             file,
@@ -806,7 +808,7 @@ def create_spatial_data(dir='climate-month'):
     is_missing_loc = (~np.isfinite(locs)).any(1)
     locs = locs[~is_missing_loc,:]
     y = y[~is_missing_loc,:]
-    ids = ids[is_missing_loc]
+    ids = ids[~is_missing_loc]
     data = data_class.Data(locs, y)
     data.multilabel_to_multisource()
     s = dir + '/raw_data.pkl'
@@ -830,7 +832,8 @@ if __name__ == "__main__":
     #create_kc_housing()
     #create_pollution(series_to_use=2, num_instances=500, save_data=True)
     #create_spatial_data()
-    create_spatial_data('uber')
+    #create_spatial_data('uber')
+    create_spatial_data('irs-income')
     '''
     for i in range(200):
         create_pollution(labels_to_use=[0, 1], series_to_use=i, num_instances=500, save_data=False)

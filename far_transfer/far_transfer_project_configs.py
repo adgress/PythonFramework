@@ -67,7 +67,7 @@ use_validation = True
 
 run_batch_graph = False
 run_batch_graph_nw = True
-run_batch_baseline = True
+run_batch_baseline = False
 run_batch_datasets = False
 
 all_data_sets = [data_set_to_use]
@@ -109,7 +109,7 @@ FT_METHOD_LOCAL_NONPARAMETRIC = 4
 
 other_method_configs = {
     'ft_method': FT_METHOD_STACKING,
-    'predict_sample': 100
+    'predict_sample': None
 }
 
 def apply_arguments(configs):
@@ -497,6 +497,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #self.files['GraphTransfer_tr.pkl'] = 'Graph Transfer: Just transfer'
         #self.files['GraphTransfer_ta.pkl'] = 'Graph Transfer: Just target'
         self.files['GraphTransferNW.pkl'] = 'Graph Transfer NW'
+        self.files['GraphTransferNW-nw.pkl'] = 'Graph Transfer NW, just nw'
         self.files['GraphTransferNW-sample=1600.pkl'] = 'Graph Transfer NW sample 1600'
         self.files['GraphTransferNW-sample=300.pkl'] = 'Graph Transfer NW sample 300'
         self.files['GraphTransferNW-sample=150.pkl'] = 'Graph Transfer NW sample 150'

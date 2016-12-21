@@ -114,12 +114,18 @@ class GraphTransferNW(GraphTransfer):
         self.cv_params['sigma_nw'] = self.create_cv_params(-5, 6, 1)
         self.cv_params['sigma_tr'] = self.create_cv_params(-9, 6, 1)
         '''
-        self.cv_params['C'] = self.create_cv_params(-10, 10, step, append_zero=True)
-        self.cv_params['sigma_nw'] = np.asarray([20, 10, 5, 3])
-        self.cv_params['sigma_tr'] = np.asarray([80, 40, 20, 10, 5, 3])
+        self.cv_params['C'] = self.create_cv_params(-5, 10, step, append_zero=True)
+        self.cv_params['sigma_nw'] = np.asarray([1, .5, .25, .1, .05, .025, .01])
+        self.cv_params['sigma_tr'] = np.asarray([1, .5, .25, .1, .05, .025])
         self.sigma_nw = None
         self.C = None
         self.sigma_tr = None
+        self.just_nw = True
+        if self.just_nw:
+            del self.cv_params['sigma_tr']
+            del self.cv_params['C']
+            self.C = 0
+            self.sigma_tr = 0
         configs = deepcopy(configs)
         self.source_learner = method.NadarayaWatsonMethod(deepcopy(configs))
         self.source_learner.configs.source_labels = None
@@ -165,8 +171,10 @@ class GraphTransferNW(GraphTransfer):
             I = np.random.choice(y_pred_source.size, self.predict_sample, replace=False)
         #L = array_functions.make_laplacian(y_pred_source[I], self.sigma_tr)
         #W = array_functions.make_rbf(self.transform.transform(self.x), self.sigma_nw, x2=self.transform.transform(data.x[I,:])).T
-        L = array_functions.make_laplacian_kNN(y_pred_source[I], self.sigma_tr)
-        W = array_functions.make_knn(self.transform.transform(self.x), self.sigma_nw, x2=self.transform.transform(data.x[I,:])).T
+        k_L = int(self.sigma_tr*I.size)
+        L = array_functions.make_laplacian_kNN(y_pred_source[I], k_L)
+        k_W = int(self.sigma_nw*self.x.shape[0])
+        W = array_functions.make_knn(self.transform.transform(data.x[I, :]), k_W, x2=self.transform.transform(self.x))
         S = array_functions.make_smoothing_matrix(W)
 
         A = np.eye(I.size) + self.C*L
@@ -192,6 +200,8 @@ class GraphTransferNW(GraphTransfer):
     @property
     def prefix(self):
         s = 'GraphTransferNW'
+        if self.just_nw:
+            s += '-nw'
         if getattr(self, 'predict_sample', None) is not None:
             s += '-sample=' + str(self.predict_sample)
         if getattr(self, 'use_validation', False):

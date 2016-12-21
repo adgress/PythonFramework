@@ -110,8 +110,8 @@ class GraphTransferNW(GraphTransfer):
         self.cv_params = dict()
         step = 2
         self.cv_params['C'] = self.create_cv_params(-5, 6, step, append_zero=True)
-        self.cv_params['sigma_nw'] = self.create_cv_params(-4, 3, 1)
-        self.cv_params['sigma_tr'] = self.create_cv_params(-9, 4, step)
+        self.cv_params['sigma_nw'] = self.create_cv_params(-5, 6, 1)
+        self.cv_params['sigma_tr'] = self.create_cv_params(-9, 6, 1)
         self.sigma_nw = None
         self.C = None
         self.sigma_tr = None

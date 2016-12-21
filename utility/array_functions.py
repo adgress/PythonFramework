@@ -338,6 +338,7 @@ def make_knn(x, k, metric='euclidean', x2=None):
     n = W.shape[0]
     for i in range(k):
         Z[(np.arange(n), I[:, i+1])] = 1
+    Z /= Z.sum()
     return Z
 
 def make_rbf(x,sigma,metric='euclidean', x2=None):

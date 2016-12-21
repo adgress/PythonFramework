@@ -109,13 +109,14 @@ class GraphTransferNW(GraphTransfer):
         super(GraphTransferNW, self).__init__(configs)
         self.cv_params = dict()
         step = 2
-        self.cv_params['C'] = self.create_cv_params(-5, 6, step, append_zero=True)
         '''
+        self.cv_params['C'] = self.create_cv_params(-5, 6, step, append_zero=True)
         self.cv_params['sigma_nw'] = self.create_cv_params(-5, 6, 1)
         self.cv_params['sigma_tr'] = self.create_cv_params(-9, 6, 1)
         '''
+        self.cv_params['C'] = self.create_cv_params(-10, 10, step, append_zero=True)
         self.cv_params['sigma_nw'] = np.asarray([20, 10, 5, 3])
-        self.cv_params['sigma_tr'] = np.asarray([20, 10, 5, 3])
+        self.cv_params['sigma_tr'] = np.asarray([80, 40, 20, 10, 5, 3])
         self.sigma_nw = None
         self.C = None
         self.sigma_tr = None

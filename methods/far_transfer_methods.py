@@ -120,7 +120,7 @@ class GraphTransferNW(GraphTransfer):
         self.sigma_nw = None
         self.C = None
         self.sigma_tr = None
-        self.just_nw = True
+        self.just_nw = False
         if self.just_nw:
             del self.cv_params['sigma_tr']
             del self.cv_params['C']

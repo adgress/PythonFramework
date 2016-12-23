@@ -122,10 +122,15 @@ class FuseTransfer(TargetTranfer):
 class StackingTransfer(FuseTransfer):
     def __init__(self, configs=None):
         super(StackingTransfer, self).__init__(configs)
+        #from far_transfer_methods import GraphTransferNW
         self.cv_params = {}
         self.base_learner = method.SKLRidgeRegression(configs)
-        self.source_learner = method.NadarayaWatsonMethod(configs)
-        self.target_learner = method.NadarayaWatsonMethod(configs)
+        #self.source_learner = method.NadarayaWatsonMethod(configs)
+        #self.target_learner = method.NadarayaWatsonMethod(configs)
+        sub_configs = deepcopy(configs)
+
+        self.source_learner = method.NadarayaWatsonKNNMethod(sub_configs)
+        self.target_learner = method.NadarayaWatsonKNNMethod(sub_configs)
         self.use_validation = configs.use_validation
 
     def _get_stacked_data(self, data):

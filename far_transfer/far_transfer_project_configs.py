@@ -46,9 +46,9 @@ data_set_to_use = None
 #data_set_to_use = bc.DATA_BIKE_SHARING
 
 #data_set_to_use = bc.DATA_POLLUTION_2
-#data_set_to_use = bc.DATA_CLIMATE_MONTH
+data_set_to_use = bc.DATA_CLIMATE_MONTH
 #data_set_to_use = bc.DATA_UBER
-data_set_to_use = bc.DATA_IRS
+#data_set_to_use = bc.DATA_IRS
 
 #data_set_to_use = bc.DATA_SYNTHETIC_CURVE
 #data_set_to_use = bc.DATA_SYNTHETIC_SLANT
@@ -67,7 +67,7 @@ use_validation = True
 
 run_batch_graph = False
 run_batch_graph_nw = True
-run_batch_baseline = False
+run_batch_baseline = True
 run_batch_datasets = False
 
 all_data_sets = [data_set_to_use]
@@ -551,6 +551,7 @@ class BatchConfigs(bc.BatchConfigs):
                 pc2.ft_method = FT_METHOD_STACKING
                 m = MainConfigs(pc2)
                 self.config_list.append(m)
+                '''
                 pc2.ft_method = FT_METHOD_LOCAL
                 m = MainConfigs(pc2)
                 self.config_list.append(m)
@@ -558,6 +559,7 @@ class BatchConfigs(bc.BatchConfigs):
                     pc2.ft_method = FT_METHOD_LOCAL_NONPARAMETRIC
                     m = MainConfigs(pc2)
                     self.config_list.append(m)
+                '''
 
 viz_params = [
     {'data_set': d} for d in all_data_sets

@@ -120,7 +120,7 @@ class GraphTransferNW(GraphTransfer):
         self.sigma_nw = None
         self.C = None
         self.sigma_tr = None
-        self.just_nw = False
+        self.just_nw = getattr(configs, 'just_nw', False)
         if self.just_nw:
             del self.cv_params['sigma_tr']
             del self.cv_params['C']
@@ -148,8 +148,11 @@ class GraphTransferNW(GraphTransfer):
         source_data.y = source_data.true_y
         source_data.set_target()
         source_data.data_set_ids[:] = self.configs.target_labels[0]
-        self.source_learner.train_and_test(source_data)
-        y_pred = self.source_learner.predict(target_data).y
+        if not self.just_nw:
+            self.source_learner.train_and_test(source_data)
+            y_pred = self.source_learner.predict(target_data).y
+        else:
+            y_pred = np.zeros(target_data.y.shape)
         target_data.source_y_pred = y_pred
         return super(GraphTransfer, self).train_and_test(target_data)
 

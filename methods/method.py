@@ -534,6 +534,23 @@ class NadarayaWatsonMethod(Method):
     def prefix(self):
         return 'NW'
 
+
+class NadarayaWatsonKNNMethod(NadarayaWatsonMethod):
+    def __init__(self,configs=MethodConfigs()):
+        super(NadarayaWatsonKNNMethod, self).__init__(configs)
+        self.cv_params['sigma'] = np.asarray([.5, .25, .1, .05, .025, .01])
+
+    def compute_kernel(self,x,y):
+        k = int(self.sigma*y.shape[0])
+        W = array_functions.make_knn(x, k, x2=y)
+        return W
+        #return pairwise.rbf_kernel(x,y,self.sigma)
+
+    @property
+    def prefix(self):
+        return 'NW-knn'
+
+
 class ScikitLearnMethod(Method):
 
     _short_name_dict = {

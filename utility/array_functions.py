@@ -281,6 +281,7 @@ def make_laplacian_kNN(x,k,metric='euclidean'):
     '''
     # assert False, 'Normalize by 1/sigma?'
     W = make_knn(x, k, metric)
+    W = .5*(W + W.T)
     D = W.sum(1)
     L = np.diag(D) - W
     return L

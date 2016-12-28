@@ -17,7 +17,7 @@ from scipy import optimize
 from methods import delta_transfer
 import scipy
 import transfer_methods
-
+from copy import deepcopy
 if helper_functions.is_laptop():
     enable_plotting = False
 else:
@@ -186,7 +186,8 @@ class LocalTransfer(HypothesisTransfer):
         #self.cv_params['radius'] = np.asarray([.05, .1, .2])
 
 
-        self.target_learner = method.NadarayaWatsonMethod(configs)
+        self.target_learner = method.NadarayaWatsonMethod(deepcopy(configs))
+        self.target_learner.configs.use_validation = False
         self.base_learner = None
         self.learn_g_just_labeled = True
         self.should_plot_g = False
@@ -200,7 +201,8 @@ class LocalTransfer(HypothesisTransfer):
 
         if use_g_learner:
             #self.g_learner = scipy_opt_methods.ScipyOptCombinePrediction(configs)
-            self.g_learner = scipy_opt_methods.ScipyOptNonparametricHypothesisTransfer(configs)
+            self.g_learner = scipy_opt_methods.ScipyOptNonparametricHypothesisTransfer(deepcopy(configs))
+            self.g_learner.configs.use_validation = False
             self.g_learner.g_supervised = self.g_supervised
             self.max_value = .5
             self.g_learner.max_value = self.max_value
@@ -235,7 +237,8 @@ class LocalTransfer(HypothesisTransfer):
             b = y_t[:,0] - y_true[:,0]
 
 
-        parametric_data = target_data.get_subset(is_labeled)
+        #parametric_data = target_data.get_subset(is_labeled)
+        parametric_data = target_data
         parametric_data.a = a
         parametric_data.b = b
         parametric_data.y_s = y_s
@@ -515,8 +518,11 @@ class LocalTransferDelta(LocalTransfer):
         vals.reverse()
         self.cv_params['C'] = 10**np.asarray(vals,dtype='float64')
         self.cv_params['C3'] = np.asarray([0, .2, .4, .6, .8, 1])
-        self.target_learner = method.NadarayaWatsonMethod(configs)
-        self.source_learner = method.NadarayaWatsonMethod(configs)
+        configs = deepcopy(configs)
+        configs.use_validation = False
+        self.target_learner = method.NadarayaWatsonMethod(deepcopy(configs))
+        self.source_learner = method.NadarayaWatsonMethod(deepcopy(configs))
+
 
         self.use_l2 = True
 
@@ -524,11 +530,11 @@ class LocalTransferDelta(LocalTransfer):
         self.use_stacking = False
         if self.use_stacking:
             self.train_source_learner = True
-            self.source_learner = transfer_methods.StackingTransfer(configs)
+            self.source_learner = transfer_methods.StackingTransfer(deepcopy(configs))
         else:
-            self.source_learner = method.NadarayaWatsonMethod(configs)
+            self.source_learner = method.NadarayaWatsonMethod(deepcopy(configs))
 
-        self.g_learner = delta_transfer.CombinePredictionsDelta(configs)
+        self.g_learner = delta_transfer.CombinePredictionsDelta(deepcopy(configs))
         self.g_learner.quiet = True
         self.g_learner.use_l2 = self.use_l2
         self.g_learner.use_fused_lasso = configs.use_fused_lasso

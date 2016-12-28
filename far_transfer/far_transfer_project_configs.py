@@ -66,7 +66,7 @@ arguments = None
 use_validation = True
 
 run_batch_graph = False
-run_batch_graph_nw = True
+run_batch_graph_nw = False
 run_batch_baseline = True
 run_batch_datasets = False
 
@@ -108,7 +108,7 @@ FT_METHOD_LOCAL = 3
 FT_METHOD_LOCAL_NONPARAMETRIC = 4
 
 other_method_configs = {
-    'ft_method': FT_METHOD_STACKING,
+    'ft_method': FT_METHOD_LOCAL_NONPARAMETRIC,
     'predict_sample': None
 }
 
@@ -461,8 +461,8 @@ class MainConfigs(bc.MainConfigs):
             self.learner = dt_local_transfer
         else:
             assert False, 'Unknown ft_method'
-        self.learner.configs.use_validation = use_validation
-        self.learner.use_validation = use_validation
+        #self.learner.configs.use_validation = use_validation
+        #self.learner.use_validation = use_validation
 
 
 class MethodConfigs(bc.MethodConfigs):
@@ -549,6 +549,9 @@ class BatchConfigs(bc.BatchConfigs):
             if run_batch_baseline:
                 pc2 = ProjectConfigs(d)
                 pc2.ft_method = FT_METHOD_STACKING
+                m = MainConfigs(pc2)
+                self.config_list.append(m)
+                pc2.ft_method = FT_METHOD_LOCAL_NONPARAMETRIC
                 m = MainConfigs(pc2)
                 self.config_list.append(m)
                 '''

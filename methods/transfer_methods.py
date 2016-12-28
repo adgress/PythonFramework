@@ -129,8 +129,8 @@ class StackingTransfer(FuseTransfer):
         #self.target_learner = method.NadarayaWatsonMethod(configs)
         sub_configs = deepcopy(configs)
 
-        self.source_learner = method.NadarayaWatsonKNNMethod(sub_configs)
-        self.target_learner = method.NadarayaWatsonKNNMethod(sub_configs)
+        self.source_learner = method.NadarayaWatsonKNNMethod(deepcopy(sub_configs))
+        self.target_learner = method.NadarayaWatsonKNNMethod(deepcopy(sub_configs))
         self.use_validation = configs.use_validation
 
     def _get_stacked_data(self, data):
@@ -156,6 +156,9 @@ class StackingTransfer(FuseTransfer):
     def _prepare_data(self, data, include_unlabeled=True):
         data = super(StackingTransfer, self)._prepare_data(data, include_unlabeled)
         source_data = data.get_subset(data.is_source)
+        self.source_learner.configs.source_labels = None
+        self.source_learner.configs.target_labels = None
+        source_data.set_target()
         self.source_learner.train_and_test(source_data)
         target_data = data.get_subset(data.is_target)
         return target_data

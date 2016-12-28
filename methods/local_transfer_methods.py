@@ -520,9 +520,12 @@ class LocalTransferDelta(LocalTransfer):
         self.cv_params['C3'] = np.asarray([0, .2, .4, .6, .8, 1])
         configs = deepcopy(configs)
         configs.use_validation = False
+        self.use_knn = True
         self.target_learner = method.NadarayaWatsonMethod(deepcopy(configs))
         self.source_learner = method.NadarayaWatsonMethod(deepcopy(configs))
-
+        if self.use_knn:
+            self.target_learner = method.NadarayaWatsonKNNMethod(deepcopy(configs))
+            self.source_learner = method.NadarayaWatsonKNNMethod(deepcopy(configs))
 
         self.use_l2 = True
 
@@ -533,6 +536,8 @@ class LocalTransferDelta(LocalTransfer):
             self.source_learner = transfer_methods.StackingTransfer(deepcopy(configs))
         else:
             self.source_learner = method.NadarayaWatsonMethod(deepcopy(configs))
+            if self.use_knn:
+                self.source_learner = method.NadarayaWatsonKNNMethod(deepcopy(configs))
 
         self.g_learner = delta_transfer.CombinePredictionsDelta(deepcopy(configs))
         self.g_learner.quiet = True
@@ -610,6 +615,8 @@ class LocalTransferDelta(LocalTransfer):
             s += '-stacking'
         if getattr(self, 'source_loo', False):
             s += '-sourceLOO'
+        if getattr(self, 'use_knn', False):
+            s += '_knn'
         return s
 
 

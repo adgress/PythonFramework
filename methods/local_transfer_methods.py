@@ -237,8 +237,8 @@ class LocalTransfer(HypothesisTransfer):
             b = y_t[:,0] - y_true[:,0]
 
 
-        #parametric_data = target_data.get_subset(is_labeled)
-        parametric_data = target_data
+        parametric_data = target_data.get_subset(is_labeled)
+        #parametric_data = target_data
         parametric_data.a = a
         parametric_data.b = b
         parametric_data.y_s = y_s

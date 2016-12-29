@@ -61,15 +61,15 @@ data_set_to_use = bc.DATA_SYNTHETIC_PIECEWISE
 
 use_1d_data = True
 
-run_experiments = True
 show_legend_on_all = False
 arguments = None
 use_validation = False
 
+run_experiments = True
 run_batch_graph = False
 run_batch_graph_nw = True
 run_batch_baseline = True
-run_batch_datasets = False
+run_batch_datasets = True
 
 all_data_sets = [data_set_to_use]
 if run_batch_datasets:
@@ -83,15 +83,15 @@ if run_batch_datasets:
         bc.DATA_CONCRETE,
         bc.DATA_WINE,
         bc.DATA_BIKE_SHARING,
-        bc.DATA_BOSTON_HOUSING,
-        bc.DATA_POLLUTION_2,
-        bc.DATA_CLIMATE_MONTH
+        bc.DATA_BOSTON_HOUSING
     ]
     '''
     all_data_sets = [
-        bc.DATA_SYNTHETIC_FLIP,
+        bc.DATA_SYNTHETIC_PIECEWISE,
+        bc.DATA_IRS,
         bc.DATA_CLIMATE_MONTH
     ]
+    '''
     '''
     all_data_sets = [
         bc.DATA_SYNTHETIC_CROSS,
@@ -101,6 +101,7 @@ if run_batch_datasets:
         bc.DATA_BOSTON_HOUSING,
         bc.DATA_POLLUTION_2,
     ]
+    '''
 
 FT_METHOD_GRAPH = 0
 FT_METHOD_GRAPH_NW = 1
@@ -507,7 +508,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files['GraphTransferNW-sample=150.pkl'] = 'Graph Transfer NW sample 150'
         self.files['GraphTransferNW-sample=100.pkl'] = 'Graph Transfer NW sample 100'
         self.files['StackTransfer+SKL-RidgeReg.pkl'] = 'Stacked'
-        self.files['LocalTransferDelta_radius_l2_lap-reg.pkl'] = 'Local Transfer: Nonparametric'
+        #self.files['LocalTransferDelta_radius_l2_lap-reg.pkl'] = 'Local Transfer: Nonparametric'
         self.files['LocalTransferDelta_radius_l2_lap-reg_knn.pkl'] = 'Local Transfer Nonparametric KNN'
         if use_validation:
             self.files = append_suffix_to_files(self.files, '-VAL', ', VAL')

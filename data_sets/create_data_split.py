@@ -152,7 +152,8 @@ def run_main():
     #split_data('pollution-2-500-norm/raw_data.pkl', regression_configs())
     #split_data('climate-month/raw_data.pkl', regression_configs())
     #split_data('uber/raw_data.pkl', regression_configs())
-    split_data('irs-income/raw_data.pkl', regression_configs())
+    #split_data('irs-income/raw_data.pkl', regression_configs())
+    split_data('synthetic_piecewise/raw_data.pkl', regression_configs())
     pass
 
 if __name__ == '__main__':

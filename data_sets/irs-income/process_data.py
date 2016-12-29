@@ -41,7 +41,7 @@ def get_zipcode_wages():
     '''
 
     mean_income = agi / num_returns
-    I = num_returns > 50
+    I = (num_returns > 50) & (mean_income < np.percentile(mean_income, 99.6))
     d = dict(zip(zipcode[I], mean_income[I]))
     return d
 

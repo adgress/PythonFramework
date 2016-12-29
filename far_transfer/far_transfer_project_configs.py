@@ -46,9 +46,9 @@ data_set_to_use = None
 #data_set_to_use = bc.DATA_BIKE_SHARING
 
 #data_set_to_use = bc.DATA_POLLUTION_2
-data_set_to_use = bc.DATA_CLIMATE_MONTH
+#data_set_to_use = bc.DATA_CLIMATE_MONTH
 #data_set_to_use = bc.DATA_UBER
-#data_set_to_use = bc.DATA_IRS
+data_set_to_use = bc.DATA_IRS
 
 #data_set_to_use = bc.DATA_SYNTHETIC_CURVE
 #data_set_to_use = bc.DATA_SYNTHETIC_SLANT
@@ -57,16 +57,17 @@ data_set_to_use = bc.DATA_CLIMATE_MONTH
 #data_set_to_use = bc.DATA_SYNTHETIC_CROSS
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
 #data_set_to_use = bc.DATA_SYNTHETIC_FLIP
+data_set_to_use = bc.DATA_SYNTHETIC_PIECEWISE
 
 use_1d_data = True
 
 run_experiments = True
 show_legend_on_all = False
 arguments = None
-use_validation = True
+use_validation = False
 
 run_batch_graph = False
-run_batch_graph_nw = False
+run_batch_graph_nw = True
 run_batch_baseline = True
 run_batch_datasets = False
 
@@ -210,6 +211,9 @@ class ProjectConfigs(bc.ProjectConfigs):
         elif data_set == bc.DATA_IRS:
             self.set_data_set_defaults('irs-income', source_labels=[0], target_labels=[1], is_regression=True)
             self.num_labels = np.asarray([20, 40, 80, 160])
+        elif data_set == bc.DATA_SYNTHETIC_PIECEWISE:
+            self.set_synthetic_regression('synthetic_piecewise')
+            self.num_labels = np.asarray([10, 20, 30, 40])
         else:
             assert False
         assert self.source_labels.size > 0
@@ -504,9 +508,12 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files['GraphTransferNW-sample=100.pkl'] = 'Graph Transfer NW sample 100'
         self.files['StackTransfer+SKL-RidgeReg.pkl'] = 'Stacked'
         self.files['LocalTransferDelta_radius_l2_lap-reg.pkl'] = 'Local Transfer: Nonparametric'
+        self.files['LocalTransferDelta_radius_l2_lap-reg_knn.pkl'] = 'Local Transfer Nonparametric KNN'
         if use_validation:
             self.files = append_suffix_to_files(self.files, '-VAL', ', VAL')
             self.files['LocalTransferDelta_l2_linear-b_clip-b_use-val.pkl'] = 'Local Transfer VAL'
+            self.files['LocalTransferDelta_radius_l2_use-val_lap-reg.pkl'] = 'Local Transfer Nonparametric VAL'
+            self.files['LocalTransferDelta_radius_l2_use-val_lap-reg_knn.pkl'] = 'Local Transfer Nonparametric KNN VAL'
         else:
             self.files['LocalTransferDelta_l2_linear-b_clip-b.pkl'] = 'Local Transfer'
         self.title = self.results_dir

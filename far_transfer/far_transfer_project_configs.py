@@ -108,6 +108,7 @@ FT_METHOD_GRAPH_NW = 1
 FT_METHOD_STACKING = 2
 FT_METHOD_LOCAL = 3
 FT_METHOD_LOCAL_NONPARAMETRIC = 4
+FT_METHOD_SMS_DELTA = 5
 
 other_method_configs = {
     'ft_method': FT_METHOD_LOCAL_NONPARAMETRIC,
@@ -437,6 +438,7 @@ class MainConfigs(bc.MainConfigs):
         #self.learner = target_nw
         offset_transfer = methods.local_transfer_methods.OffsetTransfer(method_configs)
         stacked_transfer = methods.transfer_methods.StackingTransfer(method_configs)
+        sms_delta_transfer = methods.local_transfer_methods.LocalTransferDeltaSMS(method_configs)
 
         method_configs.metric = 'euclidean'
         method_configs.no_reg = False
@@ -464,6 +466,8 @@ class MainConfigs(bc.MainConfigs):
             self.learner = stacked_transfer
         elif pc.ft_method in {FT_METHOD_LOCAL,FT_METHOD_LOCAL_NONPARAMETRIC}:
             self.learner = dt_local_transfer
+        elif pc.ft_method == FT_METHOD_SMS_DELTA:
+            self.learner = sms_delta_transfer
         else:
             assert False, 'Unknown ft_method'
         #self.learner.configs.use_validation = use_validation
@@ -560,6 +564,10 @@ class BatchConfigs(bc.BatchConfigs):
                 m = MainConfigs(pc2)
                 self.config_list.append(m)
                 pc2.ft_method = FT_METHOD_LOCAL_NONPARAMETRIC
+                m = MainConfigs(pc2)
+                self.config_list.append(m)
+                pc2 = deepcopy(pc2)
+                pc2.ft_method = FT_METHOD_SMS_DELTA
                 m = MainConfigs(pc2)
                 self.config_list.append(m)
                 '''

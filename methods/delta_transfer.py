@@ -21,9 +21,9 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
         self.use_radius = None
         self.C3 = None
         self.use_l2 = True
-        self.constant_b = configs.constant_b
-        self.linear_b = configs.linear_b
-        self.clip_b = configs.clip_b
+        self.constant_b = getattr(configs, 'constant_b', False)
+        self.linear_b = getattr(configs, 'linear_b', False)
+        self.clip_b = getattr(configs, 'clip_b', False)
         #self.transform = StandardScaler()
         self.transform = MinMaxScaler()
 

@@ -191,12 +191,12 @@ class LocalTransfer(HypothesisTransfer):
         self.base_learner = None
         self.learn_g_just_labeled = True
         self.should_plot_g = False
-        self.use_fused_lasso = configs.use_fused_lasso
+        self.use_fused_lasso = getattr(configs, 'use_fused_lasso', False)
         self.use_oracle = False
         self.g_learner = None
         #self.g_supervised = True
         self.g_supervised = False
-        use_g_learner = configs.use_g_learner
+        use_g_learner = getattr(configs, 'use_g_learner', True)
         self.include_bias = False
 
         if use_g_learner:
@@ -207,7 +207,7 @@ class LocalTransfer(HypothesisTransfer):
             self.max_value = .5
             self.g_learner.max_value = self.max_value
             self.g_learner.include_bias = self.include_bias
-        self.no_reg = self.configs.no_reg
+        self.no_reg = getattr(configs, 'no_reg', False)
         if self.no_reg:
             self.cv_params['C'] = np.zeros(1)
             self.cv_params['C2'] = np.zeros(1)
@@ -542,15 +542,15 @@ class LocalTransferDelta(LocalTransfer):
         self.g_learner = delta_transfer.CombinePredictionsDelta(deepcopy(configs))
         self.g_learner.quiet = True
         self.g_learner.use_l2 = self.use_l2
-        self.g_learner.use_fused_lasso = configs.use_fused_lasso
+        self.g_learner.use_fused_lasso = getattr(configs, 'use_fused_lasso', False)
 
         self.metric = configs.metric
         self.quiet = False
-        self.no_C3 = configs.no_C3
-        self.constant_b = configs.constant_b
-        self.use_radius = configs.use_radius
-        self.linear_b = configs.linear_b
-        self.clip_b = configs.clip_b
+        self.no_C3 = getattr(configs, 'no_C3', False)
+        self.constant_b = getattr(configs, 'constant_b', False)
+        self.use_radius = getattr(configs, 'use_radius', False)
+        self.linear_b = getattr(configs, 'linear_b', False)
+        self.clip_b = getattr(configs, 'clip_b', False)
         if self.constant_b:
             del self.cv_params['radius']
             del self.cv_params['C']
@@ -624,7 +624,7 @@ class LocalTransferDeltaSMS(LocalTransferDelta):
     def __init__(self, configs=None):
         super(LocalTransferDeltaSMS, self).__init__(configs)
         self.C2 = 0
-        self.include_scale = configs.include_scale
+        self.include_scale = getattr(configs, 'include_scale', False)
         self.cv_params = {}
         vals = list(range(-4,5))
         vals.reverse()
@@ -637,6 +637,7 @@ class LocalTransferDeltaSMS(LocalTransferDelta):
         self.g_learner.quiet = True
         self.quiet = False
         self.num_splits = 5
+        self.use_validation = configs.use_validation
 
 
     def train_g_learner(self, target_data):
@@ -659,6 +660,8 @@ class LocalTransferDeltaSMS(LocalTransferDelta):
         s = 'LocalTransferDeltaSMS'
         if getattr(self, 'include_scale', False):
             s += '_scale'
+        if getattr(self, 'use_validation', False):
+            s += '-VAL'
         return s
 
 class IWTLTransfer(method.Method):
@@ -808,6 +811,7 @@ class SMSTransfer(method.Method):
         self.base_learner = None
         self.metric = self.configs.metric
         self.opt_succeeded = True
+        self.use_validation = configs.use_validation
 
     def _prepare_data(self, data, include_unlabeled=True):
         target_labels = self.configs.target_labels
@@ -1019,6 +1023,8 @@ class SMSTransfer(method.Method):
     @property
     def prefix(self):
         s = 'SMS'
+        if getattr(self, 'use_validation', False):
+            s += '-VAL'
         return s
 
 

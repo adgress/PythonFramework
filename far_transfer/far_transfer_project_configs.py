@@ -92,16 +92,17 @@ if run_batch_datasets:
         bc.DATA_CLIMATE_MONTH
     ]
     '''
-    '''
+
     all_data_sets = [
         bc.DATA_SYNTHETIC_CROSS,
         bc.DATA_SYNTHETIC_SLANT,
         bc.DATA_SYNTHETIC_CURVE,
         bc.DATA_BIKE_SHARING,
         bc.DATA_BOSTON_HOUSING,
+        bc.DATA_CONCRETE,
         bc.DATA_POLLUTION_2,
     ]
-    '''
+
 
 FT_METHOD_GRAPH = 0
 FT_METHOD_GRAPH_NW = 1

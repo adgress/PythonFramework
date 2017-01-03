@@ -110,6 +110,7 @@ FT_METHOD_STACKING = 2
 FT_METHOD_LOCAL = 3
 FT_METHOD_LOCAL_NONPARAMETRIC = 4
 FT_METHOD_SMS_DELTA = 5
+FT_METHOD_OFFSET = 6
 
 other_method_configs = {
     'ft_method': FT_METHOD_LOCAL_NONPARAMETRIC,
@@ -469,6 +470,8 @@ class MainConfigs(bc.MainConfigs):
             self.learner = dt_local_transfer
         elif pc.ft_method == FT_METHOD_SMS_DELTA:
             self.learner = sms_delta_transfer
+        elif pc.ft_method == FT_METHOD_OFFSET:
+            self.learner = offset_transfer
         else:
             assert False, 'Unknown ft_method'
         #self.learner.configs.use_validation = use_validation
@@ -522,6 +525,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['LocalTransferDelta_radius_l2_use-val_lap-reg_knn.pkl'] = 'Local Transfer Nonparametric KNN VAL'
         else:
             self.files['LocalTransferDelta_l2_linear-b_clip-b.pkl'] = 'Local Transfer'
+            #self.files['LocalTransferDeltaSMS.pkl'] = 'SMS Delta'
         self.title = self.results_dir
 
 
@@ -569,6 +573,10 @@ class BatchConfigs(bc.BatchConfigs):
                 self.config_list.append(m)
                 pc2 = deepcopy(pc2)
                 pc2.ft_method = FT_METHOD_SMS_DELTA
+                m = MainConfigs(pc2)
+                self.config_list.append(m)
+                pc2 = deepcopy(pc2)
+                pc2.ft_method = FT_METHOD_OFFSET
                 m = MainConfigs(pc2)
                 self.config_list.append(m)
                 '''

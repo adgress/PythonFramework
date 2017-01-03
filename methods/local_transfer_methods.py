@@ -485,7 +485,9 @@ class OffsetTransfer(HypothesisTransfer):
     def train(self, data):
         target_data = self.get_target_subset(data)
         target_data = target_data.get_subset(target_data.is_labeled)
-        self.g_learner.train_and_test(target_data)
+        offset_data = deepcopy(target_data)
+        offset_data.y -= self.source_learner.predict(offset_data).y
+        self.g_learner.train_and_test(offset_data)
         source_data = self.get_source_data(data)
         x_source = source_data.x
         y_source_new = source_data.y + self.g_learner.predict(source_data).y

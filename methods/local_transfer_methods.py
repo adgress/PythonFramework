@@ -469,6 +469,10 @@ class OffsetTransfer(HypothesisTransfer):
         self.g_learner = method.NadarayaWatsonMethod(configs)
         self.x_source = None
         self.y_source_new = None
+        self.joint_cv = True
+        if self.joint_cv:
+            self.cv_params['sigma_g_learner'] = 10**np.asarray(range(-8,8),dtype='float64')
+            self.cv_params['sigma_target_learner'] = 10 ** np.asarray(range(-8, 8), dtype='float64')
 
 
     def train_and_test(self, data):
@@ -483,11 +487,17 @@ class OffsetTransfer(HypothesisTransfer):
         return super(HypothesisTransfer, self).train_and_test(data_copy)
 
     def train(self, data):
+        if self.joint_cv:
+            self.g_learner.sigma = self.sigma_g_learner
+            self.target_learner.sigma = self.sigma_target_learner
         target_data = self.get_target_subset(data)
         target_data = target_data.get_subset(target_data.is_labeled)
         offset_data = deepcopy(target_data)
         offset_data.y -= self.source_learner.predict(offset_data).y
-        self.g_learner.train_and_test(offset_data)
+        if self.joint_cv:
+            self.g_learner.train(offset_data)
+        else:
+            self.g_learner.train_and_test(offset_data)
         source_data = self.get_source_data(data)
         x_source = source_data.x
         y_source_new = source_data.y + self.g_learner.predict(source_data).y
@@ -495,7 +505,10 @@ class OffsetTransfer(HypothesisTransfer):
 
         all_data = copy.deepcopy(target_data)
         all_data.combine(source_data_new)
-        self.target_learner.train_and_test(all_data)
+        if self.joint_cv:
+            self.target_learner.train(all_data)
+        else:
+            self.target_learner.train_and_test(all_data)
 
     def predict(self, data):
         o = self.target_learner.predict(data)
@@ -504,6 +517,8 @@ class OffsetTransfer(HypothesisTransfer):
     @property
     def prefix(self):
         s = 'OffsetTransfer'
+        if getattr(self, 'joint_cv', False):
+            s += '-jointCV'
         return s
 
 

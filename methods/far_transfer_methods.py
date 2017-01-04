@@ -118,7 +118,7 @@ class GraphTransferNW(GraphTransfer):
             self.cv_params['C'] = self.create_cv_params(-5, 10, step, append_zero=True)
             self.cv_params['sigma_nw'] = np.asarray([1, .5, .25, .1, .05, .025, .01])
             self.cv_params['sigma_tr'] = np.asarray([1, .5, .25, .1, .05, .025])
-        self.use_prediction_graph_sparsification = True
+        self.use_prediction_graph_sparsification = False
         self.k_sparsification = 10
         self.sigma_nw = None
         self.C = None

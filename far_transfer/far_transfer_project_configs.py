@@ -69,39 +69,38 @@ run_experiments = True
 run_batch_graph = False
 run_batch_graph_nw = True
 run_batch_baseline = True
-run_batch_datasets = True
+
+BATCH_DATA_NONE = 0
+BATCH_DATA_POSITIVE = 1
+BATCH_DATA_NEGATIVE = 2
+BATCH_ALL = 3
+
+#run_batch_datasets = BATCH_DATA_NONE
+#run_batch_datasets = BATCH_DATA_POSITIVE
+run_batch_datasets = BATCH_DATA_NEGATIVE
+run_batch_datasets = BATCH_ALL
 
 all_data_sets = [data_set_to_use]
-if run_batch_datasets:
-    all_data_sets = [
-        bc.DATA_SYNTHETIC_CURVE,
-        bc.DATA_SYNTHETIC_SLANT,
-        bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER,
-        bc.DATA_SYNTHETIC_CROSS,
-        bc.DATA_SYNTHETIC_STEP_TRANSFER,
-        bc.DATA_SYNTHETIC_FLIP,
-        bc.DATA_CONCRETE,
-        bc.DATA_WINE,
-        bc.DATA_BIKE_SHARING,
-        bc.DATA_BOSTON_HOUSING
-    ]
-    '''
-    all_data_sets = [
-        bc.DATA_SYNTHETIC_PIECEWISE,
-        bc.DATA_IRS,
-        bc.DATA_CLIMATE_MONTH
-    ]
-    '''
+if run_batch_datasets > 0:
+    all_data_sets = []
+    if run_batch_datasets in {BATCH_DATA_POSITIVE, BATCH_ALL}:
+        all_data_sets += [
+            bc.DATA_SYNTHETIC_PIECEWISE,
+            bc.DATA_IRS,
+            bc.DATA_CLIMATE_MONTH
+        ]
+    elif run_batch_datasets in {BATCH_DATA_NEGATIVE, BATCH_ALL}:
+        all_data_sets += [
+            bc.DATA_SYNTHETIC_CROSS,
+            bc.DATA_SYNTHETIC_SLANT,
+            bc.DATA_SYNTHETIC_CURVE,
+            bc.DATA_BIKE_SHARING,
+            bc.DATA_BOSTON_HOUSING,
+            bc.DATA_CONCRETE,
+            bc.DATA_POLLUTION_2,
+        ]
 
-    all_data_sets = [
-        bc.DATA_SYNTHETIC_CROSS,
-        bc.DATA_SYNTHETIC_SLANT,
-        bc.DATA_SYNTHETIC_CURVE,
-        bc.DATA_BIKE_SHARING,
-        bc.DATA_BOSTON_HOUSING,
-        bc.DATA_CONCRETE,
-        bc.DATA_POLLUTION_2,
-    ]
+
 
 
 FT_METHOD_GRAPH = 0
@@ -525,6 +524,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['LocalTransferDelta_radius_l2_use-val_lap-reg_knn.pkl'] = 'Local Transfer Nonparametric KNN VAL'
         else:
             self.files['LocalTransferDelta_l2_linear-b_clip-b.pkl'] = 'Local Transfer'
+            #self.files['OffsetTransfer.pkl'] = 'Offset'
+            self.files['OffsetTransfer-jointCV.pkl'] = 'Offset Joint CV'
             #self.files['LocalTransferDeltaSMS.pkl'] = 'SMS Delta'
         self.title = self.results_dir
 

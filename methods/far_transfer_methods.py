@@ -117,6 +117,8 @@ class GraphTransferNW(GraphTransfer):
         self.cv_params['C'] = self.create_cv_params(-5, 10, step, append_zero=True)
         self.cv_params['sigma_nw'] = np.asarray([1, .5, .25, .1, .05, .025, .01])
         self.cv_params['sigma_tr'] = np.asarray([1, .5, .25, .1, .05, .025])
+        self.use_prediction_graph_sparsification = True
+        self.k_sparsification = 10
         self.sigma_nw = None
         self.C = None
         self.sigma_tr = None
@@ -178,6 +180,12 @@ class GraphTransferNW(GraphTransfer):
         L = array_functions.make_laplacian_kNN(y_pred_source[I], k_L)
         k_W = int(self.sigma_nw*self.x.shape[0])
         W = array_functions.make_knn(self.transform.transform(data.x[I, :]), k_W, x2=self.transform.transform(self.x))
+        if self.use_prediction_graph_sparsification:
+            W_knn = array_functions.make_knn(self.transform.transform(data.x[I, :]), self.k_sparsification, x2=self.transform.transform(data.x[I, :]))
+            L_sparse = L * W_knn
+            diag_inds = np.diag_indices(L_sparse.shape[0])
+            L_sparse[diag_inds] = L[diag_inds]
+            L = L_sparse
         S = array_functions.make_smoothing_matrix(W)
 
         A = np.eye(I.size) + self.C*L
@@ -209,4 +217,6 @@ class GraphTransferNW(GraphTransfer):
             s += '-sample=' + str(self.predict_sample)
         if getattr(self, 'use_validation', False):
             s += '-VAL'
+        if getattr(self, 'use_prediction_graph_sparsification', False):
+            s += '-transfer_sparse=' + str(self.k_sparsification )
         return s

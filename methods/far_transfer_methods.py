@@ -109,14 +109,15 @@ class GraphTransferNW(GraphTransfer):
         super(GraphTransferNW, self).__init__(configs)
         self.cv_params = dict()
         step = 2
-        '''
-        self.cv_params['C'] = self.create_cv_params(-5, 6, step, append_zero=True)
-        self.cv_params['sigma_nw'] = self.create_cv_params(-5, 6, 1)
-        self.cv_params['sigma_tr'] = self.create_cv_params(-9, 6, 1)
-        '''
-        self.cv_params['C'] = self.create_cv_params(-5, 10, step, append_zero=True)
-        self.cv_params['sigma_nw'] = np.asarray([1, .5, .25, .1, .05, .025, .01])
-        self.cv_params['sigma_tr'] = np.asarray([1, .5, .25, .1, .05, .025])
+        self.use_rbf = True
+        if self.use_rbf:
+            self.cv_params['C'] = self.create_cv_params(-5, 6, step, append_zero=True)
+            self.cv_params['sigma_nw'] = self.create_cv_params(-5, 6, 1)
+            self.cv_params['sigma_tr'] = self.create_cv_params(-5, 6, 1)
+        else:
+            self.cv_params['C'] = self.create_cv_params(-5, 10, step, append_zero=True)
+            self.cv_params['sigma_nw'] = np.asarray([1, .5, .25, .1, .05, .025, .01])
+            self.cv_params['sigma_tr'] = np.asarray([1, .5, .25, .1, .05, .025])
         self.use_prediction_graph_sparsification = True
         self.k_sparsification = 10
         self.sigma_nw = None
@@ -174,17 +175,19 @@ class GraphTransferNW(GraphTransfer):
         I = np.arange(y_pred_source.size)
         if self.predict_sample is not None and self.predict_sample < y_pred_source.size:
             I = np.random.choice(y_pred_source.size, self.predict_sample, replace=False)
-        #L = array_functions.make_laplacian(y_pred_source[I], self.sigma_tr)
-        #W = array_functions.make_rbf(self.transform.transform(self.x), self.sigma_nw, x2=self.transform.transform(data.x[I,:])).T
-        k_L = int(self.sigma_tr*I.size)
-        L = array_functions.make_laplacian_kNN(y_pred_source[I], k_L)
-        k_W = int(self.sigma_nw*self.x.shape[0])
-        W = array_functions.make_knn(self.transform.transform(data.x[I, :]), k_W, x2=self.transform.transform(self.x))
-        if self.use_prediction_graph_sparsification:
-            W_knn = array_functions.make_knn(self.transform.transform(data.x[I, :]), self.k_sparsification, x2=self.transform.transform(data.x[I, :]))
-            W_L = array_functions.make_knn(y_pred_source[I], k_L)
-            W_sparse = W_L * W_knn
-            L = array_functions.make_laplacian_with_W(W_sparse)
+        if self.use_rbf:
+            L = array_functions.make_laplacian(y_pred_source[I], self.sigma_tr)
+            W = array_functions.make_rbf(self.transform.transform(self.x), self.sigma_nw, x2=self.transform.transform(data.x[I,:])).T
+        else:
+            k_L = int(self.sigma_tr*I.size)
+            L = array_functions.make_laplacian_kNN(y_pred_source[I], k_L)
+            k_W = int(self.sigma_nw*self.x.shape[0])
+            W = array_functions.make_knn(self.transform.transform(data.x[I, :]), k_W, x2=self.transform.transform(self.x))
+            if self.use_prediction_graph_sparsification:
+                W_knn = array_functions.make_knn(self.transform.transform(data.x[I, :]), self.k_sparsification, x2=self.transform.transform(data.x[I, :]))
+                W_L = array_functions.make_knn(y_pred_source[I], k_L)
+                W_sparse = W_L * W_knn
+                L = array_functions.make_laplacian_with_W(W_sparse)
         S = array_functions.make_smoothing_matrix(W)
 
         A = np.eye(I.size) + self.C*L
@@ -214,8 +217,10 @@ class GraphTransferNW(GraphTransfer):
             s += '-nw'
         if getattr(self, 'predict_sample', None) is not None:
             s += '-sample=' + str(self.predict_sample)
+        if self.use_rbf:
+            s += '-use_rbf'
+        if getattr(self, 'use_prediction_graph_sparsification', False):
+            s += '-transfer_sparse=' + str(self.k_sparsification)
         if getattr(self, 'use_validation', False):
             s += '-VAL'
-        if getattr(self, 'use_prediction_graph_sparsification', False):
-            s += '-transfer_sparse=' + str(self.k_sparsification )
         return s

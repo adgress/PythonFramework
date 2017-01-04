@@ -182,10 +182,9 @@ class GraphTransferNW(GraphTransfer):
         W = array_functions.make_knn(self.transform.transform(data.x[I, :]), k_W, x2=self.transform.transform(self.x))
         if self.use_prediction_graph_sparsification:
             W_knn = array_functions.make_knn(self.transform.transform(data.x[I, :]), self.k_sparsification, x2=self.transform.transform(data.x[I, :]))
-            L_sparse = L * W_knn
-            diag_inds = np.diag_indices(L_sparse.shape[0])
-            L_sparse[diag_inds] = L[diag_inds]
-            L = L_sparse
+            W_L = array_functions.make_knn(y_pred_source[I], k_L)
+            W_sparse = W_L * W_knn
+            L = array_functions.make_laplacian_with_W(W_sparse)
         S = array_functions.make_smoothing_matrix(W)
 
         A = np.eye(I.size) + self.C*L

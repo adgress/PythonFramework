@@ -89,7 +89,7 @@ if run_batch_datasets > 0:
             bc.DATA_IRS,
             bc.DATA_CLIMATE_MONTH
         ]
-    elif run_batch_datasets in {BATCH_DATA_NEGATIVE, BATCH_ALL}:
+    if run_batch_datasets in {BATCH_DATA_NEGATIVE, BATCH_ALL}:
         all_data_sets += [
             bc.DATA_SYNTHETIC_CROSS,
             bc.DATA_SYNTHETIC_SLANT,
@@ -526,6 +526,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['LocalTransferDelta_l2_linear-b_clip-b.pkl'] = 'Local Transfer'
             #self.files['OffsetTransfer.pkl'] = 'Offset'
             self.files['OffsetTransfer-jointCV.pkl'] = 'Offset Joint CV'
+            self.files['GraphTransferNW-transfer_sparse=10.pkl'] = ' Graph Transfer NW Sparse=10'
             #self.files['LocalTransferDeltaSMS.pkl'] = 'SMS Delta'
         self.title = self.results_dir
 

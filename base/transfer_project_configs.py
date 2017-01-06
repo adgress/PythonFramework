@@ -58,7 +58,7 @@ PLOT_SMS = 4
 PLOT_TABLE = 5
 PLOT_TABLE_VAL = 6
 PLOT_ALPHA = 7
-plot_idx = PLOT_PARAMETRIC
+plot_idx = PLOT_SMS
 max_rows = 1
 fontsize = 20
 
@@ -68,10 +68,14 @@ sizes_to_use = [5, 10, 20, 30]
 
 run_experiments = True
 show_legend_on_all = False
+if plot_idx == PLOT_SMS:
+    show_legend_on_all = True
 
 run_batch_exps = True
 use_1d_data = False
 use_sms_plot_data_sets = plot_idx == PLOT_SMS
+
+use_validation = False
 
 use_constraints = False
 use_fused_lasso = False
@@ -80,7 +84,6 @@ use_radius = True
 include_scale = False
 constant_b = False
 linear_b = True
-use_validation = True
 clip_b = True
 
 synthetic_data_sets = [
@@ -511,8 +514,8 @@ class MainConfigs(bc.MainConfigs):
         #self.learner = dt_sms
         #self.learner = ssl_regression
         #self.learner = cov_shift
-        #self.learner = offset_transfer
-        self.learner = stacked_transfer
+        self.learner = offset_transfer
+        #self.learner = stacked_transfer
 
 
 class MethodConfigs(bc.MethodConfigs):

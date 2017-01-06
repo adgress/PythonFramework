@@ -65,7 +65,7 @@ show_legend_on_all = False
 arguments = None
 use_validation = False
 
-run_experiments = True
+run_experiments = False
 run_batch_graph = False
 run_batch_graph_nw = True
 run_batch_baseline = True
@@ -526,7 +526,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['LocalTransferDelta_l2_linear-b_clip-b.pkl'] = 'Local Transfer'
             #self.files['OffsetTransfer.pkl'] = 'Offset'
             self.files['OffsetTransfer-jointCV.pkl'] = 'Offset Joint CV'
-            self.files['GraphTransferNW-transfer_sparse=10.pkl'] = ' Graph Transfer NW Sparse=10'
+            #self.files['GraphTransferNW-transfer_sparse=10.pkl'] = ' Graph Transfer NW Sparse=10'
+            self.files['GraphTransferNW-use_rbf.pkl'] = 'Graph Transfer RBF'
             #self.files['LocalTransferDeltaSMS.pkl'] = 'SMS Delta'
         self.title = self.results_dir
 

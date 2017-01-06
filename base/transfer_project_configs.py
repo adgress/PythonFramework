@@ -66,7 +66,7 @@ vis_table = plot_idx in {PLOT_TABLE, PLOT_TABLE_VAL}
 size_to_vis = 10
 sizes_to_use = [5, 10, 20, 30]
 
-run_experiments = False
+run_experiments = True
 #show_legend_on_all = False
 show_legend_on_all = True
 
@@ -79,10 +79,10 @@ use_validation = False
 use_constraints = False
 use_fused_lasso = False
 no_C3 = False
-use_radius = True
+use_radius = False
 include_scale = False
 constant_b = False
-linear_b = True
+linear_b = False
 clip_b = True
 
 synthetic_data_sets = [
@@ -597,6 +597,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['LocalTransferDelta_radius_l2_constant-b.pkl'] = 'Ours: Constant'
             self.files['LocalTransferDelta_radius_l2_linear-b_clip-b.pkl'] = 'Ours: Linear'
             self.files['LocalTransferDelta_radius_l2_linear-b_clip-b-TESTING_REFACTOR.pkl'] = 'Ours: Linear (Refactored)'
+            self.files['OffsetTransfer-jointCV.pkl'] = 'Offset'
             #self.files['LocalTransferDelta_C3=0_radius_l2_linear-b.pkl'] = 'Ours: Linear, alpha=0'
         elif plot_idx == PLOT_VALIDATION:
             self.files = OrderedDict()

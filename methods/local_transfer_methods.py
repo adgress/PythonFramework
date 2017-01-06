@@ -191,7 +191,7 @@ class LocalTransferDelta(HypothesisTransfer):
         vals.reverse()
         self.cv_params['C'] = 10**np.asarray(vals,dtype='float64')
         self.cv_params['C3'] = np.asarray([0, .2, .4, .6, .8, 1])
-        self.cv_params['sigma_L'] = self.create_cv_params(-5, 5)
+        self.cv_params['sigma_g_learner'] = self.create_cv_params(-5, 5)
         configs = deepcopy(configs)
         configs.use_validation = False
         self.use_knn = False
@@ -229,10 +229,10 @@ class LocalTransferDelta(HypothesisTransfer):
         if self.constant_b:
             del self.cv_params['radius']
             del self.cv_params['C']
-            del self.cv_params['sigma_L']
-        if self.linear_b:
+            del self.cv_params['sigma_g_learner']
+        elif self.linear_b:
             del self.cv_params['radius']
-            del self.cv_params['sigma_L']
+            del self.cv_params['sigma_g_learner']
         if not self.use_radius:
             if 'radius' in self.cv_params:
                 del self.cv_params['radius']
@@ -243,6 +243,7 @@ class LocalTransferDelta(HypothesisTransfer):
     def train_g_learner(self, target_data):
         self.g_learner.C3 = self.C3
         self.g_learner.use_radius = self.use_radius
+        self.g_learner.sigma = self.sigma_g_learner
         target_data = target_data.get_subset(target_data.is_train)
         y_t, y_s, y_true = self.get_predictions(target_data)
 
@@ -414,7 +415,7 @@ class LocalTransferDelta(HypothesisTransfer):
             s += '-sourceLOO'
         if getattr(self, 'use_knn', False):
             s += '_knn'
-        s += '-TESTING_REFACTOR'
+        #s += '-TESTING_REFACTOR'
         return s
 
 class OffsetTransfer(HypothesisTransfer):

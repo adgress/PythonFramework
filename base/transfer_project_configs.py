@@ -58,7 +58,7 @@ PLOT_SMS = 4
 PLOT_TABLE = 5
 PLOT_TABLE_VAL = 6
 PLOT_ALPHA = 7
-plot_idx = PLOT_SMS
+plot_idx = PLOT_PARAMETRIC
 max_rows = 1
 fontsize = 20
 
@@ -66,13 +66,12 @@ vis_table = plot_idx in {PLOT_TABLE, PLOT_TABLE_VAL}
 size_to_vis = 10
 sizes_to_use = [5, 10, 20, 30]
 
-run_experiments = True
-show_legend_on_all = False
-if plot_idx == PLOT_SMS:
-    show_legend_on_all = True
+run_experiments = False
+#show_legend_on_all = False
+show_legend_on_all = True
 
 run_batch_exps = True
-use_1d_data = False
+use_1d_data = True
 use_sms_plot_data_sets = plot_idx == PLOT_SMS
 
 use_validation = False
@@ -488,13 +487,12 @@ class MainConfigs(bc.MainConfigs):
         log_reg = method.SKLLogisticRegression(method_configs)
         target_knn = transfer_methods.TargetTranfer(method_configs)
         target_knn.base_learner = method.SKLKNN(method_configs)
-        local_transfer = methods.local_transfer_methods.LocalTransfer(method_configs)
         scipy_ridge_reg = scipy_opt_methods.ScipyOptRidgeRegression(method_configs)
         model_transfer = methods.transfer_methods.ModelSelectionTransfer(method_configs)
         hyp_transfer = methods.local_transfer_methods.HypothesisTransfer(method_configs)
         iwl_transfer = methods.local_transfer_methods.IWTLTransfer(method_configs)
         sms_transfer = methods.local_transfer_methods.SMSTransfer(method_configs)
-        dt_local_transfer = methods.local_transfer_methods.LocalTransferDelta(method_configs)
+        local_transfer_delta = methods.local_transfer_methods.LocalTransferDelta(method_configs)
         dt_sms = methods.local_transfer_methods.LocalTransferDeltaSMS(method_configs)
         cov_shift = transfer_methods.ReweightedTransfer(method_configs)
         offset_transfer = methods.local_transfer_methods.OffsetTransfer(method_configs)
@@ -510,11 +508,11 @@ class MainConfigs(bc.MainConfigs):
         #self.learner = local_transfer
         #self.learner = iwl_transfer
         #self.learner = sms_transfer
-        #self.learner = dt_local_transfer
+        self.learner = local_transfer_delta
         #self.learner = dt_sms
         #self.learner = ssl_regression
         #self.learner = cov_shift
-        self.learner = offset_transfer
+        #self.learner = offset_transfer
         #self.learner = stacked_transfer
 
 
@@ -598,6 +596,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             '''
             self.files['LocalTransferDelta_radius_l2_constant-b.pkl'] = 'Ours: Constant'
             self.files['LocalTransferDelta_radius_l2_linear-b_clip-b.pkl'] = 'Ours: Linear'
+            self.files['LocalTransferDelta_radius_l2_linear-b_clip-b-TESTING_REFACTOR.pkl'] = 'Ours: Linear (Refactored)'
             #self.files['LocalTransferDelta_C3=0_radius_l2_linear-b.pkl'] = 'Ours: Linear, alpha=0'
         elif plot_idx == PLOT_VALIDATION:
             self.files = OrderedDict()

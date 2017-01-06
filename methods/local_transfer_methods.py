@@ -59,8 +59,10 @@ class HypothesisTransfer(method.Method):
         is_labeled = target_data.is_labeled
 
         target_labels = self.configs.target_labels
+        '''
         if self.use_estimated_f:
             o = self.target_learner.predict_loo(target_data.get_subset(is_labeled))
+        '''
         if target_data.is_regression:
             y_t = array_functions.vec_to_2d(o.fu)
             if self.source_loo:
@@ -161,70 +163,86 @@ class HypothesisTransfer(method.Method):
             s += '-Oracle'
         return s
 
-class LocalTransfer(HypothesisTransfer):
+
+
+
+
+
+
+
+
+
+
+class LocalTransferDelta(HypothesisTransfer):
     def __init__(self, configs=None):
-        super(LocalTransfer, self).__init__(configs)
-        self.cv_params = {}
-        self.configs.use_reg2 = False
-        self.configs.use_fused_lasso = False
-        #self.cv_params['sigma'] = 10**np.asarray(range(-4,4),dtype='float64')
-        self.sigma = 100
-        #self.cv_params['radius'] = np.asarray([.01, .05, .1, .15, .2],dtype='float64')
-        self.radius = .05
-        #self.cv_params['C'] = 10**np.asarray(range(-4,4),dtype='float64')
-        self.cv_params['C'] = 10**np.asarray(range(-6,6),dtype='float64')
-        if self.configs.use_fused_lasso:
-            self.cv_params['C'] = np.asarray([1,3,5,10,20])
-            #self.cv_params['C'] = np.asarray([1,5,10,50,100,500,1000000])
-        self.cv_params['C'] = np.insert(self.cv_params['C'],0,0)
-        self.cv_params['C2'] = np.asarray([0,.001,.01,.1,1,10,100,1000])
-        if not self.configs.use_reg2:
-            self.cv_params['C2'] = np.asarray([0])
-        self.cv_params['C2'] = np.zeros(1)
-        self.k = 1
-        #self.cv_params['k'] = np.asarray([1,2,4])
-        #self.cv_params['radius'] = np.asarray([.05, .1, .2])
-
-
-        self.target_learner = method.NadarayaWatsonMethod(deepcopy(configs))
-        self.target_learner.configs.use_validation = False
+        super(LocalTransferDelta, self).__init__(configs)
         self.base_learner = None
-        self.learn_g_just_labeled = True
         self.should_plot_g = False
-        self.use_fused_lasso = getattr(configs, 'use_fused_lasso', False)
         self.use_oracle = False
-        self.g_learner = None
-        #self.g_supervised = True
-        self.g_supervised = False
-        use_g_learner = getattr(configs, 'use_g_learner', True)
-        self.include_bias = False
-
-        if use_g_learner:
-            #self.g_learner = scipy_opt_methods.ScipyOptCombinePrediction(configs)
-            self.g_learner = scipy_opt_methods.ScipyOptNonparametricHypothesisTransfer(deepcopy(configs))
-            self.g_learner.configs.use_validation = False
-            self.g_learner.g_supervised = self.g_supervised
-            self.max_value = .5
-            self.g_learner.max_value = self.max_value
-            self.g_learner.include_bias = self.include_bias
-        self.no_reg = getattr(configs, 'no_reg', False)
-        if self.no_reg:
-            self.cv_params['C'] = np.zeros(1)
-            self.cv_params['C2'] = np.zeros(1)
-            self.cv_params['radius'] = np.zeros(1)
-        #self.g_learner = None
-        self.use_estimated_f = False
-        #self.metric = 'euclidean'
-        self.metric = configs.metric
-        self.target_learner.quiet = True
-        self.source_learner.quiet = True
-        if self.g_learner is not None:
-            self.g_learner.quiet = True
-
         self.quiet = False
 
+        self.C = None
+        self.C2 = 0
+        self.C3 = None
+        self.radius = None
+        self.cv_params = {}
+        self.cv_params['radius'] = np.asarray([.05, .1, .2],dtype='float64')
+        vals = [0] + list(range(-6,6))
+        vals.reverse()
+        self.cv_params['C'] = 10**np.asarray(vals,dtype='float64')
+        self.cv_params['C3'] = np.asarray([0, .2, .4, .6, .8, 1])
+        self.cv_params['sigma_L'] = self.create_cv_params(-5, 5)
+        configs = deepcopy(configs)
+        configs.use_validation = False
+        self.use_knn = False
+        self.use_fused_lasso = getattr(configs, 'use_fused_lasso', False)
+        self.target_learner = method.NadarayaWatsonMethod(deepcopy(configs))
+        self.source_learner = method.NadarayaWatsonMethod(deepcopy(configs))
+        if self.use_knn:
+            self.target_learner = method.NadarayaWatsonKNNMethod(deepcopy(configs))
+            self.source_learner = method.NadarayaWatsonKNNMethod(deepcopy(configs))
+
+        self.use_l2 = True
+
+        self.source_loo = False
+        self.use_stacking = False
+        if self.use_stacking:
+            self.train_source_learner = True
+            self.source_learner = transfer_methods.StackingTransfer(deepcopy(configs))
+        else:
+            self.source_learner = method.NadarayaWatsonMethod(deepcopy(configs))
+            if self.use_knn:
+                self.source_learner = method.NadarayaWatsonKNNMethod(deepcopy(configs))
+
+        self.g_learner = delta_transfer.CombinePredictionsDelta(deepcopy(configs))
+        self.g_learner.quiet = True
+        self.g_learner.use_l2 = self.use_l2
+        self.g_learner.use_fused_lasso = getattr(configs, 'use_fused_lasso', False)
+
+        self.metric = configs.metric
+        self.quiet = False
+        self.no_C3 = getattr(configs, 'no_C3', False)
+        self.constant_b = getattr(configs, 'constant_b', False)
+        self.use_radius = getattr(configs, 'use_radius', False)
+        self.linear_b = getattr(configs, 'linear_b', False)
+        self.clip_b = getattr(configs, 'clip_b', False)
+        if self.constant_b:
+            del self.cv_params['radius']
+            del self.cv_params['C']
+            del self.cv_params['sigma_L']
+        if self.linear_b:
+            del self.cv_params['radius']
+            del self.cv_params['sigma_L']
+        if not self.use_radius:
+            if 'radius' in self.cv_params:
+                del self.cv_params['radius']
+        if self.no_C3:
+            del self.cv_params['C3']
+            self.C3 = 0
 
     def train_g_learner(self, target_data):
+        self.g_learner.C3 = self.C3
+        self.g_learner.use_radius = self.use_radius
         target_data = target_data.get_subset(target_data.is_train)
         y_t, y_s, y_true = self.get_predictions(target_data)
 
@@ -233,28 +251,25 @@ class LocalTransfer(HypothesisTransfer):
             a = y_s - y_t
             b = y_t - y_true
         else:
-            a = y_s[:,0] - y_t[:,0]
-            b = y_t[:,0] - y_true[:,0]
-
+            a = y_s[:, 0] - y_t[:, 0]
+            b = y_t[:, 0] - y_true[:, 0]
 
         parametric_data = target_data.get_subset(is_labeled)
-        #parametric_data = target_data
+        # parametric_data = target_data
         parametric_data.a = a
         parametric_data.b = b
         parametric_data.y_s = y_s
         parametric_data.y_t = y_t
         parametric_data.set_target()
         parametric_data.set_train()
-        #assert target_data.is_regression
+        # assert target_data.is_regression
         if target_data.is_regression:
             parametric_data.data_set_ids[:] = self.configs.target_labels[0]
-        #s = np.hstack((a,b))
-        #s[parametric_data.x.argsort(0)]
+        # s = np.hstack((a,b))
+        # s[parametric_data.x.argsort(0)]
         self.g_learner.C = self.C
         self.g_learner.C2 = self.C2
-        self.g_learner.k = self.k
         self.g_learner.radius = self.radius
-        self.g_learner.sigma = self.sigma
         self.g_learner.cv_params = {}
         self.g_learner.train_and_test(parametric_data)
         '''
@@ -266,121 +281,32 @@ class LocalTransfer(HypothesisTransfer):
         print str(a)
         print 'C:' + str(self.C)
         '''
-        pass
-
-    def train_g_nonparametric(self, target_data):
-        y_t, y_s, y_true = self.get_predictions(target_data)
-
-        is_labeled = target_data.is_labeled
-        labeled_inds = is_labeled.nonzero()[0]
-        n_labeled = len(labeled_inds)
-        g = cvx.Variable(n_labeled)
-        '''
-        L = array_functions.make_laplacian_uniform(target_data.x[labeled_inds,:],self.radius,metric) \
-            + .0001*np.identity(n_labeled)
-        '''
-        L = array_functions.make_laplacian_kNN(target_data.x[labeled_inds,:],self.k,self.metric) \
-            + .0001*np.identity(n_labeled)
-        if self.use_fused_lasso:
-            reg = cvx_functions.create_fused_lasso(-L, g)
-        else:
-            reg = cvx.quad_form(g,L)
-        loss = cvx.sum_entries(
-            cvx.power(
-                cvx.mul_elemwise(y_s[:,0], g) + cvx.mul_elemwise(y_t[:,0], (1-g)) - y_true[:,0],
-                2
-            )
-        )
-        constraints = [g >= 0, g <= .5]
-        #constraints += [g[0] == .5, g[-1] == 0]
-        obj = cvx.Minimize(loss + self.C*reg)
-        prob = cvx.Problem(obj,constraints)
-
-        assert prob.is_dcp()
-        try:
-            prob.solve()
-            g_value = np.reshape(np.asarray(g.value),n_labeled)
-        except:
-            k = 0
-            #assert prob.status is None
-            print 'CVX problem: setting g = ' + str(k)
-            print '\tsigma=' + str(self.sigma)
-            print '\tC=' + str(self.C)
-            print '\tradius=' + str(self.radius)
-            g_value = k*np.ones(n_labeled)
-        if self.should_plot_g and enable_plotting and target_data.x.shape[1] == 1:
-            array_functions.plot_2d(target_data.x[labeled_inds,:],g_value)
-
-        labeled_train_data = target_data.get_subset(labeled_inds)
-        assert labeled_train_data.y.shape == g_value.shape
-        g_nw = method.NadarayaWatsonMethod(copy.deepcopy(self.configs))
-        labeled_train_data.is_regression = True
-        labeled_train_data.y = g_value
-        labeled_train_data.true_y = g_value
-        g_nw.configs.loss_function = loss_function.MeanSquaredError()
-
-        g_nw.tune_loo(labeled_train_data)
-        g_nw.train(labeled_train_data)
-        '''
-        a =np.hstack((g_value[labeled_train_data.x.argsort(0)], np.sort(labeled_train_data.x,0)))
-        print str(a)
-        print 'g_nw sigma: ' + str(g_nw.sigma)
-        print 'C:' + str(self.C)
-        '''
-        target_data.is_regression = True
-        self.g = g_nw.predict(target_data).fu
-        self.g[labeled_inds] = g_value
-        assert not np.any(np.isnan(self.g))
 
     def train_and_test(self, data):
         target_labels = self.configs.target_labels
-        target_data = data.get_transfer_subset(target_labels,include_unlabeled=True)
+        target_data = data.get_transfer_subset(target_labels, include_unlabeled=True)
         assert target_data.n > 0
         self.target_learner.train_and_test(target_data)
         if self.use_stacking:
             self.source_learner.train_and_test(data)
-        results =  super(LocalTransfer, self).train_and_test(data)
-        #print self.g_learner.g
+        results = super(LocalTransferDelta, self).train_and_test(data)
+        # print self.g_learner.g
+        '''
+        self.plot_g()
+        I = np.squeeze(self.g_learner.g_nw.x.argsort(0))
+        sorted_x = self.g_learner.g_nw.x[I,:]
+        sorted_g = self.g_learner.g_nw.y[I]
+        print sorted_x.T
+        print sorted_g
+        print self.g_learner.g_nw.sigma
+        '''
         return results
-
-    def plot_g(self):
-        x = np.linspace(0,1)
-        x = array_functions.vec_to_2d(x)
-        g_orig = self.g_learner.predict_g(x)
-        g = 1 / (1+g_orig)
-        array_functions.plot_2d(x,g)
-        pass
-
-    def plot_source(self):
-        x = np.linspace(0,1)
-        x = array_functions.vec_to_2d(x)
-        d = data_lib.Data()
-        d.x = x
-        d.y = np.nan*np.ones(x.shape[0])
-        d.is_regression = True
-        o = self.source_learner.predict(d)
-        array_functions.plot_2d(x, o.y)
-
-    def plot_target(self):
-        x = np.linspace(0,1)
-        x = array_functions.vec_to_2d(x)
-        d = data_lib.Data()
-        d.x = x
-        d.y = np.nan*np.ones(x.shape[0])
-        d.is_regression = True
-        o = self.target_learner.predict(d)
-        array_functions.plot_2d(x, o.y)
 
     def train(self, data):
         target_data = self.get_target_subset(data)
         #self.target_learner.train_and_test(target_data)
         self.target_learner.train(target_data)
-        if self.g_learner is not None:
-            self.train_g_learner(target_data)
-        elif self.learn_g_just_labeled:
-            self.train_g_nonparametric(target_data)
-        else:
-            self.train_g_nonparametric_all(target_data)
+        self.train_g_learner(target_data)
         I = target_data.is_labeled
         plot_functions = False
         if plot_functions:
@@ -390,7 +316,6 @@ class LocalTransfer(HypothesisTransfer):
         if self.should_plot_g and enable_plotting and target_data.x.shape[1] == 1:
             self.plot_g()
             pass
-
 
     def predict(self, data):
         o = self.target_learner.predict(data)
@@ -434,33 +359,63 @@ class LocalTransfer(HypothesisTransfer):
         assert not (np.isnan(o.fu)).any()
         return o
 
+    def plot_source(self):
+        x = np.linspace(0,1)
+        x = array_functions.vec_to_2d(x)
+        d = data_lib.Data()
+        d.x = x
+        d.y = np.nan*np.ones(x.shape[0])
+        d.is_regression = True
+        o = self.source_learner.predict(d)
+        array_functions.plot_2d(x, o.y)
+
+    def plot_target(self):
+        x = np.linspace(0,1)
+        x = array_functions.vec_to_2d(x)
+        d = data_lib.Data()
+        d.x = x
+        d.y = np.nan*np.ones(x.shape[0])
+        d.is_regression = True
+        o = self.target_learner.predict(d)
+        array_functions.plot_2d(x, o.y)
+
+    def plot_g(self):
+        x = np.linspace(0,1)
+        x = array_functions.vec_to_2d(x)
+        g = self.g_learner.predict_g(x)
+        array_functions.plot_2d(x,g)
+        pass
+
     @property
     def prefix(self):
-        s = 'LocalTransfer'
-        if 'use_oracle' in self.__dict__ and self.use_oracle:
-            s += '-Oracle'
-        if 'no_reg' in self.__dict__ and self.no_reg:
-            s += '-no_reg'
-        if 'g_learner' in self.__dict__ and self.g_learner is not None:
-            s += '-' + self.g_learner.prefix
-        elif 'use_fused_lasso' in self.__dict__ and self.use_fused_lasso:
-            s += '-l1'
-        else:
-            s += '-l2'
-        if 'use_estimated_f' in self.__dict__ and self.use_estimated_f:
-            s += '-est_f'
-        '''
-        if 'max_value' in self.__dict__ and self.max_value != 1:
-            s += '-max_value=' + str(self.max_value)
-        '''
-        if 'g_supervised' in self.__dict__ and self.g_supervised:
-            s += '-g_sup'
-        if 'include_bias' in self.__dict__ and self.include_bias:
-            s += '-bias'
+        s = 'LocalTransferDelta'
+        is_nonparametric = not (getattr(self,'linear_b',False) or getattr(self,'constant_b',False))
+        if getattr(self, 'no_C3', False):
+            s += '_C3=0'
+        if getattr(self, 'use_radius', False):
+            s += '_radius'
+        if getattr(self.configs, 'constraints', []):
+            s += '_cons'
+        if getattr(self, 'use_l2', False):
+            s += '_l2'
+        if getattr(self, 'constant_b', False):
+            s += '_constant-b'
+        if getattr(self, 'linear_b', False):
+            s += '_linear-b'
+            if getattr(self, 'clip_b', False):
+                s += '_clip-b'
+        if getattr(self.configs, 'use_validation', False):
+            s += '_use-val'
+        if not self.use_fused_lasso and is_nonparametric:
+            s += '_lap-reg'
         if getattr(self, 'use_stacking', False):
             s += '-stacking'
+        if getattr(self, 'source_loo', False):
+            s += '-sourceLOO'
+        if getattr(self, 'use_knn', False):
+            s += '_knn'
+        s += '-TESTING_REFACTOR'
         return s
-
 
 class OffsetTransfer(HypothesisTransfer):
     def __init__(self, configs=None):
@@ -520,122 +475,6 @@ class OffsetTransfer(HypothesisTransfer):
         if getattr(self, 'joint_cv', False):
             s += '-jointCV'
         return s
-
-
-class LocalTransferDelta(LocalTransfer):
-    def __init__(self, configs=None):
-        super(LocalTransferDelta, self).__init__(configs)
-        self.C = None
-        self.C2 = 0
-        self.C3 = None
-        self.radius = None
-        self.cv_params = {}
-        self.cv_params['radius'] = np.asarray([.05, .1, .2],dtype='float64')
-        vals = [0] + list(range(-6,6))
-        vals.reverse()
-        self.cv_params['C'] = 10**np.asarray(vals,dtype='float64')
-        self.cv_params['C3'] = np.asarray([0, .2, .4, .6, .8, 1])
-        configs = deepcopy(configs)
-        configs.use_validation = False
-        self.use_knn = True
-        self.target_learner = method.NadarayaWatsonMethod(deepcopy(configs))
-        self.source_learner = method.NadarayaWatsonMethod(deepcopy(configs))
-        if self.use_knn:
-            self.target_learner = method.NadarayaWatsonKNNMethod(deepcopy(configs))
-            self.source_learner = method.NadarayaWatsonKNNMethod(deepcopy(configs))
-
-        self.use_l2 = True
-
-        self.source_loo = False
-        self.use_stacking = False
-        if self.use_stacking:
-            self.train_source_learner = True
-            self.source_learner = transfer_methods.StackingTransfer(deepcopy(configs))
-        else:
-            self.source_learner = method.NadarayaWatsonMethod(deepcopy(configs))
-            if self.use_knn:
-                self.source_learner = method.NadarayaWatsonKNNMethod(deepcopy(configs))
-
-        self.g_learner = delta_transfer.CombinePredictionsDelta(deepcopy(configs))
-        self.g_learner.quiet = True
-        self.g_learner.use_l2 = self.use_l2
-        self.g_learner.use_fused_lasso = getattr(configs, 'use_fused_lasso', False)
-
-        self.metric = configs.metric
-        self.quiet = False
-        self.no_C3 = getattr(configs, 'no_C3', False)
-        self.constant_b = getattr(configs, 'constant_b', False)
-        self.use_radius = getattr(configs, 'use_radius', False)
-        self.linear_b = getattr(configs, 'linear_b', False)
-        self.clip_b = getattr(configs, 'clip_b', False)
-        if self.constant_b:
-            del self.cv_params['radius']
-            del self.cv_params['C']
-        if self.linear_b:
-            del self.cv_params['radius']
-        if not self.use_radius:
-            if 'radius' in self.cv_params:
-                del self.cv_params['radius']
-        if self.no_C3:
-            del self.cv_params['C3']
-            self.C3 = 0
-
-    def train_g_learner(self, target_data):
-        self.g_learner.C3 = self.C3
-        self.g_learner.use_radius = self.use_radius
-        super(LocalTransferDelta, self).train_g_learner(target_data)
-        pass
-
-    def train_and_test(self, data):
-        r = super(LocalTransferDelta, self).train_and_test(data)
-        '''
-        self.plot_g()
-        I = np.squeeze(self.g_learner.g_nw.x.argsort(0))
-        sorted_x = self.g_learner.g_nw.x[I,:]
-        sorted_g = self.g_learner.g_nw.y[I]
-        print sorted_x.T
-        print sorted_g
-        print self.g_learner.g_nw.sigma
-        '''
-        return r
-
-    def plot_g(self):
-        x = np.linspace(0,1)
-        x = array_functions.vec_to_2d(x)
-        g = self.g_learner.predict_g(x)
-        array_functions.plot_2d(x,g)
-        pass
-
-    @property
-    def prefix(self):
-        s = 'LocalTransferDelta'
-        is_nonparametric = not (getattr(self,'linear_b',False) or getattr(self,'constant_b',False))
-        if getattr(self, 'no_C3', False):
-            s += '_C3=0'
-        if getattr(self, 'use_radius', False):
-            s += '_radius'
-        if getattr(self.configs, 'constraints', []):
-            s += '_cons'
-        if getattr(self, 'use_l2', False):
-            s += '_l2'
-        if getattr(self, 'constant_b', False):
-            s += '_constant-b'
-        if getattr(self, 'linear_b', False):
-            s += '_linear-b'
-            if getattr(self, 'clip_b', False):
-                s += '_clip-b'
-        if getattr(self.configs, 'use_validation', False):
-            s += '_use-val'
-        if not self.use_fused_lasso and is_nonparametric:
-            s += '_lap-reg'
-        if getattr(self, 'use_stacking', False):
-            s += '-stacking'
-        if getattr(self, 'source_loo', False):
-            s += '-sourceLOO'
-        if getattr(self, 'use_knn', False):
-            s += '_knn'
-        return s
-
 
 class LocalTransferDeltaSMS(LocalTransferDelta):
     def __init__(self, configs=None):

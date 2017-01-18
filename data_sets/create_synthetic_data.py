@@ -25,6 +25,16 @@ synthetic_hypothesis_transfer_class_file = 'synthetic_hyp_trans_class%s/raw_data
 synthetic_flip_file = 'synthetic_flip/raw_data.pkl'
 synthetic_piecewise_file = 'synthetic_piecewise/raw_data.pkl'
 
+synthetic_slant_multitask = 'synthetic_slant_multitask/raw_data.pkl'
+
+def create_ids(n_per_id, num_ids):
+    ids = np.zeros(n_per_id*num_ids)
+    i = 0
+    for curr_id in range(num_ids):
+        ids[i:i+n_per_id] = curr_id
+        i += n_per_id
+    return ids
+
 def create_synthetic_classification(file_dir='',local=True):
     dim = 1
     n_target = 200
@@ -171,6 +181,21 @@ def create_synthetic_step_linear_transfer(file_dir=''):
         s = file_dir + '/' + s
     helper_functions.save_object(s,data)
 
+def create_synthetic_multitask_transfer():
+    slope_source = 8
+    target_slope1 = 4
+    target_slope2 = 4.5
+    source_func = lambda x: slope_source*x
+    target_funcs = [
+        lambda x: target_slope1*x + 3,
+        lambda x: target_slope2*x + 8
+    ]
+    data = create_synthetic_regression_transfer(target_funcs, source_func)
+    array_functions.plot_2d(data.x, data.y, data.data_set_ids, title='Multitask Slant')
+    s = synthetic_slant_multitask
+    helper_functions.save_object(s, data)
+
+
 def create_synthetic_delta_linear_transfer():
     slope = 5
     target_fun = lambda x: slope*x
@@ -202,16 +227,27 @@ def create_synthetic_curve_transfer():
     s = synthetic_curve_file
     helper_functions.save_object(s, data)
 
-def create_synthetic_regression_transfer(target_fun, source_fun, n_target=100, n_source=100, sigma=.5):
-    n = n_target + n_source
+def create_synthetic_regression_transfer(target_fun_or_list, source_fun_or_list, n_target=100, n_source=100, sigma=.5):
+    try:
+        source_funcs = list(source_fun_or_list)
+    except:
+        source_funcs = [source_fun_or_list]
+    try:
+        target_funcs = list(target_fun_or_list)
+    except:
+        target_funcs = [target_fun_or_list]
+    num_target_funcs = len(target_funcs)
+    num_source_funcs = len(source_funcs)
+    n = n_target*num_target_funcs + n_source*num_source_funcs
     data = data_class.Data()
     data.x = np.random.uniform(0,1,(n,1))
-    data.data_set_ids = np.zeros(n)
-    data.data_set_ids[n_target:] = 1
-    is_target = data.data_set_ids == 0
+    assert n_target == n_source
+    data.data_set_ids = create_ids(n_target, num_source_funcs + num_target_funcs)
     data.y = np.zeros(n)
-    data.y[is_target] = target_fun(data.x[is_target])
-    data.y[~is_target] = source_fun(data.x[~is_target])
+    all_funcs = target_funcs + source_funcs
+    for id, f in enumerate(all_funcs):
+        I = data.data_set_ids == id
+        data.y[I] = f(data.x[I])
     data.y += np.random.normal(0,sigma,n)
     data.set_true_y()
     data.set_train()
@@ -302,4 +338,5 @@ if __name__ == '__main__':
     #create_synthetic_hypothesis_transfer(kt=2, ks=2)
     #create_synthetic_linear_regression(p=10, num_non_zero=4)
     #create_synthetic_flip_transfer()
-    create_synthetic_piecewise_transfer()
+    #create_synthetic_piecewise_transfer()
+    create_synthetic_multitask_transfer()

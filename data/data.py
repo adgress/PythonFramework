@@ -249,6 +249,10 @@ class LabeledData(LabeledVector):
             return array_functions.find_set(self.true_y,labels_or_ids)
 
     def get_transfer_subset(self,labels_or_ids,include_unlabeled=False):
+        try:
+            labels_or_ids[0]
+        except:
+            labels_or_ids = np.asarray([labels_or_ids])
         assert len(labels_or_ids) > 0
         if self.is_regression:
             inds = array_functions.find_set(self.data_set_ids,labels_or_ids)
@@ -564,14 +568,16 @@ class SplitData(object):
             d.y[to_keep] = np.nan
         if num_labeled is not None:
             if d.is_regression:
-                labeled_inds = np.nonzero(d.is_train & d.is_labeled)[0]
-                if self.use_data_set_ids and \
-                                d.data_set_ids is not None and \
-                                self.target_labels is not None:
-                    labeled_inds = np.nonzero(d.is_train & (d.data_set_ids == self.target_labels))[0]
-                to_clear = labeled_inds[num_labeled:]
-                d.y[to_clear] = np.nan
-                d.y[d.is_test] = np.nan
+                for label in self.target_labels:
+                    labeled_inds = np.nonzero(d.is_train & d.is_labeled)[0]
+                    if self.use_data_set_ids and \
+                                    d.data_set_ids is not None and \
+                                    self.target_labels is not None:
+                        #labeled_inds = np.nonzero(d.is_train & (d.data_set_ids == self.target_labels))[0]
+                        labeled_inds = np.nonzero(d.is_train & (d.data_set_ids == label))[0]
+                    to_clear = labeled_inds[num_labeled:]
+                    d.y[to_clear] = np.nan
+                    d.y[d.is_test] = np.nan
             else:
                 d.y = d.y.astype('float32')
                 d.true_y = d.true_y.astype('float32')

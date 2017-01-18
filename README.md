@@ -81,10 +81,14 @@ export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libgfortran.so.3
 #NOTE: it seems like just running the following will suffice:
 conda install mpi4py
 
+#NOTE: After doing this I had to use 'mpirun' instead of 'mpiexec'
+
 You may need to install openmpi and update LD_LIBRARY_PATH
 
 I had trouble with mpi4py version 2.0.0, so I install the previous version instead (1.4.3?)
 This can be done using 'pip install mpi4py=X.Y.Z'
+
+
 
 4) Copy (or generate) datasets
 

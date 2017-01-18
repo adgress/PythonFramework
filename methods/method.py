@@ -20,6 +20,7 @@ from sklearn import linear_model
 from sklearn import neighbors
 from sklearn.metrics import pairwise
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.gaussian_process import GaussianProcess
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 from sklearn.feature_selection import SelectKBest
@@ -685,6 +686,12 @@ class SKLMeanRegressor(ScikitLearnMethod):
     def __init__(self,configs=None):
         #assert False, 'Test this'
         super(SKLMeanRegressor, self).__init__(configs,dummy.DummyRegressor('mean'))
+
+class SKLGaussianProcess(ScikitLearnMethod):
+    def __init__(self,configs=None):
+        #assert False, 'Test this'
+        super(SKLGaussianProcess, self).__init__(configs,GaussianProcess)
+        self.cv_params['nugget'] = self.create_cv_params(-5, 5)
 
 '''
 class PyQtFitMethod(Method):

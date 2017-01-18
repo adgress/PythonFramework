@@ -51,18 +51,24 @@ class HypothesisTransfer(method.Method):
         return target_data
 
     def get_predictions(self, target_data):
-        o = self.target_learner.predict_loo(target_data)
+        o = self.target_learner[0].predict_loo(target_data)
+        idx = 0
+        is_labeled = target_data.is_labeled
+        if self.separate_target_domains:
+            is_labeled = np.zeros(target_data.is_labeled.sum(), dtype=np.int)
+            for i, label in enumerate(self.configs.target_labels):
+                I = (target_data.data_set_ids == label) & target_data.is_labeled
+                data_i = target_data.get_subset(I)
+                o_i = self.target_learner[i].predict_loo(data_i)
+                o.y[idx:idx+data_i.n] = o_i.y
+                o.fu[idx:idx+data_i.n] = o_i.fu
+                o.true_y[idx:idx+data_i.n] = o_i.true_y
+                is_labeled[idx:idx+data_i.n] = I.nonzero()[0]
+                idx += data_i.n
         if self.source_loo:
             o_source = self.source_learner.train_predict_loo(target_data)
         else:
             o_source = self.source_learner.predict(target_data)
-        is_labeled = target_data.is_labeled
-
-        target_labels = self.configs.target_labels
-        '''
-        if self.use_estimated_f:
-            o = self.target_learner.predict_loo(target_data.get_subset(is_labeled))
-        '''
         if target_data.is_regression:
             y_t = array_functions.vec_to_2d(o.fu)
             if self.source_loo:
@@ -180,10 +186,13 @@ class LocalTransferDelta(HypothesisTransfer):
         self.should_plot_g = False
         self.use_oracle = False
         self.quiet = False
-
-        self.C = None
+        self.separate_target_domains = getattr(configs, 'separate_target_domains', False)
+        self.multitask = getattr(configs, 'multitask', False)
+        self.C = 0
         self.C2 = 0
         self.C3 = None
+        self.reg_MT = 0
+        self.sigma_g_learner = None
         self.radius = None
         self.cv_params = {}
         self.cv_params['radius'] = np.asarray([.05, .1, .2],dtype='float64')
@@ -196,10 +205,10 @@ class LocalTransferDelta(HypothesisTransfer):
         configs.use_validation = False
         self.use_knn = False
         self.use_fused_lasso = getattr(configs, 'use_fused_lasso', False)
-        self.target_learner = method.NadarayaWatsonMethod(deepcopy(configs))
+        self.target_learner = [method.NadarayaWatsonMethod(deepcopy(configs))]
         self.source_learner = method.NadarayaWatsonMethod(deepcopy(configs))
         if self.use_knn:
-            self.target_learner = method.NadarayaWatsonKNNMethod(deepcopy(configs))
+            self.target_learner = [method.NadarayaWatsonKNNMethod(deepcopy(configs))]
             self.source_learner = method.NadarayaWatsonKNNMethod(deepcopy(configs))
 
         self.use_l2 = True
@@ -214,7 +223,10 @@ class LocalTransferDelta(HypothesisTransfer):
             if self.use_knn:
                 self.source_learner = method.NadarayaWatsonKNNMethod(deepcopy(configs))
 
+        #self.g_learner = [delta_transfer.CombinePredictionsDelta(deepcopy(configs))]
         self.g_learner = delta_transfer.CombinePredictionsDelta(deepcopy(configs))
+        if self.multitask:
+            self.g_learner = delta_transfer.CombinePredictionsDeltaMultitask(deepcopy(configs))
         self.g_learner.quiet = True
         self.g_learner.use_l2 = self.use_l2
         self.g_learner.use_fused_lasso = getattr(configs, 'use_fused_lasso', False)
@@ -233,6 +245,11 @@ class LocalTransferDelta(HypothesisTransfer):
         elif self.linear_b:
             del self.cv_params['radius']
             del self.cv_params['sigma_g_learner']
+        if self.multitask:
+            assert self.linear_b
+            del self.cv_params['C']
+            self.cv_params['reg_MT'] = self.create_cv_params(-5, 5)
+            self.C = 1e-3
         if not self.use_radius:
             if 'radius' in self.cv_params:
                 del self.cv_params['radius']
@@ -241,9 +258,14 @@ class LocalTransferDelta(HypothesisTransfer):
             self.C3 = 0
 
     def train_g_learner(self, target_data):
+        self.g_learner.reg_MT = self.reg_MT
         self.g_learner.C3 = self.C3
         self.g_learner.use_radius = self.use_radius
         self.g_learner.sigma = self.sigma_g_learner
+        self.g_learner.C = self.C
+        self.g_learner.C2 = self.C2
+        self.g_learner.radius = self.radius
+        self.g_learner.cv_params = {}
         target_data = target_data.get_subset(target_data.is_train)
         y_t, y_s, y_true = self.get_predictions(target_data)
 
@@ -263,15 +285,14 @@ class LocalTransferDelta(HypothesisTransfer):
         parametric_data.y_t = y_t
         parametric_data.set_target()
         parametric_data.set_train()
+        parametric_data.data_set_ids = target_data.data_set_ids[is_labeled]
         # assert target_data.is_regression
+        '''
         if target_data.is_regression:
             parametric_data.data_set_ids[:] = self.configs.target_labels[0]
+        '''
         # s = np.hstack((a,b))
         # s[parametric_data.x.argsort(0)]
-        self.g_learner.C = self.C
-        self.g_learner.C2 = self.C2
-        self.g_learner.radius = self.radius
-        self.g_learner.cv_params = {}
         self.g_learner.train_and_test(parametric_data)
         '''
         I = parametric_data.x.argsort(0)
@@ -285,9 +306,20 @@ class LocalTransferDelta(HypothesisTransfer):
 
     def train_and_test(self, data):
         target_labels = self.configs.target_labels
-        target_data = data.get_transfer_subset(target_labels, include_unlabeled=True)
-        assert target_data.n > 0
-        self.target_learner.train_and_test(target_data)
+        num_target_domains = target_labels.size
+        assert len(self.target_learner) == 1
+        if self.separate_target_domains:
+            for i in range(num_target_domains):
+                if i > 0:
+                    self.target_learner.append(deepcopy(self.target_learner[0]))
+                target_data = data.get_transfer_subset(target_labels[i], include_unlabeled=True)
+                assert target_data.n > 0
+                self.target_learner[i].train_and_test(target_data)
+        else:
+            target_data = self.get_target_subset(data)
+            self.target_learner[0].train_and_test(target_data)
+        if self.use_stacking:
+            assert num_target_domains == 1
         if self.use_stacking:
             self.source_learner.train_and_test(data)
         results = super(LocalTransferDelta, self).train_and_test(data)
@@ -304,9 +336,15 @@ class LocalTransferDelta(HypothesisTransfer):
         return results
 
     def train(self, data):
+        target_labels = self.configs.target_labels
+        if self.separate_target_domains:
+            for i, label in enumerate(target_labels):
+                target_data = data.get_transfer_subset(target_labels[i], include_unlabeled=True)
+                self.target_learner[i].train(target_data)
+        else:
+            target_data = self.get_target_subset(data)
+            self.target_learner[0].train(target_data)
         target_data = self.get_target_subset(data)
-        #self.target_learner.train_and_test(target_data)
-        self.target_learner.train(target_data)
         self.train_g_learner(target_data)
         I = target_data.is_labeled
         plot_functions = False
@@ -319,7 +357,13 @@ class LocalTransferDelta(HypothesisTransfer):
             pass
 
     def predict(self, data):
-        o = self.target_learner.predict(data)
+        o = self.target_learner[0].predict(data)
+        if self.separate_target_domains:
+            for i, label in enumerate(self.configs.target_labels):
+                I = data.data_set_ids == label
+                o_i = self.target_learner[i].predict(data)
+                o.y[I] = o_i.y[I]
+                o.fu[I] = o_i.fu[I]
         is_target = data.is_target
         o_source = self.source_learner.predict(data.get_subset(is_target))
         if not data.is_regression:
@@ -333,11 +377,11 @@ class LocalTransferDelta(HypothesisTransfer):
             fu_t = o.fu[is_target,i]
             fu_s = o_source.fu[:,i]
             if self.g_learner is not None:
-                pred = self.g_learner.combine_predictions(data.x[is_target,:],fu_s,fu_t)
-                if data.x.shape[1] == 1:
+                pred = self.g_learner.combine_predictions(data.x[is_target,:],fu_s,fu_t, data.data_set_ids[is_target])
+                if data.x.shape[1] == 1 and not self.multitask:
                     x = scipy.linspace(data.x.min(),data.x.max(),100)
                     x = array_functions.vec_to_2d(x)
-                    g = self.g_learner.predict_g(x)
+                    g = self.g_learner.predict_g(x, data.data_set_ids)
                     o.x = x
                     o.g = g
             else:
@@ -351,7 +395,7 @@ class LocalTransferDelta(HypothesisTransfer):
             fu = array_functions.normalize_rows(fu)
             o.fu = fu
             o.y = fu.argmax(1)
-        if data.x.shape[1] == 1:
+        if data.x.shape[1] == 1 and not self.multitask:
             x = array_functions.vec_to_2d(scipy.linspace(data.x.min(),data.x.max(),100))
             o.linspace_x = x
             o.linspace_g = self.g_learner.predict_g(x)
@@ -415,6 +459,10 @@ class LocalTransferDelta(HypothesisTransfer):
             s += '-sourceLOO'
         if getattr(self, 'use_knn', False):
             s += '_knn'
+        if getattr(self, 'separate_target_domains', False):
+            s += '_sep-target'
+        if getattr(self, 'multitask', False):
+            s += '_multitask'
         #s += '-TESTING_REFACTOR'
         return s
 

@@ -267,7 +267,7 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
             #print 'succeeded'
 
     def predict(self, data):
-        fu = self.combine_predictions(data.x,data.y_s,data.y_t)
+        fu = self.combine_predictions(data.x,data.y_s,data.y_t, data.data_set_ids)
         o =  results.Output(data)
         o.fu = fu
         o.y = fu

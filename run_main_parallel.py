@@ -98,6 +98,7 @@ if __name__ == '__main__':
                 timer.toc()
                 main.run_main(configs=c)
     else:
+        assert False, 'Use MPI instead!'
         if use_multiprocessing_pool:
             pool = multiprocessing_utility.LoggingPool(processes=pool_size)
             pool.map(launch_subprocess_args, num_labels_list)

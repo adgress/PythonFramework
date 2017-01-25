@@ -153,7 +153,7 @@ def make_smoothing_matrix(W):
     return S
 
 def bin_data(x, num_bins=10):
-    assert False, 'Use np.digitize instead?'
+    #assert False, 'Use np.digitize instead?'
     x = np.squeeze(x)
     assert x.ndim == 1
     bins = np.empty(num_bins-1)

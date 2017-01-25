@@ -41,7 +41,6 @@ pca_feats=20
 #max_features=100
 boston_num_feats = np.inf
 concrete_num_feats = np.inf
-create_transfer_data = False
 
 boston_housing_raw_data_file = 'boston_housing%s/raw_data.pkl'
 ng_raw_data_file = '20ng-%d/raw_data.pkl' % max_features
@@ -580,7 +579,32 @@ def create_boston_housing(file_dir=''):
     s = boston_housing_raw_data_file
     x = data.x
     y = data.y
-    if create_transfer_data:
+    create_transfer_data = False
+    create_y_split = True
+    if create_y_split:
+        from base import transfer_project_configs as configs_lib
+        pc = configs_lib.ProjectConfigs()
+        main_configs = configs_lib.MainConfigs(pc)
+        learner = main_configs.learner
+        learner.quiet = True
+        learner.target_learner[0].quiet = True
+        learner.source_learner.quiet = True
+        learner.g_learner.quiet = False
+        domain_ids = array_functions.bin_data(data.y, num_bins=2)
+        data.data_set_ids = domain_ids
+        data.is_train[:] = True
+        corrs = []
+        for i in range(x.shape[1]):
+            corrs.append(scipy.stats.pearsonr(x[:,i], y)[0])
+        learner.train_and_test(data)
+        print 'Just playing with data - not meant to save it'
+        for i, name in enumerate(data.feature_names):
+            v = learner.g_learner.g[i]
+            if abs(v) < 1e-6:
+                v = 0
+            print name + ': ' + str(v)
+        exit()
+    elif create_transfer_data:
         x_ind = 5
         domain_ind = 12
         domain_ids = np.ones(x.shape[0])
@@ -833,7 +857,9 @@ if __name__ == "__main__":
     #create_pollution(series_to_use=2, num_instances=500, save_data=True)
     #create_spatial_data()
     #create_spatial_data('uber')
-    create_spatial_data('irs-income')
+    #create_spatial_data('irs-income')
+    #create_concrete(True)
+    create_boston_housing()
     '''
     for i in range(200):
         create_pollution(labels_to_use=[0, 1], series_to_use=i, num_instances=500, save_data=False)

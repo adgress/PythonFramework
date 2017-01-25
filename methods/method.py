@@ -298,9 +298,12 @@ class Method(Saveable):
         if aggregate_test_results:
             performance_on_test_data = errors_on_test_data[errors.argmin()]
         if not self.quiet and mpi_utility.is_group_master():
-            print best_params
-            print 'CV Error: ' + str(errors.min())
-            print 'Test Error: ' + str(errors_on_test_data[errors.argmin()])
+            if test_data.n == 0:
+                print 'No test data!'
+            else:
+                print best_params
+                print 'CV Error: ' + str(errors.min())
+                print 'Test Error: ' + str(errors_on_test_data[errors.argmin()])
         self.best_params = best_params
 
         return [best_params, min_error, performance_on_test_data]
@@ -630,7 +633,8 @@ class SKLRidgeRegression(ScikitLearnMethod):
             self.train(d)
             o_i = self.predict(d)
             y[i] = o_i.y[i]
-            d.reveal_labels(i)
+            #d.reveal_labels(i)
+            d.y[i] = d.true_y[i]
         o = Output(d)
         o.fu = y
         o.y = y

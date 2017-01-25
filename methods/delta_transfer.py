@@ -39,6 +39,29 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
         is_labeled = data.is_labeled
         labeled_inds = is_labeled.nonzero()[0]
         n_labeled = len(labeled_inds)
+
+        plot_lasso_path = False
+        if plot_lasso_path:
+            y_tilde = y_s - y
+            #x = data.x[is_labeled, :]
+            x = self.transform.fit_transform(data.x[is_labeled, :])
+            from sklearn import linear_model
+            import matplotlib.pyplot as plt
+            regs, _, coefs = linear_model.lars_path(x, y_tilde, method='lasso', )
+            xx = np.sum(np.abs(coefs.T), axis=1)
+            xx /= xx[-1]
+            plt.plot(xx, coefs.T)
+            ymin, ymax = plt.ylim()
+            plt.vlines(xx, ymin, ymax, linestyle='dashed')
+            plt.xlabel('Normalized Norm of Coefficients')
+            plt.ylabel('Coefficients')
+            plt.title('LASSO Path for Boston Housing Data')
+            plt.legend(data.feature_names)
+            plt.axis('tight')
+            xmin, xmax = plt.xlim()
+            plt.xlim(xmin, xmax + .3)
+            plt.show()
+
         if self.linear_b:
             g = cvx.Variable(data.p)
             b = cvx.Variable(1)
@@ -66,14 +89,10 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
                     reg = cvx.quad_form(g,L)
                     #reg = g.T * L * g
             err = self.C3*y_t + (1 - self.C3)*(y_s+g) - y
-        #err = y_s + g - y
-        err_abs = cvx.abs(err)
         err_l2 = cvx.power(err,2)
-        err_huber = cvx.huber(err, 2)
-        if self.use_l2:
-            loss = cvx.sum_entries(err_l2)
-        else:
-            loss = cvx.sum_entries(err_huber)
+        loss = cvx.sum_entries(err_l2)
+        if not self.use_l2:
+            reg = cvx.norm(g, 1)
         #constraints = [g >= -2, g <= 2]
         #constraints = [g >= -4, g <= 0]
         #constraints = [g >= 4, g <= 4]

@@ -200,6 +200,11 @@ class LocalTransferDelta(HypothesisTransfer):
         vals.reverse()
         self.cv_params['C'] = 10**np.asarray(vals,dtype='float64')
         self.cv_params['C3'] = np.asarray([0, .2, .4, .6, .8, 1])
+
+        hard_coded_reg_params = False
+        if hard_coded_reg_params:
+            self.cv_params['C3'] = np.asarray([0])
+            self.cv_params['C'] = np.asarray([30])
         self.cv_params['sigma_g_learner'] = self.create_cv_params(-5, 5)
         configs = deepcopy(configs)
         configs.use_validation = False
@@ -207,10 +212,13 @@ class LocalTransferDelta(HypothesisTransfer):
         self.use_fused_lasso = getattr(configs, 'use_fused_lasso', False)
         self.target_learner = [method.NadarayaWatsonMethod(deepcopy(configs))]
         self.source_learner = method.NadarayaWatsonMethod(deepcopy(configs))
+        use_linear = False
         if self.use_knn:
             self.target_learner = [method.NadarayaWatsonKNNMethod(deepcopy(configs))]
             self.source_learner = method.NadarayaWatsonKNNMethod(deepcopy(configs))
-
+        if use_linear:
+            self.target_learner = [method.SKLRidgeRegression(deepcopy(configs))]
+            self.source_learner = method.SKLRidgeRegression(deepcopy(configs))
         self.use_l2 = True
 
         self.source_loo = False
@@ -333,6 +341,12 @@ class LocalTransferDelta(HypothesisTransfer):
         print sorted_g
         print self.g_learner.g_nw.sigma
         '''
+        print_sparse_g = False
+        if print_sparse_g:
+            g = self.g_learner.g
+            g[np.abs(g) < 1e-5] = 0
+            for name, gi in zip(data.feature_names, g):
+                print name + ': ' + str(gi)
         return results
 
     def train(self, data):
@@ -395,11 +409,12 @@ class LocalTransferDelta(HypothesisTransfer):
             fu = array_functions.normalize_rows(fu)
             o.fu = fu
             o.y = fu.argmax(1)
+        '''
         if data.x.shape[1] == 1 and not self.multitask:
             x = array_functions.vec_to_2d(scipy.linspace(data.x.min(),data.x.max(),100))
             o.linspace_x = x
             o.linspace_g = self.g_learner.predict_g(x)
-
+        '''
         assert not (np.isnan(o.y)).any()
         assert not (np.isnan(o.fu)).any()
         return o

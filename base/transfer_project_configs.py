@@ -50,6 +50,7 @@ data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
 #data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
 #data_set_to_use = bc.DATA_SYNTHETIC_CROSS
+#data_set_to_use = bc.DATA_SYNTHETIC_SLANT_MULTITASK
 
 PLOT_PARAMETRIC = 1
 PLOT_VALIDATION = 2
@@ -58,7 +59,8 @@ PLOT_SMS = 4
 PLOT_TABLE = 5
 PLOT_TABLE_VAL = 6
 PLOT_ALPHA = 7
-plot_idx = PLOT_PARAMETRIC
+#plot_idx = PLOT_PARAMETRIC
+plot_idx = PLOT_CONSTRAINED
 max_rows = 1
 fontsize = 20
 
@@ -70,8 +72,9 @@ run_experiments = True
 #show_legend_on_all = False
 show_legend_on_all = True
 
-run_batch_exps = True
-use_1d_data = True
+run_batch_exps = False
+vis_batch = True
+use_1d_data = False
 use_sms_plot_data_sets = plot_idx == PLOT_SMS
 
 use_validation = False
@@ -82,8 +85,10 @@ no_C3 = False
 use_radius = False
 include_scale = False
 constant_b = False
-linear_b = False
+linear_b = True
 clip_b = True
+separate_target_domains = False
+multitask = False
 
 synthetic_data_sets = [
     bc.DATA_SYNTHETIC_CURVE,
@@ -91,6 +96,7 @@ synthetic_data_sets = [
     bc.DATA_SYNTHETIC_DELTA_LINEAR,
     bc.DATA_SYNTHETIC_CROSS,
     bc.DATA_SYNTHETIC_SLANT,
+    bc.DATA_SYNTHETIC_SLANT_MULTITASK
 ]
 
 real_data_sets_1d = [
@@ -211,6 +217,11 @@ class ProjectConfigs(bc.ProjectConfigs):
         elif data_set == bc.DATA_SYNTHETIC_CURVE:
             self.set_synthetic_regression('synthetic_curve')
             self.num_labels = np.asarray([10,20,30])
+        elif data_set == bc.DATA_SYNTHETIC_SLANT_MULTITASK:
+            self.set_synthetic_regression('synthetic_slant_multitask')
+            self.target_labels = np.asarray([0,1])
+            self.source_labels = np.asarray([2])
+            self.num_labels = np.asarray([5, 10, 20])
         elif data_set == bc.DATA_PAIR_82_83:
             self.set_synthetic_regression('pair_data_82_83')
             self.num_labels = np.asarray([10,20,30])
@@ -423,7 +434,11 @@ class MainConfigs(bc.MainConfigs):
         method_configs.constant_b = constant_b
         method_configs.linear_b = linear_b
         method_configs.clip_b = clip_b
-
+        method_configs.separate_target_domains = separate_target_domains
+        method_configs.multitask = multitask
+        if self.data_set != bc.DATA_SYNTHETIC_SLANT_MULTITASK:
+            method_configs.separate_target_domains = False
+            method_configs.multitask = False
         assert not (constant_b and linear_b)
 
         if self.data_set == bc.DATA_NG:
@@ -498,6 +513,8 @@ class MainConfigs(bc.MainConfigs):
         offset_transfer = methods.local_transfer_methods.OffsetTransfer(method_configs)
         stacked_transfer = methods.transfer_methods.StackingTransfer(method_configs)
 
+        gaussian_process = methods.method.SKLGaussianProcess(method_configs)
+
         from methods import semisupervised
         from methods import preprocessing
         ssl_regression = semisupervised.SemisupervisedRegressionMethod(method_configs)
@@ -514,6 +531,7 @@ class MainConfigs(bc.MainConfigs):
         #self.learner = cov_shift
         #self.learner = offset_transfer
         #self.learner = stacked_transfer
+        #self.learner = gaussian_process
 
 
 class MethodConfigs(bc.MethodConfigs):
@@ -596,9 +614,17 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             '''
             self.files['LocalTransferDelta_radius_l2_constant-b.pkl'] = 'Ours: Constant'
             self.files['LocalTransferDelta_radius_l2_linear-b_clip-b.pkl'] = 'Ours: Linear'
-            self.files['LocalTransferDelta_radius_l2_linear-b_clip-b-TESTING_REFACTOR.pkl'] = 'Ours: Linear (Refactored)'
-            self.files['OffsetTransfer-jointCV.pkl'] = 'Offset'
+            self.files['LocalTransferDelta_l2_lap-reg.pkl'] = 'Ours: Nonparametric, rbf'
+            #self.files['LocalTransferDelta_radius_l2.pkl'] = 'Ours: Nonparametric'
+            #self.files['LocalTransferDelta_radius_l2_linear-b_clip-b-TESTING_REFACTOR.pkl'] = 'Ours: Linear (Refactored)'
+            #self.files['LocalTransferDelta_l2_constant-b.pkl'] = 'Ours: Constant'
+            self.files['OffsetTransfer-jointCV.pkl'] = 'Offset Transfer'
             #self.files['LocalTransferDelta_C3=0_radius_l2_linear-b.pkl'] = 'Ours: Linear, alpha=0'
+
+            '''
+            self.files['LocalTransferDelta_l2_constant-b_sep-target.pkl'] = 'Ours: Constant, Separate Target Domains'
+            self.files['LocalTransferDelta_l2_linear-b_clip-b_multitask.pkl'] = 'Ours: Linear, Multitask'
+            '''
         elif plot_idx == PLOT_VALIDATION:
             self.files = OrderedDict()
             self.files['TargetTransfer+NW.pkl'] = 'Target Only'
@@ -611,9 +637,10 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             #self.files['SLL-NW.pkl'] = 'LLGC'
 
             #self.files['LocalTransferDelta_radius_l2_linear-b_clip-b.pkl'] = 'Ours: Linear'
-            self.files['LocalTransferDelta_radius_l2_lap-reg.pkl'] = 'Ours: Nonparametric'
-            self.files['LocalTransferDelta_radius_cons_l2_lap-reg.pkl'] = 'Ours: Nonparametric, constrained'
-
+            #self.files['LocalTransferDelta_radius_l2_lap-reg.pkl'] = 'Ours: Nonparametric'
+            #self.files['LocalTransferDelta_radius_cons_l2_lap-reg.pkl'] = 'Ours: Nonparametric, constrained'
+            self.files['LocalTransferDelta_l2_lap-reg.pkl'] = 'Ours: Nonparametric, rbf'
+            self.files['LocalTransferDelta_cons_l2_lap-reg.pkl'] = 'Ours: Nonparametric, rbf, constrained'
         elif plot_idx == PLOT_SMS:
             self.files = OrderedDict()
             self.files['TargetTransfer+NW.pkl'] = 'Target Only'
@@ -739,9 +766,14 @@ class BatchConfigs(bc.BatchConfigs):
 if vis_table:
     viz_params = [{'data_set': d, 'use_1d_data': True} for d in all_1d] + \
                  [{'data_set': d, 'use_1d_data': False} for d in real_data_sets_full]
-else:
+elif vis_batch:
     viz_params = [{'data_set': d, 'use_1d_data': True} for d in all_1d] + \
                  [{'data_set': d, 'use_1d_data': False} for d in real_data_sets_full]
+else:
+    viz_params = [{
+        'data_set': data_set_to_use,
+        'use_1d_data': use_1d_data
+    }]
 '''
 elif use_1d_data:
     viz_params = [{'data_set': d} for d in all_1d]

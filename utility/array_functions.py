@@ -304,7 +304,7 @@ def make_laplacian(x, sigma, metric='euclidean'):
     L = np.diag(D) - W
     return L
 
-def make_knn(x, k, metric='euclidean', x2=None):
+def make_knn(x, k, metric='euclidean', x2=None, normalize_entries=True):
     if x.ndim == 1:
         x = np.expand_dims(x, 1)
     if x2 is None:
@@ -341,7 +341,7 @@ def make_knn(x, k, metric='euclidean', x2=None):
         if i+1 >= I.shape[1]:
             break
         Z[(np.arange(n), I[:, i+1])] = 1
-    if Z.sum() > 0:
+    if normalize_entries and Z.sum() > 0:
         Z /= Z.sum()
     return Z
 

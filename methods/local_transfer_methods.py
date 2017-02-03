@@ -452,7 +452,7 @@ class LocalTransferDelta(HypothesisTransfer):
         is_nonparametric = not (getattr(self,'linear_b',False) or getattr(self,'constant_b',False))
         if getattr(self, 'no_C3', False):
             s += '_C3=0'
-        if getattr(self, 'use_radius', False):
+        if getattr(self, 'use_radius', False) or not is_nonparametric:
             s += '_radius'
         if getattr(self.configs, 'constraints', []):
             s += '_cons'

@@ -118,8 +118,8 @@ class GraphTransferNW(GraphTransfer):
             self.cv_params['C'] = self.create_cv_params(-5, 10, step, append_zero=True)
             self.cv_params['sigma_nw'] = np.asarray([1, .5, .25, .1, .05, .025, .01])
             self.cv_params['sigma_tr'] = np.asarray([1, .5, .25, .1, .05, .025])
-        self.use_prediction_graph_sparsification = False
-        self.k_sparsification = 10
+        self.use_prediction_graph_sparsification = True
+        self.k_sparsification = 5
         self.sigma_nw = None
         self.C = None
         self.sigma_tr = None
@@ -176,18 +176,23 @@ class GraphTransferNW(GraphTransfer):
         if self.predict_sample is not None and self.predict_sample < y_pred_source.size:
             I = np.random.choice(y_pred_source.size, self.predict_sample, replace=False)
         if self.use_rbf:
-            L = array_functions.make_laplacian(y_pred_source[I], self.sigma_tr)
+            #L = array_functions.make_laplacian(y_pred_source[I], self.sigma_tr)
+            W_source_pred = array_functions.make_rbf(y_pred_source[I], self.sigma_tr)
             W = array_functions.make_rbf(self.transform.transform(self.x), self.sigma_nw, x2=self.transform.transform(data.x[I,:])).T
         else:
             k_L = int(self.sigma_tr*I.size)
-            L = array_functions.make_laplacian_kNN(y_pred_source[I], k_L)
+            #L = array_functions.make_laplacian_kNN(y_pred_source[I], k_L)
+            W_source_pred = array_functions.make_knn(y_pred_source[I], k_L)
             k_W = int(self.sigma_nw*self.x.shape[0])
             W = array_functions.make_knn(self.transform.transform(data.x[I, :]), k_W, x2=self.transform.transform(self.x))
-            if self.use_prediction_graph_sparsification:
-                W_knn = array_functions.make_knn(self.transform.transform(data.x[I, :]), self.k_sparsification, x2=self.transform.transform(data.x[I, :]))
-                W_L = array_functions.make_knn(y_pred_source[I], k_L)
-                W_sparse = W_L * W_knn
-                L = array_functions.make_laplacian_with_W(W_sparse)
+        if self.use_prediction_graph_sparsification:
+            W_sparse = array_functions.make_knn(
+                self.transform.transform(data.x[I, :]),
+                self.k_sparsification,
+                normalize_entries=False)
+            #W_L = array_functions.make_knn(y_pred_source[I], k_L)
+            W_source_pred = W_source_pred * W_sparse
+        L = array_functions.make_laplacian_with_W(W_source_pred)
         S = array_functions.make_smoothing_matrix(W)
 
         A = np.eye(I.size) + self.C*L

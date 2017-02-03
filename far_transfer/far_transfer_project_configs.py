@@ -63,12 +63,12 @@ use_1d_data = True
 
 show_legend_on_all = False
 arguments = None
-use_validation = False
+use_validation = True
 
-run_experiments = False
+run_experiments = True
 run_batch_graph = False
 run_batch_graph_nw = True
-run_batch_baseline = True
+run_batch_baseline = False
 
 BATCH_DATA_NONE = 0
 BATCH_DATA_POSITIVE = 1
@@ -76,9 +76,9 @@ BATCH_DATA_NEGATIVE = 2
 BATCH_ALL = 3
 
 #run_batch_datasets = BATCH_DATA_NONE
-#run_batch_datasets = BATCH_DATA_POSITIVE
-run_batch_datasets = BATCH_DATA_NEGATIVE
-run_batch_datasets = BATCH_ALL
+run_batch_datasets = BATCH_DATA_POSITIVE
+#run_batch_datasets = BATCH_DATA_NEGATIVE
+#run_batch_datasets = BATCH_ALL
 
 all_data_sets = [data_set_to_use]
 if run_batch_datasets > 0:
@@ -113,7 +113,7 @@ FT_METHOD_OFFSET = 6
 
 other_method_configs = {
     'ft_method': FT_METHOD_LOCAL_NONPARAMETRIC,
-    'predict_sample': None
+    'predict_sample': None,
 }
 
 def apply_arguments(configs):

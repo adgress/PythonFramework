@@ -96,8 +96,9 @@ synthetic_data_sets = [
     bc.DATA_SYNTHETIC_DELTA_LINEAR,
     bc.DATA_SYNTHETIC_CROSS,
     bc.DATA_SYNTHETIC_SLANT,
-    bc.DATA_SYNTHETIC_SLANT_MULTITASK
 ]
+
+#bc.DATA_SYNTHETIC_SLANT_MULTITASK
 
 real_data_sets_1d = [
     bc.DATA_BOSTON_HOUSING,
@@ -654,7 +655,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['TargetTransfer+NW.pkl'] = 'Target Only'
             self.files['SLL-NW.pkl'] = 'LLGC'
             self.files['CovShift.pkl'] = 'Reweighting'
-            self.files['OffsetTransfer.pkl'] = 'Offset'
+            self.files['OffsetTransfer-jointCV.pkl'] = 'Offset'
             #self.files['LocalTransferDeltaSMS.pkl'] = 'SMS no scale'
             self.files['LocalTransferDeltaSMS_scale.pkl'] = 'SMS scale'
             self.files['StackTransfer+SKL-RidgeReg.pkl'] = 'Stacking'

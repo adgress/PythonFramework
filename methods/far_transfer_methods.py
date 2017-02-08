@@ -118,8 +118,9 @@ class GraphTransferNW(GraphTransfer):
             self.cv_params['C'] = self.create_cv_params(-5, 10, step, append_zero=True)
             self.cv_params['sigma_nw'] = np.asarray([1, .5, .25, .1, .05, .025, .01])
             self.cv_params['sigma_tr'] = np.asarray([1, .5, .25, .1, .05, .025])
-        self.use_prediction_graph_sparsification = True
+        self.use_prediction_graph_sparsification = False
         self.k_sparsification = 5
+        self.use_oracle_graph = True
         self.sigma_nw = None
         self.C = None
         self.sigma_tr = None
@@ -154,6 +155,8 @@ class GraphTransferNW(GraphTransfer):
         if not self.just_nw:
             self.source_learner.train_and_test(source_data)
             y_pred = self.source_learner.predict(target_data).y
+            if self.use_oracle_graph:
+                y_pred = target_data.true_y
         else:
             y_pred = np.zeros(target_data.y.shape)
         target_data.source_y_pred = y_pred
@@ -161,13 +164,14 @@ class GraphTransferNW(GraphTransfer):
 
     def train(self, data):
         I = data.is_labeled
-        y_pred_source = data.source_y_pred[I]
+        #y_pred_source = data.source_y_pred[I]
+
         y = data.y[I]
         x = data.x[I, :]
         self.transform.fit(x)
         self.x = x
         self.y = y
-        self.y_pred_source = y_pred_source
+        #self.y_pred_source = y_pred_source
 
     def predict(self, data):
         # d = data_lib.Data(np.expand_dims(data.source_y_pred, 1), data.y)
@@ -226,6 +230,8 @@ class GraphTransferNW(GraphTransfer):
             s += '-use_rbf'
         if getattr(self, 'use_prediction_graph_sparsification', False):
             s += '-transfer_sparse=' + str(self.k_sparsification)
+        if getattr(self, 'use_oracle_graph', False):
+            s += '-oracle_graph'
         if getattr(self, 'use_validation', False):
             s += '-VAL'
         return s

@@ -327,6 +327,7 @@ class VisualizationConfigs(Configs):
         self.size_to_vis = None
         self.sizes_to_use = None
         self.title = 'Title not set'
+        self.baseline_idx = None
 
         self.files = [
             'SKL-RidgeReg.pkl'

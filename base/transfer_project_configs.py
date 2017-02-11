@@ -60,7 +60,7 @@ PLOT_TABLE = 5
 PLOT_TABLE_VAL = 6
 PLOT_ALPHA = 7
 #plot_idx = PLOT_PARAMETRIC
-plot_idx = PLOT_CONSTRAINED
+plot_idx = PLOT_TABLE
 max_rows = 1
 fontsize = 20
 
@@ -68,7 +68,7 @@ vis_table = plot_idx in {PLOT_TABLE, PLOT_TABLE_VAL}
 size_to_vis = 10
 sizes_to_use = [5, 10, 20, 30]
 
-run_experiments = True
+run_experiments = False
 #show_legend_on_all = False
 show_legend_on_all = True
 
@@ -650,6 +650,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['LocalTransferDeltaSMS.pkl'] = 'SMS no scale'
             #self.files['LocalTransferDelta_C3=0_radius_l2_constant-b.pkl'] = 'Constant b, alpha=0'
         elif plot_idx == PLOT_TABLE:
+            self.baseline_idx = 1
             self.files = OrderedDict()
             self.files['LocalTransferDelta_radius_l2_linear-b_clip-b.pkl'] = 'Ours: Linear'
             self.files['TargetTransfer+NW.pkl'] = 'Target Only'

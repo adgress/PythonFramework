@@ -83,12 +83,15 @@ def create_table():
     cols = []
     rows = []
     size_to_vis = vis_configs.size_to_vis
+    baseline_perf = []
+    all_perf = []
     for data_set_idx, curr_viz_params in enumerate(viz_params):
         vis_configs = configs_lib.VisualizationConfigs(**curr_viz_params)
         param_text = []
         if len(rows) <= data_set_idx:
             rows.append(vis_configs.results_dir)
         method_idx = 0
+        mean_perf = []
         for file, legend_str in vis_configs.results_files:
             if not os.path.isfile(file):
                 print file + ' doesn''t exist - skipping'
@@ -119,8 +122,15 @@ def create_table():
                 #latex_str = '%.1f \\pm %.1f' % (mean_val, var)
                 latex_str = '%.1f (%.1f)' % (mean_val, var)
             cell_text[data_set_idx][method_idx] = latex_str
+            if method_idx == vis_configs.baseline_idx:
+                baseline_perf.append(mean_val)
+            mean_perf.append(mean_val)
             method_idx += 1
+        all_perf.append(np.asarray(mean_perf))
         #cell_text.append(param_text)
+    relative_improvement = np.zeros((len(all_perf), all_perf[0].size))
+    for i in range(relative_improvement.shape[0]):
+        relative_improvement[i, :] = (baseline_perf[i] - all_perf[i]) / baseline_perf[i]
     latex_text = ' & Ours: Linear & Target Only & LLGC & Reweighting & Offset & SMS & Stacking & Ours with Stacking\\\\ \hline \n'
     data_names = [
         'Curve', 'Step', 'Delta', 'Cross', 'Slant', 'BH 1D', 'Concrete 1D', 'Bike 1D',

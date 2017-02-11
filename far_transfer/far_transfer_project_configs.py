@@ -69,6 +69,7 @@ run_experiments = True
 run_batch_graph = False
 run_batch_graph_nw = True
 run_batch_baseline = False
+run_batch_target_only = False
 
 BATCH_DATA_NONE = 0
 BATCH_DATA_POSITIVE = 1
@@ -505,10 +506,11 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             setattr(self, key, value)
         self.files = OrderedDict()
         self.files['TargetTransfer+NW.pkl'] = 'Target Only'
+        self.files['GraphTransfer_ta.pkl'] = 'Target Only'
         #self.files['GraphTransfer.pkl'] = 'Graph Transfer'
         #self.files['GraphTransfer_tr.pkl'] = 'Graph Transfer: Just transfer'
         #self.files['GraphTransfer_ta.pkl'] = 'Graph Transfer: Just target'
-        self.files['GraphTransferNW.pkl'] = 'Graph Transfer NW'
+        #self.files['GraphTransferNW.pkl'] = 'Graph Transfer NW'
         self.files['GraphTransferNW-nw.pkl'] = 'Graph Transfer NW, just nw'
         self.files['GraphTransferNW-sample=1600.pkl'] = 'Graph Transfer NW sample 1600'
         self.files['GraphTransferNW-sample=300.pkl'] = 'Graph Transfer NW sample 300'
@@ -516,14 +518,21 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files['GraphTransferNW-sample=100.pkl'] = 'Graph Transfer NW sample 100'
         self.files['StackTransfer+SKL-RidgeReg.pkl'] = 'Stacked'
         #self.files['LocalTransferDelta_radius_l2_lap-reg.pkl'] = 'Local Transfer: Nonparametric'
-        self.files['LocalTransferDelta_radius_l2_lap-reg_knn.pkl'] = 'Local Transfer Nonparametric KNN'
+        #self.files['LocalTransferDelta_radius_l2_lap-reg_knn.pkl'] = 'Local Transfer Nonparametric KNN'
+        self.files['GraphTransferNW-use_rbf.pkl'] = 'Graph Transfer NW, rbf'
+        #self.files['GraphTransferNW-use_rbf-transfer_sparse=5.pkl'] = 'Graph Transfer NW, rbf, sparse=5'
+        #self.files['GraphTransferNW-use_rbf-transfer_sparse=10.pkl'] = 'Graph Transfer NW, rbf, sparse=10'
+        #self.files['GraphTransferNW-use_rbf-transfer_sparse=20.pkl'] = 'Graph Transfer NW, rbf, sparse=20'
+        #self.files['GraphTransferNW-use_rbf-transfer_sparse=40.pkl'] = 'Graph Transfer NW, rbf, sparse=40'
+        #self.files['GraphTransferNW-use_rbf-transfer_sparse=80.pkl'] = 'Graph Transfer NW, rbf, sparse=80'
+        self.files['GraphTransferNW-use_rbf-oracle_graph.pkl'] = 'Graph Transfer NW, rbf, oracle graph'
         if use_validation:
             self.files = append_suffix_to_files(self.files, '-VAL', ', VAL')
-            self.files['LocalTransferDelta_l2_linear-b_clip-b_use-val.pkl'] = 'Local Transfer VAL'
-            self.files['LocalTransferDelta_radius_l2_use-val_lap-reg.pkl'] = 'Local Transfer Nonparametric VAL'
-            self.files['LocalTransferDelta_radius_l2_use-val_lap-reg_knn.pkl'] = 'Local Transfer Nonparametric KNN VAL'
+            #self.files['LocalTransferDelta_l2_linear-b_clip-b_use-val.pkl'] = 'Local Transfer VAL'
+            #self.files['LocalTransferDelta_radius_l2_use-val_lap-reg.pkl'] = 'Local Transfer Nonparametric VAL'
+            #self.files['LocalTransferDelta_radius_l2_use-val_lap-reg_knn.pkl'] = 'Local Transfer Nonparametric KNN VAL'
         else:
-            self.files['LocalTransferDelta_l2_linear-b_clip-b.pkl'] = 'Local Transfer'
+            #self.files['LocalTransferDelta_l2_linear-b_clip-b.pkl'] = 'Local Transfer'
             #self.files['OffsetTransfer.pkl'] = 'Offset'
             self.files['OffsetTransfer-jointCV.pkl'] = 'Offset Joint CV'
             #self.files['GraphTransferNW-transfer_sparse=10.pkl'] = ' Graph Transfer NW Sparse=10'
@@ -544,6 +553,13 @@ class BatchConfigs(bc.BatchConfigs):
         ]
         '''
         for d in all_data_sets:
+            if run_batch_target_only:
+                pc2 = ProjectConfigs(d)
+                pc2.ft_method = FT_METHOD_GRAPH
+                m = MainConfigs(pc2)
+                m.learner.just_transfer = False
+                m.learner.just_target = True
+                self.config_list.append(m)
             if run_batch_graph:
                 m = MainConfigs(ProjectConfigs(d))
                 m.ft_method = FT_METHOD_GRAPH

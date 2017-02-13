@@ -255,6 +255,9 @@ def make_graph_radius(x, radius, metric):
     dists[dists != 0] = 1
     return dists
 
+def make_graph_distance(x, metric='euclidean'):
+    x = vec_to_2d(x)
+    return pairwise.pairwise_distances(x, x, metric)
 
 def make_laplacian_with_W(W):
     D = W.sum(1)

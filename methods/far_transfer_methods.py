@@ -124,6 +124,7 @@ class GraphTransferNW(GraphTransfer):
         self.k_sparsification = 5
         self.use_oracle_graph = False
         self.oracle_guidance = .1
+        self.oracle_guidance_binary = True
         self.sigma_nw = None
         self.C = None
         self.sigma_tr = None
@@ -187,14 +188,21 @@ class GraphTransferNW(GraphTransfer):
             W_source_pred = array_functions.make_rbf(y_pred_source[I], self.sigma_tr)
             if self.oracle_guidance is not None:
                 y = data.true_y[I]
-                y_scaled = array_functions.normalize(y)*(y_pred_source.max() - y_pred_source.min())
-                W_oracle_pred = array_functions.make_rbf(y_scaled, self.sigma_tr)
-                n_y = y_scaled.size
+
+                n_y = y.size
                 num_to_sample = math.ceil(self.oracle_guidance*n_y**2)
                 rand_index1 = np.random.choice(n_y, int(num_to_sample), replace=True)
                 rand_index2 = np.random.choice(n_y, int(num_to_sample), replace=True)
-                W_source_pred[rand_index1, rand_index2] = W_oracle_pred[rand_index1, rand_index2]
-                W_source_pred[rand_index2, rand_index1] = W_oracle_pred[rand_index2, rand_index1]
+                if self.oracle_guidance_binary:
+                    target_distances = array_functions.make_graph_distance(y)
+                    distance_threshold = .2*(y.max() - y.min())
+                    W_source_pred[rand_index1, rand_index2] = target_distances[rand_index1, rand_index2] <= distance_threshold
+                    W_source_pred[rand_index2, rand_index1] = target_distances[rand_index2, rand_index1] <= distance_threshold
+                else:
+                    y_scaled = array_functions.normalize(y) * (y_pred_source.max() - y_pred_source.min())
+                    W_oracle_pred = array_functions.make_rbf(y_scaled, self.sigma_tr)
+                    W_source_pred[rand_index1, rand_index2] = W_oracle_pred[rand_index1, rand_index2]
+                    W_source_pred[rand_index2, rand_index1] = W_oracle_pred[rand_index2, rand_index1]
             W = array_functions.make_rbf(self.transform.transform(self.x), self.sigma_nw, x2=self.transform.transform(data.x[I,:])).T
 
         else:
@@ -248,7 +256,10 @@ class GraphTransferNW(GraphTransfer):
         if getattr(self, 'use_oracle_graph', False):
             s += '-oracle_graph'
         if getattr(self, 'oracle_guidance', None) is not None:
-            s += '-guidance=' + str(self.oracle_guidance)
+            if getattr(self, 'oracle_guidance_binary', False):
+                s += '-guidance_binary=' + str(self.oracle_guidance)
+            else:
+                s += '-guidance=' + str(self.oracle_guidance)
         if getattr(self, 'use_validation', False):
             s += '-VAL'
         return s

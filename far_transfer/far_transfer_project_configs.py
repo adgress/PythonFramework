@@ -526,6 +526,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #self.files['GraphTransferNW-use_rbf-transfer_sparse=40.pkl'] = 'Graph Transfer NW, rbf, sparse=40'
         #self.files['GraphTransferNW-use_rbf-transfer_sparse=80.pkl'] = 'Graph Transfer NW, rbf, sparse=80'
         self.files['GraphTransferNW-use_rbf-oracle_graph.pkl'] = 'Graph Transfer NW, rbf, oracle graph'
+        self.files['GraphTransferNW-use_rbf-guidance=0.1.pkl'] =  'Graph Transfer NW, rbf, 10% oracle'
+        self.files['GraphTransferNW-use_rbf-guidance=0.2.pkl'] = 'Graph Transfer NW, rbf, 20% oracle'
         if use_validation:
             self.files = append_suffix_to_files(self.files, '-VAL', ', VAL')
             #self.files['LocalTransferDelta_l2_linear-b_clip-b_use-val.pkl'] = 'Local Transfer VAL'

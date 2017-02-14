@@ -2,6 +2,7 @@ __author__ = 'Aubrey'
 
 import abc
 from utility import helper_functions
+from timer import timer
 from utility import multiprocessing_utility
 from results_class import results
 import os
@@ -145,6 +146,8 @@ def _run_experiment_args(self, results_file, data_and_splits, method_results, i_
     curr_results = _load_temp_split_file(results_file, num_labels, split)
     if curr_results:
         return curr_results
+    if mpi_utility.is_group_master():
+        timer.tic()
     #print 'num_labels-split: ' + s
     temp_file_name = _temp_split_file_name(results_file, num_labels, split)
     temp_dir_root = helper_functions.remove_suffix(temp_file_name, '.pkl')
@@ -163,4 +166,5 @@ def _run_experiment_args(self, results_file, data_and_splits, method_results, i_
             print s + '-' + str(curr_learner.best_params) + ' Error: ' + str(curr_results.compute_error(self.configs.loss_function))
         else:
             print s + ' Done'
+        timer.toc()
     return curr_results

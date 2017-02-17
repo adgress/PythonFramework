@@ -147,7 +147,11 @@ def make_smoothing_matrix(W):
     W = replace_invalid(W,0,0)
     D = W.sum(1)
     D[D==0] = 1
-    D_inv = 1 / D
+    D[~np.isfinite(D)] = 1
+    try:
+        D_inv = 1 / D
+    except:
+        D_inv = np.on
     D_inv = replace_invalid(D_inv,x_min=1,x_max=1)
     S = (W.swapaxes(0, 1) * D_inv).swapaxes(0, 1)
     return S
@@ -514,13 +518,16 @@ def plot_line_sub(x_list, y_list, title=None, y_axes = None,fig=None,show=True):
         move_fig(fig)
         pl.show(block=True)
 
-def plot_heatmap(x, y_mat, alpha=1,title=None,sizes=None,share_axis=False):
+def plot_heatmap(x, y_mat, alpha=1,title=None,sizes=None,share_axis=False, fig=None):
     if sizes is None:
         sizes = 60
     if y_mat.ndim == 1:
         y_mat = np.expand_dims(y_mat, 1)
-    pl.close()
-    fig = pl.figure(4)
+    new_fig = False
+    if fig is None:
+        new_fig = True
+        pl.close()
+        fig = pl.figure(4)
     fig.suptitle(title)
     for index, y in enumerate(y_mat.T):
         if index == 0:
@@ -537,9 +544,11 @@ def plot_heatmap(x, y_mat, alpha=1,title=None,sizes=None,share_axis=False):
         pl.ylabel(str(index))
         if I.mean > 0:
             print 'Percent skipped due to nans: ' + str(1-I.mean())
-        pl.scatter(x[I,0], x[I,1], alpha=alpha, c=colors[I,:], edgecolors='none', s=sizes)
+        pl.scatter(x[I,0], x[I,1], alpha=alpha, c=colors[I,:], edgecolors='none', s=sizes, zorder=1)
     move_fig(fig, 1000, 1000)
-    pl.show(block=True)
+
+    if new_fig:
+        pl.show(block=True)
     pass
 
 

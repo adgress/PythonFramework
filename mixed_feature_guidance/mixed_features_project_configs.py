@@ -15,6 +15,7 @@ def create_project_configs():
     return ProjectConfigs()
 
 pc_fields_to_copy = bc.pc_fields_to_copy + [
+    'disable_relaxed_guidance'
 ]
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10_nnz4
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
@@ -168,7 +169,6 @@ class MainConfigs(bc.MainConfigs):
         from methods import preprocessing
         from methods import mixed_feature_guidance
         method_configs = MethodConfigs(pc)
-
         for key in other_method_configs.keys():
             setattr(method_configs, key, getattr(pc,key))
 
@@ -218,6 +218,7 @@ class BatchConfigs(bc.BatchConfigs):
                 p = deepcopy(p)
                 p.disable_relaxed_guidance = True
                 p.num_random_signs = 10
+                self.config_list.append(MainConfigs(p))
                 if data_set in {bc.DATA_SYNTHETIC_LINEAR_REGRESSION, bc.DATA_DROSOPHILIA}:
                     p = deepcopy(p)
                     p.num_random_pairs = 0

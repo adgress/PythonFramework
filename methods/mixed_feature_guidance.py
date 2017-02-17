@@ -99,7 +99,8 @@ class MixedFeatureGuidanceMethod(method.Method):
             del self.cv_params['C2']
         if self.disable_relaxed_guidance:
             self.C2 = np.inf
-            del self.cv_params['C2']
+            if 'C2' in self.cv_params:
+                del self.cv_params['C2']
         self.quiet = False
         self.pairs = None
         self.feats_to_constrain = None

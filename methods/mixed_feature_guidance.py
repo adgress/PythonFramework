@@ -78,6 +78,7 @@ class MixedFeatureGuidanceMethod(method.Method):
         self.use_validation = configs.use_validation
         self.num_random_pairs = getattr(configs, 'num_random_pairs', 0)
         self.num_random_signs = getattr(configs, 'num_random_signs', 0)
+        self.disable_relaxed_guidance = getattr(configs, 'disable_relaxed_guidance', False)
         self.w = None
         self.b = None
         self.stacking_method = method.NadarayaWatsonMethod(configs)
@@ -96,6 +97,9 @@ class MixedFeatureGuidanceMethod(method.Method):
         if self.method in MixedFeatureGuidanceMethod.METHODS_NO_C2:
             self.C2 = 0
             del self.cv_params['C2']
+        if self.disable_relaxed_guidance:
+            self.C2 = np.inf
+            del self.cv_params['C2']
         self.quiet = False
         self.pairs = None
         self.feats_to_constrain = None
@@ -112,6 +116,10 @@ class MixedFeatureGuidanceMethod(method.Method):
             ridge = method.SKLRidgeRegression(self.configs)
             ridge.quiet = True
             ridge.preprocessor = self.preprocessor
+            ridge.use_validation = False
+            ridge.use_test_error_for_model_selection = False
+            ridge.configs.use_validation = False
+            ridge.configs.use_test_error_for_model_selection = False
             data_copy = deepcopy(data)
             data_copy.set_train()
             data_copy.set_true_y()
@@ -339,9 +347,9 @@ class MixedFeatureGuidanceMethod(method.Method):
                 else:
                     reg_guidance = cvx.norm2(z) ** 2
                 if np.isinf(C2):
-                    constraints = []
-                    C2 = 0
-                constraints.append(z >= 0)
+                    constraints.append(z == 0)
+                else:
+                    constraints.append(z >= 0)
                 if self.use_nonneg:
                     constraints.append(w >= 0)
                 obj = cvx.Minimize(loss + C*reg + C2*reg_guidance)
@@ -472,6 +480,8 @@ class MixedFeatureGuidanceMethod(method.Method):
             s += '_corr'
         if getattr(self, 'use_nonneg', False):
             s += '_nonneg'
+        if getattr(self, 'disable_relaxed_guidance', False):
+            s += '_not-relaxed'
         if getattr(self, 'use_stacking', False):
             s += '_stacked'
         if getattr(self, 'cvx_method', 'SCS') != 'SCS':

@@ -28,6 +28,7 @@ data_set_to_use = bc.DATA_CONCRETE
 viz_for_paper = False
 
 run_experiments = True
+run_batch_experiments = True
 
 use_ridge = False
 use_mean = False
@@ -38,20 +39,32 @@ mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_
 
 viz_w_error = False
 
+all_data_sets = [data_set_to_use]
+if run_batch_experiments:
+    all_data_sets = [
+        bc.DATA_BOSTON_HOUSING,
+        bc.DATA_DROSOPHILIA,
+        bc.DATA_KC_HOUSING,
+        bc.DATA_WINE_RED,
+        bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10,
+        bc.DATA_CONCRETE
+    ]
+
+
 other_pc_configs = {
 }
 
 other_method_configs = {
-    'num_random_pairs': 10,
-    'num_random_signs': 0,
-    'use_l1': False,
+    'num_random_pairs': 0,
+    'num_random_signs': 10,
+    'use_l1': True,
     'num_features': None,
     'use_nonneg': False,
     'use_stacking': False,
     'use_corr': True,
     'include_size_in_file_name': False,
     'num_features': -1,
-    'use_validation': False,
+    'use_validation': True,
     'use_test_error_for_model_selection': False,
     'y_scale_min_max': False,
     'y_scale_standard': False,
@@ -64,10 +77,6 @@ other_method_configs = {
 
 if data_set_to_use == bc.DATA_DROSOPHILIA:
     other_method_configs['num_features'] = 50
-
-run_batch = True
-if helper_functions.is_laptop():
-    run_batch = False
 
 show_legend_on_all = True
 
@@ -98,6 +107,7 @@ class ProjectConfigs(bc.ProjectConfigs):
             data_set = data_set_to_use
         self.set_data_set(data_set)
         self.num_splits = 30
+        self.disable_relaxed_guidance = False
         if use_arguments and arguments is not None:
             apply_arguments(self)
 
@@ -186,30 +196,51 @@ class BatchConfigs(bc.BatchConfigs):
         super(BatchConfigs, self).__init__()
         from experiment.experiment_manager import MethodExperimentManager
         self.method_experiment_manager_class = MethodExperimentManager
-        if not run_batch:
+        if not run_batch_experiments:
             self.config_list = [MainConfigs(pc)]
             return
         else:
-            #self.config_list = [MainConfigs(pc)]
             self.config_list = []
-            p = deepcopy(pc)
-            p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
-            p.num_random_pairs = 0
-            p.num_random_signs = 10
-            self.config_list.append(MainConfigs(p))
-            if data_set_to_use in {bc.DATA_SYNTHETIC_LINEAR_REGRESSION, bc.DATA_DROSOPHILIA}:
-                p = deepcopy(p)
+            for data_set in all_data_sets:
+                pc = ProjectConfigs(data_set)
+
+                p = deepcopy(pc)
+                p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
                 p.num_random_pairs = 0
-                p.num_random_signs = 50
+                p.num_random_signs = 10
                 self.config_list.append(MainConfigs(p))
-            p = deepcopy(p)
-            p.num_random_pairs = 10
-            p.num_random_signs = 0
-            self.config_list.append(MainConfigs(p))
-            p = deepcopy(pc)
-            p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
-            self.config_list.append(MainConfigs(p))
-            #assert False, 'Not Implemented Yet'
+                if data_set in {bc.DATA_SYNTHETIC_LINEAR_REGRESSION, bc.DATA_DROSOPHILIA}:
+                    p = deepcopy(p)
+                    p.num_random_pairs = 0
+                    p.num_random_signs = 50
+                    self.config_list.append(MainConfigs(p))
+
+                p = deepcopy(p)
+                p.disable_relaxed_guidance = True
+                p.num_random_signs = 10
+                if data_set in {bc.DATA_SYNTHETIC_LINEAR_REGRESSION, bc.DATA_DROSOPHILIA}:
+                    p = deepcopy(p)
+                    p.num_random_pairs = 0
+                    p.num_random_signs = 50
+                    self.config_list.append(MainConfigs(p))
+
+                p = deepcopy(p)
+                p.disable_relaxed_guidance = False
+                p.num_random_signs = 0
+                m = MainConfigs(p)
+                m.learner.use_nonneg = True
+                m.learner.use_corr = False
+                self.config_list.append(m)
+                '''
+                p = deepcopy(p)
+                p.num_random_pairs = 10
+                p.num_random_signs = 0
+                '''
+                self.config_list.append(MainConfigs(p))
+                p = deepcopy(pc)
+                p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
+                self.config_list.append(MainConfigs(p))
+                #assert False, 'Not Implemented Yet'
 
 class VisualizationConfigs(bc.VisualizationConfigs):
     def __init__(self, data_set=None, **kwargs):
@@ -311,7 +342,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
 
         methods = []
         #methods.append(('numRandPairs','RelReg, %s pairs', 'Our Method: %s relative'))
-        self.title = 'Test'
+        self.title = self.results_dir
 
         all_params = list(grid_search.ParameterGrid(suffixes))
         for file_suffix, legend_name, legend_name_paper in methods:
@@ -347,5 +378,5 @@ class VisualizationConfigs(bc.VisualizationConfigs):
 
 
 viz_params = [
-    {'None': None},
+    {'data_set': d} for d in all_data_sets
 ]

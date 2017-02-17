@@ -69,7 +69,7 @@ other_method_configs = {
     'y_scale_min_max': False,
     'y_scale_standard': False,
     'scipy_opt_method': 'L-BFGS-B',
-    'cvx_method': 'CVXOPT',
+    'cvx_method': 'SCS',
     'num_cv_splits': 10,
     'eps': 1e-10,
     'use_perfect_feature_selection': True

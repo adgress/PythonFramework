@@ -232,6 +232,14 @@ class BatchConfigs(bc.BatchConfigs):
                 m.learner.use_nonneg = True
                 m.learner.use_corr = False
                 self.config_list.append(m)
+
+                p = deepcopy(p)
+                p.disable_relaxed_guidance = True
+                p.num_random_signs = 0
+                m = MainConfigs(p)
+                m.learner.use_nonneg = True
+                m.learner.use_corr = False
+                self.config_list.append(m)
                 '''
                 p = deepcopy(p)
                 p.num_random_pairs = 10

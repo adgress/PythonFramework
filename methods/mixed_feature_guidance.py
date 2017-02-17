@@ -311,6 +311,8 @@ class MixedFeatureGuidanceMethod(method.Method):
 
 
             if self.method == MixedFeatureGuidanceMethod.METHOD_RELATIVE or use_nonneg_ridge:
+                if self.use_nonneg:
+                    feats_to_constraint = range(x.shape[1])
                 assert len(feats_to_constraint) == 0 or len(pairs) == 0
                 w = cvx.Variable(p)
                 b = cvx.Variable(1)
@@ -336,8 +338,10 @@ class MixedFeatureGuidanceMethod(method.Method):
                             constraints.append(w[j] - w[k] + z[idx] >= 0)
                         idx += 1
                     for j in feats_to_constraint:
-                        assert not self.use_nonneg
-                        if self.use_corr:
+                        #assert not self.use_nonneg
+                        if self.use_nonneg:
+                            constraints.append(w[j] + z[idx] >= 0)
+                        elif self.use_corr:
                             constraints.append(w[j] * np.sign(corr[j]) + z[idx] >= 0)
                         else:
                             constraints.append(w[j]*np.sign(true_w[j]) + z[idx] >= 0)

@@ -11,10 +11,10 @@ import importlib
 #import hypothesis_transfer.hypothesis_project_configs as configs_library
 #import active.active_project_configs as configs_library
 #import new_project.new_project_configs as configs_library
-#import mixed_feature_guidance.mixed_features_project_configs as configs_library
 
+import mixed_feature_guidance.mixed_features_project_configs as configs_library
 #import base.transfer_project_configs as configs_library
-import far_transfer.far_transfer_project_configs as configs_library
+#import far_transfer.far_transfer_project_configs as configs_library
 #import active_base.active_base_project_configs as configs_library
 
 configs_lib = configs_library
@@ -313,7 +313,7 @@ def run_main(num_labels=None, split_idx=None, no_viz=None, configs=None, comm=No
         run_experiments(configs)
     if mpi_utility.is_group_master():
         timer.toc()
-    if helper_functions.is_laptop() and not arguments.no_viz:
+    if helper_functions.is_laptop() and not arguments.no_viz and MPI.COMM_WORLD.Get_size() == 1:
         vis_configs = configs_lib.VisualizationConfigs()
         if vis_configs.vis_table:
             create_table()

@@ -244,9 +244,11 @@ class BatchConfigs(bc.BatchConfigs):
                 p = deepcopy(p)
                 p.num_random_pairs = 10
                 p.num_random_signs = 0
-                '''
                 self.config_list.append(MainConfigs(p))
+                '''
+
                 p = deepcopy(pc)
+                p.disable_relaxed_guidance = False
                 p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
                 self.config_list.append(MainConfigs(p))
                 #assert False, 'Not Implemented Yet'

@@ -353,11 +353,12 @@ class MixedFeatureGuidanceMethod(method.Method):
                     reg_guidance = cvx.norm2(z) ** 2
                 if np.isinf(C2):
                     constraints.append(z == 0)
+                    obj = cvx.Minimize(loss + C * reg)
                 else:
                     constraints.append(z >= 0)
+                    obj = cvx.Minimize(loss + C * reg + C2 * reg_guidance)
                 if self.use_nonneg:
                     constraints.append(w >= 0)
-                obj = cvx.Minimize(loss + C*reg + C2*reg_guidance)
                 prob = cvx.Problem(obj, constraints)
                 try:
                     #prob.solve(solver='SCS')

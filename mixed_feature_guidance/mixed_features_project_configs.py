@@ -240,6 +240,7 @@ class BatchConfigs(bc.BatchConfigs):
                 p = deepcopy(p)
                 p.disable_relaxed_guidance = False
                 p.num_random_signs = 0
+                p.num_rand_pairs = 0
                 m = MainConfigs(p)
                 m.learner.use_nonneg = True
                 m.learner.use_corr = False

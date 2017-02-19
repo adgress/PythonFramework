@@ -44,7 +44,7 @@ all_data_sets = [data_set_to_use]
 if run_batch_experiments:
     all_data_sets = [
         bc.DATA_BOSTON_HOUSING,
-        bc.DATA_DROSOPHILIA,
+        #bc.DATA_DROSOPHILIA,
         bc.DATA_KC_HOUSING,
         bc.DATA_WINE_RED,
         bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10,
@@ -215,6 +215,12 @@ class BatchConfigs(bc.BatchConfigs):
                     p.num_random_signs = 50
                     self.config_list.append(MainConfigs(p))
 
+                p = deepcopy(pc)
+                p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
+                p.num_random_pairs = 0
+                p.num_random_signs = 5
+                self.config_list.append(MainConfigs(p))
+
                 p = deepcopy(p)
                 p.disable_relaxed_guidance = True
                 p.num_random_signs = 10
@@ -224,6 +230,12 @@ class BatchConfigs(bc.BatchConfigs):
                     p.num_random_pairs = 0
                     p.num_random_signs = 50
                     self.config_list.append(MainConfigs(p))
+
+                p = deepcopy(p)
+                p.disable_relaxed_guidance = False
+                p.num_random_signs = 0
+                p.num_random_pairs = 10
+                self.config_list.append(MainConfigs(p))
 
                 p = deepcopy(p)
                 p.disable_relaxed_guidance = False
@@ -268,6 +280,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.title = bc.data_name_dict.get(self.data_set_to_use, 'Unknown Data Set')
         self.show_legend_on_all = show_legend_on_all
         self.x_axis_string = 'Number of labeled instances'
+        self.ylims = None
+        '''
         if pc.data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
             self.ylims = [0,12]
         elif pc.data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
@@ -278,7 +292,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.ylims = [0,1000]
         elif pc.data_set == bc.DATA_DROSOPHILIA:
             self.ylims = [0,3]
-
+        '''
         self.generate_file_names(pc)
 
     def generate_file_names(self, pc):
@@ -292,52 +306,16 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #self.files['SLL-NW.pkl'] = 'LLGC'
         #self.files['NW.pkl'] = 'NW'
 
-        if other_method_configs['use_nonneg']:
-            self.files['Mixed-feats_method=Ridge_nonneg.pkl'] = 'Mixed: Ridge, nonneg'
-            self.files['Mixed-feats_method=Rel_pairs=10_corr_nonneg.pkl'] = 'Mixed: Relative, corr, 10 pairs, nonneg'
-            self.files['Mixed-feats_method=Rel_pairs=1000_corr_nonneg.pkl'] = 'Mixed: Relative, corr, 1000 pairs, nonneg'
-            self.files['Mixed-feats_method=Ridge_nonneg_stacked.pkl'] = 'Mixed: Ridge, nonneg, stacked'
-            self.files['Mixed-feats_method=Rel_pairs=10_corr_nonneg_stacked.pkl'] = 'Mixed: Relative, corr, nonneg, stacked, 10 pairs'
-        else:
-            '''
-            self.files['SKL-RidgeReg.pkl'] = 'SKL Ridge Regression'
-            self.files['Mixed-feats_method=Ridge.pkl'] = 'Mixed: Ridge'
-            self.files['Mixed-feats_method=Rel_signs=10_corr_CVXOPT.pkl'] = 'Mixed: Relative, corr, 10 signs'
-            self.files['Mixed-feats_method=Rel_pairs=10_corr_CVXOPT.pkl'] = 'Mixed: Relative, corr, 10 pairs'
-            self.files['Mixed-feats_method=Rel_signs=1000_corr_CVXOPT.pkl'] = 'Mixed: Relative, corr, 1000 signs'
-            '''
-            self.files['Mixed-feats_method=Ridge_CVXOPT.pkl'] = 'Mixed: Ridge'
-            self.files['Mixed-feats_method=Rel_signs=10_corr_CVXOPT.pkl'] = 'Mixed: Relative, corr, 10 signs'
-            self.files['Mixed-feats_method=Rel_signs=50_corr_CVXOPT.pkl'] = 'Mixed: Relative, corr, 50 signs'
-            #self.files['Mixed-feats_method=Ridge_stacked.pkl'] = 'Mixed: Ridge, stacked'
-            self.files['Mixed-feats_method=Rel_pairs=10_corr_CVXOPT.pkl'] = 'Mixed: Relative, corr, 10 pairs'
-            #self.files['Mixed-feats_method=Rel_pairs=10_corr_CVXOPT_l1.pkl'] = 'Mixed: Relative, corr, 10 pairs, l1'
-            #self.files['Mixed-feats_method=Rel_signs=10_corr_CVXOPT_l1.pkl'] = 'Mixed: Relative, corr, 10 signs, l1'
-            #self.files['Mixed-feats_method=Rel_signs=10_corr_stacked.pkl'] = 'Mixed: Relative, corr, stacked, 10 signs'
-        '''
         self.files['Mixed-feats_method=Ridge.pkl'] = 'Mixed: Ridge'
-        self.files['Mixed-feats_method=HardConstraints_pairs=5.pkl'] = 'Mixed: Hard Constraints, 5 pairs'
-        self.files['Mixed-feats_method=HardConstraints_pairs=10.pkl'] = 'Mixed: Hard Constraints, 10 pairs'
-        self.files['Mixed-feats_method=HardConstraints_pairs=20.pkl'] = 'Mixed: Hard Constraints, 20 pairs'
-        self.files['Mixed-feats_method=HardConstraints_signs=5.pkl'] = 'Mixed: Hard Constraints, 5 signs'
-        self.files['Mixed-feats_method=HardConstraints_signs=10.pkl'] = 'Mixed: Hard Constraints, 10 signs'
-        self.files['Mixed-feats_method=HardConstraints_signs=25.pkl'] = 'Mixed: Hard Constraints, 25 signs'
-        '''
+        self.files['Mixed-feats_method=Rel_nonneg_l1.pkl'] = 'Mixed: Nonneg'
+        self.files['Mixed-feats_method=Rel_nonneg_not-relaxed_l1.pkl'] = 'Mixed: Nonneg, not relaxed'
+        self.files['Mixed-feats_method=Rel_signs=10_corr_l1.pkl'] = 'Mixed: 10 signs'
+        self.files['Mixed-feats_method=Rel_signs=10_corr_not-relaxed_l1.pkl'] = 'Mixed: 10 signs, not relaxed'
+
         #self.files['SKL-DumReg.pkl'] = 'Predict Mean'
-        sizes = []
-        suffixes = OrderedDict()
-        #suffixes['mixedCV'] = [None,'']
-        if not use_test:
-            suffixes['nCV'] = [None, '10']
-
-        #suffixes['numFeats'] = [str(num_feat)]
-
-        ordered_keys = [
-            'nCV',
-        ]
 
         if use_test or use_val:
-            test_files = {}
+            test_files = OrderedDict()
             for f, leg in self.files.iteritems():
                 f = helper_functions.remove_suffix(f, '.pkl')
                 if data_set_to_use == bc.DATA_DROSOPHILIA:
@@ -351,39 +329,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                 test_files[f] = leg
             self.files = test_files
 
-        methods = []
-        #methods.append(('numRandPairs','RelReg, %s pairs', 'Our Method: %s relative'))
         self.title = self.results_dir
-
-        all_params = list(grid_search.ParameterGrid(suffixes))
-        for file_suffix, legend_name, legend_name_paper in methods:
-            for size in sizes:
-                for params in all_params:
-                    file_name = base_file_name
-                    file_name = file_name % (file_suffix, str(size))
-                    legend = legend_name
-                    if viz_for_paper:
-                        legend = legend_name_paper
-                    legend %= str(size)
-                    for key in ordered_keys:
-                        if not params.has_key(key):
-                            continue
-                        value = params[key]
-                        if value is None:
-                            continue
-                        if value == '':
-                            file_name += '-' + key
-                            if not viz_for_paper:
-                                legend += ', ' + key
-                        else:
-                            file_name += '-' + key + '=' + str(value)
-                            if not viz_for_paper:
-                                legend += ', ' + str(value) + ' ' + key
-                    if use_test:
-                        file_name += '-TEST'
-                        legend = 'TEST: ' + legend
-                    file_name += '.pkl'
-                    self.files[file_name] = legend
         self.files['SKL-DumReg.pkl'] = 'Predict Mean'
 
 

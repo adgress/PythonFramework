@@ -15,7 +15,9 @@ def create_project_configs():
     return ProjectConfigs()
 
 pc_fields_to_copy = bc.pc_fields_to_copy + [
-    'disable_relaxed_guidance'
+    'disable_relaxed_guidance',
+    'disable_tikhonov',
+    'random_guidance'
 ]
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10_nnz4
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
@@ -109,6 +111,8 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.set_data_set(data_set)
         self.num_splits = 30
         self.disable_relaxed_guidance = False
+        self.disable_tikhonov = False
+        self.random_guidance = True
         if use_arguments and arguments is not None:
             apply_arguments(self)
 
@@ -307,11 +311,16 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #self.files['SLL-NW.pkl'] = 'LLGC'
         #self.files['NW.pkl'] = 'NW'
 
+
         self.files['Mixed-feats_method=Ridge.pkl'] = 'Mixed: Ridge'
         self.files['Mixed-feats_method=Rel_nonneg_l1.pkl'] = 'Mixed: Nonneg'
         self.files['Mixed-feats_method=Rel_nonneg_not-relaxed_l1.pkl'] = 'Mixed: Nonneg, not relaxed'
+        self.files['Mixed-feats_method=Rel_signs=5_corr_l1.pkl'] = 'Mixed: 5 signs'
         self.files['Mixed-feats_method=Rel_signs=10_corr_l1.pkl'] = 'Mixed: 10 signs'
         self.files['Mixed-feats_method=Rel_signs=10_corr_not-relaxed_l1.pkl'] = 'Mixed: 10 signs, not relaxed'
+
+        self.files['Mixed-feats_method=Rel_pairs=10_corr_l1.pkl'] = 'Mixed: 10 pairs'
+        #self.files['Mixed-feats_method=Rel_pairs=10_corr_no-tikhonov_l1.pkl'] = 'Mixed: 10 pairs, no tikhonov'
 
         #self.files['SKL-DumReg.pkl'] = 'Predict Mean'
 

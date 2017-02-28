@@ -79,6 +79,8 @@ class MixedFeatureGuidanceMethod(method.Method):
         self.num_random_pairs = getattr(configs, 'num_random_pairs', 0)
         self.num_random_signs = getattr(configs, 'num_random_signs', 0)
         self.disable_relaxed_guidance = getattr(configs, 'disable_relaxed_guidance', False)
+        self.disable_tikhonov = getattr(configs, 'disable_tikhonov', False)
+        self.random_guidance = getattr(configs, 'random_guidance', False)
         self.w = None
         self.b = None
         self.stacking_method = method.NadarayaWatsonMethod(configs)
@@ -101,6 +103,10 @@ class MixedFeatureGuidanceMethod(method.Method):
             self.C2 = np.inf
             if 'C2' in self.cv_params:
                 del self.cv_params['C2']
+        if self.disable_tikhonov:
+            self.C = 0
+            if 'C' in self.cv_params:
+                del self.cv_params['C']
         self.quiet = False
         self.pairs = None
         self.feats_to_constrain = None
@@ -292,6 +298,10 @@ class MixedFeatureGuidanceMethod(method.Method):
                 constraints = list()
 
                 for j, k in pairs:
+                    if self.random_guidance and np.random.rand() > .5:
+                        temp = j
+                        j = k
+                        k = temp
                     constraints.append({
                         'fun': lambda w, j=j, k=k: w[j] - w[k],
                         'type': 'ineq'
@@ -300,6 +310,7 @@ class MixedFeatureGuidanceMethod(method.Method):
                 #    j = np.random.choice(p)
 
                 for j in feats_to_constraint:
+                    assert not self.random_guidance
                     fun = lambda w, j=j: w[j]*np.sign(true_w[j])
                     constraints.append({
                         'fun': fun,
@@ -330,11 +341,15 @@ class MixedFeatureGuidanceMethod(method.Method):
                 if self.method != MixedFeatureGuidanceMethod.METHOD_RIDGE:
                     for j, k in pairs:
                         if self.use_corr:
-                            if corr[j] > corr[k]:
+                            jk_order = corr[j] > corr[k]
+                            if self.random_guidance and np.random.rand() > .5:
+                                jk_order = not jk_order
+                            if jk_order:
                                 constraints.append(w[j] - w[k] + z[idx] >= 0)
                             else:
                                 constraints.append(w[k] - w[j] + z[idx] >= 0)
                         else:
+                            assert not self.random_guidance
                             constraints.append(w[j] - w[k] + z[idx] >= 0)
                         idx += 1
                     for j in feats_to_constraint:
@@ -342,8 +357,12 @@ class MixedFeatureGuidanceMethod(method.Method):
                         if self.use_nonneg:
                             constraints.append(w[j] + z[idx] >= 0)
                         elif self.use_corr:
-                            constraints.append(w[j] * np.sign(corr[j]) + z[idx] >= 0)
+                            s = np.sign(corr[j])
+                            if self.random_guidance and np.random.rand() > .5:
+                                s *= -1
+                            constraints.append(w[j] * s + z[idx] >= 0)
                         else:
+                            assert not self.random_guidance
                             constraints.append(w[j]*np.sign(true_w[j]) + z[idx] >= 0)
                         idx += 1
                 reg = cvx.norm2(w) ** 2
@@ -482,12 +501,16 @@ class MixedFeatureGuidanceMethod(method.Method):
             s += '_signs=' + str(num_signs)
         if self.method in MixedFeatureGuidanceMethod.METHODS_USES_PAIRS and num_pairs > 0:
             s += '_pairs=' + str(num_pairs)
+        if getattr(self, 'random_guidance', False) and self.method != MixedFeatureGuidanceMethod.METHOD_RIDGE:
+            s += '_random'
         if getattr(self, 'use_corr', False) and self.method != MixedFeatureGuidanceMethod.METHOD_RIDGE:
             s += '_corr'
         if getattr(self, 'use_nonneg', False):
             s += '_nonneg'
-        if getattr(self, 'disable_relaxed_guidance', False):
+        if self.method != MixedFeatureGuidanceMethod.METHOD_RIDGE and getattr(self, 'disable_relaxed_guidance', False):
             s += '_not-relaxed'
+        if getattr(self, 'disable_tikhonov', False):
+            s += '_no-tikhonov'
         if getattr(self, 'use_stacking', False):
             s += '_stacked'
         if getattr(self, 'cvx_method', 'SCS') != 'SCS':

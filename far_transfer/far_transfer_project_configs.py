@@ -63,9 +63,9 @@ use_1d_data = True
 
 show_legend_on_all = False
 arguments = None
-use_validation = True
+use_validation = False
 
-run_experiments = True
+run_experiments = False
 run_batch_graph = False
 run_batch_graph_nw = True
 run_batch_baseline = False
@@ -77,8 +77,8 @@ BATCH_DATA_NEGATIVE = 2
 BATCH_ALL = 3
 
 #run_batch_datasets = BATCH_DATA_NONE
-run_batch_datasets = BATCH_DATA_POSITIVE
-#run_batch_datasets = BATCH_DATA_NEGATIVE
+#run_batch_datasets = BATCH_DATA_POSITIVE
+run_batch_datasets = BATCH_DATA_NEGATIVE
 #run_batch_datasets = BATCH_ALL
 
 all_data_sets = [data_set_to_use]
@@ -526,8 +526,10 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #self.files['GraphTransferNW-use_rbf-transfer_sparse=40.pkl'] = 'Graph Transfer NW, rbf, sparse=40'
         #self.files['GraphTransferNW-use_rbf-transfer_sparse=80.pkl'] = 'Graph Transfer NW, rbf, sparse=80'
         self.files['GraphTransferNW-use_rbf-oracle_graph.pkl'] = 'Graph Transfer NW, rbf, oracle graph'
-        self.files['GraphTransferNW-use_rbf-guidance=0.1.pkl'] =  'Graph Transfer NW, rbf, 10% oracle'
-        self.files['GraphTransferNW-use_rbf-guidance=0.2.pkl'] = 'Graph Transfer NW, rbf, 20% oracle'
+        #self.files['GraphTransferNW-use_rbf-guidance=0.1.pkl'] =  'Graph Transfer NW, rbf, 10% oracle'
+        #self.files['GraphTransferNW-use_rbf-guidance=0.2.pkl'] = 'Graph Transfer NW, rbf, 20% oracle'
+        self.files['GraphTransferNW-use_rbf-guidance_binary=0.1.pkl'] = 'Graph Transfer NW, rbf, 10% oracle binary'
+        self.files['GraphTransferNW-use_rbf-guidance_binary=0.2.pkl'] = 'Graph Transfer NW, rbf, 20% oracle binary'
         if use_validation:
             self.files = append_suffix_to_files(self.files, '-VAL', ', VAL')
             #self.files['LocalTransferDelta_l2_linear-b_clip-b_use-val.pkl'] = 'Local Transfer VAL'

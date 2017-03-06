@@ -21,12 +21,19 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
     'include_size_in_file_name'
 ]
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
+#data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
+
+all_data_sets = [
+    bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10,
+    bc.DATA_BOSTON_HOUSING,
+    bc.DATA_CONCRETE,
+    bc.DATA_DROSOPHILIA
+]
+
+data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_DROSOPHILIA
-
-data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 
 data_sets_for_exps = [data_set_to_use]
 
@@ -291,6 +298,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         super(VisualizationConfigs, self).__init__(data_set, **kwargs)
         if getattr(self, 'plot_type', None) is None:
             self.plot_type = VisualizationConfigs.PLOT_PAIRWISE
+
         self.max_rows = 2
         pc = ProjectConfigs(data_set)
         self.copy_fields(pc,pc_fields_to_copy)
@@ -306,20 +314,26 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         elif pc.data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
             self.ylims = [0,1000]
         elif pc.data_set == bc.DATA_BOSTON_HOUSING:
-            self.ylims = [0,200]
+            self.ylims = [0,600]
         elif pc.data_set == bc.DATA_CONCRETE:
-            self.ylims = [0,1000]
+            self.ylims = [0,1500]
         elif pc.data_set == bc.DATA_DROSOPHILIA:
-            self.ylims = [0,3]
+            self.ylims = [0,6]
 
         self.files = OrderedDict()
         self.files['ActiveRandom+SKL-RidgeReg.pkl'] = 'Random, Ridge'
         #self.files['OED+SKL-RidgeReg.pkl'] = 'OED, Ridge'
         #self.files['OED+SKL-RidgeReg_use-labeled.pkl'] = 'OED, Ridge, use_labeled'
+        if data_set in {bc.DATA_DROSOPHILIA, bc.DATA_ADIENCE_ALIGNED_CNN_1}:
+            num_feats = '-numFeatsPerfect=' + str(11)
+        else:
+            num_feats = ''
+        '''
         if other_method_configs['num_features'] is None:
             num_feats = ''
         else:
             num_feats = '-numFeatsPerfect=' + str(other_method_configs['num_features'])
+        '''
         active_opts_stf = '-10-' + str(active_iterations) + '-' + str(active_items_per_iteration)
         if data_set_to_use == bc.DATA_BOSTON_HOUSING:
             active_opts_stf = '-10-' + str(active_iterations) + '-' + str(active_items_per_iteration)
@@ -350,4 +364,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             file = file % (active_opts_stf, num_feats)
             self.files[file] = legend
 
-viz_params = [dict()]
+#viz_params = [dict()]
+viz_params = [
+    {'data_set': d} for d in all_data_sets
+]

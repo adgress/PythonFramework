@@ -146,7 +146,7 @@ def _run_experiment_args(self, results_file, data_and_splits, method_results, i_
     curr_results = _load_temp_split_file(results_file, num_labels, split)
     if curr_results:
         return curr_results
-    if mpi_utility.is_group_master():
+    if mpi_utility.is_master():
         timer.tic()
     #print 'num_labels-split: ' + s
     temp_file_name = _temp_split_file_name(results_file, num_labels, split)
@@ -166,5 +166,6 @@ def _run_experiment_args(self, results_file, data_and_splits, method_results, i_
             print s + '-' + str(curr_learner.best_params) + ' Error: ' + str(curr_results.compute_error(self.configs.loss_function))
         else:
             print s + ' Done'
+    if mpi_utility.is_master():
         timer.toc()
     return curr_results

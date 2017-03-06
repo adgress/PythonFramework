@@ -828,7 +828,7 @@ def create_pollution(labels_to_use=np.arange(2), series_to_use=0, num_instances=
 def create_spatial_data(dir='climate-month'):
     file = dir + '/processed_data.pkl'
     locs, y, ids = helper_functions.load_object(file)
-    #y = y.T
+    y = y.T
     is_missing_loc = (~np.isfinite(locs)).any(1)
     locs = locs[~is_missing_loc,:]
     y = y[~is_missing_loc,:]
@@ -855,11 +855,11 @@ if __name__ == "__main__":
     #create_drosophila()
     #create_kc_housing()
     #create_pollution(series_to_use=2, num_instances=500, save_data=True)
-    #create_spatial_data()
+    create_spatial_data()
     #create_spatial_data('uber')
     #create_spatial_data('irs-income')
     #create_concrete(True)
-    create_boston_housing()
+    #create_boston_housing()
     '''
     for i in range(200):
         create_pollution(labels_to_use=[0, 1], series_to_use=i, num_instances=500, save_data=False)

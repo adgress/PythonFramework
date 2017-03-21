@@ -18,8 +18,8 @@ class LossFunction(object):
         self.short_name = None
 
     def compute_score(self, output):
-        y1 = output.y
-        y2 = output.true_y
+        y1 = np.squeeze(output.y)
+        y2 = np.squeeze(output.true_y)
         I = ~output.is_train
         return self._compute_score(y1[I], y2[I])
         '''

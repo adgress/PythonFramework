@@ -123,6 +123,10 @@ def clip(x, min, max):
     y[x > max] = max
     return y
 
+def plot_matrix(x):
+    pl.matshow(x, cmap=pl.cm.gray)
+    pl.show()
+
 def plot_histogram(x, num_bins=10):
     assert x.ndim == 1 or x.shape[1] == 1
     pl.hist(x, num_bins, normed=1, facecolor='green', alpha=0.75)
@@ -191,12 +195,18 @@ def standardize(x):
     x = preprocessing.scale(x)
     return x
 
-def normalize(x):
+def normalize(x, min_override=None, max_override=None):
     x = x.copy()
     I = ~np.isfinite(x)
     if (~I).size > 0:
-        x_min = x[~I].min()
-        x_max = x[~I].max()
+        if min_override is None:
+            x_min = x[~I].min()
+        else:
+            x_min = min_override
+        if max_override is None:
+            x_max = x[~I].max()
+        else:
+            x_max = max_override
         delta = x_max-x_min
         if delta == 0:
             delta = 1
@@ -529,6 +539,12 @@ def plot_heatmap(x, y_mat, alpha=1,title=None,sizes=None,share_axis=False, fig=N
         pl.close()
         fig = pl.figure(4)
     fig.suptitle(title)
+    finite_y = y_mat[np.isfinite(y_mat[:])]
+    y_min = None
+    y_max = None
+    #y_min = finite_y.min()
+    #y_max = finite_y.max()
+    #y_mat = np.log(y_mat)
     for index, y in enumerate(y_mat.T):
         if index == 0:
             ax1 = pl.subplot(y_mat.shape[1], 1, index + 1)
@@ -537,7 +553,7 @@ def plot_heatmap(x, y_mat, alpha=1,title=None,sizes=None,share_axis=False, fig=N
                 pl.subplot(y_mat.shape[1], 1, index + 1, sharex=ax1, sharey=ax1)
             else:
                 pl.subplot(y_mat.shape[1], 1, index + 1)
-        red_values = normalize(y)
+        red_values = normalize(y, min_override=y_min, max_override=y_max)
         I = np.isfinite(y) & np.isfinite(x[:,0]) & np.isfinite(x[:,1])
         colors = np.zeros((red_values.size, 3))
         colors[:,0] = red_values

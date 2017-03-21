@@ -490,8 +490,8 @@ class OffsetTransfer(HypothesisTransfer):
         self.y_source_new = None
         self.joint_cv = True
         if self.joint_cv:
-            self.cv_params['sigma_g_learner'] = 10**np.asarray(range(-8,8),dtype='float64')
-            self.cv_params['sigma_target_learner'] = 10 ** np.asarray(range(-8, 8), dtype='float64')
+            self.cv_params['sigma_g_learner'] = 10**np.asarray(range(-5,5),dtype='float64')
+            self.cv_params['sigma_target_learner'] = 10 ** np.asarray(range(-5, 5), dtype='float64')
 
 
     def train_and_test(self, data):

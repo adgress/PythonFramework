@@ -346,6 +346,9 @@ class LabeledData(LabeledVector):
 
     def change_labels(self, curr_labels, new_labels):
         #assert len(curr_labels) == len(new_labels)
+
+        curr_labels = np.asarray(curr_labels)
+        new_labels = np.asarray(new_labels)
         assert curr_labels.shape == new_labels.shape or curr_labels.shape[1] == new_labels.shape[0]
         if curr_labels.ndim == 1:
             curr_labels = np.expand_dims(curr_labels,0)

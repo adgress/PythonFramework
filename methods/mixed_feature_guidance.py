@@ -141,6 +141,8 @@ class MixedFeatureGuidanceMethod(method.Method):
             corr[i] = scipy.stats.pearsonr(data.x[:,i], data.true_y)[0]
             I = data.is_labeled & data.is_train
             training_corr[i] = scipy.stats.pearsonr(data.x[I,i], data.true_y[I])[0]
+        training_corr[~np.isfinite(training_corr)] = 0
+        assert (np.isfinite(training_corr)).all()
         metadata['corr'] = corr
         metadata['training_corr'] = training_corr
         num_random_pairs = self.num_random_pairs

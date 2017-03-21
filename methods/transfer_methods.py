@@ -132,6 +132,7 @@ class StackingTransfer(FuseTransfer):
         self.source_learner = method.NadarayaWatsonKNNMethod(deepcopy(sub_configs))
         self.target_learner = method.NadarayaWatsonKNNMethod(deepcopy(sub_configs))
         self.use_validation = configs.use_validation
+        self.only_use_source_prediction = False
 
     def _get_stacked_data(self, data):
         y_source = np.expand_dims(self.source_learner.predict(data).y, 1)
@@ -142,6 +143,10 @@ class StackingTransfer(FuseTransfer):
         return data_stacked
 
     def train(self, data):
+        if data.n_train_labeled == 0:
+            self.only_use_source_prediction = True
+            return
+        self.only_use_source_prediction = False
         self.target_learner.train_and_test(data)
         #Need unlabeled data if using validation data for parameter tuning
         #I = data.is_labeled & data.is_target
@@ -150,12 +155,16 @@ class StackingTransfer(FuseTransfer):
         self.base_learner.train_and_test(stacked_data)
 
     def predict(self, data):
+        if self.only_use_source_prediction:
+            return self.source_learner.predict(data)
         stacked_data = self._get_stacked_data(data)
         return self.base_learner.predict(stacked_data)
 
     def _prepare_data(self, data, include_unlabeled=True):
         data = super(StackingTransfer, self)._prepare_data(data, include_unlabeled)
         source_data = data.get_subset(data.is_source)
+        if self.preprocessor is not None:
+            source_data = self.preprocessor.preprocess(source_data, self.configs)
         self.source_learner.configs.source_labels = None
         self.source_learner.configs.target_labels = None
         source_data.set_target()
@@ -166,6 +175,8 @@ class StackingTransfer(FuseTransfer):
     @property
     def prefix(self):
         s = 'StackTransfer+' + self.base_learner.prefix
+        if self.preprocessor is not None:
+            s += '-' + self.preprocessor.prefix()
         if getattr(self, 'use_validation', False):
             s += '-VAL'
         return s

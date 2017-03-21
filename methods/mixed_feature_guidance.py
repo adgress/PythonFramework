@@ -71,6 +71,7 @@ class MixedFeatureGuidanceMethod(method.Method):
             #self.method = MixedFeatureGuidanceMethod.METHOD_ORACLE
             #self.method = MixedFeatureGuidanceMethod.METHOD_ORACLE_SPARSITY
         self.use_corr = getattr(configs, 'use_corr', False)
+        self.use_training_corr = getattr(configs, 'use_training_corr', False)
         self.use_nonneg = getattr(configs, 'use_nonneg', False)
         self.use_stacking = getattr(configs, 'use_stacking', False)
         self.can_use_test_error_for_model_selection = True
@@ -135,9 +136,13 @@ class MixedFeatureGuidanceMethod(method.Method):
         data.metadata = metadata
         p = data.x.shape[1]
         corr = np.zeros(p)
+        training_corr = np.zeros(p)
         for i in range(p):
             corr[i] = scipy.stats.pearsonr(data.x[:,i], data.true_y)[0]
+            I = data.is_labeled & data.is_train
+            training_corr[i] = scipy.stats.pearsonr(data.x[I,i], data.true_y[I])[0]
         metadata['corr'] = corr
+        metadata['training_corr'] = training_corr
         num_random_pairs = self.num_random_pairs
         num_signs = self.num_random_signs
         self.pairs = self.create_random_pairs(data.metadata['true_w'], num_pairs=num_random_pairs)
@@ -338,6 +343,8 @@ class MixedFeatureGuidanceMethod(method.Method):
                 constraints = list()
                 idx = 0
                 corr = data.metadata['corr']
+                if self.use_training_corr:
+                    corr = data.metadata['training_corr']
                 if self.method != MixedFeatureGuidanceMethod.METHOD_RIDGE:
                     for j, k in pairs:
                         if self.use_corr:
@@ -504,7 +511,10 @@ class MixedFeatureGuidanceMethod(method.Method):
         if getattr(self, 'random_guidance', False) and self.method != MixedFeatureGuidanceMethod.METHOD_RIDGE:
             s += '_random'
         if getattr(self, 'use_corr', False) and self.method != MixedFeatureGuidanceMethod.METHOD_RIDGE:
-            s += '_corr'
+            if getattr(self, 'use_training_corr', False):
+                s += '_trainCorr'
+            else:
+                s += '_corr'
         if getattr(self, 'use_nonneg', False):
             s += '_nonneg'
         if self.method != MixedFeatureGuidanceMethod.METHOD_RIDGE and getattr(self, 'disable_relaxed_guidance', False):

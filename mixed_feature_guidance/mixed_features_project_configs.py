@@ -17,7 +17,8 @@ def create_project_configs():
 pc_fields_to_copy = bc.pc_fields_to_copy + [
     'disable_relaxed_guidance',
     'disable_tikhonov',
-    'random_guidance'
+    'random_guidance',
+    'use_training_corr'
 ]
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10_nnz4
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
@@ -65,6 +66,7 @@ other_method_configs = {
     'use_nonneg': False,
     'use_stacking': False,
     'use_corr': True,
+    'use_training_corr': False,
     'include_size_in_file_name': False,
     'num_features': -1,
     'use_validation': True,
@@ -218,6 +220,13 @@ class BatchConfigs(bc.BatchConfigs):
                     p.num_random_pairs = 0
                     p.num_random_signs = 50
                     self.config_list.append(MainConfigs(p))
+
+                p = deepcopy(pc)
+                p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
+                p.num_random_pairs = 0
+                p.num_random_signs = 10
+                p.use_training_corr = True
+                self.config_list.append(MainConfigs(p))
 
                 p = deepcopy(pc)
                 p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE

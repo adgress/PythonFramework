@@ -481,8 +481,8 @@ class MixedFeatureGuidanceMethod(method.Method):
         use_pairs = False
         use_signs = False
         try:
-            if self.preprocessor.name() is not None:
-                s += '_' + self.preprocessor.name()
+            if self.preprocessor.prefix() is not None:
+                s += '_' + self.preprocessor.prefix()
         except:
             pass
         if self.method == MixedFeatureGuidanceMethod.METHOD_RIDGE:

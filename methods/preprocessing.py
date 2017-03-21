@@ -1,6 +1,7 @@
 from data import data as data_lib
 from sklearn.preprocessing import LabelEncoder, LabelBinarizer,PolynomialFeatures
 import numpy as np
+import warnings
 
 class NanLabelBinarizer(LabelBinarizer):
     def fit(self, y):
@@ -58,7 +59,7 @@ class IdentityPreprocessor(object):
     def preprocess(self, data, configs):
         return data
 
-    def name(self):
+    def prefix(self):
         return None
 
 class TargetOnlyPreprocessor(IdentityPreprocessor):
@@ -73,6 +74,30 @@ class TargetOnlyPreprocessor(IdentityPreprocessor):
         is_target_data = data_set_ids == target_id
         target_data = data.get_subset(is_target_data)
         return target_data
+
+    def prefix(self):
+        return 'TargetOnly'
+
+class SelectSourcePreprocessor(IdentityPreprocessor):
+    def __init__(self, sources_to_keep):
+        self.sources_to_keep = sources_to_keep
+
+    def preprocess(self, data, configs):
+        target_labels = configs.target_labels
+        assert target_labels.size == 1
+        target_id = target_labels[0]
+        data_set_ids = data.data_set_ids
+        assert data_set_ids.size > 0
+        should_keep = data_set_ids == target_id
+        for source_id in self.sources_to_keep:
+            if not (source_id == data_set_ids).any():
+                warnings.warn('data_set_ids doesn'' contain id: ' + str(source_id))
+            should_keep |= data_set_ids == source_id
+        processed_data = data.get_subset(should_keep)
+        return processed_data
+
+    def prefix(self):
+        return 'Sources=' + str(self.sources_to_keep)
 
 class BasisExpansionPreprocessor(IdentityPreprocessor):
     BASIS_IDENTITY = 0
@@ -112,7 +137,7 @@ class BasisExpansionPreprocessor(IdentityPreprocessor):
         x_new = x_new[:, 1:]
         return x_new
 
-    def name(self):
+    def prefix(self):
         if self.basis_expansion_type == BasisExpansionPreprocessor.BASIS_QUADRATIC:
             return 'QuadFeats'
         elif self.basis_expansion_type == BasisExpansionPreprocessor.BASIS_QUADRATIC_FEW:

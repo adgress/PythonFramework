@@ -427,7 +427,7 @@ class NadarayaWatsonMethod(Method):
         self.cv_params['sigma'] = 10**np.asarray(range(-8,8),dtype='float64')
         #self.sigma = 1
         self.metric = 'euclidean'
-        if 'metric' in configs.__dict__:
+        if configs is not None and 'metric' in configs.__dict__:
             self.metric = configs.metric
         self.instance_weights = None
         #self.metric = 'cosine'
@@ -436,11 +436,13 @@ class NadarayaWatsonMethod(Method):
     def can_use_instance_weights(self):
         return True
 
-    def compute_kernel(self,x,y):
+    def compute_kernel(self,x,y,bandwidth=None):
+        if bandwidth is None:
+            bandwidth = self.sigma
         #TODO: Optimize this for cosine similarity using cross product and matrix multiplication
         W = pairwise.pairwise_distances(x,y,self.metric)
         W = np.square(W)
-        W = -self.sigma * W
+        W = -bandwidth * W
         W = np.exp(W)
         return W
         #return pairwise.rbf_kernel(x,y,self.sigma)
@@ -608,7 +610,7 @@ class ScikitLearnMethod(Method):
     @property
     def prefix(self):
         s = "SKL-" + ScikitLearnMethod._short_name_dict[self._skl_method_name()]
-        if self.preprocessor.name() is not None:
+        if self.preprocessor.prefix() is not None:
             s += '-' + self.preprocessor.name()
         return s
 
@@ -641,7 +643,7 @@ class SKLRidgeRegression(ScikitLearnMethod):
         return o
 
 class SKLRidgeClassification(ScikitLearnMethod):
-    def __init__(self, configs=None):
+    def __init__(self, configs=MethodConfigs()):
         super(SKLRidgeClassification, self).__init__(configs, linear_model.RidgeClassifier())
         self.cv_params['alpha'] = 10 ** np.asarray(range(-8, 8), dtype='float64')
         self.set_params(alpha=0, fit_intercept=True, normalize=True, tol=1e-12)
@@ -653,13 +655,14 @@ class SKLRidgeClassification(ScikitLearnMethod):
             self.transform = StandardScaler()
 
 class SKLLogisticRegression(ScikitLearnMethod):
-    def __init__(self,configs=None):
+    def __init__(self,configs=MethodConfigs()):
         super(SKLLogisticRegression, self).__init__(configs, linear_model.LogisticRegression())
         self.cv_params['C'] = 10**np.asarray(list(reversed(range(-5, 5))),dtype='float64')
         self.set_params(C=0,fit_intercept=True,penalty='l2')
 
     def predict(self, data):
-        assert False, 'Incorporate probabilities?'
+        #assert False, 'Incorporate probabilities?'
+        warnings.warn('Incorporate Probabilities?')
         o = Output(data)
         o.y = self.skl_method.predict(data.x)
         return o

@@ -12,8 +12,10 @@ from scipy.misc import imread
 #data_file_dir = 'bike_sharing-feat=1'
 #data_file_dir = 'pair_data_82_83'
 #data_file_dir = 'climate-month'
-data_file_dir = 'irs-income'
 
+#data_file_dir = 'irs-income'
+
+data_file_dir = 'pollution-[3 4]-500-norm'
 def vis_data():
     s = 'data_sets/' + data_file_dir + '/raw_data.pkl'
     data = helper_functions.load_object(s)

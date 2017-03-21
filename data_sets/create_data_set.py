@@ -793,28 +793,42 @@ def create_drought(label_to_use=0, series_to_use=0, num_instances=None, normaliz
         helper_functions.save_object(s, data)
 
 
-def create_pollution(labels_to_use=np.arange(2), series_to_use=0, num_instances=None, normalize_xy=True, save_data=True):
+def create_pollution(labels_to_use=np.arange(2), series_to_use=[0], num_instances=None, normalize_xy=True, save_data=True):
+    #series_to_use = 1
     file = 'pollution/processed_data.pkl'
     y, ids = helper_functions.load_object(file)
-    y_to_use = y[:,series_to_use, :]
-    print str(series_to_use) + ': ' + ids[series_to_use]
-    data = data_class.TimeSeriesData(y_to_use, np.asarray([ids[series_to_use]]))
-    data.is_regression = True
-    data.keep_series(labels_to_use)
-    data = data.get_min_range()
-    data.smooth_missing()
-    data.x = data.x.astype(np.float)
-    if num_instances is not None:
-        data = data.get_range([0, num_instances])
-    if normalize_xy:
-        data.reset_x()
-        data.normalize_y()
+    data = None
+    label_names = []
+    for i in range(y.shape[1]):
+        print str(i) + '-' + ids[i] + ': ' + str(y[0,i,:])
+    for idx, s in enumerate(series_to_use):
+        for label in labels_to_use:
+            label_names.append(str(label) + '-' + ids[s])
+        y_to_use = y[:, s, :]
+        print str(s) + ': ' + ids[s]
+        time_series_data = data_class.TimeSeriesData(y_to_use, np.asarray([ids[s]]))
+        time_series_data.is_regression = True
+        time_series_data.keep_series(labels_to_use)
+        time_series_data = time_series_data.get_min_range()
+        time_series_data.smooth_missing()
+        time_series_data.x = time_series_data.x.astype(np.float)
+        if num_instances is not None:
+            time_series_data = time_series_data.get_range([0, num_instances])
 
-    data = data.create_data_instance()
+        if normalize_xy:
+            time_series_data.reset_x()
+            #time_series_data.normalize_y()
+
+        curr_data = time_series_data.create_data_instance()
+        curr_data.data_set_ids += idx * labels_to_use.size
+        if data is None:
+            data = curr_data
+        else:
+            data.combine(curr_data)
+    data.label_names = label_names
     #perc_used = data.get_perc_used()
     if num_instances is not None:
-        pass
-        s = 'pollution-%d-%d' % (series_to_use, num_instances)
+        s = 'pollution-%s-%s' % (str(series_to_use), str(num_instances))
     else:
         s = 'pollution-%d' % series_to_use
     if normalize_xy:
@@ -854,8 +868,8 @@ if __name__ == "__main__":
     #create_wine()
     #create_drosophila()
     #create_kc_housing()
-    #create_pollution(series_to_use=2, num_instances=500, save_data=True)
-    create_spatial_data()
+    create_pollution(series_to_use=np.asarray([60, 71]), num_instances=500, save_data=True, normalize_xy=True)
+    #create_spatial_data()
     #create_spatial_data('uber')
     #create_spatial_data('irs-income')
     #create_concrete(True)

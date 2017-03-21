@@ -9,13 +9,20 @@ from collections import OrderedDict
 daily_file_names = ['844054.csv', '844056.csv', '844150.csv']
 monthly_file_names = ['844233.csv']
 use_monthly = True
-plot_data = False
-y_to_use = 3
+y_names = ['TAVG', 'TMIN', 'TMAX', 'PRCP']
+y_to_use = np.asarray([1,3])
+
+plot_data = True
+plot_2d = True
+plot_multiple_stations = True
+y_to_plot = 3
 
 def to_date(date_str):
     year = int(date_str[:4])
     if use_monthly:
-        print 'TODO: Fix this'
+        #print 'TODO: Fix this'
+
+        #This is really the month.  We pretend it's the day to make the dates contiguous
         day = int(date_str[5:])
         month = 1
     else:
@@ -59,7 +66,6 @@ for i, file in enumerate(file_names):
         print 'Found repeated station, removing: ' + s
         to_remove = to_remove | (curr_stations == s)
     data = np.vstack((data, data_curr[~to_remove,:]))
-y_names = ['TAVG', 'TMIN', 'TMAX', 'PRCP']
 y_inds = []
 for name in y_names:
     y_inds.append(array_functions.find_first_element(feat_names, name))
@@ -85,7 +91,7 @@ series_id = a1
 
 min_date_id = date_ids.min()
 max_date_id = date_ids.max()
-num_days = max_date_id-min_date_id+1
+num_time_intervals = max_date_id - min_date_id + 1
 d = OrderedDict()
 for s in series_id:
     d[s] = None
@@ -93,7 +99,7 @@ unique_series_ids = np.asarray(list(d))
 unique_locs = np.zeros((unique_series_ids.size, 2))
 for i, u in enumerate(unique_series_ids):
     unique_locs[i] = locs[find_first_element(series_id, u)]
-times_series_vals = -1*np.ones((num_days, unique_series_ids.size, y.shape[1]))
+times_series_vals = -1*np.ones((num_time_intervals, unique_series_ids.size, y.shape[1]))
 for i, name in enumerate(unique_series_ids):
     I = (series_id==name).nonzero()[0]
     dates_idx = date_ids[I] - min_date_id
@@ -101,14 +107,11 @@ for i, name in enumerate(unique_series_ids):
 
 times_series_vals[times_series_vals < 0] = np.nan
 
-plot_2d = True
-plot_multiple_stations = True
-y_to_plot = 3
 if plot_data:
     if plot_2d:
-        for i in range(num_days):
+        for i in range(num_time_intervals):
             if use_monthly:
-                y_val = times_series_vals[[i, i+4], :, y_to_plot]
+                y_val = times_series_vals[[i, i+1], :, y_to_plot]
             else:
                 y_val = times_series_vals[[i,60+i],:,y_to_plot]
                 y_val1 = times_series_vals[range(i,i+30),:,y_to_plot].mean(0)
@@ -137,13 +140,13 @@ if plot_data:
 
 
 data = (unique_locs, times_series_vals[:,:,y_to_use],unique_series_ids)
-suffix = y_names[y_to_use]
+suffix = str(y_names[y_to_use])
 if use_monthly:
     suffix += '-month'
 s = '../climate'
 if use_monthly:
     s += '-month'
-s += '/processed_data.pkl'
+s += '/processed_data-' + suffix + '.pkl'
 helper_functions.save_object(s, data)
 
 pass

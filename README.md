@@ -95,3 +95,11 @@ See: https://docs.continuum.io/mkl-optimizations/
 5) Copy (or generate) datasets
 
 The raw data and split data is not included in the repository, so it needs to be generated or copied over
+
+6) DEBUGGING MPI!!!
+
+I had some issues with MPI.  The issue seemed to be that mpi4py was using openmpi install of mpich.  Running the following seemed to fix the issue:
+conda uninstall openmpi
+conda uninstall mpich2
+conda install mpich2
+conda install mpi4py

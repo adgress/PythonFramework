@@ -26,8 +26,9 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 #data_set_to_use = bc.DATA_DROSOPHILIA
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_WINE_RED
-data_set_to_use = bc.DATA_CONCRETE
+#data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_KC_HOUSING
+data_set_to_use = bc.DATA_DS2
 
 viz_for_paper = False
 
@@ -51,7 +52,8 @@ if run_batch_experiments:
         bc.DATA_KC_HOUSING,
         bc.DATA_WINE_RED,
         bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10,
-        bc.DATA_CONCRETE
+        bc.DATA_CONCRETE,
+        bc.DATA_DS2
     ]
 
 
@@ -114,7 +116,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.num_splits = 30
         self.disable_relaxed_guidance = False
         self.disable_tikhonov = False
-        self.random_guidance = True
+        self.random_guidance = False
         if use_arguments and arguments is not None:
             apply_arguments(self)
 
@@ -156,6 +158,9 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.set_data_set_defaults('kc_housing')
             self.num_labels = [10, 20, 40]
             #self.num_labels = [160]
+        elif data_set == bc.DATA_DS2:
+            self.set_data_set_defaults('DS2-processed')
+            self.num_labels = [10, 20, 40]
         '''
         if self.include_size_in_file_name:
             assert len(self.num_labels) == 1
@@ -277,6 +282,11 @@ class BatchConfigs(bc.BatchConfigs):
                 p.disable_relaxed_guidance = False
                 p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
                 self.config_list.append(MainConfigs(p))
+
+                p = deepcopy(pc)
+                p.disable_relaxed_guidance = False
+                p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_LASSO
+                self.config_list.append(MainConfigs(p))
                 #assert False, 'Not Implemented Yet'
 
 class VisualizationConfigs(bc.VisualizationConfigs):
@@ -322,10 +332,12 @@ class VisualizationConfigs(bc.VisualizationConfigs):
 
 
         self.files['Mixed-feats_method=Ridge.pkl'] = 'Mixed: Ridge'
+        self.files['Mixed-feats_method=Lasso.pkl'] = 'Mixed: Lasso'
         self.files['Mixed-feats_method=Rel_nonneg_l1.pkl'] = 'Mixed: Nonneg'
         self.files['Mixed-feats_method=Rel_nonneg_not-relaxed_l1.pkl'] = 'Mixed: Nonneg, not relaxed'
         self.files['Mixed-feats_method=Rel_signs=5_corr_l1.pkl'] = 'Mixed: 5 signs'
         self.files['Mixed-feats_method=Rel_signs=10_corr_l1.pkl'] = 'Mixed: 10 signs'
+        self.files['Mixed-feats_method=Rel_signs=10_trainCorr_l1.pkl'] = 'Mixed: 10 signs, training correlation'
         self.files['Mixed-feats_method=Rel_signs=10_corr_not-relaxed_l1.pkl'] = 'Mixed: 10 signs, not relaxed'
 
         self.files['Mixed-feats_method=Rel_pairs=10_corr_l1.pkl'] = 'Mixed: 10 pairs'

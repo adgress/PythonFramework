@@ -19,6 +19,7 @@ from PyMTL_master.src.PyMTL import data as PyMTL_data
 from copy import deepcopy
 from create_synthetic_data import *
 import itertools
+import cPickle as pickle
 
 ng_a = np.asarray(0)
 ng_c = np.asarray(range(1,6))
@@ -852,6 +853,16 @@ def create_spatial_data(dir='climate-month'):
     s = dir + '/raw_data.pkl'
     helper_functions.save_object(s, data)
 
+def create_ds2_data(target_skill_idx=0):
+    ds2_data = pickle.load(open('DS2-processed/DS2-dict.pkl'))
+    x = ds2_data['skill_estimates']
+    y = ds2_data['skill_estimates'][:,target_skill_idx]
+    x = np.delete(x, target_skill_idx, 1)
+    data = data_class.Data(x, y)
+    s = 'DS2-processed/raw_data.pkl'
+    helper_functions.save_object(s, data)
+
+
 if __name__ == "__main__":
     #create_boston_housing()
     #create_concrete()
@@ -868,7 +879,7 @@ if __name__ == "__main__":
     #create_wine()
     #create_drosophila()
     #create_kc_housing()
-    create_pollution(series_to_use=np.asarray([60, 71]), num_instances=500, save_data=True, normalize_xy=True)
+    #create_pollution(series_to_use=np.asarray([60, 71]), num_instances=500, save_data=True, normalize_xy=True)
     #create_spatial_data()
     #create_spatial_data('uber')
     #create_spatial_data('irs-income')
@@ -880,5 +891,6 @@ if __name__ == "__main__":
     '''
     #create_time_series(label_to_use=0, series_to_use=range(8), save_data=False)
     #create_time_series(label_to_use=0, series_to_use=[0,3], save_data=False)
+    create_ds2_data()
     from data_sets import create_data_split
     create_data_split.run_main()

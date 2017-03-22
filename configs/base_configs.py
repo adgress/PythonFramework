@@ -17,6 +17,7 @@ DATA_POLLUTION_2 = 10
 DATA_CLIMATE_MONTH = 11
 DATA_UBER = 12
 DATA_IRS = 13
+DATA_DS2 = 14
 
 DATA_PAIR_START = 100
 DATA_PAIR_82_83 = 101
@@ -64,6 +65,7 @@ data_name_dict = {
     DATA_ADIENCE_ALIGNED_CNN_1: 'Adience Aligned CNN 1 Per Instance ID',
     DATA_WINE_RED: 'Wine: Red',
     DATA_DROSOPHILIA: 'Drosophila',
+    DATA_DS2: 'ITS - DS2',
 }
 
 def is_synthetic_data(data_idx):

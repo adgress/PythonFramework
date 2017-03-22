@@ -47,8 +47,8 @@ data_set_to_use = None
 
 #data_set_to_use = bc.DATA_POLLUTION_2
 #data_set_to_use = bc.DATA_CLIMATE_MONTH
-#data_set_to_use = bc.DATA_UBER
-data_set_to_use = bc.DATA_IRS
+data_set_to_use = bc.DATA_UBER
+#data_set_to_use = bc.DATA_IRS
 
 #data_set_to_use = bc.DATA_SYNTHETIC_CURVE
 #data_set_to_use = bc.DATA_SYNTHETIC_SLANT
@@ -57,28 +57,28 @@ data_set_to_use = bc.DATA_IRS
 #data_set_to_use = bc.DATA_SYNTHETIC_CROSS
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
 #data_set_to_use = bc.DATA_SYNTHETIC_FLIP
-data_set_to_use = bc.DATA_SYNTHETIC_PIECEWISE
+#data_set_to_use = bc.DATA_SYNTHETIC_PIECEWISE
 
 use_1d_data = True
 
 show_legend_on_all = False
 arguments = None
-use_validation = False
+use_validation = True
 
-run_experiments = False
+run_experiments = True
 run_batch_graph = False
 run_batch_graph_nw = True
-run_batch_baseline = False
-run_batch_target_only = False
+run_batch_baseline = True
+run_batch_target_only = True
 
 BATCH_DATA_NONE = 0
 BATCH_DATA_POSITIVE = 1
 BATCH_DATA_NEGATIVE = 2
 BATCH_ALL = 3
 
-#run_batch_datasets = BATCH_DATA_NONE
+run_batch_datasets = BATCH_DATA_NONE
 #run_batch_datasets = BATCH_DATA_POSITIVE
-run_batch_datasets = BATCH_DATA_NEGATIVE
+#run_batch_datasets = BATCH_DATA_NEGATIVE
 #run_batch_datasets = BATCH_ALL
 
 all_data_sets = [data_set_to_use]

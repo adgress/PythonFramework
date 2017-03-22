@@ -611,7 +611,7 @@ class ScikitLearnMethod(Method):
     def prefix(self):
         s = "SKL-" + ScikitLearnMethod._short_name_dict[self._skl_method_name()]
         if self.preprocessor is not None and self.preprocessor.prefix() is not None:
-            s += '-' + self.preprocessor.name()
+            s += '-' + self.preprocessor.prefix()
         return s
 
 class SKLRidgeRegression(ScikitLearnMethod):

@@ -610,7 +610,7 @@ class ScikitLearnMethod(Method):
     @property
     def prefix(self):
         s = "SKL-" + ScikitLearnMethod._short_name_dict[self._skl_method_name()]
-        if self.preprocessor.prefix() is not None:
+        if self.preprocessor is not None and self.preprocessor.prefix() is not None:
             s += '-' + self.preprocessor.name()
         return s
 

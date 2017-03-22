@@ -60,7 +60,7 @@ class IdentityPreprocessor(object):
         return data
 
     def prefix(self):
-        return None
+        return 'Identity'
 
 class TargetOnlyPreprocessor(IdentityPreprocessor):
     def __init__(self):

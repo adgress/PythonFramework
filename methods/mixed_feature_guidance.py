@@ -15,7 +15,7 @@ from utility.capturing import Capturing
 from copy import deepcopy
 import preprocessing
 from sklearn.feature_selection import SelectKBest, f_regression
-
+from sklearn.linear_model import Lasso
 
 class optimize_data(object):
     def __init__(self, x, y, reg_ridge, reg_a, reg_mixed):
@@ -37,6 +37,7 @@ class MixedFeatureGuidanceMethod(method.Method):
     METHOD_RIDGE = 10
     METHOD_ORACLE = 11
     METHOD_ORACLE_SPARSITY = 12
+    METHOD_LASSO = 13
     '''
     METHODS_UNIFORM_C = {
         METHOD_NO_RELATIVE, METHOD_ORACLE_SPARSITY
@@ -44,10 +45,10 @@ class MixedFeatureGuidanceMethod(method.Method):
     '''
     METHODS_UNIFORM_C = {}
     METHODS_NO_C2 = {
-        METHOD_RIDGE, METHOD_ORACLE, METHOD_HARD_CONSTRAINT
+        METHOD_RIDGE, METHOD_ORACLE, METHOD_HARD_CONSTRAINT, METHOD_LASSO
     }
     METHODS_NO_C3 = {
-        METHOD_RELATIVE, METHOD_RIDGE, METHOD_ORACLE, METHOD_ORACLE_SPARSITY, METHOD_HARD_CONSTRAINT
+        METHOD_RELATIVE, METHOD_RIDGE, METHOD_ORACLE, METHOD_ORACLE_SPARSITY, METHOD_HARD_CONSTRAINT, METHOD_LASSO
     }
     METHODS_USES_PAIRS = {
         METHOD_RELATIVE, METHOD_HARD_CONSTRAINT
@@ -111,6 +112,7 @@ class MixedFeatureGuidanceMethod(method.Method):
         self.quiet = False
         self.pairs = None
         self.feats_to_constrain = None
+        self.learner_lasso = Lasso()
 
     def train_and_test(self, data):
         #data = deepcopy(data)
@@ -443,14 +445,22 @@ class MixedFeatureGuidanceMethod(method.Method):
                 self.w = np.asarray(results.x)
         else:
             #assert not self.use_corr
-            self.w = self.solve_w(x, y, C)
+            if self.method == MixedFeatureGuidanceMethod.METHOD_LASSO:
+                self.learner_lasso.set_params(alpha=C)
+                self.learner_lasso.fit(x, y)
+            else:
+                assert self.method == MixedFeatureGuidanceMethod.METHOD_RIDGE
+                self.w = self.solve_w(x, y, C)
         self.b = y.mean()
         if not self.running_cv:
             try:
                 print prob.status
             except:
                 pass
-        if not self.running_cv and self.method != MixedFeatureGuidanceMethod.METHOD_RIDGE:
+        if not self.running_cv and self.method not in {
+            MixedFeatureGuidanceMethod.METHOD_RIDGE,
+            MixedFeatureGuidanceMethod.METHOD_LASSO
+        }:
             w2 = self.solve_w(x,y,C)
             true_w = data.metadata['true_w']
             err1 = array_functions.normalized_error(self.w, true_w)
@@ -477,10 +487,14 @@ class MixedFeatureGuidanceMethod(method.Method):
         if self.use_stacking:
             x = self.get_stacking_x(data)
         x = self.transform.transform(x)
-        o.y = x.dot(self.w) + self.b
-        o.fu = o.y
-        o.w = self.w
-        o.true_w = self.true_w
+        if self.method == MixedFeatureGuidanceMethod.METHOD_LASSO:
+            o.y = self.learner_lasso.predict(x)
+            o.fu = o.y
+        else:
+            o.y = x.dot(self.w) + self.b
+            o.fu = o.y
+            o.w = self.w
+            o.true_w = self.true_w
         return o
 
 
@@ -496,6 +510,8 @@ class MixedFeatureGuidanceMethod(method.Method):
             pass
         if self.method == MixedFeatureGuidanceMethod.METHOD_RIDGE:
             s += '_method=Ridge'
+        elif self.method == MixedFeatureGuidanceMethod.METHOD_LASSO:
+            s += '_method=Lasso'
         elif self.method == MixedFeatureGuidanceMethod.METHOD_RELATIVE:
             s += '_method=Rel'
         elif self.method == MixedFeatureGuidanceMethod.METHOD_ORACLE:
@@ -512,7 +528,8 @@ class MixedFeatureGuidanceMethod(method.Method):
             s += '_pairs=' + str(num_pairs)
         if getattr(self, 'random_guidance', False) and self.method != MixedFeatureGuidanceMethod.METHOD_RIDGE:
             s += '_random'
-        if getattr(self, 'use_corr', False) and self.method != MixedFeatureGuidanceMethod.METHOD_RIDGE:
+        if getattr(self, 'use_corr', False) and \
+                        self.method not in {MixedFeatureGuidanceMethod.METHOD_RIDGE, MixedFeatureGuidanceMethod.METHOD_LASSO}:
             if getattr(self, 'use_training_corr', False):
                 s += '_trainCorr'
             else:

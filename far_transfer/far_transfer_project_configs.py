@@ -222,7 +222,7 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.num_labels = np.asarray([10, 20, 30, 40])
         elif data_set == bc.DATA_TAXI:
             self.set_data_set_defaults('taxi', source_labels=[0], target_labels=[1], is_regression=True)
-            self.num_labels = np.asarray([50, 100, 500, 1000, 2000])
+            self.num_labels = np.asarray([25, 50, 100, 200, 400, 800])
         else:
             assert False
         assert self.source_labels.size > 0

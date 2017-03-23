@@ -38,7 +38,7 @@ pair_target = 56
 pair_source = 59
 
 max_features=2000
-pca_feats=20
+pca_feats=100
 #max_features=100
 boston_num_feats = np.inf
 concrete_num_feats = np.inf
@@ -139,7 +139,7 @@ def load_trip_data(file_names, y_names, time_name, loc_names, resolution=np.asar
     num_days = max_date_id - min_date_id + 1
     dates_idx = date_ids - min_date_id
     num_locations = np.prod(resolution)
-    trip_counts = 0 * np.ones((num_days, num_locations))
+    trip_counts = np.zeros((num_days, num_locations))
     locs = locs.astype(np.float)
     p_min = .3
     p_max = .7
@@ -165,7 +165,7 @@ def load_trip_data(file_names, y_names, time_name, loc_names, resolution=np.asar
     y1 = trip_counts[:30,:].sum(0)
     y2 = trip_counts[154:, :].sum(0)
     '''
-    y1 = trip_counts[:30:7, :].mean(0)
+    y1 = trip_counts[3:30:7, :].mean(0)
     y2 = trip_counts[4:30:7, :].mean(0)
     y = np.stack((y1,y2), 1)
 
@@ -437,17 +437,21 @@ def create_20ng_data(file_dir=''):
         #16-19
         'T1','T2','T3','T4'
     ]
-    data.label_names = short_names
     y = newsgroups_train.target
-    l = [1,2,7,8,12,17]
+    #l = [1,2,7,8,12,17]
     #l = [1,2,7,8,12,13]
+    #l = [0,1,2,3,4,5,7,8,9,10,11,12,13,14,16,17,18,19]
+    l = [0, 1, 2, 3, 4, 5, 7, 8, 9, 10]
+    data.label_names = [short_names[i] for i in l]
     I = array_functions.false(len(newsgroups_train.target))
     for i in l:
         I = I | (y == i)
     #I = y == 1 | y == 2 | y == 7 | y == 7 | y == 11 | y == 16
     I = I.nonzero()[0]
-    max_df = .95
-    min_df = .001
+    max_df = .5
+    min_df = .01
+    #max_df = .95
+    #min_df = .001
     #max_df = .1
     #min_df = .01
     newsgroups_train.data = [newsgroups_train.data[i] for i in I]
@@ -464,8 +468,9 @@ def create_20ng_data(file_dir=''):
     num_feats = len(vocab)
     vocab = [vocab[i] for i in range(num_feats)]
 
-    pca = PCA(n_components=pca_feats)
-    v2 = pca.fit_transform(vectors.toarray())
+    #pca = PCA(n_components=pca_feats)
+    #v2 = pca.fit_transform(vectors.toarray())
+    v2 = vectors.toarray()
     vectors = v2
 
     y = newsgroups_train.target.copy()
@@ -493,7 +498,9 @@ def create_20ng_data(file_dir=''):
 
     data.x = vectors
     data.y = newsgroups_train.target
-    data.set_defaults()
+    data.set_train()
+    data.set_target()
+    data.set_true_y()
     data.is_regression = False
     data.feature_names = vocab
     class_counts = array_functions.histogram_unique(data.y)
@@ -501,6 +508,7 @@ def create_20ng_data(file_dir=''):
     if file_dir != '':
         s = file_dir + '/' + s
     helper_functions.save_object(s,data)
+
 
 #1,9
 WINE_TRANSFER = 1
@@ -891,6 +899,7 @@ if __name__ == "__main__":
     '''
     #create_time_series(label_to_use=0, series_to_use=range(8), save_data=False)
     #create_time_series(label_to_use=0, series_to_use=[0,3], save_data=False)
-    create_ds2_data()
+    #create_ds2_data()
+    create_20ng_data()
     from data_sets import create_data_split
-    create_data_split.run_main()
+    #create_data_split.run_main()

@@ -4,7 +4,9 @@ from sklearn.datasets import fetch_20newsgroups
 from sklearn.datasets import fetch_rcv1
 
 twenty_ngs = fetch_20newsgroups(subset='train', shuffle=True, random_state=42)
-rcv1 = fetch_rcv1()
+
+#Ran out of memory when fetching rcv1.  May need to download using overachiever.
+#rcv1 = fetch_rcv1()
 
 raw_data = pickle.load(open('reuters.pkl'))
 vectorizer = CountVectorizer()

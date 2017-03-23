@@ -528,7 +528,7 @@ def plot_line_sub(x_list, y_list, title=None, y_axes = None,fig=None,show=True):
         move_fig(fig)
         pl.show(block=True)
 
-def plot_heatmap(x, y_mat, alpha=1,title=None,sizes=None,share_axis=False, fig=None):
+def plot_heatmap(x, y_mat, alpha=1,title=None,sizes=None,share_axis=False, fig=None, subtract_min=True):
     if sizes is None:
         sizes = 60
     if y_mat.ndim == 1:
@@ -542,9 +542,12 @@ def plot_heatmap(x, y_mat, alpha=1,title=None,sizes=None,share_axis=False, fig=N
     finite_y = y_mat[np.isfinite(y_mat[:])]
     y_min = None
     y_max = None
+    if not subtract_min:
+        y_min = 0
     #y_min = finite_y.min()
     #y_max = finite_y.max()
     #y_mat = np.log(y_mat)
+    #y_max = finite_y.max()
     for index, y in enumerate(y_mat.T):
         if index == 0:
             ax1 = pl.subplot(y_mat.shape[1], 1, index + 1)
@@ -555,12 +558,15 @@ def plot_heatmap(x, y_mat, alpha=1,title=None,sizes=None,share_axis=False, fig=N
                 pl.subplot(y_mat.shape[1], 1, index + 1)
         red_values = normalize(y, min_override=y_min, max_override=y_max)
         I = np.isfinite(y) & np.isfinite(x[:,0]) & np.isfinite(x[:,1])
-        colors = np.zeros((red_values.size, 3))
-        colors[:,0] = red_values
+        colors = np.zeros((red_values.size, 4))
+        #colors[:,0] = red_values
+        colors[:, 0] = 0
+        alpha = red_values
+        colors[:,3] = alpha
         pl.ylabel(str(index))
         if I.mean > 0:
             print 'Percent skipped due to nans: ' + str(1-I.mean())
-        pl.scatter(x[I,0], x[I,1], alpha=alpha, c=colors[I,:], edgecolors='none', s=sizes, zorder=1)
+        pl.scatter(x[I,0], x[I,1], c=colors[I,:], edgecolors='none', s=sizes, zorder=1)
     move_fig(fig, 1000, 1000)
 
     if new_fig:

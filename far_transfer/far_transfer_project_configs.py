@@ -47,8 +47,9 @@ data_set_to_use = None
 
 #data_set_to_use = bc.DATA_POLLUTION_2
 #data_set_to_use = bc.DATA_CLIMATE_MONTH
-data_set_to_use = bc.DATA_UBER
+#data_set_to_use = bc.DATA_UBER
 #data_set_to_use = bc.DATA_IRS
+data_set_to_use = bc.DATA_TAXI
 
 #data_set_to_use = bc.DATA_SYNTHETIC_CURVE
 #data_set_to_use = bc.DATA_SYNTHETIC_SLANT
@@ -67,9 +68,10 @@ use_validation = True
 
 run_experiments = True
 run_batch_graph = False
-run_batch_graph_nw = True
-run_batch_baseline = True
-run_batch_target_only = True
+run_batch_graph_nw = False
+run_batch_baseline = False
+run_batch_target_only = False
+run_batch_stacking = True
 
 BATCH_DATA_NONE = 0
 BATCH_DATA_POSITIVE = 1
@@ -218,6 +220,9 @@ class ProjectConfigs(bc.ProjectConfigs):
         elif data_set == bc.DATA_SYNTHETIC_PIECEWISE:
             self.set_synthetic_regression('synthetic_piecewise')
             self.num_labels = np.asarray([10, 20, 30, 40])
+        elif data_set == bc.DATA_TAXI:
+            self.set_data_set_defaults('taxi', source_labels=[0], target_labels=[1], is_regression=True)
+            self.num_labels = np.asarray([50, 100, 500, 1000, 2000])
         else:
             assert False
         assert self.source_labels.size > 0
@@ -586,11 +591,12 @@ class BatchConfigs(bc.BatchConfigs):
                 pc2.ft_method = FT_METHOD_GRAPH_NW
                 m = MainConfigs(pc2)
                 self.config_list.append(m)
-            if run_batch_baseline:
+            if run_batch_stacking:
                 pc2 = ProjectConfigs(d)
                 pc2.ft_method = FT_METHOD_STACKING
                 m = MainConfigs(pc2)
                 self.config_list.append(m)
+            if run_batch_baseline:
                 pc2.ft_method = FT_METHOD_LOCAL_NONPARAMETRIC
                 m = MainConfigs(pc2)
                 self.config_list.append(m)

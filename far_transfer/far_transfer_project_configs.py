@@ -72,6 +72,7 @@ run_batch_graph_nw = False
 run_batch_baseline = False
 run_batch_target_only = False
 run_batch_stacking = True
+run_batch_dummy = True
 
 BATCH_DATA_NONE = 0
 BATCH_DATA_POSITIVE = 1
@@ -113,6 +114,7 @@ FT_METHOD_LOCAL = 3
 FT_METHOD_LOCAL_NONPARAMETRIC = 4
 FT_METHOD_SMS_DELTA = 5
 FT_METHOD_OFFSET = 6
+FT_METHOD_DUMMY = 7
 
 other_method_configs = {
     'ft_method': FT_METHOD_LOCAL_NONPARAMETRIC,
@@ -222,7 +224,7 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.num_labels = np.asarray([10, 20, 30, 40])
         elif data_set == bc.DATA_TAXI:
             self.set_data_set_defaults('taxi', source_labels=[0], target_labels=[1], is_regression=True)
-            self.num_labels = np.asarray([25, 50, 100, 200, 400, 800])
+            self.num_labels = np.asarray([5, 10, 20, 40, 100, 200, 400, 800])
         else:
             assert False
         assert self.source_labels.size > 0
@@ -434,10 +436,14 @@ class MainConfigs(bc.MainConfigs):
         graph_transfer = far_transfer_methods.GraphTransfer(method_configs)
 
 
+
         from methods import semisupervised
         from methods import preprocessing
         ssl_regression = semisupervised.SemisupervisedRegressionMethod(method_configs)
         ssl_regression.preprocessor = preprocessing.TargetOnlyPreprocessor()
+
+        dummy = method.SKLMeanRegressor(method_configs)
+        dummy.preprocessor = preprocessing.TargetOnlyPreprocessor()
 
         graph_transfer_nw = far_transfer_methods.GraphTransferNW(method_configs)
         graph_transfer_nw.predict_sample = pc.predict_sample
@@ -477,6 +483,8 @@ class MainConfigs(bc.MainConfigs):
             self.learner = sms_delta_transfer
         elif pc.ft_method == FT_METHOD_OFFSET:
             self.learner = offset_transfer
+        elif pc.ft_method == FT_METHOD_DUMMY:
+            self.learner = dummy
         else:
             assert False, 'Unknown ft_method'
         #self.learner.configs.use_validation = use_validation
@@ -547,6 +555,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             #self.files['GraphTransferNW-transfer_sparse=10.pkl'] = ' Graph Transfer NW Sparse=10'
             self.files['GraphTransferNW-use_rbf.pkl'] = 'Graph Transfer RBF'
             #self.files['LocalTransferDeltaSMS.pkl'] = 'SMS Delta'
+        self.files['SKL-DumReg-TargetOnly.pkl'] = 'Predict Mean'
         self.title = self.results_dir
 
 
@@ -594,6 +603,11 @@ class BatchConfigs(bc.BatchConfigs):
             if run_batch_stacking:
                 pc2 = ProjectConfigs(d)
                 pc2.ft_method = FT_METHOD_STACKING
+                m = MainConfigs(pc2)
+                self.config_list.append(m)
+            if run_batch_dummy:
+                pc2 = ProjectConfigs(d)
+                pc2.ft_method = FT_METHOD_DUMMY
                 m = MainConfigs(pc2)
                 self.config_list.append(m)
             if run_batch_baseline:

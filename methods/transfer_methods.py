@@ -13,9 +13,10 @@ from sklearn.preprocessing import StandardScaler
 from results_class.results import Output
 import cvxpy as cvx
 import scipy
+from configs.base_configs import MethodConfigs
 
 class TargetTranfer(method.Method):
-    def __init__(self, configs=None):
+    def __init__(self, configs=MethodConfigs()):
         super(TargetTranfer, self).__init__(configs)
         self.base_learner = method.SKLLogisticRegression(configs)
         self.cv_params = {}
@@ -57,7 +58,7 @@ class TargetTranfer(method.Method):
         return 'TargetTransfer+' + self.base_learner.prefix
 
 class FuseTransfer(TargetTranfer):
-    def __init__(self, configs=None):
+    def __init__(self, configs=MethodConfigs()):
         super(FuseTransfer, self).__init__(configs)
         self.use_oracle = False
         #self.target_weight_scale = None
@@ -120,7 +121,7 @@ class FuseTransfer(TargetTranfer):
         return s
 
 class StackingTransfer(FuseTransfer):
-    def __init__(self, configs=None):
+    def __init__(self, configs=MethodConfigs()):
         super(StackingTransfer, self).__init__(configs)
         #from far_transfer_methods import GraphTransferNW
         self.cv_params = {}
@@ -134,9 +135,19 @@ class StackingTransfer(FuseTransfer):
         self.use_validation = configs.use_validation
         self.only_use_source_prediction = False
 
+    def _switch_labels(self, x, old, new):
+        x_new = deepcopy(x)
+        for o, n in zip(old[:], new[:]):
+            x_new[x == o] = n
+        return x_new
+
     def _get_stacked_data(self, data):
         y_source = np.expand_dims(self.source_learner.predict(data).y, 1)
         y_target = np.expand_dims(self.target_learner.predict(data).y, 1)
+        classes = data.classes
+        new_classes = np.asarray([0,1])
+        y_source = self._switch_labels(y_source, classes, new_classes)
+        y_target = self._switch_labels(y_target, classes, new_classes)
         x = np.hstack((y_target, y_source))
         data_stacked = deepcopy(data)
         data_stacked.x = x
@@ -153,6 +164,8 @@ class StackingTransfer(FuseTransfer):
         I = data.is_target
         stacked_data = self._get_stacked_data(data).get_subset(I)
         self.base_learner.train_and_test(stacked_data)
+        if not self.running_cv:
+            x = 1
 
     def predict(self, data):
         if self.only_use_source_prediction:
@@ -188,7 +201,7 @@ class HypothesisTransfer(FuseTransfer):
     WEIGHTS_JUST_TARGET = 1
     WEIGHTS_JUST_OPTIMAL = 2
     WEIGHTS_JUST_FIRST = 3
-    def __init__(self, configs=None):
+    def __init__(self, configs=MethodConfigs()):
         super(HypothesisTransfer, self).__init__(configs)
         self.cv_params = {
             'C': self.create_cv_params(-5,5),
@@ -402,7 +415,7 @@ class HypothesisTransfer(FuseTransfer):
 
 
 class ModelSelectionTransfer(method.ModelSelectionMethod):
-    def __init__(self, configs=None):
+    def __init__(self, configs=MethodConfigs()):
         super(ModelSelectionTransfer, self).__init__(configs)
         self.methods.append(TargetTranfer(configs))
         self.methods.append(FuseTransfer(configs))
@@ -414,7 +427,7 @@ class ModelSelectionTransfer(method.ModelSelectionMethod):
         return 'ModelSelTransfer'
 
 class ReweightedTransfer(method.Method):
-    def __init__(self, configs=None):
+    def __init__(self, configs=MethodConfigs()):
         super(ReweightedTransfer, self).__init__(configs)
         self.target_kde = None
         self.source_kde = None

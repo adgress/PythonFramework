@@ -235,6 +235,67 @@ def to_boolean(x, length=None):
     return b
 
 
+def woodbury(A_inv, C_inv, U, V):
+    VA = V.dot(A_inv)
+    B = np.linalg.inv(C_inv + VA.dot(U))
+    return A_inv - A_inv.dot(U).dot(B).dot(VA)
+
+#Approximate (lambda I + diag(X.sum()) - X)^-1
+def nystrom_woodbury_laplacian(X, lamb, perc_columns, W=None, C=None, D=None):
+    lamb = float(lamb)
+    timing_test = False
+    if timing_test:
+        tic()
+    if W is None or C is None:
+        W, C = nystrom(X, perc_columns)
+    #W_inv = np.linalg.pinv(W)
+    #X_n = X.shape[0]
+    d = X.sum(1)
+    dl_inv = 1/(d+lamb)
+
+    fast_solver = True
+    if fast_solver:
+        CTA = C.T*dl_inv
+        B_inv = np.linalg.pinv(-W + CTA.dot(C))
+        T = -C.dot(B_inv).dot(CTA)
+        T[np.diag_indices_from(T)] += 1
+        inv_approx = dl_inv[:, None] * T
+    else:
+        A_inv = np.diag(1 / (d + lamb))
+        CTA = C.T.dot(A_inv)
+        B_inv = np.linalg.pinv(-W + CTA.dot(C))
+        inv_approx = A_inv - A_inv.dot(C).dot(B_inv).dot(CTA)
+    #inv_approx = A_inv.dot(np.eye(A_inv.shape[0]) - C.dot(B_inv).dot(CTA))
+    '''
+
+    '''
+    #print 'optimized approx error: ' + str(norm(inv_approx-inv_approx2))
+    if timing_test:
+        toc()
+        tic()
+        inv_actual = np.linalg.inv(lamb*np.eye(X.shape[0]) + np.diag(d) - X)
+        print 'Nystrom-Woodbery error: ' + str(norm(inv_approx-inv_actual)/norm(inv_actual))
+        toc()
+    return inv_approx
+
+def nystrom(x, perc_columns):
+    timing_test = False
+    num_columns = x.shape[1]
+    num_sampled_columns = int(np.ceil(perc_columns * num_columns))
+    sampled_columns = np.random.choice(num_columns, num_sampled_columns, replace=False)
+    sampled_columns = np.sort(sampled_columns)
+    x = try_toarray(x)
+    C = x[:, sampled_columns]
+    W = x[sampled_columns, :]
+    W = W[:, sampled_columns]
+    #W_inv = np.linalg.pinv(W, rcond=1e-5)
+    #Lapprox = C.dot(W_inv).dot(C.T)
+    #print 'L Error: ' + str(norm(x - Lapprox) / norm(x))
+    if timing_test:
+        x_approx = C.dot(np.linalg.pinv(W)).dot(C.T)
+        print 'Nystrom error: ' + str(norm(x_approx - x)/norm(x))
+    return W, C
+
 def make_graph_adjacent(x, metric):
     assert metric == 'euclidean'
     assert x.shape[1] == 1
@@ -273,9 +334,12 @@ def make_graph_distance(x, metric='euclidean'):
     x = vec_to_2d(x)
     return pairwise.pairwise_distances(x, x, metric)
 
-def make_laplacian_with_W(W):
+def make_laplacian_with_W(W, normalized=False):
     D = W.sum(1)
     L = np.diag(D) - W
+    if normalized:
+        D_inv2 = np.diag(1/(D ** .5))
+        L = D_inv2.dot(L).dot(D_inv2)
     L = scipy.sparse.csc_matrix(L)
     return L
 
@@ -659,6 +723,10 @@ def find_set(a,to_find):
     assert len(a.shape) <= 1 or a.shape[1] == 1
     a = np.squeeze(a)
     inds = false(len(a))
+    try:
+        len(to_find)
+    except:
+        to_find = [to_find]
     for i in to_find:
         inds = inds | (i == a)
     return inds

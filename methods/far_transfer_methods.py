@@ -16,6 +16,7 @@ import transfer_methods
 from utility import array_functions
 from results_class import results
 import math
+from timer.timer import tic, toc
 
 class GraphTransfer(method.Method):
     def __init__(self, configs=None):
@@ -123,8 +124,9 @@ class GraphTransferNW(GraphTransfer):
         self.use_prediction_graph_sparsification = False
         self.k_sparsification = 5
         self.use_oracle_graph = False
-        self.oracle_guidance = .1
+        self.oracle_guidance = None
         self.oracle_guidance_binary = True
+        self.nystrom_percentage = .1
         self.sigma_nw = None
         self.C = None
         self.sigma_tr = None
@@ -219,16 +221,36 @@ class GraphTransferNW(GraphTransfer):
                 normalize_entries=False)
             #W_L = array_functions.make_knn(y_pred_source[I], k_L)
             W_source_pred = W_source_pred * W_sparse
-        L = array_functions.make_laplacian_with_W(W_source_pred)
         S = array_functions.make_smoothing_matrix(W)
-
-        A = np.eye(I.size) + self.C*L
-        try:
-            f = np.linalg.lstsq(A, S.dot(self.y))[0]
-        except:
-            print 'GraphTransferNW:predict failed, returning mean'
-            f = self.y.mean() * np.ones(data.true_y.shape)
-
+        timing_test = False
+        if self.nystrom_percentage > 0 or timing_test:
+            if timing_test:
+                tic()
+            Sy = S.dot(self.y)
+            if self.C != 0:
+                lamb = 1/float(self.C)
+                inv_approx = array_functions.nystrom_woodbury_laplacian(W_source_pred, lamb, self.nystrom_percentage)
+                inv_approx *= lamb
+                f = inv_approx.dot(Sy)
+            else:
+                f = Sy
+            if timing_test:
+                toc()
+        if self.nystrom_percentage == 0 or self.nystrom_percentage is None or timing_test:
+            if timing_test:
+                tic()
+            L = array_functions.make_laplacian_with_W(W_source_pred, normalized=False)
+            A = np.eye(I.size) + self.C*L
+            try:
+                f = np.linalg.lstsq(A, S.dot(self.y))[0]
+            except:
+                print 'GraphTransferNW:predict failed, returning mean'
+                f = self.y.mean() * np.ones(data.true_y.shape)
+            if timing_test:
+                toc()
+        if timing_test:
+            A_inv = np.linalg.inv(A)
+            print 'approx error: ' + str(norm(inv_approx - A_inv)/norm(A_inv))
         o = results.Output(data)
         if self.predict_sample is not None:
             nw_data = data_lib.Data(data.x[I,:], f)
@@ -256,10 +278,12 @@ class GraphTransferNW(GraphTransfer):
         if getattr(self, 'use_oracle_graph', False):
             s += '-oracle_graph'
         if getattr(self, 'oracle_guidance', None) is not None:
-            if getattr(self, 'oracle_guidance_binary', False):
+            if getattr(self, 'oracle_guidance_binary', False) > 0:
                 s += '-guidance_binary=' + str(self.oracle_guidance)
             else:
                 s += '-guidance=' + str(self.oracle_guidance)
+        if getattr(self, 'nystrom_percentage', None) > 0:
+            s += '-nystrom=' + str(self.nystrom_percentage)
         if getattr(self, 'use_validation', False):
             s += '-VAL'
         return s

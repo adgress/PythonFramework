@@ -33,7 +33,10 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
     'use_pool',
     'pool_size',
     'use_1d_data',
-    'data_set'
+    'data_set',
+    'oracle_guidance',
+    'use_oracle_graph',
+    'nystrom_percentage'
 ]
 data_set_to_use = None
 #data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION
@@ -46,10 +49,10 @@ data_set_to_use = None
 #data_set_to_use = bc.DATA_BIKE_SHARING
 
 #data_set_to_use = bc.DATA_POLLUTION_2
-#data_set_to_use = bc.DATA_CLIMATE_MONTH
+data_set_to_use = bc.DATA_CLIMATE_MONTH
 #data_set_to_use = bc.DATA_UBER
 #data_set_to_use = bc.DATA_IRS
-data_set_to_use = bc.DATA_TAXI
+#data_set_to_use = bc.DATA_TAXI
 
 #data_set_to_use = bc.DATA_SYNTHETIC_CURVE
 #data_set_to_use = bc.DATA_SYNTHETIC_SLANT
@@ -68,11 +71,15 @@ use_validation = True
 
 run_experiments = True
 run_batch_graph = False
-run_batch_graph_nw = False
+run_batch_graph_nw = True
 run_batch_baseline = False
 run_batch_target_only = False
-run_batch_stacking = True
-run_batch_dummy = True
+run_batch_stacking = False
+run_batch_dummy = False
+
+oracle_guidance = None
+use_oracle_graph = False
+nystrom_percentage = .1
 
 BATCH_DATA_NONE = 0
 BATCH_DATA_POSITIVE = 1
@@ -130,6 +137,9 @@ def apply_arguments(configs):
 class ProjectConfigs(bc.ProjectConfigs):
     def __init__(self, data_set=None, use_arguments=True, **kwargs):
         super(ProjectConfigs, self).__init__()
+        self.oracle_guidance = oracle_guidance
+        self.use_oracle_graph = use_oracle_graph
+        self.nystrom_percentage = nystrom_percentage
         self.target_labels = np.empty(0)
         self.source_labels = np.empty(0)
         self.project_dir = 'far_transfer'
@@ -543,6 +553,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #self.files['GraphTransferNW-use_rbf-guidance=0.2.pkl'] = 'Graph Transfer NW, rbf, 20% oracle'
         self.files['GraphTransferNW-use_rbf-guidance_binary=0.1.pkl'] = 'Graph Transfer NW, rbf, 10% oracle binary'
         self.files['GraphTransferNW-use_rbf-guidance_binary=0.2.pkl'] = 'Graph Transfer NW, rbf, 20% oracle binary'
+        self.files['GraphTransferNW-use_rbf-nystrom=0.1.pkl'] = 'Graph Transfer NW, rbf, 10% Nystrom'
         if use_validation:
             self.files = append_suffix_to_files(self.files, '-VAL', ', VAL')
             #self.files['LocalTransferDelta_l2_linear-b_clip-b_use-val.pkl'] = 'Local Transfer VAL'

@@ -123,10 +123,10 @@ class GraphTransferNW(GraphTransfer):
             self.cv_params['sigma_tr'] = np.asarray([1, .5, .25, .1, .05, .025])
         self.use_prediction_graph_sparsification = False
         self.k_sparsification = 5
-        self.use_oracle_graph = False
-        self.oracle_guidance = None
+        self.use_oracle_graph = getattr(configs, 'use_oracle_graph', False)
+        self.oracle_guidance = getattr(configs, 'oracle_guidance', None)
         self.oracle_guidance_binary = True
-        self.nystrom_percentage = .1
+        self.nystrom_percentage = getattr(configs, 'nystrom_percentage', None)
         self.sigma_nw = None
         self.C = None
         self.sigma_tr = None

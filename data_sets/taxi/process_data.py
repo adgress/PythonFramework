@@ -37,14 +37,16 @@ def vec_to_matrix(locs, values, num_bins):
         vals[locs[i,1], locs[i,0]] = values[i]
     return vals
 
-num_bins = 400
+num_bins = 50
 all_files = [f for f in os.listdir(data_dir) if path.isfile(path.join(data_dir, f))]
 x = []
 y = []
 time = []
 has_passenger = []
 for i, file in enumerate(all_files):
-    if i == 100:
+    if i == 600:
+        break
+    if i >= 535:
         break
     file_data = load_csv(path.join(data_dir, file), has_field_names=False, delim=str(' '))[1]
     y.append(file_data[:,0])
@@ -57,13 +59,17 @@ y_all = np.concatenate(y)
 time_all = np.concatenate(time)
 
 has_passenger_all = np.concatenate(has_passenger)
-x_bounds = [-122.45677419354838, -122.38322580645161]
-y_bounds = [37.738054968287521, 37.816543340380548]
+#x_bounds = [-122.45677419354838, -122.38322580645161]
+#y_bounds = [37.738054968287521, 37.816543340380548]
+x_bounds = [-122.42, -122.39]
+y_bounds = [37.78, 37.795]
 is_in_range = in_range(x_all, *x_bounds) & in_range(y_all, *y_bounds)
 x_all = x_all[is_in_range]
 y_all = y_all[is_in_range]
 x_all = quantize_loc(x_all, num_bins)
 y_all = quantize_loc(y_all, num_bins)
+
+
 
 time_all = time_all[is_in_range]
 get_hour_vec = np.vectorize(get_hour)
@@ -76,10 +82,13 @@ has_passenger_all = has_passenger_all[is_in_range]
 
 #is_morning = (hours >= 5) & (hours <= 12)
 #is_night = (hours >= 17)
-#is_morning = hours == 6
-#is_night = hours == 18
-is_morning = days == 4
-is_night = days == 8
+
+is_morning = hours == 6
+is_night = hours == 18
+
+#is_morning = days == 4
+#is_night = days == 8
+
 day_locs, day_values = count_cars(x_all[is_morning], y_all[is_morning], num_bins)
 night_locs, night_values = count_cars(x_all[is_night], y_all[is_night], num_bins)
 
@@ -105,13 +114,14 @@ plot_y = np.ones(locations.shape[0])
 
 
 #array_functions.plot_heatmap(all_locs, np.log(all_values), sizes=10, alpha=1, subtract_min=False)
-'''
-fig1 = pl.figure(3)
-array_functions.plot_heatmap(day_locs, np.log(day_values), sizes=30, alpha=1, subtract_min=False, fig=fig1)
-fig2 = pl.figure(4)
-array_functions.plot_heatmap(night_locs, np.log(night_values), sizes=30, alpha=1, subtract_min=False, fig=fig2)
-pl.show(block=True)
-'''
+viz = True
+if viz:
+    fig1 = pl.figure(3)
+    array_functions.plot_heatmap(day_locs, np.log(day_values), sizes=30, alpha=1, subtract_min=False, fig=fig1)
+    fig2 = pl.figure(4)
+    array_functions.plot_heatmap(night_locs, np.log(night_values), sizes=30, alpha=1, subtract_min=False, fig=fig2)
+    pl.show(block=True)
+
 x = np.vstack((day_locs, night_locs))
 for i in range(x.shape[1]):
     x[:,i] = x[:,i] / x[:,i].max()
@@ -120,8 +130,12 @@ data_set_ids = np.hstack((np.zeros(day_values.size), np.ones(day_values.size)))
 
 y = np.hstack((day_values, night_values))
 y = np.log(y)
-I = np.isfinite(y) & (y > 0)
+I = np.isfinite(y) & (y > 0) & (y > np.log(5))
+I = I & in_range(x[:,0], .2, .8) & in_range(x[:,1], .2, .8)
 data = data_lib.Data(x[I,:], y[I])
 data.data_set_ids = data_set_ids[I]
-helper_functions.save_object('raw_data.pkl', data)
+print 'n: ' + str(data.n)
+if not viz:
+    pass
+    helper_functions.save_object('raw_data.pkl', data)
 print ''

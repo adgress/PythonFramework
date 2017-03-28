@@ -673,6 +673,7 @@ class SKLKNN(ScikitLearnMethod):
         self.cv_params['n_neighbors'] = np.asarray(list(reversed([1,3,5,15,31])))
         #self.set_params(metric=metrics.CosineDistanceMetric())
         self.set_params(algorithm='brute')
+        self.set_params(metric='cosine')
 
     def train(self, data):
         labeled_train = data.labeled_training_data()
@@ -683,6 +684,14 @@ class SKLKNN(ScikitLearnMethod):
         o = Output(data)
         o.y = self.skl_method.predict(array_functions.try_toarray(data.x))
         return o
+
+class SKLKNNRegression(SKLKNN):
+    def __init__(self,configs=None):
+        super(SKLKNN, self).__init__(configs, neighbors.KNeighborsRegressor())
+        self.cv_params['n_neighbors'] = np.asarray(list(reversed([1,3,5,15,31])))
+        #self.set_params(metric=metrics.CosineDistanceMetric())
+        self.set_params(algorithm='brute')
+        self.set_params(metric='cosine')
 
 class SKLGuessClassifier(ScikitLearnMethod):
     def __init__(self,configs=None):

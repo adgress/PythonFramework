@@ -21,27 +21,36 @@ split_data = data_lib.SplitData(
     data,
     splits
 )
-use_transfer = True
+use_transfer = False
+use_regression = True
 m = base_configs.MethodConfigs()
 m.use_validation = True
 if use_transfer:
+    assert not use_regression
     m.loss_function = loss_function.ZeroOneError()
     m.cv_loss_function = loss_function.ZeroOneError()
     transfer_learner = transfer_methods.StackingTransfer(deepcopy(m))
     transfer_learner.base_learner = method.SKLLogisticRegression(deepcopy(m))
-    transfer_learner.source_learner = method.SKLLogisticRegression(deepcopy(m))
+    #transfer_learner.source_learner = method.SKLLogisticRegression(deepcopy(m))
+    transfer_learner.source_learner = method.SKLKNN(deepcopy(m))
     transfer_learner.source_learner.configs.use_validation = False
-    transfer_learner.target_learner = method.SKLLogisticRegression(deepcopy(m))
+    transfer_learner.use_all_source = True
+    #transfer_learner.target_learner = method.SKLLogisticRegression(deepcopy(m))
+    transfer_learner.target_learner = method.SKLKNN(deepcopy(m))
 
-learner = method.SKLLogisticRegression(deepcopy(m))
+#learner = method.SKLKNN(deepcopy(m))
+#learner = method.SKLLogisticRegression(deepcopy(m))
 #learner = method.SKLRidgeClassification()
-learner.configs.cv_loss_function = loss_function.ZeroOneError()
-loss_function = loss_function.ZeroOneError()
+if use_regression:
+    learner = method.SKLKNNRegression(deepcopy(m))
+    learner.configs.cv_loss_function = loss_function.MeanAbsoluteError()
+    loss_function = loss_function.MeanAbsoluteError()
+else:
+    learner = method.SKLKNN(deepcopy(m))
+    learner.configs.cv_loss_function = loss_function.ZeroOneError()
+    loss_function = loss_function.ZeroOneError()
 num_classes = data.classes.size
 
-#num_labels = [5, 10, 20]
-num_labels = [3, 5, 10]
-avg_perf = np.zeros((num_classes, len(num_labels)))
 all_learners = []
 base_class_idx = 0
 base_label = data.classes[base_class_idx]
@@ -80,24 +89,34 @@ for split_idx in range(num_splits):
                 I = (data_copy.true_y == target_label) | (data_copy.true_y == base_label)
                 data_target = data_copy.get_subset(I)
                 transfer_results = learner.predict(data_target)
+                transfer_results.y[transfer_results.y == source_label] = target_label
 
             error = loss_function.compute_score(transfer_results)
             transfer_error[source_idx, target_idx] += error
         print str(source_label) + ' done with source class: ' + data.label_names[source_idx]
-        print [str(idx) + ':%0.3f' % i for idx, i in enumerate(transfer_error[source_idx,:])]
+        print [str(idx) + ':%0.3f' % i for idx, i in enumerate(transfer_error[source_idx,:]/(split_idx+1))]
     print 'done with split ' + str(split_idx)
 
 transfer_error /= num_splits
 
 #subtract error when training and testing with target data
 
-for i in range(num_classes):
-    transfer_error[:, i] -= transfer_error[i, i]
+transfer_error = transfer_error[1:,:]
+transfer_error = transfer_error[:,1:]
+normalize_relative_difference = True
+if normalize_relative_difference:
+    for i in range(transfer_error.shape[0]):
+        transfer_error[:, i] = (transfer_error[:, i] - transfer_error[i, i]) / transfer_error[i, i]
+else:
+    for i in range(transfer_error.shape[0]):
+        transfer_error[:, i] = transfer_error[:, i] - transfer_error[i, i]
 
 print str(transfer_error.T)
-transfer_error -= transfer_error[:].min()
-to_viz = transfer_error[1:, :]
-to_viz = to_viz[:, 1:]
-array_functions.plot_matrix(to_viz)
+'''
+if use_transfer:
+    transfer_error -= transfer_error[:].min()
+'''
+print str(transfer_error.T)
+array_functions.plot_matrix(transfer_error)
 
 print 'hello'

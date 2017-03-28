@@ -53,8 +53,8 @@ for i, z in enumerate(zip_code):
     locations[i,:] = zipcode_location_map[z]
 
 I = np.isfinite(year1_idx) & np.isfinite(year2_idx) & np.isfinite(locations[:,0])
-#I = I & (state == 'CA')
-viz = True
+I = I & (state == 'CA')
+viz = False
 print 'n: ' + str(I.sum())
 pricing_data[:] = 1
 if viz:
@@ -63,5 +63,16 @@ if viz:
     fig2 = pl.figure(4)
     array_functions.plot_heatmap(locations[I,:], pricing_data[I,1], sizes=30, alpha=1, subtract_min=False, fig=fig2)
     pl.show(block=True)
+
+x_all = np.vstack((locations[I,:], locations[I,:]))
+y_all = np.concatenate((pricing_data[I,0], pricing_data[I,1]))
+data_set_ids = np.concatenate((np.zeros(I.sum()), np.ones(I.sum())))
+data = data_lib.Data(x_all, y_all)
+data.data_set_ids = data_set_ids
+print 'n: ' + str(data.n)
+if not viz:
+    pass
+    helper_functions.save_object('raw_data.pkl', data)
+print ''
 
 print ''

@@ -441,7 +441,8 @@ def create_20ng_data(file_dir=''):
     #l = [1,2,7,8,12,17]
     #l = [1,2,7,8,12,13]
     #l = [0,1,2,3,4,5,7,8,9,10,11,12,13,14,16,17,18,19]
-    l = [0, 1, 2, 3, 4, 5, 7, 8, 9, 10]
+    l = [0, 1, 2, 7, 8, 11, 12, 16, 17]
+    #l = [0, 1, 2, 3, 4, 7, 8, 9, 10,11,12,13,14,16,17,18,19]
     data.label_names = [short_names[i] for i in l]
     I = array_functions.false(len(newsgroups_train.target))
     for i in l:

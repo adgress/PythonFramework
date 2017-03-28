@@ -49,10 +49,10 @@ data_set_to_use = None
 #data_set_to_use = bc.DATA_BIKE_SHARING
 
 #data_set_to_use = bc.DATA_POLLUTION_2
-data_set_to_use = bc.DATA_CLIMATE_MONTH
+#data_set_to_use = bc.DATA_CLIMATE_MONTH
 #data_set_to_use = bc.DATA_UBER
 #data_set_to_use = bc.DATA_IRS
-#data_set_to_use = bc.DATA_TAXI
+data_set_to_use = bc.DATA_TAXI
 
 #data_set_to_use = bc.DATA_SYNTHETIC_CURVE
 #data_set_to_use = bc.DATA_SYNTHETIC_SLANT
@@ -62,7 +62,7 @@ data_set_to_use = bc.DATA_CLIMATE_MONTH
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
 #data_set_to_use = bc.DATA_SYNTHETIC_FLIP
 #data_set_to_use = bc.DATA_SYNTHETIC_PIECEWISE
-
+data_set_to_use = bc.DATA_ZILLOW
 use_1d_data = True
 
 show_legend_on_all = False
@@ -235,6 +235,9 @@ class ProjectConfigs(bc.ProjectConfigs):
         elif data_set == bc.DATA_TAXI:
             self.set_data_set_defaults('taxi', source_labels=[0], target_labels=[1], is_regression=True)
             self.num_labels = np.asarray([5, 10, 20, 40, 100, 200, 400, 800])
+        elif data_set == bc.DATA_ZILLOW:
+            self.set_data_set_defaults('zillow', source_labels=[0], target_labels=[1], is_regression=True)
+            self.num_labels = np.asarray([5, 10, 20, 40, 100])
         else:
             assert False
         assert self.source_labels.size > 0

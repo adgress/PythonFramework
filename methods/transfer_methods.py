@@ -127,12 +127,12 @@ class StackingTransfer(FuseTransfer):
         #from far_transfer_methods import GraphTransferNW
         self.cv_params = {}
         self.base_learner = method.SKLRidgeRegression(configs)
-        #self.source_learner = method.NadarayaWatsonMethod(configs)
-        #self.target_learner = method.NadarayaWatsonMethod(configs)
+        self.source_learner = method.NadarayaWatsonMethod(configs)
+        self.target_learner = method.NadarayaWatsonMethod(configs)
         sub_configs = deepcopy(configs)
 
-        self.source_learner = method.NadarayaWatsonKNNMethod(deepcopy(sub_configs))
-        self.target_learner = method.NadarayaWatsonKNNMethod(deepcopy(sub_configs))
+        #self.source_learner = method.NadarayaWatsonKNNMethod(deepcopy(sub_configs))
+        #self.target_learner = method.NadarayaWatsonKNNMethod(deepcopy(sub_configs))
         self.use_validation = configs.use_validation
         self.only_use_source_prediction = False
         self.use_all_source = True
@@ -146,10 +146,11 @@ class StackingTransfer(FuseTransfer):
     def _get_stacked_data(self, data):
         y_source = np.expand_dims(self.source_learner.predict(data).y, 1)
         y_target = np.expand_dims(self.target_learner.predict(data).y, 1)
-        classes = data.classes
-        new_classes = np.asarray([0,1])
-        y_source = self._switch_labels(y_source, classes, new_classes)
-        y_target = self._switch_labels(y_target, classes, new_classes)
+        if not data.is_regression:
+            classes = data.classes
+            new_classes = np.asarray([0,1])
+            y_source = self._switch_labels(y_source, classes, new_classes)
+            y_target = self._switch_labels(y_target, classes, new_classes)
         x = np.hstack((y_target, y_source))
         data_stacked = deepcopy(data)
         data_stacked.x = x

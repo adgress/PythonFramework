@@ -108,7 +108,8 @@ class FuseTransfer(TargetTranfer):
             data_copy.type[source_inds] = data_lib.TYPE_SOURCE
             data_copy.is_train[source_inds] = True
             data_copy.data_set_ids[source_inds] = i+1
-        data_copy.reveal_labels(data_copy.is_source)
+        if getattr(self, 'use_all_source', False):
+            data_copy.reveal_labels(data_copy.is_source)
         return data_copy
 
     @property
@@ -134,6 +135,7 @@ class StackingTransfer(FuseTransfer):
         self.target_learner = method.NadarayaWatsonKNNMethod(deepcopy(sub_configs))
         self.use_validation = configs.use_validation
         self.only_use_source_prediction = False
+        self.use_all_source = True
 
     def _switch_labels(self, x, old, new):
         x_new = deepcopy(x)

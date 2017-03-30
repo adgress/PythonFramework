@@ -46,10 +46,10 @@ class GraphTransfer(method.Method):
         self.source_learner.use_validation = self.use_validation
         self.nw_transfer.use_validation = self.use_validation
         self.nw_target.use_validation = self.use_validation
-        if self.just_transfer:
+        if self.just_transfer and 'alpha' in self.cv_params:
             del self.cv_params['alpha']
             self.alpha = 0
-        if self.just_target:
+        if self.just_target and 'alpha' in self.cv_params:
             del self.cv_params['alpha']
             self.alpha = 1
         is_source = data.data_set_ids == self.configs.source_labels[0]
@@ -123,10 +123,10 @@ class GraphTransferNW(GraphTransfer):
             self.cv_params['sigma_tr'] = np.asarray([1, .5, .25, .1, .05, .025])
         self.use_prediction_graph_sparsification = False
         self.k_sparsification = 5
-        self.use_oracle_graph = getattr(configs, 'use_oracle_graph', False)
+        self.use_oracle_graph = False
         self.oracle_guidance = getattr(configs, 'oracle_guidance', None)
-        self.oracle_guidance_binary = True
-        self.nystrom_percentage = getattr(configs, 'nystrom_percentage', None)
+        self.oracle_guidance_binary = getattr(configs, 'oracle_guidance_binary', False)
+        self.nystrom_percentage = getattr(configs, 'nystrom_percentage')
         self.sigma_nw = None
         self.C = None
         self.sigma_tr = None

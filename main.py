@@ -11,12 +11,14 @@ import importlib
 #import hypothesis_transfer.hypothesis_project_configs as configs_library
 #import active.active_project_configs as configs_library
 #import new_project.new_project_configs as configs_library
+#import higher_order_transfer.higher_order_transfer_configs as configs_library
+
+#import base.transfer_project_configs as configs_library
 
 #import mixed_feature_guidance.mixed_features_project_configs as configs_library
-#import base.transfer_project_configs as configs_library
 import far_transfer.far_transfer_project_configs as configs_library
 #import active_base.active_base_project_configs as configs_library
-#import higher_order_transfer.higher_order_transfer_configs as configs_library
+
 
 configs_lib = configs_library
 import boto

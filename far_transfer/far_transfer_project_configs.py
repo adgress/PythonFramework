@@ -63,6 +63,7 @@ data_set_to_use = bc.DATA_TAXI
 #data_set_to_use = bc.DATA_SYNTHETIC_FLIP
 #data_set_to_use = bc.DATA_SYNTHETIC_PIECEWISE
 data_set_to_use = bc.DATA_ZILLOW
+
 use_1d_data = True
 
 show_legend_on_all = False
@@ -70,16 +71,16 @@ arguments = None
 use_validation = True
 
 run_experiments = True
-run_batch_graph = False
+run_batch_graph = True
 run_batch_graph_nw = True
 run_batch_baseline = False
 run_batch_target_only = False
-run_batch_stacking = False
+run_batch_stacking = True
 run_batch_dummy = False
 
 oracle_guidance = None
 use_oracle_graph = False
-nystrom_percentage = .1
+nystrom_percentage = None
 
 BATCH_DATA_NONE = 0
 BATCH_DATA_POSITIVE = 1
@@ -237,7 +238,7 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.num_labels = np.asarray([5, 10, 20, 40, 100, 200, 400, 800])
         elif data_set == bc.DATA_ZILLOW:
             self.set_data_set_defaults('zillow', source_labels=[0], target_labels=[1], is_regression=True)
-            self.num_labels = np.asarray([5, 10, 20, 40, 100])
+            self.num_labels = np.asarray([5, 10, 20, 40, 80, 160])
         else:
             assert False
         assert self.source_labels.size > 0
@@ -532,10 +533,6 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             setattr(self, key, value)
         self.files = OrderedDict()
         self.files['TargetTransfer+NW.pkl'] = 'Target Only'
-        self.files['GraphTransfer_ta.pkl'] = 'Target Only'
-        #self.files['GraphTransfer.pkl'] = 'Graph Transfer'
-        #self.files['GraphTransfer_tr.pkl'] = 'Graph Transfer: Just transfer'
-        #self.files['GraphTransfer_ta.pkl'] = 'Graph Transfer: Just target'
         #self.files['GraphTransferNW.pkl'] = 'Graph Transfer NW'
         self.files['GraphTransferNW-nw.pkl'] = 'Graph Transfer NW, just nw'
         self.files['GraphTransferNW-sample=1600.pkl'] = 'Graph Transfer NW sample 1600'
@@ -557,6 +554,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files['GraphTransferNW-use_rbf-guidance_binary=0.1.pkl'] = 'Graph Transfer NW, rbf, 10% oracle binary'
         self.files['GraphTransferNW-use_rbf-guidance_binary=0.2.pkl'] = 'Graph Transfer NW, rbf, 20% oracle binary'
         self.files['GraphTransferNW-use_rbf-nystrom=0.1.pkl'] = 'Graph Transfer NW, rbf, 10% Nystrom'
+        self.files['GraphTransferNW-use_rbf-nystrom=0.2.pkl'] = 'Graph Transfer NW, rbf, 20% Nystrom'
         if use_validation:
             self.files = append_suffix_to_files(self.files, '-VAL', ', VAL')
             #self.files['LocalTransferDelta_l2_linear-b_clip-b_use-val.pkl'] = 'Local Transfer VAL'
@@ -570,6 +568,9 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['GraphTransferNW-use_rbf.pkl'] = 'Graph Transfer RBF'
             #self.files['LocalTransferDeltaSMS.pkl'] = 'SMS Delta'
         self.files['SKL-DumReg-TargetOnly.pkl'] = 'Predict Mean'
+        self.files['GraphTransfer.pkl'] = 'Graph Transfer'
+        self.files['GraphTransfer_tr.pkl'] = 'Graph Transfer: Just transfer'
+        self.files['GraphTransfer_ta.pkl'] = 'Graph Transfer: Just target'
         self.title = self.results_dir
 
 
@@ -593,8 +594,9 @@ class BatchConfigs(bc.BatchConfigs):
                 m.learner.just_target = True
                 self.config_list.append(m)
             if run_batch_graph:
-                m = MainConfigs(ProjectConfigs(d))
-                m.ft_method = FT_METHOD_GRAPH
+                pc2 = ProjectConfigs(d)
+                pc2.ft_method = FT_METHOD_GRAPH
+                m = MainConfigs(pc2)
                 m.learner.just_transfer = False
                 m.learner.just_target = False
                 self.config_list.append(m)

@@ -15,8 +15,8 @@ import importlib
 
 #import base.transfer_project_configs as configs_library
 
-#import mixed_feature_guidance.mixed_features_project_configs as configs_library
-import far_transfer.far_transfer_project_configs as configs_library
+import mixed_feature_guidance.mixed_features_project_configs as configs_library
+#import far_transfer.far_transfer_project_configs as configs_library
 #import active_base.active_base_project_configs as configs_library
 
 

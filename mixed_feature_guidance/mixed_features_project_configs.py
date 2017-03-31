@@ -215,68 +215,51 @@ class BatchConfigs(bc.BatchConfigs):
             for data_set in all_data_sets:
                 pc = ProjectConfigs(data_set)
 
-                p = deepcopy(pc)
-                p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
-                p.num_random_pairs = 0
-                p.num_random_signs = 10
-                self.config_list.append(MainConfigs(p))
-                if data_set in {bc.DATA_SYNTHETIC_LINEAR_REGRESSION, bc.DATA_DROSOPHILIA}:
-                    p = deepcopy(p)
+                num_signs = [.25, .5, 1]
+                for i in num_signs:
+                    p = deepcopy(pc)
+                    p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
                     p.num_random_pairs = 0
-                    p.num_random_signs = 50
+                    p.num_random_signs = i
                     self.config_list.append(MainConfigs(p))
 
                 p = deepcopy(pc)
                 p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
                 p.num_random_pairs = 0
-                p.num_random_signs = 10
+                p.num_random_signs = 1
                 p.use_training_corr = True
                 self.config_list.append(MainConfigs(p))
 
                 p = deepcopy(pc)
-                p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
-                p.num_random_pairs = 0
-                p.num_random_signs = 5
+                p.disable_relaxed_guidance = True
+                p.num_random_signs = 1
                 self.config_list.append(MainConfigs(p))
 
-                p = deepcopy(p)
-                p.disable_relaxed_guidance = True
-                p.num_random_signs = 10
-                self.config_list.append(MainConfigs(p))
-                if data_set in {bc.DATA_SYNTHETIC_LINEAR_REGRESSION, bc.DATA_DROSOPHILIA}:
-                    p = deepcopy(p)
-                    p.num_random_pairs = 0
-                    p.num_random_signs = 50
+                num_pairs = num_signs
+                for i in num_pairs:
+                    p = deepcopy(pc)
+                    p.disable_relaxed_guidance = False
+                    p.num_random_signs = 0
+                    p.num_random_pairs = i
                     self.config_list.append(MainConfigs(p))
 
                 p = deepcopy(p)
                 p.disable_relaxed_guidance = False
                 p.num_random_signs = 0
-                p.num_random_pairs = 10
-                self.config_list.append(MainConfigs(p))
-
-                p = deepcopy(p)
-                p.disable_relaxed_guidance = False
-                p.num_random_signs = 0
                 p.num_random_pairs = 0
                 m = MainConfigs(p)
                 m.learner.use_nonneg = True
                 m.learner.use_corr = False
                 self.config_list.append(m)
 
-                p = deepcopy(p)
+                p = deepcopy(pc)
                 p.disable_relaxed_guidance = True
                 p.num_random_signs = 0
+                p.num_random_pairs = 0
                 m = MainConfigs(p)
                 m.learner.use_nonneg = True
                 m.learner.use_corr = False
                 self.config_list.append(m)
-                '''
-                p = deepcopy(p)
-                p.num_random_pairs = 10
-                p.num_random_signs = 0
-                self.config_list.append(MainConfigs(p))
-                '''
 
                 p = deepcopy(pc)
                 p.disable_relaxed_guidance = False
@@ -335,12 +318,12 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files['Mixed-feats_method=Lasso.pkl'] = 'Mixed: Lasso'
         self.files['Mixed-feats_method=Rel_nonneg_l1.pkl'] = 'Mixed: Nonneg'
         self.files['Mixed-feats_method=Rel_nonneg_not-relaxed_l1.pkl'] = 'Mixed: Nonneg, not relaxed'
-        self.files['Mixed-feats_method=Rel_signs=5_corr_l1.pkl'] = 'Mixed: 5 signs'
-        self.files['Mixed-feats_method=Rel_signs=10_corr_l1.pkl'] = 'Mixed: 10 signs'
-        self.files['Mixed-feats_method=Rel_signs=10_trainCorr_l1.pkl'] = 'Mixed: 10 signs, training correlation'
-        self.files['Mixed-feats_method=Rel_signs=10_corr_not-relaxed_l1.pkl'] = 'Mixed: 10 signs, not relaxed'
+        #self.files['Mixed-feats_method=Rel_signs=5_corr_l1.pkl'] = 'Mixed: 5 signs'
+        self.files['Mixed-feats_method=Rel_signs=21_corr_l1.pkl'] = 'Mixed: 10 signs'
+        #self.files['Mixed-feats_method=Rel_signs=10_trainCorr_l1.pkl'] = 'Mixed: 10 signs, training correlation'
+        #self.files['Mixed-feats_method=Rel_signs=10_corr_not-relaxed_l1.pkl'] = 'Mixed: 10 signs, not relaxed'
 
-        self.files['Mixed-feats_method=Rel_pairs=10_corr_l1.pkl'] = 'Mixed: 10 pairs'
+        self.files['Mixed-feats_method=Rel_pairs=21_corr_l1.pkl'] = 'Mixed: 10 pairs'
         #self.files['Mixed-feats_method=Rel_pairs=10_corr_no-tikhonov_l1.pkl'] = 'Mixed: 10 pairs, no tikhonov'
 
         #self.files['SKL-DumReg.pkl'] = 'Predict Mean'

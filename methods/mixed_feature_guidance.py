@@ -147,8 +147,8 @@ class MixedFeatureGuidanceMethod(method.Method):
         assert (np.isfinite(training_corr)).all()
         metadata['corr'] = corr
         metadata['training_corr'] = training_corr
-        num_random_pairs = self.num_random_pairs
-        num_signs = self.num_random_signs
+        num_random_pairs = int(np.ceil(self.num_random_pairs*p))
+        num_signs = int(np.ceil(self.num_random_signs*p))
         self.pairs = self.create_random_pairs(data.metadata['true_w'], num_pairs=num_random_pairs)
         if num_signs > p:
             num_signs = p

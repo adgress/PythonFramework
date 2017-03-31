@@ -103,7 +103,7 @@ class GraphTransfer(method.Method):
             s += '_tr'
         if getattr(self, 'just_target', False):
             s += '_ta'
-        if getattr(self, 'use_validation', False):
+        if getattr(self.configs, 'use_validation', False):
             s += '-VAL'
         return s
 

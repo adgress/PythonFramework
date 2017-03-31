@@ -91,6 +91,7 @@ for split_idx in range(num_splits):
                 transfer_results = learner.predict(data_target)
                 transfer_results.y[transfer_results.y == source_label] = target_label
 
+            assert False, 'Are we computing error on test data?'
             error = loss_function.compute_score(transfer_results)
             transfer_error[source_idx, target_idx] += error
         print str(source_label) + ' done with source class: ' + data.label_names[source_idx]

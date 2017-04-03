@@ -168,7 +168,12 @@ class StackingTransfer(FuseTransfer):
         stacked_data = self._get_stacked_data(data).get_subset(I)
         self.base_learner.train_and_test(stacked_data)
         if not self.running_cv:
-            x = 1
+            dict = {
+                'source': self.source_learner.sigma,
+                'target': self.target_learner.sigma,
+                'lambda': self.base_learner.alpha
+            }
+            print 'Stacking params: ' + str(dict)
 
     def predict(self, data):
         if self.only_use_source_prediction:

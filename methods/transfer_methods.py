@@ -167,9 +167,8 @@ class StackingTransfer(FuseTransfer):
             self.only_use_source_prediction = True
             return
         if self.joint_cv:
-            for key in self.cv_params.keys():
-                setattr(self.target_learner, key, getattr(self, key))
-                setattr(self.base_learner, key, getattr(self, key))
+            self.target_learner.set_params(sigma=self.sigma)
+            self.base_learner.set_params(alpha=self.alpha)
             self.target_learner.train(data)
         else:
             self.target_learner.train_and_test(data)

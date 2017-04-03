@@ -125,10 +125,16 @@ class StackingTransfer(FuseTransfer):
     def __init__(self, configs=MethodConfigs()):
         super(StackingTransfer, self).__init__(configs)
         #from far_transfer_methods import GraphTransferNW
-        self.cv_params = {}
         self.base_learner = method.SKLRidgeRegression(configs)
         self.source_learner = method.NadarayaWatsonMethod(configs)
         self.target_learner = method.NadarayaWatsonMethod(configs)
+        self.joint_cv = getattr(configs, 'joint_cv', False)
+        if self.joint_cv:
+            self.cv_params = self.base_learner.cv_params.copy()
+            self.cv_params.update(self.target_learner.cv_params)
+            self.base_learner.cv_params = None
+            self.target_learner.cv_params = None
+
         sub_configs = deepcopy(configs)
 
         #self.source_learner = method.NadarayaWatsonKNNMethod(deepcopy(sub_configs))
@@ -160,19 +166,30 @@ class StackingTransfer(FuseTransfer):
         if data.n_train_labeled == 0:
             self.only_use_source_prediction = True
             return
+        if self.joint_cv:
+            for key in self.cv_params.keys():
+                setattr(self.target_learner, key, getattr(key))
+                setattr(self.base_learner, key, getattr(key))
+            self.target_learner.train(data)
+        else:
+            self.target_learner.train_and_test(data)
         self.only_use_source_prediction = False
-        self.target_learner.train_and_test(data)
         #Need unlabeled data if using validation data for parameter tuning
         #I = data.is_labeled & data.is_target
         I = data.is_target
         stacked_data = self._get_stacked_data(data).get_subset(I)
-        self.base_learner.train_and_test(stacked_data)
+        if self.joint_cv:
+            self.base_learner.train(stacked_data)
+        else:
+            self.base_learner.train_and_test(stacked_data)
         if not self.running_cv:
+            '''
             dict = {
                 'source': self.source_learner.sigma,
                 'target': self.target_learner.sigma,
                 'lambda': self.base_learner.alpha
             }
+            '''
             print 'Stacking params: ' + str(dict)
 
     def predict(self, data):
@@ -198,6 +215,8 @@ class StackingTransfer(FuseTransfer):
         s = 'StackTransfer+' + self.base_learner.prefix
         if self.preprocessor is not None and self.preprocessor.prefix() is not None:
             s += '-' + self.preprocessor.prefix()
+        if getattr(self, 'joint_cv', False):
+            s += '-jointCV'
         if getattr(self, 'use_validation', False):
             s += '-VAL'
         return s

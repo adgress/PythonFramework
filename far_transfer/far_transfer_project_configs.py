@@ -36,7 +36,8 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
     'data_set',
     'oracle_guidance',
     'use_oracle_graph',
-    'nystrom_percentage'
+    'nystrom_percentage',
+    'joint_cv'
 ]
 data_set_to_use = None
 #data_set_to_use = bc.DATA_SYNTHETIC_CLASSIFICATION
@@ -62,17 +63,17 @@ data_set_to_use = bc.DATA_TAXI
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
 #data_set_to_use = bc.DATA_SYNTHETIC_FLIP
 #data_set_to_use = bc.DATA_SYNTHETIC_PIECEWISE
-data_set_to_use = bc.DATA_ZILLOW
+#data_set_to_use = bc.DATA_ZILLOW
 
 use_1d_data = True
 
 show_legend_on_all = False
 arguments = None
-use_validation = True
+use_validation = False
 
 run_experiments = True
-run_batch_graph = True
-run_batch_graph_nw = True
+run_batch_graph = False
+run_batch_graph_nw = False
 run_batch_baseline = False
 run_batch_target_only = False
 run_batch_stacking = True
@@ -81,6 +82,7 @@ run_batch_dummy = False
 oracle_guidance = None
 use_oracle_graph = False
 nystrom_percentage = None
+stacking_joint_cv = True
 
 BATCH_DATA_NONE = 0
 BATCH_DATA_POSITIVE = 1
@@ -147,6 +149,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.num_labels = range(40,201,40)
         self.oracle_labels = np.empty(0)
         self.use_1d_data = use_1d_data
+        self.joint_cv = stacking_joint_cv
         if data_set is None:
             data_set = data_set_to_use
         for key, value in other_method_configs.items():

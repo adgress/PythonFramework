@@ -168,8 +168,8 @@ class StackingTransfer(FuseTransfer):
             return
         if self.joint_cv:
             for key in self.cv_params.keys():
-                setattr(self.target_learner, key, getattr(key))
-                setattr(self.base_learner, key, getattr(key))
+                setattr(self.target_learner, key, getattr(self, key))
+                setattr(self.base_learner, key, getattr(self, key))
             self.target_learner.train(data)
         else:
             self.target_learner.train_and_test(data)

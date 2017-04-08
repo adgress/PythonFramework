@@ -15,8 +15,8 @@ import importlib
 
 #import base.transfer_project_configs as configs_library
 
-import mixed_feature_guidance.mixed_features_project_configs as configs_library
-#import far_transfer.far_transfer_project_configs as configs_library
+#import mixed_feature_guidance.mixed_features_project_configs as configs_library
+import far_transfer.far_transfer_project_configs as configs_library
 #import active_base.active_base_project_configs as configs_library
 
 
@@ -188,7 +188,7 @@ def run_visualization():
         for file, legend_str in vis_configs.results_files:
             if not os.path.isfile(file):
                 print file + ' doesn''t exist - skipping'
-                assert vis_configs.show_legend_on_all, 'Just to be safe, set show_legend_on_all=True if files are missing'
+                assert len(viz_params) == 1 or vis_configs.show_legend_on_all, 'Just to be safe, set show_legend_on_all=True if files are missing'
                 continue
             results = helper_functions.load_object(file)
             sized_results = get_sized_results(file)
@@ -251,7 +251,7 @@ def run_visualization():
             axis[2] = ylims[0]
             axis[3] = ylims[1]
         plt.axis(axis)
-        if config_idx == 2 or vis_configs.show_legend_on_all:
+        if config_idx == 2 or vis_configs.show_legend_on_all or len(viz_params) == 1:
             plt.legend(loc='upper right', fontsize=vis_configs.fontsize)
     #fig.tight_layout(rect=[.05,.05,.95,.95])
     if getattr(vis_configs,'borders',None):

@@ -50,10 +50,12 @@ data_set_to_use = None
 #data_set_to_use = bc.DATA_BIKE_SHARING
 
 #data_set_to_use = bc.DATA_POLLUTION_2
-#data_set_to_use = bc.DATA_CLIMATE_MONTH
-#data_set_to_use = bc.DATA_UBER
+data_set_to_use = bc.DATA_CLIMATE_MONTH
 #data_set_to_use = bc.DATA_IRS
-data_set_to_use = bc.DATA_TAXI
+#data_set_to_use = bc.DATA_TAXI
+#data_set_to_use = bc.DATA_SYNTHETIC_PIECEWISE
+#data_set_to_use = bc.DATA_ZILLOW
+#data_set_to_use = bc.DATA_UBER
 
 #data_set_to_use = bc.DATA_SYNTHETIC_CURVE
 #data_set_to_use = bc.DATA_SYNTHETIC_SLANT
@@ -62,27 +64,34 @@ data_set_to_use = bc.DATA_TAXI
 #data_set_to_use = bc.DATA_SYNTHETIC_CROSS
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
 #data_set_to_use = bc.DATA_SYNTHETIC_FLIP
-#data_set_to_use = bc.DATA_SYNTHETIC_PIECEWISE
-#data_set_to_use = bc.DATA_ZILLOW
+#
+
+VIZ_EXPERIMENTS = 0
+VIZ_PAPER_ERROR = 1
+VIZ_PAPER_NYSTROM = 2
+VIZ_PAPER_GUIDANCE = 3
+
+viz_type = VIZ_PAPER_NYSTROM
 
 use_1d_data = True
 
 show_legend_on_all = False
 arguments = None
-use_validation = False
+use_validation = True
 
 run_experiments = True
 run_batch_graph = False
-run_batch_graph_nw = False
-run_batch_baseline = False
+run_batch_graph_nw = True
+run_batch_baseline = True
 run_batch_target_only = False
 run_batch_stacking = True
 run_batch_dummy = False
 
 oracle_guidance = None
 use_oracle_graph = False
+#nystrom_percentage = .005
 nystrom_percentage = None
-stacking_joint_cv = True
+stacking_joint_cv = False
 
 BATCH_DATA_NONE = 0
 BATCH_DATA_POSITIVE = 1
@@ -111,7 +120,7 @@ if run_batch_datasets > 0:
             bc.DATA_BIKE_SHARING,
             bc.DATA_BOSTON_HOUSING,
             bc.DATA_CONCRETE,
-            bc.DATA_POLLUTION_2,
+            #bc.DATA_POLLUTION_2,
         ]
 
 
@@ -238,7 +247,10 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.num_labels = np.asarray([10, 20, 30, 40])
         elif data_set == bc.DATA_TAXI:
             self.set_data_set_defaults('taxi', source_labels=[0], target_labels=[1], is_regression=True)
-            self.num_labels = np.asarray([5, 10, 20, 40, 100, 200, 400, 800])
+            #self.set_data_set_defaults('taxi2', source_labels=[0], target_labels=[1], is_regression=True)
+            #self.num_labels = np.asarray([5, 10, 20, 40, 100, 200, 400, 800])
+            #self.num_labels = np.asarray([5, 10, 20, 40, 100])
+            self.num_labels = np.asarray([100, 200, 400, 800, 1600])
         elif data_set == bc.DATA_ZILLOW:
             self.set_data_set_defaults('zillow', source_labels=[0], target_labels=[1], is_regression=True)
             self.num_labels = np.asarray([5, 10, 20, 40, 80, 160])
@@ -531,49 +543,75 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         super(VisualizationConfigs, self).__init__()
         pc = ProjectConfigs(data_set, **kwargs)
         self.copy_fields(pc,pc_fields_to_copy)
-        self.max_rows = 2
+        self.max_rows = 1
+        self.show_legend_on_all = False
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
+
+        viz_just_stacking = False
         self.files = OrderedDict()
-        self.files['TargetTransfer+NW.pkl'] = 'Target Only'
-        #self.files['GraphTransferNW.pkl'] = 'Graph Transfer NW'
-        self.files['GraphTransferNW-nw.pkl'] = 'Graph Transfer NW, just nw'
-        self.files['GraphTransferNW-sample=1600.pkl'] = 'Graph Transfer NW sample 1600'
-        self.files['GraphTransferNW-sample=300.pkl'] = 'Graph Transfer NW sample 300'
-        self.files['GraphTransferNW-sample=150.pkl'] = 'Graph Transfer NW sample 150'
-        self.files['GraphTransferNW-sample=100.pkl'] = 'Graph Transfer NW sample 100'
-        self.files['StackTransfer+SKL-RidgeReg.pkl'] = 'Stacked'
-        #self.files['LocalTransferDelta_radius_l2_lap-reg.pkl'] = 'Local Transfer: Nonparametric'
-        #self.files['LocalTransferDelta_radius_l2_lap-reg_knn.pkl'] = 'Local Transfer Nonparametric KNN'
-        self.files['GraphTransferNW-use_rbf.pkl'] = 'Graph Transfer NW, rbf'
-        #self.files['GraphTransferNW-use_rbf-transfer_sparse=5.pkl'] = 'Graph Transfer NW, rbf, sparse=5'
-        #self.files['GraphTransferNW-use_rbf-transfer_sparse=10.pkl'] = 'Graph Transfer NW, rbf, sparse=10'
-        #self.files['GraphTransferNW-use_rbf-transfer_sparse=20.pkl'] = 'Graph Transfer NW, rbf, sparse=20'
-        #self.files['GraphTransferNW-use_rbf-transfer_sparse=40.pkl'] = 'Graph Transfer NW, rbf, sparse=40'
-        #self.files['GraphTransferNW-use_rbf-transfer_sparse=80.pkl'] = 'Graph Transfer NW, rbf, sparse=80'
-        self.files['GraphTransferNW-use_rbf-oracle_graph.pkl'] = 'Graph Transfer NW, rbf, oracle graph'
-        #self.files['GraphTransferNW-use_rbf-guidance=0.1.pkl'] =  'Graph Transfer NW, rbf, 10% oracle'
-        #self.files['GraphTransferNW-use_rbf-guidance=0.2.pkl'] = 'Graph Transfer NW, rbf, 20% oracle'
-        self.files['GraphTransferNW-use_rbf-guidance_binary=0.1.pkl'] = 'Graph Transfer NW, rbf, 10% oracle binary'
-        self.files['GraphTransferNW-use_rbf-guidance_binary=0.2.pkl'] = 'Graph Transfer NW, rbf, 20% oracle binary'
-        self.files['GraphTransferNW-use_rbf-nystrom=0.1.pkl'] = 'Graph Transfer NW, rbf, 10% Nystrom'
-        self.files['GraphTransferNW-use_rbf-nystrom=0.2.pkl'] = 'Graph Transfer NW, rbf, 20% Nystrom'
+
+
+        if viz_type == VIZ_PAPER_ERROR:
+            self.files['StackTransfer+SKL-RidgeReg-target.pkl'] = 'Target only'
+            self.files['StackTransfer+SKL-RidgeReg.pkl'] = 'Stacked'
+            self.files['OffsetTransfer-jointCV.pkl'] = 'Offset'
+            self.files['GraphTransferNW-use_rbf.pkl'] = 'Our Method'
+            if run_batch_datasets != BATCH_DATA_NEGATIVE:
+                self.files['GraphTransferNW-use_rbf-guidance_binary=0.2.pkl'] = 'Our Method, 20% Guidance'
+                self.files['GraphTransferNW-use_rbf-oracle_graph.pkl'] = 'Our Method, Oracle Graph'
+                #self.files['GraphTransferNW-use_rbf-nystrom=0.2.pkl'] = 'Our Method, rbf, 20% Nystrom'
+        elif viz_type == VIZ_PAPER_NYSTROM:
+            self.files['GraphTransferNW-use_rbf-nystrom=0.01.pkl'] = 'Our Method, rbf, 1% Nystrom'
+            self.files['GraphTransferNW-use_rbf-nystrom=0.05.pkl'] = 'Our Method, rbf, 5% Nystrom'
+            self.files['GraphTransferNW-use_rbf-nystrom=0.1.pkl'] = 'Our Method, rbf, 10% Nystrom'
+            self.files['GraphTransferNW-use_rbf-nystrom=0.2.pkl'] = 'Our Method, rbf, 20% Nystrom'
+            self.files['GraphTransferNW-use_rbf.pkl'] = 'Our Method'
+            self.files['StackTransfer+SKL-RidgeReg-target.pkl'] = 'Target only'
+        elif viz_type == VIZ_PAPER_GUIDANCE:
+            self.files['GraphTransferNW-use_rbf-guidance_binary=0.05.pkl'] = 'Our Method, 5% Guidance'
+            self.files['GraphTransferNW-use_rbf-guidance_binary=0.1.pkl'] = 'Our Method, 10% Guidance'
+            self.files['GraphTransferNW-use_rbf-guidance_binary=0.2.pkl'] = 'Our Method, 20% Guidance'
+            self.files['GraphTransferNW-use_rbf.pkl'] = 'Our Method'
+        else:
+            self.files['StackTransfer+SKL-RidgeReg.pkl'] = 'Stacked'
+            self.files['StackTransfer+SKL-RidgeReg-jointCV.pkl'] = 'Stacked: Joint CV'
+            #self.files['StackTransfer+SKL-RidgeReg-source.pkl'] = 'Stacked: Source only'
+            self.files['StackTransfer+SKL-RidgeReg-target.pkl'] = 'Stacked: Target only'
+            #self.files['StackTransfer+SKL-RidgeReg-bias.pkl'] = 'Stacked: Source and Bias'
+
+            if not viz_just_stacking:
+                #self.files['LocalTransferDelta_radius_l2_lap-reg.pkl'] = 'Local Transfer: Nonparametric'
+                #self.files['LocalTransferDelta_radius_l2_lap-reg_knn.pkl'] = 'Local Transfer Nonparametric KNN'
+                self.files['GraphTransferNW-use_rbf.pkl'] = 'Graph Transfer NW, rbf'
+                if run_batch_datasets != BATCH_DATA_NEGATIVE:
+                    self.files['GraphTransferNW-use_rbf-oracle_graph.pkl'] = 'Graph Transfer NW, rbf, oracle graph'
+                    self.files['GraphTransferNW-use_rbf-oracle_graph-nystrom=0.2.pkl'] = 'Graph Transfer NW, rbf, oracle graph, 20% Nystrom'
+                    self.files['GraphTransferNW-use_rbf-guidance_binary=0.1.pkl'] = 'Graph Transfer NW, rbf, 10% oracle binary'
+                    self.files['GraphTransferNW-use_rbf-guidance_binary=0.2.pkl'] = 'Graph Transfer NW, rbf, 20% oracle binary'
+                    #self.files['GraphTransferNW-use_rbf-guidance=0.2-nystrom=0.5.pkl'] = 'Graph Transfer NW, rbf, 20% oracle binary, 50% Nystrom'
+                    #self.files['GraphTransferNW-use_rbf-guidance_binary=0.2-nystrom=0.2.pkl'] = 'Graph Transfer NW, rbf, 20% oracle binary, 20% binary'
+                    #self.files['GraphTransferNW-use_rbf-nystrom=0.1.pkl'] = 'Graph Transfer NW, rbf, 10% Nystrom'
+                    self.files['GraphTransferNW-use_rbf-nystrom=0.2.pkl'] = 'Graph Transfer NW, 20% Nystrom'
+                    self.files['GraphTransfer.pkl'] = 'Graph Transfer'
+                    #self.files['GraphTransfer_tr.pkl'] = 'Graph Transfer: Just transfer'
+                    #self.files['GraphTransfer_ta.pkl'] = 'Graph Transfer: Just target'
         if use_validation:
-            self.files = append_suffix_to_files(self.files, '-VAL', ', VAL')
+            if viz_type != VIZ_EXPERIMENTS:
+                self.files = append_suffix_to_files(self.files, '-VAL', '')
+            else:
+                self.files = append_suffix_to_files(self.files, '-VAL', ', VAL')
             #self.files['LocalTransferDelta_l2_linear-b_clip-b_use-val.pkl'] = 'Local Transfer VAL'
             #self.files['LocalTransferDelta_radius_l2_use-val_lap-reg.pkl'] = 'Local Transfer Nonparametric VAL'
             #self.files['LocalTransferDelta_radius_l2_use-val_lap-reg_knn.pkl'] = 'Local Transfer Nonparametric KNN VAL'
         else:
+            pass
             #self.files['LocalTransferDelta_l2_linear-b_clip-b.pkl'] = 'Local Transfer'
             #self.files['OffsetTransfer.pkl'] = 'Offset'
-            self.files['OffsetTransfer-jointCV.pkl'] = 'Offset Joint CV'
+            #self.files['OffsetTransfer-jointCV.pkl'] = 'Offset Joint CV'
             #self.files['GraphTransferNW-transfer_sparse=10.pkl'] = ' Graph Transfer NW Sparse=10'
-            self.files['GraphTransferNW-use_rbf.pkl'] = 'Graph Transfer RBF'
+            #self.files['GraphTransferNW-use_rbf.pkl'] = 'Graph Transfer RBF'
             #self.files['LocalTransferDeltaSMS.pkl'] = 'SMS Delta'
-        self.files['SKL-DumReg-TargetOnly.pkl'] = 'Predict Mean'
-        self.files['GraphTransfer.pkl'] = 'Graph Transfer'
-        self.files['GraphTransfer_tr.pkl'] = 'Graph Transfer: Just transfer'
-        self.files['GraphTransfer_ta.pkl'] = 'Graph Transfer: Just target'
         self.title = self.results_dir
 
 
@@ -630,6 +668,8 @@ class BatchConfigs(bc.BatchConfigs):
                 m = MainConfigs(pc2)
                 self.config_list.append(m)
             if run_batch_baseline:
+                pc2 = ProjectConfigs(d)
+                '''
                 pc2.ft_method = FT_METHOD_LOCAL_NONPARAMETRIC
                 m = MainConfigs(pc2)
                 self.config_list.append(m)
@@ -637,6 +677,7 @@ class BatchConfigs(bc.BatchConfigs):
                 pc2.ft_method = FT_METHOD_SMS_DELTA
                 m = MainConfigs(pc2)
                 self.config_list.append(m)
+                '''
                 pc2 = deepcopy(pc2)
                 pc2.ft_method = FT_METHOD_OFFSET
                 m = MainConfigs(pc2)

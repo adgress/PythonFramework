@@ -114,14 +114,14 @@ class GraphTransferNW(GraphTransfer):
         step = 2
         self.use_rbf = True
         if self.use_rbf:
-            self.cv_params['C'] = self.create_cv_params(-5, 6, step, append_zero=True)
+            self.cv_params['C'] = self.create_cv_params(0, 12, step, append_zero=True)
             self.cv_params['sigma_nw'] = self.create_cv_params(-5, 6, 1)
             self.cv_params['sigma_tr'] = self.create_cv_params(-5, 6, 1)
         else:
             self.cv_params['C'] = self.create_cv_params(-5, 10, step, append_zero=True)
             self.cv_params['sigma_nw'] = np.asarray([1, .5, .25, .1, .05, .025, .01])
             self.cv_params['sigma_tr'] = np.asarray([1, .5, .25, .1, .05, .025])
-        self.use_prediction_graph_sparsification = False
+        self.use_prediction_graph_sparsification = True
         self.k_sparsification = 5
         self.use_oracle_graph = False
         self.oracle_guidance = getattr(configs, 'oracle_guidance', None)
@@ -223,15 +223,21 @@ class GraphTransferNW(GraphTransfer):
             W_source_pred = W_source_pred * W_sparse
         S = array_functions.make_smoothing_matrix(W)
         timing_test = False
+        C = self.C*self.x.shape[0]/W_source_pred[:].sum()
         if self.nystrom_percentage > 0 or timing_test:
             if timing_test:
                 tic()
             Sy = S.dot(self.y)
-            if self.C != 0:
-                lamb = 1/float(self.C)
-                inv_approx = array_functions.nystrom_woodbury_laplacian(W_source_pred, lamb, self.nystrom_percentage)
-                inv_approx *= lamb
-                f = inv_approx.dot(Sy)
+            if C != 0:
+                lamb = 1/float(C)
+                f = None
+                inv_approx, _ = array_functions.nystrom_woodbury_laplacian(W_source_pred, lamb, self.nystrom_percentage)
+                #_, f2 = array_functions.nystrom_woodbury_laplacian(W_source_pred, lamb, self.nystrom_percentage, v=Sy)
+                if f is not None:
+                    f *= lamb
+                else:
+                    inv_approx *= lamb
+                    f = inv_approx.dot(Sy)
             else:
                 f = Sy
             if timing_test:
@@ -240,7 +246,7 @@ class GraphTransferNW(GraphTransfer):
             if timing_test:
                 tic()
             L = array_functions.make_laplacian_with_W(W_source_pred, normalized=False)
-            A = np.eye(I.size) + self.C*L
+            A = np.eye(I.size) + C*L
             try:
                 f = np.linalg.lstsq(A, S.dot(self.y))[0]
             except:

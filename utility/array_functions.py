@@ -241,7 +241,7 @@ def woodbury(A_inv, C_inv, U, V):
     return A_inv - A_inv.dot(U).dot(B).dot(VA)
 
 #Approximate (lambda I + diag(X.sum()) - X)^-1
-def nystrom_woodbury_laplacian(X, lamb, perc_columns, W=None, C=None, D=None):
+def nystrom_woodbury_laplacian(X, lamb, perc_columns, W=None, C=None, D=None, v=None):
     lamb = float(lamb)
     timing_test = False
     if timing_test:
@@ -253,13 +253,30 @@ def nystrom_woodbury_laplacian(X, lamb, perc_columns, W=None, C=None, D=None):
     d = X.sum(1)
     dl_inv = 1/(d+lamb)
 
+    inv_approx = None
+    vProd = None
     fast_solver = True
     if fast_solver:
         CTA = C.T*dl_inv
         B_inv = np.linalg.pinv(-W + CTA.dot(C))
-        T = -C.dot(B_inv).dot(CTA)
-        T[np.diag_indices_from(T)] += 1
-        inv_approx = dl_inv[:, None] * T
+        if v is not None:
+            assert False, 'Make sure this works'
+            v1 = CTA.dot(v)
+            v2 = B_inv.dot(v1)
+            v3 = -C.dot(v2)
+            v4 = v3 + v
+            v5 = dl_inv * v4
+            vProd = v5
+        else:
+            T = -C.dot(B_inv).dot(CTA)
+            T[np.diag_indices_from(T)] += 1
+            inv_approx = dl_inv[:, None] * T
+        '''
+        vProd = inv_approx.dot(v)
+        err = norm(vProd - v5) / norm(vProd)
+        print str(err)
+        print ''
+        '''
     else:
         A_inv = np.diag(1 / (d + lamb))
         CTA = C.T.dot(A_inv)
@@ -276,7 +293,7 @@ def nystrom_woodbury_laplacian(X, lamb, perc_columns, W=None, C=None, D=None):
         inv_actual = np.linalg.inv(lamb*np.eye(X.shape[0]) + np.diag(d) - X)
         print 'Nystrom-Woodbery error: ' + str(norm(inv_approx-inv_actual)/norm(inv_actual))
         toc()
-    return inv_approx
+    return inv_approx, vProd
 
 def nystrom(x, perc_columns):
     timing_test = False

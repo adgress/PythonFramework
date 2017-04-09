@@ -19,6 +19,7 @@ import random
 import re
 from sklearn.feature_selection import SelectKBest, f_regression
 import math
+from sklearn.neighbors import kneighbors_graph, radius_neighbors_graph
 
 def is_in_percentile(v, p_min, p_max):
     assert np.squeeze(v).ndim == 1
@@ -335,16 +336,24 @@ def make_graph_adjacent(x, metric):
     dists[dists != 0] = 1
     return dists
 
-def make_graph_radius(x, radius, metric):
-    assert metric == 'euclidean'
-    #assert x.shape[1] == 1
-    p = x.shape[1]
-    max_dist = norm(np.ones(p) - np.zeros(p))
-    x = normalize(x)
-    dists = pairwise.pairwise_distances(x,x,metric) / max_dist
-    dists[np.diag(true(x.shape[0]))] = 0
-    dists[dists > radius] = 0
-    dists[dists != 0] = 1
+def make_graph_radius(x, radius, metric='euclidean', normalize_dists=True):
+    use_sklearn = False
+    if use_sklearn:
+        dists = radius_neighbors_graph(
+            x, radius, mode='connectivity', metric=metric
+        )
+    else:
+        assert metric == 'euclidean'
+        p = x.shape[1]
+        #max_dist = norm(np.ones(p) - np.zeros(p))
+        x = normalize(x)
+        #dists = pairwise.pairwise_distances(x,x,metric) / max_dist
+        dists = pairwise.pairwise_distances(x, x, metric)
+        if normalize_dists:
+            dists /= dists.max()
+        dists[np.diag_indices_from(dists)] = 0
+        dists[dists > radius] = 0
+        dists[dists != 0] = 1
     return dists
 
 def make_graph_distance(x, metric='euclidean'):
@@ -405,40 +414,27 @@ def make_laplacian(x, sigma, metric='euclidean'):
 def make_knn(x, k, metric='euclidean', x2=None, normalize_entries=True):
     if x.ndim == 1:
         x = np.expand_dims(x, 1)
+    no_x2 = True
     if x2 is None:
         x2 = x
-    if metric == 'cosine':
-        #This code may be faster for some matrices
-        # Code from http://stackoverflow.com/questions/17627219/whats-the-fastest-way-in-python-to-calculate-cosine-similarity-given-sparse-mat
-        '''
-        tic()
-        #x = x.toarray()
-        #similarity = np.dot(x, x.T)
-        similarity = (x.dot(x.T)).toarray()
-        square_mag = np.diag(similarity)
-        inv_square_mag = 1 / square_mag
-        inv_square_mag[np.isinf(inv_square_mag)] = 0
-        inv_mag = np.sqrt(inv_square_mag)
-        W = similarity * inv_mag
-        W = W.T * inv_mag
-        W = 1 - W
-        toc()
-        tic()
-        W2 = pairwise.pairwise_distances(x,x,metric)
-        toc()
-        '''
-        W = pairwise.pairwise_distances(x,x2,metric)
+        no_x2 = False
+    use_sklearn = True
+    if use_sklearn and no_x2:
+        Z = kneighbors_graph(
+            x,
+            k,
+            mode='connectivity',
+            metric=metric
+        )
     else:
-        #tic()
         W = pairwise.pairwise_distances(x,x2,metric)
-        #toc()
-    I = np.argsort(W)
-    Z = np.zeros(W.shape)
-    n = W.shape[0]
-    for i in range(k):
-        if i+1 >= I.shape[1]:
-            break
-        Z[(np.arange(n), I[:, i+1])] = 1
+        I = np.argsort(W)
+        Z = np.zeros(W.shape)
+        n = W.shape[0]
+        for i in range(k):
+            if i+1 >= I.shape[1]:
+                break
+            Z[(np.arange(n), I[:, i+1])] = 1
     if normalize_entries and Z.sum() > 0:
         Z /= Z.sum()
     return Z

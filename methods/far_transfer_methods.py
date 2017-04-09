@@ -5,7 +5,7 @@ from numpy.linalg import norm
 import method
 from preprocessing import NanLabelEncoding, NanLabelBinarizer
 from data import data as data_lib
-from sklearn.neighbors import KernelDensity
+from sklearn.neighbors import KernelDensity, radius_neighbors_graph, kneighbors_graph, BallTree
 from sklearn.grid_search import GridSearchCV
 from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import StandardScaler
@@ -114,15 +114,19 @@ class GraphTransferNW(GraphTransfer):
         step = 2
         self.use_rbf = True
         if self.use_rbf:
-            self.cv_params['C'] = self.create_cv_params(0, 12, step, append_zero=True)
+            self.cv_params['C'] = self.create_cv_params(-4, 5, step, append_zero=True)
             self.cv_params['sigma_nw'] = self.create_cv_params(-5, 6, 1)
             self.cv_params['sigma_tr'] = self.create_cv_params(-5, 6, 1)
         else:
             self.cv_params['C'] = self.create_cv_params(-5, 10, step, append_zero=True)
             self.cv_params['sigma_nw'] = np.asarray([1, .5, .25, .1, .05, .025, .01])
             self.cv_params['sigma_tr'] = np.asarray([1, .5, .25, .1, .05, .025])
-        self.use_prediction_graph_sparsification = True
-        self.k_sparsification = 5
+        self.use_prediction_graph_sparsification = False
+        self.k_sparsification = 25
+        self.use_prediction_graph_radius = True
+        self.radius = .1
+        if self.use_prediction_graph_radius:
+            self.cv_params['radius'] = np.asarray([1, .3, .1, .05])
         self.use_oracle_graph = False
         self.oracle_guidance = getattr(configs, 'oracle_guidance', None)
         self.oracle_guidance_binary = getattr(configs, 'oracle_guidance_binary', False)
@@ -214,12 +218,22 @@ class GraphTransferNW(GraphTransfer):
             W_source_pred = array_functions.make_knn(y_pred_source[I], k_L)
             k_W = int(self.sigma_nw*self.x.shape[0])
             W = array_functions.make_knn(self.transform.transform(data.x[I, :]), k_W, x2=self.transform.transform(self.x))
+        sparsify_prediction_graph = False
+        if self.use_prediction_graph_radius:
+            sparsify_prediction_graph = True
+            W_sparse = array_functions.make_graph_radius(
+                self.transform.transform(data.x[I, :]),
+                radius=self.radius,
+            )
         if self.use_prediction_graph_sparsification:
+            sparsify_prediction_graph = True
             W_sparse = array_functions.make_knn(
                 self.transform.transform(data.x[I, :]),
                 self.k_sparsification,
-                normalize_entries=False)
+                normalize_entries=False
+            )
             #W_L = array_functions.make_knn(y_pred_source[I], k_L)
+        if sparsify_prediction_graph:
             W_source_pred = W_source_pred * W_sparse
         S = array_functions.make_smoothing_matrix(W)
         timing_test = False
@@ -281,6 +295,9 @@ class GraphTransferNW(GraphTransfer):
             s += '-use_rbf'
         if getattr(self, 'use_prediction_graph_sparsification', False):
             s += '-transfer_sparse=' + str(self.k_sparsification)
+        if getattr(self, 'use_prediction_graph_radius', False):
+            s += '-radius'
+            #s += '-radius=' + str(self.radius)
         if getattr(self, 'use_oracle_graph', False):
             s += '-oracle_graph'
         if getattr(self, 'oracle_guidance', None) is not None:

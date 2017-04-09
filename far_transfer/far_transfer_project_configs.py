@@ -70,8 +70,9 @@ VIZ_EXPERIMENTS = 0
 VIZ_PAPER_ERROR = 1
 VIZ_PAPER_NYSTROM = 2
 VIZ_PAPER_GUIDANCE = 3
+VIZ_PAPER_SPARSITY = 4
 
-viz_type = VIZ_PAPER_NYSTROM
+viz_type = VIZ_PAPER_SPARSITY
 
 use_1d_data = True
 
@@ -82,9 +83,9 @@ use_validation = True
 run_experiments = True
 run_batch_graph = False
 run_batch_graph_nw = True
-run_batch_baseline = True
+run_batch_baseline = False
 run_batch_target_only = False
-run_batch_stacking = True
+run_batch_stacking = False
 run_batch_dummy = False
 
 oracle_guidance = None
@@ -562,10 +563,13 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                 self.files['GraphTransferNW-use_rbf-oracle_graph.pkl'] = 'Our Method, Oracle Graph'
                 #self.files['GraphTransferNW-use_rbf-nystrom=0.2.pkl'] = 'Our Method, rbf, 20% Nystrom'
         elif viz_type == VIZ_PAPER_NYSTROM:
+            self.files['GraphTransferNW-use_rbf-nystrom=0.002.pkl'] = 'Our Method, rbf, .2% Nystrom'
+            self.files['GraphTransferNW-use_rbf-nystrom=0.005.pkl'] = 'Our Method, rbf, .5% Nystrom'
             self.files['GraphTransferNW-use_rbf-nystrom=0.01.pkl'] = 'Our Method, rbf, 1% Nystrom'
             self.files['GraphTransferNW-use_rbf-nystrom=0.05.pkl'] = 'Our Method, rbf, 5% Nystrom'
             self.files['GraphTransferNW-use_rbf-nystrom=0.1.pkl'] = 'Our Method, rbf, 10% Nystrom'
             self.files['GraphTransferNW-use_rbf-nystrom=0.2.pkl'] = 'Our Method, rbf, 20% Nystrom'
+            self.files['GraphTransferNW-use_rbf-nystrom=0.5.pkl'] = 'Our Method, rbf, 50% Nystrom'
             self.files['GraphTransferNW-use_rbf.pkl'] = 'Our Method'
             self.files['StackTransfer+SKL-RidgeReg-target.pkl'] = 'Target only'
         elif viz_type == VIZ_PAPER_GUIDANCE:
@@ -573,6 +577,15 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['GraphTransferNW-use_rbf-guidance_binary=0.1.pkl'] = 'Our Method, 10% Guidance'
             self.files['GraphTransferNW-use_rbf-guidance_binary=0.2.pkl'] = 'Our Method, 20% Guidance'
             self.files['GraphTransferNW-use_rbf.pkl'] = 'Our Method'
+        elif viz_type == VIZ_PAPER_SPARSITY:
+            self.files['GraphTransferNW-use_rbf-transfer_sparse=3.pkl'] = 'Our Method: sparsity 3'
+            self.files['GraphTransferNW-use_rbf-transfer_sparse=5.pkl'] = 'Our Method: sparsity 5'
+            self.files['GraphTransferNW-use_rbf-transfer_sparse=10.pkl'] = 'Our Method: sparsity 10'
+            self.files['GraphTransferNW-use_rbf-transfer_sparse=20.pkl'] = 'Our Method: sparsity 20'
+            self.files['GraphTransferNW-use_rbf-transfer_sparse=40.pkl'] = 'Our Method: sparsity 40'
+            self.files['GraphTransferNW-use_rbf-radius=0.1.pkl'] = 'Our Method: Radius .1'
+            self.files['GraphTransferNW-use_rbf.pkl'] = 'Our Method'
+            self.files['StackTransfer+SKL-RidgeReg-target.pkl'] = 'Target only'
         else:
             self.files['StackTransfer+SKL-RidgeReg.pkl'] = 'Stacked'
             self.files['StackTransfer+SKL-RidgeReg-jointCV.pkl'] = 'Stacked: Joint CV'

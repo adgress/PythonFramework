@@ -496,6 +496,7 @@ class OffsetTransfer(HypothesisTransfer):
 
     def train_and_test(self, data):
         source_data = self.get_source_data(data)
+        self.source_learner.configs.use_validation = False
         self.source_learner.train_and_test(source_data)
         '''
         data_copy = self._prepare_data(data, include_unlabeled=True)
@@ -510,7 +511,7 @@ class OffsetTransfer(HypothesisTransfer):
             self.g_learner.sigma = self.sigma_g_learner
             self.target_learner.sigma = self.sigma_target_learner
         target_data = self.get_target_subset(data)
-        target_data = target_data.get_subset(target_data.is_labeled)
+        #target_data = target_data.get_subset(target_data.is_labeled)
         offset_data = deepcopy(target_data)
         offset_data.y -= self.source_learner.predict(offset_data).y
         if self.joint_cv:
@@ -538,6 +539,8 @@ class OffsetTransfer(HypothesisTransfer):
         s = 'OffsetTransfer'
         if getattr(self, 'joint_cv', False):
             s += '-jointCV'
+        if getattr(self.configs, 'use_validation', False):
+            s += '-VAL'
         return s
 
 class LocalTransferDeltaSMS(LocalTransferDelta):

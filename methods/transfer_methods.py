@@ -125,10 +125,27 @@ class StackingTransfer(FuseTransfer):
     def __init__(self, configs=MethodConfigs()):
         super(StackingTransfer, self).__init__(configs)
         #from far_transfer_methods import GraphTransferNW
-        self.base_learner = method.SKLRidgeRegression(configs)
-        self.source_learner = method.NadarayaWatsonMethod(configs)
-        self.target_learner = method.NadarayaWatsonMethod(configs)
+        self.base_learner = method.SKLRidgeRegression(deepcopy(configs))
+        self.source_learner = method.NadarayaWatsonMethod(deepcopy(configs))
+        self.target_learner = method.NadarayaWatsonMethod(deepcopy(configs))
         self.joint_cv = getattr(configs, 'joint_cv', False)
+        self.only_use_source_prediction = False
+        self.use_all_source = True
+        self.source_only = False
+        self.target_only = True
+        self.just_bias = False
+        self.linear_source = False
+        if self.target_only or self.source_only or self.linear_source:
+            self.joint_cv = False
+        if self.just_bias:
+            self.base_learner.cv_params = {
+                'alpha': [1e16]
+            }
+            self.joint_cv = False
+        if self.linear_source:
+            self.target_learner.cv_params = {
+                'sigma': [1]
+            }
         if self.joint_cv:
             self.cv_params = self.base_learner.cv_params.copy()
             self.cv_params.update(self.target_learner.cv_params)
@@ -140,8 +157,7 @@ class StackingTransfer(FuseTransfer):
         #self.source_learner = method.NadarayaWatsonKNNMethod(deepcopy(sub_configs))
         #self.target_learner = method.NadarayaWatsonKNNMethod(deepcopy(sub_configs))
         self.use_validation = configs.use_validation
-        self.only_use_source_prediction = False
-        self.use_all_source = True
+
 
     def _switch_labels(self, x, old, new):
         x_new = deepcopy(x)
@@ -157,13 +173,15 @@ class StackingTransfer(FuseTransfer):
             new_classes = np.asarray([0,1])
             y_source = self._switch_labels(y_source, classes, new_classes)
             y_target = self._switch_labels(y_target, classes, new_classes)
+        if self.linear_source:
+            y_target[:] = 0
         x = np.hstack((y_target, y_source))
         data_stacked = deepcopy(data)
         data_stacked.x = x
         return data_stacked
 
     def train(self, data):
-        if data.n_train_labeled == 0:
+        if data.n_train_labeled == 0 or self.source_only:
             self.only_use_source_prediction = True
             return
         if self.joint_cv:
@@ -173,6 +191,8 @@ class StackingTransfer(FuseTransfer):
         else:
             self.target_learner.train_and_test(data)
         self.only_use_source_prediction = False
+        if self.target_only:
+            return
         #Need unlabeled data if using validation data for parameter tuning
         #I = data.is_labeled & data.is_target
         I = data.is_target
@@ -192,20 +212,23 @@ class StackingTransfer(FuseTransfer):
             print 'Stacking params: ' + str(dict)
 
     def predict(self, data):
-        if self.only_use_source_prediction:
+        if self.only_use_source_prediction or self.source_only:
             return self.source_learner.predict(data)
+        if self.target_only:
+            return self.target_learner.predict(data)
         stacked_data = self._get_stacked_data(data)
         return self.base_learner.predict(stacked_data)
 
     def _prepare_data(self, data, include_unlabeled=True):
         data = super(StackingTransfer, self)._prepare_data(data, include_unlabeled)
-        source_data = data.get_subset(data.is_source)
-        if self.preprocessor is not None:
-            source_data = self.preprocessor.preprocess(source_data, self.configs)
-        self.source_learner.configs.source_labels = None
-        self.source_learner.configs.target_labels = None
-        source_data.set_target()
-        self.source_learner.train_and_test(source_data)
+        if not self.target_only:
+            source_data = data.get_subset(data.is_source)
+            if self.preprocessor is not None:
+                source_data = self.preprocessor.preprocess(source_data, self.configs)
+            self.source_learner.configs.source_labels = None
+            self.source_learner.configs.target_labels = None
+            source_data.set_target()
+            self.source_learner.train_and_test(source_data)
         target_data = data.get_subset(data.is_target)
         return target_data
 
@@ -214,6 +237,14 @@ class StackingTransfer(FuseTransfer):
         s = 'StackTransfer+' + self.base_learner.prefix
         if self.preprocessor is not None and self.preprocessor.prefix() is not None:
             s += '-' + self.preprocessor.prefix()
+        if getattr(self, 'source_only', False):
+            s += '-source'
+        if getattr(self, 'target_only', False):
+            s += '-target'
+        if getattr(self, 'just_bias', False):
+            s += '-bias'
+        if getattr(self, 'linear_source', False):
+            s += '-linearSource'
         if getattr(self, 'joint_cv', False):
             s += '-jointCV'
         if getattr(self, 'use_validation', False):

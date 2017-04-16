@@ -53,9 +53,9 @@ data_set_to_use = None
 #data_set_to_use = bc.DATA_CLIMATE_MONTH
 #data_set_to_use = bc.DATA_IRS
 #data_set_to_use = bc.DATA_TAXI
-data_set_to_use = bc.DATA_KC_HOUSING
+#data_set_to_use = bc.DATA_KC_HOUSING
 #data_set_to_use = bc.DATA_SYNTHETIC_PIECEWISE
-#data_set_to_use = bc.DATA_ZILLOW
+data_set_to_use = bc.DATA_ZILLOW
 #data_set_to_use = bc.DATA_UBER
 
 #data_set_to_use = bc.DATA_SYNTHETIC_CURVE
@@ -83,7 +83,7 @@ use_validation = True
 
 run_experiments = True
 run_batch_graph = True
-run_batch_graph_nw = False
+run_batch_graph_nw = True
 run_batch_baseline = False
 run_batch_target_only = True
 run_batch_stacking = True
@@ -248,18 +248,20 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.set_synthetic_regression('synthetic_piecewise')
             self.num_labels = np.asarray([10, 20, 30, 40])
         elif data_set == bc.DATA_KC_HOUSING:
-            self.set_data_set_defaults('kc-housing-spatial', source_labels=[0], target_labels=[1], is_regression=True)
+            self.set_data_set_defaults('kc-housing-spatial-floors', source_labels=[0], target_labels=[1], is_regression=True)
             self.num_labels = np.asarray([20, 40, 80, 160])
         elif data_set == bc.DATA_TAXI:
             #self.set_data_set_defaults('taxi2-20', source_labels=[1], target_labels=[0], is_regression=True)
-            self.set_data_set_defaults('taxi2-50', source_labels=[1], target_labels=[0], is_regression=True)
+            #self.set_data_set_defaults('taxi2-50', source_labels=[1], target_labels=[0], is_regression=True)
             #self.set_data_set_defaults('taxi2', source_labels=[0], target_labels=[1], is_regression=True)
+            self.set_data_set_defaults('taxi3', source_labels=[1], target_labels=[0], is_regression=True)
             #self.num_labels = np.asarray([5, 10, 20, 40, 100, 200, 400, 800])
             self.num_labels = np.asarray([10, 20, 40, 80])
             self.num_labels = np.asarray([50, 100, 200, 400])
         elif data_set == bc.DATA_ZILLOW:
-            self.set_data_set_defaults('zillow', source_labels=[0], target_labels=[1], is_regression=True)
-            self.num_labels = np.asarray([5, 10, 20, 40, 80, 160])
+            self.set_data_set_defaults('zillow-traffic', source_labels=[1], target_labels=[0], is_regression=True)
+            #self.set_data_set_defaults('zillow', source_labels=[1], target_labels=[0], is_regression=True)
+            self.num_labels = np.asarray([10, 20, 40])
         else:
             assert False
         assert self.source_labels.size > 0
@@ -617,6 +619,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                     self.files['GraphTransferNW-use_rbf-oracle_graph-nystrom=0.2.pkl'] = 'Graph Transfer NW, rbf, oracle graph, 20% Nystrom'
                     self.files['GraphTransferNW-use_rbf-guidance_binary=0.1.pkl'] = 'Graph Transfer NW, rbf, 10% oracle binary'
                     self.files['GraphTransferNW-use_rbf-guidance_binary=0.2.pkl'] = 'Graph Transfer NW, rbf, 20% oracle binary'
+                    self.files['GraphTransferNW-use_rbf-radius-nystrom=0.1.pkl'] = 'Graph Transfer NW, rbf, radius, nystrom=.1'
                     #self.files['GraphTransferNW-use_rbf-guidance=0.2-nystrom=0.5.pkl'] = 'Graph Transfer NW, rbf, 20% oracle binary, 50% Nystrom'
                     #self.files['GraphTransferNW-use_rbf-guidance_binary=0.2-nystrom=0.2.pkl'] = 'Graph Transfer NW, rbf, 20% oracle binary, 20% binary'
                     #self.files['GraphTransferNW-use_rbf-nystrom=0.1.pkl'] = 'Graph Transfer NW, rbf, 10% Nystrom'

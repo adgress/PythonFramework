@@ -68,6 +68,10 @@ data_name_dict = {
     DATA_WINE_RED: 'Wine: Red',
     DATA_DROSOPHILIA: 'Drosophila',
     DATA_DS2: 'ITS - DS2',
+    DATA_TAXI: 'Taxi',
+    DATA_IRS: 'Census',
+    DATA_CLIMATE_MONTH: 'Temperature',
+    DATA_SYNTHETIC_PIECEWISE: 'Synthetic Piecewise'
 }
 
 def is_synthetic_data(data_idx):

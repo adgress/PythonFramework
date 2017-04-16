@@ -158,7 +158,9 @@ def run_main():
     #split_data('pollution-[60 71]-500-norm/raw_data.pkl', regression_configs())
     #split_data('DS2-processed/raw_data.pkl', regression_configs())
     #split_data('taxi/raw_data.pkl', regression_configs())
-    split_data('zillow/raw_data.pkl', regression_configs())
+    split_data('zillow-traffic/raw_data.pkl', regression_configs())
+    #split_data('taxi2-50/raw_data.pkl', regression_configs())
+    #split_data('kc-housing-spatial-floors/raw_data.pkl', regression_configs())
     pass
 
 if __name__ == '__main__':

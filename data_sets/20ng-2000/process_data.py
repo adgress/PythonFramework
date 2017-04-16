@@ -21,8 +21,9 @@ split_data = data_lib.SplitData(
     data,
     splits
 )
-use_transfer = False
-use_regression = True
+use_transfer = True
+
+use_regression = False
 m = base_configs.MethodConfigs()
 m.use_validation = True
 if use_transfer:
@@ -91,8 +92,11 @@ for split_idx in range(num_splits):
                 transfer_results = learner.predict(data_target)
                 transfer_results.y[transfer_results.y == source_label] = target_label
 
-            assert False, 'Are we computing error on test data?'
+            #Unnecessary for zero-one loss, important for other loss functions
+            #transfer_results.y[transfer_results.y == target_label] = 1
+            #transfer_results.true_y[transfer_results.y == target_label] = 1
             error = loss_function.compute_score(transfer_results)
+            #assert False, 'Are we computing error on test data?'
             transfer_error[source_idx, target_idx] += error
         print str(source_label) + ' done with source class: ' + data.label_names[source_idx]
         print [str(idx) + ':%0.3f' % i for idx, i in enumerate(transfer_error[source_idx,:]/(split_idx+1))]

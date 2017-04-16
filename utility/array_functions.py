@@ -502,7 +502,11 @@ def try_toarray(x):
         pass
     return x
 
-def move_fig(fig, width=None, height=None):
+def move_fig(fig, width=None, height=None, x=None, y=None):
+    if x is None:
+        x = 2000
+    if y is None:
+        y = 100
     manager = fig.canvas.manager
     w = manager.canvas.width()
     h = manager.canvas.height()
@@ -510,7 +514,7 @@ def move_fig(fig, width=None, height=None):
         w = width
     if height is not None:
         h = height
-    manager.window.setGeometry(2000,100,w,h)
+    manager.window.setGeometry(x,y,w,h)
 
 
 

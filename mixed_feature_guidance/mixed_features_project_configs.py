@@ -316,16 +316,19 @@ class VisualizationConfigs(bc.VisualizationConfigs):
 
         self.files['Mixed-feats_method=Ridge.pkl'] = 'Mixed: Ridge'
         self.files['Mixed-feats_method=Lasso.pkl'] = 'Mixed: Lasso'
+        '''
         self.files['Mixed-feats_method=Rel_nonneg_l1.pkl'] = 'Mixed: Nonneg'
         self.files['Mixed-feats_method=Rel_nonneg_not-relaxed_l1.pkl'] = 'Mixed: Nonneg, not relaxed'
-        #self.files['Mixed-feats_method=Rel_signs=5_corr_l1.pkl'] = 'Mixed: 5 signs'
-        self.files['Mixed-feats_method=Rel_signs=21_corr_l1.pkl'] = 'Mixed: 10 signs'
-        #self.files['Mixed-feats_method=Rel_signs=10_trainCorr_l1.pkl'] = 'Mixed: 10 signs, training correlation'
-        #self.files['Mixed-feats_method=Rel_signs=10_corr_not-relaxed_l1.pkl'] = 'Mixed: 10 signs, not relaxed'
-
-        self.files['Mixed-feats_method=Rel_pairs=21_corr_l1.pkl'] = 'Mixed: 10 pairs'
-        #self.files['Mixed-feats_method=Rel_pairs=10_corr_no-tikhonov_l1.pkl'] = 'Mixed: 10 pairs, no tikhonov'
-
+        '''
+        self.files['Mixed-feats_method=Rel_signs=0.25_corr_l1.pkl'] = 'Mixed: 25% signs'
+        self.files['Mixed-feats_method=Rel_signs=0.5_corr_l1.pkl'] = '20ngMixed: 50% signs'
+        self.files['Mixed-feats_method=Rel_signs=1_corr_l1.pkl'] = 'Mixed: 100% signs'
+        '''
+        self.files['Mixed-feats_method=Rel_pairs=0.25_corr_l1.pkl'] = 'Mixed: 25% pairs'
+        self.files['Mixed-feats_method=Rel_pairs=0.5_corr_l1.pkl'] = 'Mixed: 50% pairs'
+        self.files['Mixed-feats_method=Rel_pairs=1_corr_l1.pkl'] = 'Mixed: 100% pairs'
+        '''
+        self.files['Mixed-feats_method=Rel_signs=1_trainCorr_l1.pkl'] = 'Mixed: 100% signs, train correlation'
         #self.files['SKL-DumReg.pkl'] = 'Predict Mean'
 
         if use_test or use_val:

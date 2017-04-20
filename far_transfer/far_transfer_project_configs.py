@@ -73,7 +73,7 @@ VIZ_PAPER_NYSTROM = 2
 VIZ_PAPER_GUIDANCE = 3
 VIZ_PAPER_SPARSITY = 4
 
-viz_type = VIZ_EXPERIMENTS
+viz_type = VIZ_PAPER_ERROR
 
 use_1d_data = True
 
@@ -82,12 +82,14 @@ arguments = None
 use_validation = True
 
 run_experiments = True
-run_batch_graph = True
-run_batch_graph_nw = True
+run_batch_graph = False
+run_batch_sms_delta = True
+run_batch_graph_nw = False
 run_batch_baseline = False
-run_batch_target_only = True
-run_batch_stacking = True
+run_batch_target_only = False
+run_batch_stacking = False
 run_batch_dummy = False
+run_batch_ssl = False
 
 oracle_guidance = None
 use_oracle_graph = False
@@ -100,8 +102,8 @@ BATCH_DATA_POSITIVE = 1
 BATCH_DATA_NEGATIVE = 2
 BATCH_ALL = 3
 
-run_batch_datasets = BATCH_DATA_NONE
-#run_batch_datasets = BATCH_DATA_POSITIVE
+#run_batch_datasets = BATCH_DATA_NONE
+run_batch_datasets = BATCH_DATA_POSITIVE
 #run_batch_datasets = BATCH_DATA_NEGATIVE
 #run_batch_datasets = BATCH_ALL
 
@@ -112,16 +114,18 @@ if run_batch_datasets > 0:
         all_data_sets += [
             bc.DATA_SYNTHETIC_PIECEWISE,
             bc.DATA_IRS,
-            bc.DATA_CLIMATE_MONTH
+            bc.DATA_CLIMATE_MONTH,
+            bc.DATA_ZILLOW
         ]
     if run_batch_datasets in {BATCH_DATA_NEGATIVE, BATCH_ALL}:
         all_data_sets += [
-            bc.DATA_SYNTHETIC_CROSS,
-            bc.DATA_SYNTHETIC_SLANT,
+            #bc.DATA_SYNTHETIC_CROSS,
+            #bc.DATA_SYNTHETIC_SLANT,
             bc.DATA_SYNTHETIC_CURVE,
             bc.DATA_BIKE_SHARING,
             bc.DATA_BOSTON_HOUSING,
             bc.DATA_CONCRETE,
+            bc.DATA_KC_HOUSING
             #bc.DATA_POLLUTION_2,
         ]
 
@@ -136,6 +140,7 @@ FT_METHOD_LOCAL_NONPARAMETRIC = 4
 FT_METHOD_SMS_DELTA = 5
 FT_METHOD_OFFSET = 6
 FT_METHOD_DUMMY = 7
+FT_METHOD_SSL = 8
 
 other_method_configs = {
     'ft_method': FT_METHOD_LOCAL_NONPARAMETRIC,
@@ -261,7 +266,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         elif data_set == bc.DATA_ZILLOW:
             self.set_data_set_defaults('zillow-traffic', source_labels=[1], target_labels=[0], is_regression=True)
             #self.set_data_set_defaults('zillow', source_labels=[1], target_labels=[0], is_regression=True)
-            self.num_labels = np.asarray([10, 20, 40])
+            self.num_labels = np.asarray([5, 10, 20, 40, 80])
         else:
             assert False
         assert self.source_labels.size > 0
@@ -522,6 +527,8 @@ class MainConfigs(bc.MainConfigs):
             self.learner = offset_transfer
         elif pc.ft_method == FT_METHOD_DUMMY:
             self.learner = dummy
+        elif pc.ft_method == FT_METHOD_SSL:
+            self.learner = ssl_regression
         else:
             assert False, 'Unknown ft_method'
         #self.learner.configs.use_validation = use_validation
@@ -536,11 +543,14 @@ class MethodConfigs(bc.MethodConfigs):
         self.source_labels = pc.source_labels
 
 
-def append_suffix_to_files(dict, suffix, legend_suffix):
+def append_suffix_to_files(dict, suffix, legend_suffix, keys_to_skip=None):
     d = OrderedDict()
     for key,value in dict.iteritems():
-        f = helper_functions.remove_suffix(key, '.pkl')
-        f += suffix + '.pkl'
+        if keys_to_skip is not None and key in keys_to_skip:
+            f = key
+        else:
+            f = helper_functions.remove_suffix(key, '.pkl')
+            f += suffix + '.pkl'
         d[f] = value + legend_suffix
     return d
 
@@ -553,63 +563,64 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.copy_fields(pc,pc_fields_to_copy)
         self.max_rows = 1
         self.show_legend_on_all = False
+        if viz_type in {VIZ_PAPER_NYSTROM, VIZ_PAPER_GUIDANCE}:
+            self.show_legend_on_all = True
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
 
         viz_just_stacking = False
         self.files = OrderedDict()
 
-        if run_batch_datasets == BATCH_DATA_POSITIVE:
-            self.figsize = [16, 5]
-            self.borders = [.05,.95,.95,.05]
-        elif run_batch_datasets == BATCH_DATA_NEGATIVE:
-            pass
-        else:
-            pass
+        self.title = self.results_dir
+        if viz_type > VIZ_EXPERIMENTS:
+            self.title = bc.data_name_dict[self.data_set]
+            if run_batch_datasets == BATCH_DATA_POSITIVE:
+                self.figsize = [16, 5]
+                self.borders = [.05, .95, .95, .05]
+            elif run_batch_datasets == BATCH_DATA_NEGATIVE:
+                self.figsize = [16, 5]
+                self.borders = [.05, .95, .95, .05]
+
+        keys_to_skip = {
+            'SLL-NW.pkl'
+        }
+
         if viz_type == VIZ_PAPER_ERROR:
+            self.files['SLL-NW.pkl'] = 'Semisupervised'
             self.files['StackTransfer+SKL-RidgeReg-target.pkl'] = 'Target only'
             self.files['StackTransfer+SKL-RidgeReg.pkl'] = 'Stacked'
             self.files['OffsetTransfer-jointCV.pkl'] = 'Offset'
-            self.files['GraphTransferNW-use_rbf.pkl'] = 'Our Method'
+            self.files['GraphTransferNW-use_rbf-radius.pkl'] = 'Our Method'
             if run_batch_datasets != BATCH_DATA_NEGATIVE:
-                #self.files['GraphTransferNW-use_rbf-guidance_binary=0.2.pkl'] = 'Our Method, 20% Guidance'
-                self.files['GraphTransferNW-use_rbf-oracle_graph.pkl'] = 'Our Method, Oracle Graph'
-                #self.files['GraphTransferNW-use_rbf-nystrom=0.2.pkl'] = 'Our Method, rbf, 20% Nystrom'
+                pass
+                #self.files['GraphTransferNW-use_rbf-oracle_graph.pkl'] = 'Our Method, Oracle Graph'
         elif viz_type == VIZ_PAPER_NYSTROM:
-            #self.files['GraphTransferNW-use_rbf-nystrom=0.002.pkl'] = 'Our Method, rbf, .2% Nystrom'
-            self.files['GraphTransferNW-use_rbf-nystrom=0.005.pkl'] = 'Our Method, rbf, .5% Nystrom'
-            self.files['GraphTransferNW-use_rbf-nystrom=0.01.pkl'] = 'Our Method, rbf, 1% Nystrom'
-            #self.files['GraphTransferNW-use_rbf-nystrom=0.05.pkl'] = 'Our Method, rbf, 5% Nystrom'
-            self.files['GraphTransferNW-use_rbf-nystrom=0.1.pkl'] = 'Our Method, rbf, 10% Nystrom'
-            self.files['GraphTransferNW-use_rbf-nystrom=0.2.pkl'] = 'Our Method, rbf, 20% Nystrom'
-            self.files['GraphTransferNW-use_rbf-nystrom=0.5.pkl'] = 'Our Method, rbf, 50% Nystrom'
-            self.files['GraphTransferNW-use_rbf-nystrom=0.9.pkl'] = 'Our Method, rbf, 90% Nystrom'
+            self.files['GraphTransferNW-use_rbf-nystrom=0.005.pkl'] = 'Our Method: .5% Nystrom'
+            self.files['GraphTransferNW-use_rbf-nystrom=0.01.pkl'] = 'Our Method: 1% Nystrom'
+            self.files['GraphTransferNW-use_rbf-nystrom=0.05.pkl'] = 'Our Method: 5% Nystrom'
+            self.files['GraphTransferNW-use_rbf-nystrom=0.1.pkl'] = 'Our Method: 10% Nystrom'
+            self.files['GraphTransferNW-use_rbf-nystrom=0.2.pkl'] = 'Our Method: 20% Nystrom'
+            self.files['GraphTransferNW-use_rbf-nystrom=0.5.pkl'] = 'Our Method: 50% Nystrom'
+            self.files['GraphTransferNW-use_rbf-nystrom=0.9.pkl'] = 'Our Method: 90% Nystrom'
             self.files['GraphTransferNW-use_rbf.pkl'] = 'Our Method'
-            #self.files['StackTransfer+SKL-RidgeReg-target.pkl'] = 'Target only'
         elif viz_type == VIZ_PAPER_GUIDANCE:
-            #self.files['GraphTransferNW-use_rbf-guidance_binary=0.05.pkl'] = 'Our Method, 5% Guidance'
-            self.files['GraphTransferNW-use_rbf-guidance_binary=0.1.pkl'] = 'Our Method, 10% Guidance'
-            self.files['GraphTransferNW-use_rbf-guidance_binary=0.2.pkl'] = 'Our Method, 20% Guidance'
             self.files['GraphTransferNW-use_rbf.pkl'] = 'Our Method'
+            self.files['GraphTransferNW-use_rbf-guidance_binary=0.05.pkl'] = 'Our Method: 5% Guidance'
+            self.files['GraphTransferNW-use_rbf-guidance_binary=0.1.pkl'] = 'Our Method: 10% Guidance'
+            self.files['GraphTransferNW-use_rbf-guidance_binary=0.2.pkl'] = 'Our Method: 20% Guidance'
         elif viz_type == VIZ_PAPER_SPARSITY:
-            #self.files['GraphTransferNW-use_rbf-transfer_sparse=3.pkl'] = 'Our Method: sparsity 3'
-            #self.files['GraphTransferNW-use_rbf-transfer_sparse=5.pkl'] = 'Our Method: sparsity 5'
-            #self.files['GraphTransferNW-use_rbf-transfer_sparse=10.pkl'] = 'Our Method: sparsity 10'
-            #self.files['GraphTransferNW-use_rbf-transfer_sparse=20.pkl'] = 'Our Method: sparsity 20'
-            #self.files['GraphTransferNW-use_rbf-transfer_sparse=40.pkl'] = 'Our Method: sparsity 40'
-            #self.files['GraphTransferNW-use_rbf-radius=0.1.pkl'] = 'Our Method: Radius .1'
-            self.files['GraphTransferNW-use_rbf-radius.pkl'] = 'Our Method: Tune Radius'
-            self.files['GraphTransferNW-use_rbf.pkl'] = 'Our Method'
-            #self.files['StackTransfer+SKL-RidgeReg-target.pkl'] = 'Target only'
+            self.files['GraphTransferNW-use_rbf.pkl'] = 'Our Method: No spatial tuning'
+            self.files['GraphTransferNW-use_rbf-radius.pkl'] = 'Our Method'
         else:
             self.files['StackTransfer+SKL-RidgeReg.pkl'] = 'Stacked'
-            self.files['StackTransfer+SKL-RidgeReg-jointCV.pkl'] = 'Stacked: Joint CV'
+            #self.files['StackTransfer+SKL-RidgeReg-jointCV.pkl'] = 'Stacked: Joint CV'
             #self.files['StackTransfer+SKL-RidgeReg-source.pkl'] = 'Stacked: Source only'
             self.files['StackTransfer+SKL-RidgeReg-target.pkl'] = 'Stacked: Target only'
             #self.files['StackTransfer+SKL-RidgeReg-bias.pkl'] = 'Stacked: Source and Bias'
             self.files['StackTransfer+SKL-RidgeReg-linearSource.pkl'] = 'Stacked: Linear Source'
 
             if not viz_just_stacking:
+                self.files['OffsetTransfer-jointCV.pkl'] = 'Offset'
                 #self.files['LocalTransferDelta_radius_l2_lap-reg.pkl'] = 'Local Transfer: Nonparametric'
                 #self.files['LocalTransferDelta_radius_l2_lap-reg_knn.pkl'] = 'Local Transfer Nonparametric KNN'
                 self.files['GraphTransferNW-use_rbf.pkl'] = 'Graph Transfer NW, rbf'
@@ -629,9 +640,9 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                     self.files['GraphTransfer_ta.pkl'] = 'Graph Transfer: Just target'
         if use_validation:
             if viz_type != VIZ_EXPERIMENTS:
-                self.files = append_suffix_to_files(self.files, '-VAL', '')
+                self.files = append_suffix_to_files(self.files, '-VAL', '', keys_to_skip)
             else:
-                self.files = append_suffix_to_files(self.files, '-VAL', ', VAL')
+                self.files = append_suffix_to_files(self.files, '-VAL', ', VAL', keys_to_skip)
             #self.files['LocalTransferDelta_l2_linear-b_clip-b_use-val.pkl'] = 'Local Transfer VAL'
             #self.files['LocalTransferDelta_radius_l2_use-val_lap-reg.pkl'] = 'Local Transfer Nonparametric VAL'
             #self.files['LocalTransferDelta_radius_l2_use-val_lap-reg_knn.pkl'] = 'Local Transfer Nonparametric KNN VAL'
@@ -643,9 +654,6 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             #self.files['GraphTransferNW-transfer_sparse=10.pkl'] = ' Graph Transfer NW Sparse=10'
             #self.files['GraphTransferNW-use_rbf.pkl'] = 'Graph Transfer RBF'
             #self.files['LocalTransferDeltaSMS.pkl'] = 'SMS Delta'
-        self.title = self.results_dir
-        if viz_type > VIZ_EXPERIMENTS:
-            self.title = bc.data_name_dict[self.data_set]
 
 
 class BatchConfigs(bc.BatchConfigs):
@@ -699,6 +707,18 @@ class BatchConfigs(bc.BatchConfigs):
             if run_batch_dummy:
                 pc2 = ProjectConfigs(d)
                 pc2.ft_method = FT_METHOD_DUMMY
+                m = MainConfigs(pc2)
+                self.config_list.append(m)
+            if run_batch_ssl:
+                pc2 = ProjectConfigs(d)
+                pc2 = deepcopy(pc2)
+                pc2.ft_method = FT_METHOD_SSL
+                m = MainConfigs(pc2)
+                self.config_list.append(m)
+            if run_batch_sms_delta:
+                pc2 = ProjectConfigs(d)
+                pc2 = deepcopy(pc2)
+                pc2.ft_method = FT_METHOD_SMS_DELTA
                 m = MainConfigs(pc2)
                 self.config_list.append(m)
             if run_batch_baseline:

@@ -168,7 +168,7 @@ class CombinePredictionsDelta(scipy_opt_methods.ScipyOptNonparametricHypothesisT
                 g = array_functions.clip(g,self.g_min,self.g_max)
             g = g + self.b
         else:
-            g = super(CombinePredictionsDelta, self).predict_g(x)
+            g = super(CombinePredictionsDelta, self).predict_g(x, data_set_ids)
         return g
 
     @property
@@ -370,7 +370,7 @@ class CombinePredictionsDeltaSMS(CombinePredictionsDelta):
         R_ul = W_ul.dot(self.R_ll)
         return R_ul
 
-    def predict_g(self, x):
+    def predict_g(self, x, data_set_ids):
         R_ul = self.make_R_ul(x)
         g = R_ul.dot(self.g)
         return g
@@ -380,8 +380,8 @@ class CombinePredictionsDeltaSMS(CombinePredictionsDelta):
         w = R_ul.dot(self.w)
         return w
 
-    def combine_predictions(self,x,y_source,y_target):
-        fu = np.multiply(self.predict_w(x), y_source) + self.predict_g(x)
+    def combine_predictions(self,x,y_source,y_target, data_set_ids):
+        fu = np.multiply(self.predict_w(x), y_source) + self.predict_g(x, data_set_ids)
         return fu
 
     @property

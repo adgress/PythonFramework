@@ -245,7 +245,7 @@ def run_visualization():
         if show_y_label:
             plt.ylabel(vis_configs.y_axis_string)
         #axis[1] *= 2
-        axis[3] *= 1.
+        axis[3] *= 1.2
         ylims = getattr(vis_configs,'ylims',None)
         if ylims is not None:
             axis[2] = ylims[0]
@@ -316,6 +316,9 @@ def run_main(num_labels=None, split_idx=None, no_viz=None, configs=None, comm=No
         run_experiments(configs)
     if mpi_utility.is_group_master():
         timer.toc()
+    if helper_functions.is_laptop():
+        import winsound
+        winsound.Beep(440, 1000)
     if helper_functions.is_laptop() and not arguments.no_viz and MPI.COMM_WORLD.Get_size() == 1:
         vis_configs = configs_lib.VisualizationConfigs()
         if vis_configs.vis_table:

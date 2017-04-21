@@ -549,7 +549,7 @@ class LocalTransferDeltaSMS(LocalTransferDelta):
         self.C2 = 0
         self.include_scale = getattr(configs, 'include_scale', False)
         self.cv_params = {}
-        vals = list(range(-4,5))
+        vals = list(range(-7,8))
         vals.reverse()
         #vals = [0,1,2]
         self.cv_params['sigma'] = 10**np.asarray(vals,dtype='float64')

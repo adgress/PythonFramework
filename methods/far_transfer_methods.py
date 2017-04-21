@@ -129,7 +129,7 @@ class GraphTransferNW(GraphTransfer):
             self.cv_params['radius'] = np.asarray([1, .3, .1, .05])
         self.use_oracle_graph = False
         self.oracle_guidance = getattr(configs, 'oracle_guidance', None)
-        self.oracle_guidance_binary = getattr(configs, 'oracle_guidance_binary', False)
+        self.oracle_guidance_binary = getattr(configs, 'oracle_guidance_binary', True)
         self.nystrom_percentage = getattr(configs, 'nystrom_percentage')
         self.sigma_nw = None
         self.C = None

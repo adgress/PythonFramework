@@ -30,7 +30,7 @@ vec_remove_quotations = np.vectorize(remove_quotations)
 vec_replace = np.vectorize(replace_invalid_strings)
 use_zipcode_data = False
 apply_log = use_zipcode_data
-viz = False
+viz = True
 run_state_tests = False
 combine_with_traffic_data = True
 
@@ -218,19 +218,32 @@ if run_state_tests:
         if source_relative > target_relative:
             print '!!!'
     exit()
-
-for i in range(2):
-    data.x[:,i] = array_functions.normalize(data.x[:,i])
+if not viz:
+    for i in range(2):
+        data.x[:,i] = array_functions.normalize(data.x[:,i])
 print 'n: ' + str(data.n)
 if viz:
     I1 = data.data_set_ids == 0
     I2 = data.data_set_ids == 1
-    fig1 = pl.figure(3)
+    fig1 = pl.figure(1)
     array_functions.plot_heatmap(data.x[I1, :], data.y[I1], sizes=30, alpha=1, subtract_min=True, fig=fig1)
-    fig2 = pl.figure(4)
+    pl.xlabel('Longitude')
+    pl.ylabel('Latitude')
+    pl.title('Taxi Pickups')
+    #pl.xticks([], [])
+    #pl.yticks([], [])
+    fig2 = pl.figure(2)
     array_functions.plot_heatmap(data.x[I2, :], data.y[I2], sizes=30, alpha=1, subtract_min=True, fig=fig2)
-    array_functions.move_fig(fig1, 500, 500, 2000, 100)
-    array_functions.move_fig(fig2, 500, 500, 2600, 100)
+    pl.xlabel('Longitude')
+    pl.ylabel('Latitude')
+    pl.title('Housing Prices')
+    pl.figure(1)
+    pl.xlim(fig2.axes[0].get_xlim())
+    pl.ylim(fig2.axes[0].get_ylim())
+    #pl.xticks([], [])
+    #pl.yticks([], [])
+    array_functions.move_fig(fig1, 570, 500, 2000, 100)
+    array_functions.move_fig(fig2, 570, 500, 2600, 100)
     pl.show(block=True)
 else:
     s = 'raw_data.pkl'

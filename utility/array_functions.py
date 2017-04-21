@@ -619,7 +619,8 @@ def plot_heatmap(x, y_mat, alpha=1,title=None,sizes=None,share_axis=False, fig=N
         new_fig = True
         pl.close()
         fig = pl.figure(4)
-    fig.suptitle(title)
+    if title is not None:
+        fig.suptitle(title)
     finite_y = y_mat[np.isfinite(y_mat[:])]
     y_min = None
     y_max = None

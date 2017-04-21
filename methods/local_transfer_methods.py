@@ -556,7 +556,8 @@ class LocalTransferDeltaSMS(LocalTransferDelta):
         self.cv_params['C'] = 10**np.asarray(vals,dtype='float64')
         if self.include_scale:
             self.cv_params['C2'] = 10**np.asarray(vals,dtype='float64')
-        self.g_learner = delta_transfer.CombinePredictionsDeltaSMS(configs)
+        self.g_learner = delta_transfer.CombinePredictionsDeltaSMS(deepcopy(configs))
+        self.g_learner.include_scale = self.include_scale
         self.g_learner.quiet = True
         self.quiet = False
         self.num_splits = 5

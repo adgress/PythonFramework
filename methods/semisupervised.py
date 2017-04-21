@@ -36,10 +36,12 @@ class SemisupervisedMethod(method.Method):
 class SemisupervisedRegressionMethod(SemisupervisedMethod):
     def __init__(self, configs=None):
         super(SemisupervisedRegressionMethod, self).__init__(configs)
-        self.cv_params['C'] = self.create_cv_params(-5, 5)
-        self.cv_params['sigma'] = self.create_cv_params(-5, 5)
+        self.cv_params['C'] = self.create_cv_params(-7, 7)
+        self.cv_params['sigma'] = self.create_cv_params(-7, 7)
         self.max_n_L = 200
         self.nw_method = method.NadarayaWatsonMethod(deepcopy(configs))
+        self.nw_method.configs.target_labels = None
+        self.nw_method.configs.source_labels = None
 
     def train(self, data):
         I = data.is_train & data.is_labeled
@@ -82,15 +84,14 @@ class SemisupervisedRegressionMethod(SemisupervisedMethod):
         nw_data = data_lib.Data(x_U_not_transformed, f)
         nw_data.is_regression = True
 
-        #self.nw_method.train_and_test(nw_data)
-
-        I = nw_data.is_labeled
-        self.nw_method.x = nw_data.x
-        self.nw_method.y = nw_data.y
-        self.nw_method.tune_loo(nw_data)
-
-        #self.nw_method.sigma = self.sigma
-        #self.nw_method.train(nw_data)
+        tune_loo = False
+        if tune_loo:
+            I = nw_data.is_labeled
+            self.nw_method.x = nw_data.x
+            self.nw_method.y = nw_data.y
+            self.nw_method.tune_loo(nw_data)
+        else:
+            self.nw_method.train_and_test(nw_data)
 
     def fix_matrix_rows(self, S, c):
         sums = S.sum(1)

@@ -71,7 +71,9 @@ data_name_dict = {
     DATA_TAXI: 'Taxi',
     DATA_IRS: 'Census',
     DATA_CLIMATE_MONTH: 'Temperature',
-    DATA_SYNTHETIC_PIECEWISE: 'Synthetic Piecewise'
+    DATA_SYNTHETIC_PIECEWISE: 'Synthetic Piecewise',
+    DATA_ZILLOW: 'Zillow',
+    DATA_KC_HOUSING: 'King County Housing'
 }
 
 def is_synthetic_data(data_idx):

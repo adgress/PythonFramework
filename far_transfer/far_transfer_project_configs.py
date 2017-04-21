@@ -73,7 +73,7 @@ VIZ_PAPER_NYSTROM = 2
 VIZ_PAPER_GUIDANCE = 3
 VIZ_PAPER_SPARSITY = 4
 
-viz_type = VIZ_PAPER_ERROR
+viz_type = VIZ_PAPER_SPARSITY
 
 use_1d_data = True
 
@@ -81,7 +81,7 @@ show_legend_on_all = False
 arguments = None
 use_validation = True
 
-run_experiments = True
+run_experiments = False
 run_batch_graph = False
 run_batch_sms_delta = True
 run_batch_graph_nw = False
@@ -562,12 +562,22 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         pc = ProjectConfigs(data_set, **kwargs)
         self.copy_fields(pc,pc_fields_to_copy)
         self.max_rows = 1
-        self.show_legend_on_all = False
+        self.show_legend_on_all = show_legend_on_all
         if viz_type in {VIZ_PAPER_NYSTROM, VIZ_PAPER_GUIDANCE}:
             self.show_legend_on_all = True
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
-
+        if viz_type == VIZ_PAPER_ERROR:
+            if data_set == bc.DATA_BIKE_SHARING:
+                self.ylims = [0, .06]
+            elif data_set == bc.DATA_SYNTHETIC_PIECEWISE:
+                self.ylims = [0, 1]
+            elif data_set == bc.DATA_IRS:
+                self.ylims = [0, .06]
+            elif data_set == bc.DATA_CLIMATE_MONTH:
+                self.ylims = [0, 6]
+            elif data_set == bc.DATA_ZILLOW:
+                self.ylims = [0, 5]
         viz_just_stacking = False
         self.files = OrderedDict()
 
@@ -582,10 +592,12 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                 self.borders = [.05, .95, .95, .05]
 
         keys_to_skip = {
-            'SLL-NW.pkl'
+            'SLL-NW.pkl',
         }
 
         if viz_type == VIZ_PAPER_ERROR:
+            #self.files['LocalTransferDeltaSMS.pkl'] = 'Location Shift'
+            self.files['LocalTransferDeltaSMS_scale.pkl'] = 'Location-Scale Shift'
             self.files['SLL-NW.pkl'] = 'Semisupervised'
             self.files['StackTransfer+SKL-RidgeReg-target.pkl'] = 'Target only'
             self.files['StackTransfer+SKL-RidgeReg.pkl'] = 'Stacked'

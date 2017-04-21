@@ -340,7 +340,7 @@ class CombinePredictionsDeltaSMS(CombinePredictionsDelta):
         R_ul = self.make_R_ul(data.x)
         err = cvx.diag(self.R_ll*w)*y_s + self.R_ll*g - y
         err_l2 = cvx.power(err,2)
-        reg = cvx.norm(self.R_ll*w - 1)
+        reg = cvx.norm(self.R_ll*w - 1)**2
         loss = cvx.sum_entries(err_l2) + self.C2*reg
         constraints = []
         if not self.include_scale:

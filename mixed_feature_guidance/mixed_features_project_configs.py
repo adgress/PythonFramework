@@ -41,18 +41,25 @@ use_quad_feats = False
 mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
 #mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT
 #mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
-
 viz_w_error = False
+
+VIZ_EXPERIMENT = 0
+VIZ_PAPER_ERROR = 1
+VIZ_PAPER_SIGNS = 2
+VIZ_PAPER_RELATIVE = 3
+VIZ_PAPER_TRAINING_CORR = 4
+
+viz_type = VIZ_PAPER_TRAINING_CORR
 
 all_data_sets = [data_set_to_use]
 if run_batch_experiments:
     all_data_sets = [
+        bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10,
         bc.DATA_BOSTON_HOUSING,
         #bc.DATA_DROSOPHILIA,
-        bc.DATA_KC_HOUSING,
         bc.DATA_WINE_RED,
-        bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10,
         bc.DATA_CONCRETE,
+        bc.DATA_KC_HOUSING,
         bc.DATA_DS2
     ]
 
@@ -85,7 +92,7 @@ other_method_configs = {
 if data_set_to_use == bc.DATA_DROSOPHILIA:
     other_method_configs['num_features'] = 50
 
-show_legend_on_all = True
+show_legend_on_all = False
 
 max_rows = 3
 
@@ -313,22 +320,41 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #self.files['SLL-NW.pkl'] = 'LLGC'
         #self.files['NW.pkl'] = 'NW'
 
+        if viz_type == VIZ_EXPERIMENT:
+            self.files['Mixed-feats_method=Ridge.pkl'] = 'Mixed: Ridge'
+            self.files['Mixed-feats_method=Lasso.pkl'] = 'Mixed: Lasso'
+            '''
+            self.files['Mixed-feats_method=Rel_nonneg_l1.pkl'] = 'Mixed: Nonneg'
+            self.files['Mixed-feats_method=Rel_nonneg_not-relaxed_l1.pkl'] = 'Mixed: Nonneg, not relaxed'
+            '''
+            self.files['Mixed-feats_method=Rel_signs=0.25_corr_l1.pkl'] = 'Mixed: 25% signs'
+            self.files['Mixed-feats_method=Rel_signs=0.5_corr_l1.pkl'] = 'Mixed: 50% signs'
+            self.files['Mixed-feats_method=Rel_signs=1_corr_l1.pkl'] = 'Mixed: 100% signs'
+            '''
+            self.files['Mixed-feats_method=Rel_pairs=0.25_corr_l1.pkl'] = 'Mixed: 25% pairs'
+            self.files['Mixed-feats_method=Rel_pairs=0.5_corr_l1.pkl'] = 'Mixed: 50% pairs'
+            self.files['Mixed-feats_method=Rel_pairs=1_corr_l1.pkl'] = 'Mixed: 100% pairs'
+            '''
+            self.files['Mixed-feats_method=Rel_signs=1_trainCorr_l1.pkl'] = 'Mixed: 100% signs, train correlation'
+        elif viz_type == VIZ_PAPER_ERROR:
+            self.files['Mixed-feats_method=Rel_nonneg_not-relaxed_l1.pkl'] = 'Nonnegative'
+            self.files['Mixed-feats_method=Ridge.pkl'] = 'Ridge'
+            self.files['Mixed-feats_method=Lasso.pkl'] = 'Lasso'
+            self.files['Mixed-feats_method=Rel_signs=1_corr_l1.pkl'] = 'Our Method: 100% signs'
+            self.files['Mixed-feats_method=Rel_pairs=1_corr_l1.pkl'] = 'Our Method: 100% pairs'
+        elif viz_type == VIZ_PAPER_SIGNS:
+            self.files['Mixed-feats_method=Rel_signs=0.25_corr_l1.pkl'] = 'Our Method: 25% signs'
+            self.files['Mixed-feats_method=Rel_signs=0.5_corr_l1.pkl'] = 'Our Method: 50% signs'
+            self.files['Mixed-feats_method=Rel_signs=1_corr_l1.pkl'] = 'Our Method: 100% signs'
+        elif viz_type == VIZ_PAPER_RELATIVE:
+            self.files['Mixed-feats_method=Rel_pairs=0.25_corr_l1.pkl'] = 'Our Method: 25% pairs'
+            self.files['Mixed-feats_method=Rel_pairs=0.5_corr_l1.pkl'] = 'Our Method: 50% pairs'
+            self.files['Mixed-feats_method=Rel_pairs=1_corr_l1.pkl'] = 'Our Method: 100% pairs'
+        elif viz_type == VIZ_PAPER_TRAINING_CORR:
+            self.files['Mixed-feats_method=Ridge.pkl'] = 'Ridge'
+            self.files['Mixed-feats_method=Rel_signs=1_corr_l1.pkl'] = 'Our Method'
+            self.files['Mixed-feats_method=Rel_signs=1_trainCorr_l1.pkl'] = 'Our Method: Training Correlation'
 
-        self.files['Mixed-feats_method=Ridge.pkl'] = 'Mixed: Ridge'
-        self.files['Mixed-feats_method=Lasso.pkl'] = 'Mixed: Lasso'
-        '''
-        self.files['Mixed-feats_method=Rel_nonneg_l1.pkl'] = 'Mixed: Nonneg'
-        self.files['Mixed-feats_method=Rel_nonneg_not-relaxed_l1.pkl'] = 'Mixed: Nonneg, not relaxed'
-        '''
-        self.files['Mixed-feats_method=Rel_signs=0.25_corr_l1.pkl'] = 'Mixed: 25% signs'
-        self.files['Mixed-feats_method=Rel_signs=0.5_corr_l1.pkl'] = '20ngMixed: 50% signs'
-        self.files['Mixed-feats_method=Rel_signs=1_corr_l1.pkl'] = 'Mixed: 100% signs'
-        '''
-        self.files['Mixed-feats_method=Rel_pairs=0.25_corr_l1.pkl'] = 'Mixed: 25% pairs'
-        self.files['Mixed-feats_method=Rel_pairs=0.5_corr_l1.pkl'] = 'Mixed: 50% pairs'
-        self.files['Mixed-feats_method=Rel_pairs=1_corr_l1.pkl'] = 'Mixed: 100% pairs'
-        '''
-        self.files['Mixed-feats_method=Rel_signs=1_trainCorr_l1.pkl'] = 'Mixed: 100% signs, train correlation'
         #self.files['SKL-DumReg.pkl'] = 'Predict Mean'
 
         if use_test or use_val:
@@ -342,12 +368,14 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                     leg = 'TEST: ' + leg
                 else:
                     f += '-VAL.pkl'
-                    leg = 'VALIDATION: ' + leg
+                    #leg = 'VALIDATION: ' + leg
                 test_files[f] = leg
             self.files = test_files
 
         self.title = self.results_dir
-        self.files['SKL-DumReg.pkl'] = 'Predict Mean'
+        if viz_type > VIZ_EXPERIMENT:
+            self.title = bc.data_name_dict[pc.data_set]
+        #self.files['SKL-DumReg.pkl'] = 'Predict Mean'
 
 
 

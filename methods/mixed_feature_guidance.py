@@ -71,6 +71,7 @@ class MixedFeatureGuidanceMethod(method.Method):
             #self.method = MixedFeatureGuidanceMethod.METHOD_RIDGE
             #self.method = MixedFeatureGuidanceMethod.METHOD_ORACLE
             #self.method = MixedFeatureGuidanceMethod.METHOD_ORACLE_SPARSITY
+        self.use_sign = getattr(configs, 'use_sign', True)
         self.use_corr = getattr(configs, 'use_corr', False)
         self.use_training_corr = getattr(configs, 'use_training_corr', False)
         self.use_nonneg = getattr(configs, 'use_nonneg', False)
@@ -139,10 +140,13 @@ class MixedFeatureGuidanceMethod(method.Method):
         p = data.x.shape[1]
         corr = np.zeros(p)
         training_corr = np.zeros(p)
+        stat_func = scipy.stats.pearsonr
+        if self.use_sign:
+            stat_func = scipy.stats.linregress
         for i in range(p):
-            corr[i] = scipy.stats.pearsonr(data.x[:,i], data.true_y)[0]
+            corr[i] = stat_func(data.x[:,i], data.true_y)[0]
             I = data.is_labeled & data.is_train
-            training_corr[i] = scipy.stats.pearsonr(data.x[I,i], data.true_y[I])[0]
+            training_corr[i] = stat_func(data.x[I,i], data.true_y[I])[0]
         training_corr[~np.isfinite(training_corr)] = 0
         assert (np.isfinite(training_corr)).all()
         metadata['corr'] = corr
@@ -528,6 +532,8 @@ class MixedFeatureGuidanceMethod(method.Method):
             s += '_pairs=' + str(num_pairs)
         if getattr(self, 'random_guidance', False) and self.method != MixedFeatureGuidanceMethod.METHOD_RIDGE:
             s += '_random'
+        if getattr(self, 'use_sign', False):
+            s += '-use_sign'
         if getattr(self, 'use_corr', False) and \
                         self.method not in {MixedFeatureGuidanceMethod.METHOD_RIDGE, MixedFeatureGuidanceMethod.METHOD_LASSO}:
             if getattr(self, 'use_training_corr', False):

@@ -67,13 +67,14 @@ data_name_dict = {
     DATA_ADIENCE_ALIGNED_CNN_1: 'Adience Aligned CNN 1 Per Instance ID',
     DATA_WINE_RED: 'Wine: Red',
     DATA_DROSOPHILIA: 'Drosophila',
-    DATA_DS2: 'ITS - DS2',
+    DATA_DS2: 'ITS',
     DATA_TAXI: 'Taxi',
     DATA_IRS: 'Census',
     DATA_CLIMATE_MONTH: 'Temperature',
     DATA_SYNTHETIC_PIECEWISE: 'Synthetic Piecewise',
-    DATA_ZILLOW: 'Zillow',
-    DATA_KC_HOUSING: 'King County Housing'
+    DATA_ZILLOW: 'Taxi+Housing',
+    DATA_KC_HOUSING: 'King County Housing',
+    DATA_SYNTHETIC_LINEAR_REGRESSION_10: 'Synthetic Linear'
 }
 
 def is_synthetic_data(data_idx):

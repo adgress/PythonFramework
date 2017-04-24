@@ -15,8 +15,8 @@ import importlib
 
 #import base.transfer_project_configs as configs_library
 
-#import mixed_feature_guidance.mixed_features_project_configs as configs_library
-import far_transfer.far_transfer_project_configs as configs_library
+#import far_transfer.far_transfer_project_configs as configs_library
+import mixed_feature_guidance.mixed_features_project_configs as configs_library
 #import active_base.active_base_project_configs as configs_library
 
 
@@ -180,7 +180,7 @@ def run_visualization():
     for config_idx, curr_viz_params in enumerate(viz_params):
         subplot_idx = config_idx + 1
         plt.subplot(num_rows,num_cols,subplot_idx)
-        axis = [0, 1, 0, .01]
+        axis = [0, 1, np.inf, -np.inf]
         vis_configs = configs_lib.VisualizationConfigs(**curr_viz_params)
         sizes = None
         min_x = np.inf
@@ -245,7 +245,7 @@ def run_visualization():
         if show_y_label:
             plt.ylabel(vis_configs.y_axis_string)
         #axis[1] *= 2
-        axis[3] *= 1.2
+        axis[3] *= 1
         ylims = getattr(vis_configs,'ylims',None)
         if ylims is not None:
             axis[2] = ylims[0]

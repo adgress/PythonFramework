@@ -27,13 +27,15 @@ all_data_sets = [
     bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10,
     bc.DATA_BOSTON_HOUSING,
     bc.DATA_CONCRETE,
-    bc.DATA_DROSOPHILIA
+    bc.DATA_DROSOPHILIA,
+    bc.DATA_DS2
 ]
 
 data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_DROSOPHILIA
+#data_set_to_use = bc.DATA_DS2
 
 data_sets_for_exps = [data_set_to_use]
 
@@ -65,12 +67,12 @@ other_method_configs = {
 if data_set_to_use in {bc.DATA_DROSOPHILIA, bc.DATA_ADIENCE_ALIGNED_CNN_1}:
     other_method_configs['num_features'] = 11
 
-run_batch = True
+run_batch = False
 if helper_functions.is_laptop():
     run_batch = True
 
 active_iterations = 10
-active_items_per_iteration = 5
+active_items_per_iteration = 10
 
 show_legend_on_all = True
 
@@ -133,6 +135,21 @@ class ProjectConfigs(bc.ProjectConfigs):
         elif data_set == bc.DATA_DROSOPHILIA:
             self.set_drosophilia()
             self.num_labels = [10]
+        elif data_set ==  bc.DATA_DS2:
+            self.set_data_path_results('DS2-processed')
+            #self.num_labels = [10]
+            self.num_labels = [5]
+        else:
+            assert False
+
+
+    def set_data_path_results(self, name):
+        self.loss_function = loss_function.MeanSquaredError()
+        self.cv_loss_function = loss_function.MeanSquaredError()
+        self.data_dir = 'data_sets/' + name
+        self.data_name = name
+        self.results_dir = name
+        self.data_set_file_name = 'split_data.pkl'
 
     def set_drosophilia(self):
         self.loss_function = loss_function.MeanSquaredError()
@@ -250,10 +267,14 @@ class MainConfigs(bc.MainConfigs):
                 active.base_learner.C = 1e-1
             elif data_set_to_use == bc.DATA_ADIENCE_ALIGNED_CNN_1:
                 active.base_learner.C = 1e-1
+            elif data_set_to_use == bc.DATA_DS2:
+                active.base_learner.C = 10
+                pass
             else:
                 assert False
         else:
             active.base_learner = ridge_reg
+
         #active.base_learner = relative_reg_nw
         active.base_learner.quiet = False
 
@@ -350,6 +371,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                 ('RelActiveOED-grad-labeled-trueY%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad-labeled-trueY, pairwise, Relative=0'),
                 ('RelActiveOED-labeled%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-labeled, pairwise, Relative=0'),
                 ('RelActiveOED-E%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-E-grad, pairwise, Relative=0'),
+                ('ActiveRandom+SKL-RidgeReg.pkl', 'Random, Pointwise')
             ]
         else:
             files = [
@@ -361,7 +383,10 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                 'OED-grad-labeled, pairwise, Relative=0'),
             ]
         for file, legend in files:
-            file = file % (active_opts_stf, num_feats)
+            if file not in {
+                'ActiveRandom+SKL-RidgeReg.pkl'
+            }:
+                file = file % (active_opts_stf, num_feats)
             self.files[file] = legend
 
 #viz_params = [dict()]

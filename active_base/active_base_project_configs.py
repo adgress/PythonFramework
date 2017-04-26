@@ -51,7 +51,7 @@ include_size_in_file_name = False
 
 data_sets_for_exps = [data_set_to_use]
 if run_batch_experiments:
-    data_set_to_use = all_data_sets
+    data_sets_for_exps = all_data_sets
 
 other_method_configs = {
     'y_scale_min_max': False,

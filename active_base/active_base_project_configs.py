@@ -258,6 +258,7 @@ class MainConfigs(bc.MainConfigs):
         relative_reg_nw = methods.method.NonparametricRelativeRegressionMethod(method_configs)
         if use_relative:
             active.base_learner = relative_reg
+            '''
             del active.base_learner.cv_params['C']
             if data_set_to_use == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
                 active.base_learner.C = 1
@@ -276,6 +277,7 @@ class MainConfigs(bc.MainConfigs):
                 pass
             else:
                 assert False
+            '''
         else:
             active.base_learner = ridge_reg
 

@@ -305,11 +305,11 @@ class Method(Saveable):
         if aggregate_test_results:
             performance_on_test_data = errors_on_test_data[errors.argmin()]
         if not self.quiet and mpi_utility.is_group_master():
+            print best_params
+            print 'CV Error: ' + str(errors.min())
             if test_data.n == 0:
                 print 'No test data!'
             else:
-                print best_params
-                print 'CV Error: ' + str(errors.min())
                 print 'Test Error: ' + str(errors_on_test_data[errors.argmin()])
         self.best_params = best_params
 
@@ -802,12 +802,12 @@ class RelativeRegressionMethod(Method):
     def __init__(self,configs=MethodConfigs()):
         super(RelativeRegressionMethod, self).__init__(configs)
         self.can_use_test_error_for_model_selection = True
-        self.cv_params['C'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
-        self.cv_params['C2'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
+        self.cv_params['C'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
+        self.cv_params['C2'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
         self.cv_params['C3'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         self.cv_params['C4'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         self.cv_params['s'] = 10**np.asarray(list(reversed(range(-3,3))),dtype='float64')
-        self.cv_params['scale'] = 5**np.asarray(list(reversed(range(-3,3))),dtype='float64')
+        self.cv_params['scale'] = 10**np.asarray(list(reversed(range(-2,2))),dtype='float64')
         self.small_param_range = configs.small_param_range
         if self.small_param_range:
             self.cv_params['C'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
@@ -915,7 +915,7 @@ class RelativeRegressionMethod(Method):
             self.cv_params['C4'] = np.asarray([0])
         if not self.use_similar:
             self.cv_params['s'] = np.asarray([1])
-        if not self.tune_scale:
+        if not self.tune_scale and False:
             self.cv_params['scale'] = np.asarray([1])
         else:
             if self.use_test_error_for_model_selection:

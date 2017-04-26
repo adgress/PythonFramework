@@ -37,10 +37,10 @@ data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
 #data_set_to_use = bc.DATA_DROSOPHILIA
 #data_set_to_use = bc.DATA_DS2
 
-data_sets_for_exps = [data_set_to_use]
 
 viz_for_paper = True
 
+run_batch_experiments = True
 run_experiments = True
 use_test_error_for_model_selection = False
 
@@ -48,6 +48,10 @@ use_relative = True
 use_pairwise_active = True
 
 include_size_in_file_name = False
+
+data_sets_for_exps = [data_set_to_use]
+if run_batch_experiments:
+    data_set_to_use = all_data_sets
 
 other_method_configs = {
     'y_scale_min_max': False,
@@ -304,10 +308,12 @@ class BatchConfigs(bc.BatchConfigs):
         else:
             new_params = [{'unused': None}]
         self.config_list = list()
-        for params in new_params:
-            p = deepcopy(pc)
-            p.set(**params)
-            self.config_list.append(MainConfigs(p))
+        for d in data_sets_for_exps:
+            pc2 = ProjectConfigs(d)
+            for params in new_params:
+                p = deepcopy(pc2)
+                p.set(**params)
+                self.config_list.append(MainConfigs(p))
 
 
 class VisualizationConfigs(bc.VisualizationConfigs):

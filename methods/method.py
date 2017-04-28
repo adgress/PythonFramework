@@ -834,7 +834,7 @@ class RelativeRegressionMethod(Method):
             #self.transform = PCA(self.pca_dim,whiten=True)
         self.use_mixed_cv = configs.get('use_mixed_cv', False)
         self.use_baseline = configs.get('use_baseline', False)
-        self.ridge_on_fail = configs.get('ridge_on_fail', True)
+        self.ridge_on_fail = configs.get('ridge_on_fail', False)
         self.tune_scale = configs.get('tune_scale', False)
         self.scipy_opt_method = configs.get('scipy_opt_method', 'L-BFGS-B')
         self.num_cv_splits = configs.get('num_cv_splits', 10)

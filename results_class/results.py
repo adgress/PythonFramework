@@ -176,10 +176,10 @@ class Output(data_lib.LabeledVector):
     def __init__(self,data=None,y=None):
         super(Output, self).__init__()
         if data is not None:
-            self.y = data.y
-            self.is_train = data.is_train
-            self.true_y = data.true_y
-            self.type = data.type
+            self.y = data.y.copy()
+            self.is_train = data.is_train.copy()
+            self.true_y = data.true_y.copy()
+            self.type = data.type.copy()
             self.fu = np.zeros(data.x.shape[0])
         else:
             self.y = np.empty(0)
@@ -188,8 +188,8 @@ class Output(data_lib.LabeledVector):
             self.type = np.empty(0)
             self.fu = np.empty(0)
         if y is not None:
-            self.y = y
-            self.fu = y
+            self.y = y.copy()
+            self.fu = y.copy()
 
     def compute_error_train(self,loss_function):
         return loss_function.compute_score(

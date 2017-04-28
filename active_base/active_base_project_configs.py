@@ -27,7 +27,7 @@ all_data_sets = [
     bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10,
     bc.DATA_BOSTON_HOUSING,
     bc.DATA_CONCRETE,
-    bc.DATA_DROSOPHILIA,
+    #bc.DATA_DROSOPHILIA,
     bc.DATA_DS2
 ]
 
@@ -76,7 +76,7 @@ if helper_functions.is_laptop():
     run_batch = True
 
 active_iterations = 10
-active_items_per_iteration = 10
+active_items_per_iteration = 2
 
 show_legend_on_all = True
 
@@ -120,25 +120,25 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.data_set = data_set
         if data_set == bc.DATA_BOSTON_HOUSING:
             self.set_boston_housing()
-            self.num_labels = [10]
+            self.num_labels = [5]
         elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10:
             self.set_synthetic_linear_reg_10()
-            self.num_labels = [10]
+            self.num_labels = [5]
         elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
             self.set_synthetic_linear_reg()
-            self.num_labels = [10]
+            self.num_labels = [5]
         elif data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
             self.set_adience_aligned_cnn_1()
-            self.num_labels = [10]
+            self.num_labels = [5]
         elif data_set == bc.DATA_WINE_RED:
             self.set_wine_red()
-            self.num_labels = [20]
+            self.num_labels = [5]
         elif data_set == bc.DATA_CONCRETE:
             self.set_concrete()
-            self.num_labels = [10]
+            self.num_labels = [5]
         elif data_set == bc.DATA_DROSOPHILIA:
             self.set_drosophilia()
-            self.num_labels = [10]
+            self.num_labels = [5]
         elif data_set ==  bc.DATA_DS2:
             self.set_data_path_results('DS2-processed')
             #self.num_labels = [10]
@@ -258,26 +258,26 @@ class MainConfigs(bc.MainConfigs):
         relative_reg_nw = methods.method.NonparametricRelativeRegressionMethod(method_configs)
         if use_relative:
             active.base_learner = relative_reg
-            '''
+
             del active.base_learner.cv_params['C']
-            if data_set_to_use == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
-                active.base_learner.C = 1
-            elif data_set_to_use == bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10:
-                active.base_learner.C = 1e-3
+            #del active.base_learner.cv_params['C2']
+            if data_set_to_use == bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10:
+                active.base_learner.C = 10
+                #active.base_learner.C2 = 10
             elif data_set_to_use == bc.DATA_BOSTON_HOUSING:
-                active.base_learner.C = 1e-2
+                active.base_learner.C = 10
             elif data_set_to_use == bc.DATA_CONCRETE:
-                active.base_learner.C = 1e-3
+                active.base_learner.C = 10
             elif data_set_to_use == bc.DATA_DROSOPHILIA:
-                active.base_learner.C = 1e-1
+                active.base_learner.C = 10
             elif data_set_to_use == bc.DATA_ADIENCE_ALIGNED_CNN_1:
-                active.base_learner.C = 1e-1
+                active.base_learner.C = 10
             elif data_set_to_use == bc.DATA_DS2:
                 active.base_learner.C = 10
                 pass
             else:
                 assert False
-            '''
+
         else:
             active.base_learner = ridge_reg
 
@@ -303,8 +303,8 @@ class BatchConfigs(bc.BatchConfigs):
             ]
             if use_relative:
                 new_params = [
-                    {'use_oed': False, 'use_uncertainty': False},
                     {'use_oed': True, 'use_uncertainty': False},
+                    {'use_oed': False, 'use_uncertainty': False},
                     {'use_oed': False, 'use_uncertainty': True},
                 ]
         else:
@@ -353,10 +353,13 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files['ActiveRandom+SKL-RidgeReg.pkl'] = 'Random, Ridge'
         #self.files['OED+SKL-RidgeReg.pkl'] = 'OED, Ridge'
         #self.files['OED+SKL-RidgeReg_use-labeled.pkl'] = 'OED, Ridge, use_labeled'
+        num_feats = ''
+        '''
         if data_set in {bc.DATA_DROSOPHILIA, bc.DATA_ADIENCE_ALIGNED_CNN_1}:
             num_feats = '-numFeatsPerfect=' + str(11)
         else:
             num_feats = ''
+        '''
         '''
         if other_method_configs['num_features'] is None:
             num_feats = ''
@@ -364,22 +367,23 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             num_feats = '-numFeatsPerfect=' + str(other_method_configs['num_features'])
         '''
         active_opts_stf = '-10-' + str(active_iterations) + '-' + str(active_items_per_iteration)
-        if data_set_to_use == bc.DATA_BOSTON_HOUSING:
-            active_opts_stf = '-10-' + str(active_iterations) + '-' + str(active_items_per_iteration)
+        if data_set in {bc.DATA_DS2}:
+            active_opts_stf = '-5-' + str(active_iterations) + '-' + str(active_items_per_iteration)
+        active_opts_stf = '-5-' + str(active_iterations) + '-' + str(active_items_per_iteration)
         rand_pairs_str = '-numRandPairs=1'
         rand_pairs_str = '-numRandPairs=0'
         fixed_model_exps = False
         if not fixed_model_exps:
             files = [
-                ('RelActiveRandom%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'Random, pairwise, Relative=0'),
-                ('RelActiveUncer%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'Uncertainty, pairwise, Relative=0'),
-                ('RelActiveOED%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'OED, pairwise, Relative=0'),
-                ('RelActiveOED-grad%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad, pairwise, Relative=0'),
-                ('RelActiveOED-grad-labeled%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad-labeled, pairwise, Relative=0'),
-                ('RelActiveOED-grad-labeled-trueY%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad-labeled-trueY, pairwise, Relative=0'),
-                ('RelActiveOED-labeled%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-labeled, pairwise, Relative=0'),
-                ('RelActiveOED-E%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-E-grad, pairwise, Relative=0'),
-                ('ActiveRandom+SKL-RidgeReg.pkl', 'Random, Pointwise')
+                ('RelActiveRandom%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'Random, pairwise, Relative=0'),
+                ('RelActiveUncer%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'Uncertainty, pairwise, Relative=0'),
+                #('RelActiveOED%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'OED, pairwise, Relative=0'),
+                #('RelActiveOED-grad%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad, pairwise, Relative=0'),
+                ('RelActiveOED-grad-labeled%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad-labeled, pairwise, Relative=0'),
+                #('RelActiveOED-grad-labeled-trueY%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad-labeled-trueY, pairwise, Relative=0'),
+                #('RelActiveOED-labeled%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-labeled, pairwise, Relative=0'),
+                #('RelActiveOED-E%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-E-grad, pairwise, Relative=0'),
+                #('ActiveRandom+SKL-RidgeReg.pkl', 'Random, Pointwise')
             ]
         else:
             files = [

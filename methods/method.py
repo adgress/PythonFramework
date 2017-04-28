@@ -807,7 +807,8 @@ class RelativeRegressionMethod(Method):
         self.cv_params['C3'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         self.cv_params['C4'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         self.cv_params['s'] = 10**np.asarray(list(reversed(range(-3,3))),dtype='float64')
-        self.cv_params['scale'] = 10**np.asarray(list(reversed(range(-2,2))),dtype='float64')
+        #self.cv_params['scale'] = 10**np.asarray(list(reversed(range(-2,2))),dtype='float64')
+        self.scale = 1
         self.small_param_range = configs.small_param_range
         if self.small_param_range:
             self.cv_params['C'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
@@ -1359,6 +1360,8 @@ class RelativeRegressionMethod(Method):
             with Capturing() as output:
                 results = optimize.minimize(eval,w0,method=method,jac=grad,options=options,constraints=constraints)
             w1 = results.x
+            if not results.success:
+                print 'relative optimization failed'
             #toc()
             #options['gtol'] = 1e-3
             compare_results = False

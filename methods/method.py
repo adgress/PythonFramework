@@ -978,7 +978,7 @@ class RelativeRegressionMethod(Method):
         #if self.optimization_failed and (mpi_utility.is_group_master() or not self.use_mpi):
         if self.optimization_failed and self.ridge_on_fail:
             if mpi_utility.is_group_master():
-                warnings.warn('Optimized failed on ' + self.split_idx_str + ' - using ridge instead...')
+                warnings.warn('Optimized failed  - using ridge instead...')
             self.optimization_failed = False
             c = deepcopy(self.configs)
             c.use_pairwise = False

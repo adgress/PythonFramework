@@ -21,8 +21,8 @@ def mpi_split_even_odd():
     exit()
 
 def get_comm():
-    import main
     try:
+        import main
         comm = main.configs_lib.comm
     except:
         comm = None

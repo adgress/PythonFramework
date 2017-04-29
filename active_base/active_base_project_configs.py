@@ -31,16 +31,16 @@ all_data_sets = [
     bc.DATA_DS2
 ]
 
-data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
+#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_DROSOPHILIA
-#data_set_to_use = bc.DATA_DS2
+data_set_to_use = bc.DATA_DS2
 
 
 viz_for_paper = True
 
-run_batch_experiments = True
+run_batchs_datasets = True
 run_experiments = True
 use_test_error_for_model_selection = False
 
@@ -50,7 +50,7 @@ use_pairwise_active = True
 include_size_in_file_name = False
 
 data_sets_for_exps = [data_set_to_use]
-if run_batch_experiments:
+if run_batchs_datasets:
     data_sets_for_exps = all_data_sets
 
 other_method_configs = {
@@ -59,7 +59,7 @@ other_method_configs = {
     'scipy_opt_method': 'L-BFGS-B',
     'num_cv_splits': 10,
     'eps': 1e-10,
-    'use_perfect_feature_selection': True,
+    'use_perfect_feature_selection': False,
     'use_test_error_for_model_selection': False,
     'use_validation': True,
     'use_uncertainty': False,
@@ -68,15 +68,13 @@ other_method_configs = {
     'num_pairwise': 0,
     'use_true_y': False
 }
-if data_set_to_use in {bc.DATA_DROSOPHILIA, bc.DATA_ADIENCE_ALIGNED_CNN_1}:
-    other_method_configs['num_features'] = 11
 
-run_batch = False
+run_batch = True
 if helper_functions.is_laptop():
     run_batch = True
 
-active_iterations = 10
-active_items_per_iteration = 2
+active_iterations = 2
+active_items_per_iteration = 20
 
 show_legend_on_all = True
 
@@ -252,6 +250,8 @@ class MainConfigs(bc.MainConfigs):
             else:
                 active = active_methods.ActiveMethod(method_configs)
 
+        if pc.data_set in {bc.DATA_DROSOPHILIA, bc.DATA_ADIENCE_ALIGNED_CNN_1}:
+            method_configs.num_features = 11
         relative_reg = methods.method.RelativeRegressionMethod(method_configs)
         ridge_reg = method.SKLRidgeRegression(method_configs)
         mean_reg = method.SKLMeanRegressor(method_configs)
@@ -259,21 +259,28 @@ class MainConfigs(bc.MainConfigs):
         if use_relative:
             active.base_learner = relative_reg
 
-            del active.base_learner.cv_params['C']
-            #del active.base_learner.cv_params['C2']
-            if data_set_to_use == bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10:
-                active.base_learner.C = 10
-                #active.base_learner.C2 = 10
-            elif data_set_to_use == bc.DATA_BOSTON_HOUSING:
-                active.base_learner.C = 10
-            elif data_set_to_use == bc.DATA_CONCRETE:
-                active.base_learner.C = 10
-            elif data_set_to_use == bc.DATA_DROSOPHILIA:
-                active.base_learner.C = 10
-            elif data_set_to_use == bc.DATA_ADIENCE_ALIGNED_CNN_1:
-                active.base_learner.C = 10
-            elif data_set_to_use == bc.DATA_DS2:
-                active.base_learner.C = 10
+
+
+            #del active.base_learner.cv_params['C']
+            del active.base_learner.cv_params['C2']
+            if pc.data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10:
+                active.base_learner.C = .001
+                active.base_learner.C2 = 100
+            elif pc.data_set == bc.DATA_BOSTON_HOUSING:
+                active.base_learner.C = .01
+                active.base_learner.C2 = 100
+            elif pc.data_set == bc.DATA_CONCRETE:
+                active.base_learner.C = .01
+                active.base_learner.C2 = 100
+            elif pc.data_set == bc.DATA_DROSOPHILIA:
+                active.base_learner.C = .01
+                active.base_learner.C2 = 100
+            elif pc.data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
+                active.base_learner.C = .001
+                active.base_learner.C2 = 100
+            elif pc.data_set == bc.DATA_DS2:
+                active.base_learner.C = .01
+                active.base_learner.C2 = 100
                 pass
             else:
                 assert False
@@ -338,28 +345,28 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.title = bc.data_name_dict.get(self.data_set_to_use, 'Unknown Data Set')
         self.show_legend_on_all = show_legend_on_all
         self.x_axis_string = 'Number of labeled instances'
+        '''
         if pc.data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
             self.ylims = [0,12]
         elif pc.data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
             self.ylims = [0,1000]
         elif pc.data_set == bc.DATA_BOSTON_HOUSING:
-            self.ylims = [0,600]
+            self.ylims = [0,150]
         elif pc.data_set == bc.DATA_CONCRETE:
-            self.ylims = [0,1500]
+            self.ylims = [200,400]
         elif pc.data_set == bc.DATA_DROSOPHILIA:
             self.ylims = [0,6]
-
+        '''
         self.files = OrderedDict()
         self.files['ActiveRandom+SKL-RidgeReg.pkl'] = 'Random, Ridge'
         #self.files['OED+SKL-RidgeReg.pkl'] = 'OED, Ridge'
         #self.files['OED+SKL-RidgeReg_use-labeled.pkl'] = 'OED, Ridge, use_labeled'
         num_feats = ''
-        '''
+
         if data_set in {bc.DATA_DROSOPHILIA, bc.DATA_ADIENCE_ALIGNED_CNN_1}:
-            num_feats = '-numFeatsPerfect=' + str(11)
-        else:
-            num_feats = ''
-        '''
+            #num_feats = '-numFeatsPerfect=' + str(11)
+            num_feats = '-numFeats=' + str(11)
+
         '''
         if other_method_configs['num_features'] is None:
             num_feats = ''
@@ -370,7 +377,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         if data_set in {bc.DATA_DS2}:
             active_opts_stf = '-5-' + str(active_iterations) + '-' + str(active_items_per_iteration)
         active_opts_stf = '-5-' + str(active_iterations) + '-' + str(active_items_per_iteration)
-        rand_pairs_str = '-numRandPairs=1'
+        #rand_pairs_str = '-numRandPairs=1'
+        #rand_pairs_str = '-numRandPairs=2'
         rand_pairs_str = '-numRandPairs=0'
         fixed_model_exps = False
         if not fixed_model_exps:

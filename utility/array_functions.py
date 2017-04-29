@@ -21,6 +21,25 @@ from sklearn.feature_selection import SelectKBest, f_regression
 import math
 from sklearn.neighbors import kneighbors_graph, radius_neighbors_graph
 
+
+def make_vec_binary(I, n):
+    v = false(n)
+    v[I] = True
+    return v
+
+def create_random_splits(n, num_or_perc_sample, num_splits):
+    assert n > 0
+    assert num_or_perc_sample > 0
+    assert num_splits > 0
+    if num_or_perc_sample < 1:
+        num_or_perc_sample = math.ceil(num_or_perc_sample * n)
+    splits = false((num_splits, n))
+    for i in range(num_splits):
+        I = np.random.choice(n, num_or_perc_sample, replace=False)
+        splits[i, :] = make_vec_binary(I, n)
+    return splits
+
+
 def is_in_percentile(v, p_min, p_max):
     assert np.squeeze(v).ndim == 1
     I = np.argsort(v)
@@ -356,9 +375,11 @@ def make_graph_radius(x, radius, metric='euclidean', normalize_dists=True):
         dists[dists != 0] = 1
     return dists
 
-def make_graph_distance(x, metric='euclidean'):
+def make_graph_distance(x, x2=None, metric='euclidean'):
     x = vec_to_2d(x)
-    return pairwise.pairwise_distances(x, x, metric)
+    if x2 is None:
+        x2 = x
+    return pairwise.pairwise_distances(x, x2, metric)
 
 def make_laplacian_with_W(W, normalized=False):
     D = W.sum(1)

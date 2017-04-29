@@ -177,6 +177,9 @@ def run_visualization():
     #num_rows = min(n, configs_lib.max_rows)
     num_rows = min(n, vis_configs.max_rows)
     num_cols = math.ceil(float(n) / num_rows)
+    markers = [
+        's', '*', '>', '^', 'v', 'X', 'P', 'd', '*'
+    ]
     for config_idx, curr_viz_params in enumerate(viz_params):
         subplot_idx = config_idx + 1
         plt.subplot(num_rows,num_cols,subplot_idx)
@@ -185,7 +188,9 @@ def run_visualization():
         sizes = None
         min_x = np.inf
         max_x = -np.inf
+        marker_idx = -1
         for file, legend_str in vis_configs.results_files:
+            marker_idx += 1
             if not os.path.isfile(file):
                 print file + ' doesn''t exist - skipping'
                 assert len(viz_params) == 1 or vis_configs.show_legend_on_all, 'Just to be safe, set show_legend_on_all=True if files are missing'
@@ -221,7 +226,9 @@ def run_visualization():
             plt.errorbar(sizes,
                          processed_results.means,
                          yerr=[processed_results.lows, processed_results.highs],
-                         label=s
+                         label=s,
+                         marker=markers[marker_idx],
+                         markersize=8
             )
             highs = np.asarray(processed_results.means) + np.asarray(processed_results.highs)
             lows = np.asarray(processed_results.means) - np.asarray(processed_results.lows)

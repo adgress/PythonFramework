@@ -17,6 +17,9 @@ import scipy
 from data import data as data_lib
 from scipy import optimize
 from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+from sklearn.neighbors import KernelDensity
+from methods import density
 
 import matplotlib as plt
 import matplotlib.pylab as pl
@@ -35,26 +38,29 @@ class OptData(object):
         self.mixture_reg = mixture_reg
         self.compute_f = supervised_loss_func
         self.subset_size = subset_size
+        self.pca = None
 
 def create_eval(opt_data):
-    return lambda x: eval(x, opt_data)
+    return lambda x: eval(x, opt_data, return_losses=False)
 
 def compute_p(Z, opt_data):
     Z_diag = np.diag(Z)
     #WZ_density = opt_data.W_density.dot(Z_diag) / Z_diag.sum()
     WZ_density = opt_data.W_density.dot(Z_diag) / opt_data.subset_size
+    WZ_density[np.diag_indices_from(WZ_density)] = 0
     p_s = WZ_density.sum(1)
     return p_s
 
 def compute_f_nw(Z, opt_data):
     Z_diag = diag(Z)
     WZ_learner = opt_data.W_learner.dot(Z_diag)
+    WZ_learner[np.diag_indices_from(WZ_learner)] = 0
     WZ_Y = WZ_learner.dot(opt_data.Y)
     D = 1 / WZ_learner.sum(1)
     f_s = D * WZ_Y
     return f_s
 
-def eval(Z, opt_data):
+def eval(Z, opt_data, return_losses=False):
     f_s = opt_data.compute_f(Z, opt_data)
     residual = f_s - opt_data.f_target
     loss_f = norm(residual)**2
@@ -65,6 +71,8 @@ def eval(Z, opt_data):
     n = Z.size
     val = loss_f/n + opt_data.mixture_reg*loss_p/n
     assert np.isfinite(val)
+    if return_losses:
+        return val, loss_f/n, opt_data.mixture_reg*loss_p/n
     return val
 
 
@@ -72,21 +80,7 @@ class SupervisedInstanceSelection(method.Method):
     def __init__(self, configs=MethodConfigs()):
         super(SupervisedInstanceSelection, self).__init__(configs)
         self.cv_params = dict()
-        self.cv_params['learner_reg'] = self.create_cv_params(-2, 2)
-        #self.cv_params['density_reg'] = self.create_cv_params(-2, 2)
-        #self.cv_params['density_reg'] = np.asarray([.1])
-        #density for full data set
-        self.density_reg = .1
-        #density for subset of data set
-        self.subset_density_reg = self.density_reg
-        #self.target_density_bandwidth = .01
-        self.mixture_reg = 1
-        self.subset_size = 5
         self.is_classifier = False
-        configs = deepcopy(self.configs)
-        self.target_learner = method.NadarayaWatsonMethod(deepcopy(configs))
-        self.target_learner.quiet = True
-        self.supervised_loss_func = compute_f_nw
         self.p_s = None
         self.p_x = None
         self.f_s = None
@@ -94,33 +88,81 @@ class SupervisedInstanceSelection(method.Method):
         self.f_x_estimate = None
         self.learned_distribution = None
         self.optimization_value = None
+        self.use_linear = False
+        self.quiet = False
 
+        configs = deepcopy(self.configs)
+        self.target_learner = method.NadarayaWatsonMethod(deepcopy(configs))
+        self.target_learner.quiet = True
+        self.mixture_reg = 1
+        self.subset_size = 10
+        self.density_reg = .1
+        self.num_samples = 5
+        self.subset_density_reg = .1
+        self.learner_reg = 100
+        self.pca = None
 
-    def compute_kernel(self, x, bandwidth):
-        D = array_functions.make_graph_distance(x) / bandwidth
-        K = (1 / (x.shape[0] * bandwidth)) * (1 / np.sqrt(2 * np.pi)) * np.exp(-.5 * D ** 2)
-        return K
+        if self.use_linear:
+            self.supervised_loss_func = compute_f_linear
+        else:
+            self.supervised_loss_func = compute_f_nw
+            self.cv_params['subset_size'] = self.create_cv_params(-5, 5)
+            #self.cv_params['learner_reg'] = self.create_cv_params(-4, 4)
+            #self.cv_params['density_reg'] = self.create_cv_params(-2, 2)
+            #self.cv_params['subset_density_reg'] = self.create_cv_params(-4, 4)
 
-    def compute_density(self, X, sigma):
-        K = self.compute_kernel(X, sigma)
-        return K.sum(1)
+    def solve_w(self, X, Y, reg, Z=None, subset_size=None):
+        if subset_size is None:
+            subset_size = self.subset_size
+        if Z is None:
+            Z = np.ones(X.shape[0])/X.shape[0]
+        w = solve_w(X, Y, reg, Z, subset_size)
+        return w
 
-    def compute_predictions(self, X, Y, estimate=False):
+    def compute_predictions(self, X, Y, Z=None, subset_size=None, estimate=False, learner_reg=None):
+        if self.use_linear:
+            return self.compute_predictions_linear(X, Y, Z, subset_size, estimate, learner_reg)
+        else:
+            return self.compute_predictions_nonparametric(X, Y, estimate, learner_reg)
+
+    def compute_predictions_linear(self, X, Y, Z=None, subset_size=None, estimate=False, learner_reg=None):
+        if learner_reg is None:
+            learner_reg = self.learner_reg
         if not estimate:
             return Y.copy()
-        W = self.target_learner.compute_kernel(X, X)
-        np.fill_diagonal(W, 0)
+        if subset_size is None:
+            assert Z is None
+            subset_size = 1
+        w = self.solve_w(X, Y, learner_reg, Z, subset_size)
+        return X.dot(w)
+
+    def compute_predictions_nonparametric(self, X, Y, estimate=False, learner_reg=None):
+        if learner_reg is None:
+            learner_reg = self.learner_reg
+        if not estimate:
+            return Y.copy()
+        W = self.target_learner.compute_kernel(X, X, bandwidth=learner_reg)
+        #np.fill_diagonal(W, 0)
         S = array_functions.make_smoothing_matrix(W)
         return S.dot(Y)
 
-    def create_opt_data(self, data):
+    def create_opt_data(self, data, data_test=None):
         I = data.is_labeled & data.is_train
         X = data.x[I]
         Y = data.y[I]
-        W_learner = self.target_learner.compute_kernel(X, X, self.learner_reg)
+        #W_learner = self.target_learner.compute_kernel(X, X, self.learner_reg)
+        if data_test is None:
+            W_learner = density.compute_kernel(X, X, self.learner_reg)
+        else:
+            W_learner = density.compute_kernel(X, data_test.x, self.learner_reg)
+        X_density = X
+        if self.pca is not None:
+            X_density = self.pca.transform(X_density)
 
         # Multiple by X.shape[0] because the actual normalization coefficient will be the sum of the learned distribution
-        W_density = X.shape[0] * self.compute_kernel(X, self.subset_density_reg)
+        #W_density = X.shape[0] * density.compute_kernel(X_density, None, self.subset_density_reg)
+        ratio = float(X.shape[0]) / self.subset_size
+        W_density = ratio * density.compute_kernel(X_density, None, self.subset_density_reg)
 
         opt_data = OptData(
             X, Y,
@@ -140,17 +182,31 @@ class SupervisedInstanceSelection(method.Method):
         #Compute "correct" density
         #sigma = self.target_density_bandwidth
         sigma = self.density_reg
-        self.p_x = self.compute_density(X, sigma)
+        X_density = X
+        if self.pca is not None:
+            X_density = self.pca.transform(X_density)
+        self.p_x = density.compute_density(X_density, None, sigma)
 
-        #Compute "correct" prediction
-        self.f_x = self.compute_predictions(X, Y, subset_size=X.shape[0])
+        #self.f_x = self.compute_predictions(X, Y, subset_size=X.shape[0])
+        self.f_x = self.compute_predictions(
+            X, Y,
+            subset_size=X.shape[0],
+            learner_reg=self.target_learner.sigma,
+            estimate=False
+        )
+        #f1 = self.f_x
+        #f2 = self.target_learner.predict(data).y
 
-        self.f_x_estimate = self.compute_predictions(X, Y, subset_size=1, estimate=True)
-
+        #self.f_x_estimate = self.compute_predictions(X, Y, subset_size=1, estimate=True)
+        self.f_x_estimate = self.f_x.copy()
+        f_x_estimates = self.f_x_estimate
         #self.f_x = self.compute_predictions(X, Y)
         return super(SupervisedInstanceSelection, self).train_and_test(data)
 
     def optimize(self, opt_data):
+        return self.optimize_nonparametric(opt_data)
+
+    def optimize_nonparametric(self, opt_data):
         X = opt_data.X
         f = create_eval(opt_data)
         method = 'SLSQP'
@@ -171,26 +227,54 @@ class SupervisedInstanceSelection(method.Method):
             options=options,
             constraints=constraints,
         )
+        if not self.running_cv:
+            print 'done with cv'
         #print results.x
-        print 'done'
-        self.learned_distribution = results.x
-        self.optimization_value = results.fun
+        #print 'done'
+        self.learned_distribution = results.x.copy()
+        if not self.running_cv:
+            print 'median z: ' + str(np.median(self.learned_distribution / self.learned_distribution.sum()))
+        idx = np.argsort(self.learned_distribution)[::-1]
+        #self.learned_distribution[idx[:opt_data.subset_size]] = 1
+        #self.learned_distribution[idx[opt_data.subset_size:]] = 0
+        self.learned_distribution[idx[self.num_samples:]] = 0
+        self.learned_distribution[self.learned_distribution > 0] = 1
+        self.learned_distribution /= self.learned_distribution.sum()
+        self.learned_distribution *= self.num_samples
+        _, loss_f, loss_p = eval(self.subset_size * self.learned_distribution / self.learned_distribution.sum(), opt_data, return_losses=True)
+        '''
+        print results.fun
+        print str(self.subset_density_reg) + ' p err: ' + str(loss_p)
+        print str(self.learner_reg) + ' f err: ' + str(loss_f)
+        '''
+        #self.optimization_value = results.fun
+        a = loss_f + loss_p
+        self.optimization_value = a
 
     def train(self, data):
         opt_data = self.create_opt_data(data)
         self.optimize(opt_data)
-        self.p_s = compute_p(self.learned_distribution, opt_data)
+        self.p_s = compute_p(self.subset_size * self.learned_distribution / self.learned_distribution.sum(), opt_data)
         self.f_s = self.supervised_loss_func(self.learned_distribution, opt_data)
+
+    def predict_test(self, data_train, data_test):
+        opt_data = self.create_opt_data(data_train, data_test)
+        return self.supervised_loss_func(self.learned_distribution, opt_data)
+
 
     def predict(self, data):
         o = Output(data)
+
         o.y[:] = self.optimization_value/data.n
-        o.fu = o.y
+        o.fu = o.y.copy()
+        o.true_y[:] = 0
         return o
 
     @property
     def prefix(self):
         s = 'SupervisedInstanceSelection'
+        if self.use_linear:
+            s += '-linear'
         return s
 
 
@@ -218,62 +302,26 @@ def compute_f_linear(Z, opt_data):
     return y_pred
 
 
-
-
-class SupervisedInstanceSelectionLinear(SupervisedInstanceSelection):
-    def __init__(self, configs=MethodConfigs()):
-        super(SupervisedInstanceSelectionLinear, self).__init__(configs)
-        self.cv_params = dict()
-        #self.cv_params['learner_reg'] = self.create_cv_params(-2, 2)
-        #self.cv_params['density_reg'] = np.asarray([.1])
-        #self.target_density_bandwidth = .01
-        self.density_reg = .5
-        self.subset_density_reg = .5
-        self.mixture_reg = 1
-        self.learner_reg = 1
-        self.subset_size = 5
-        configs = deepcopy(self.configs)
-        self.target_learner = method.NadarayaWatsonMethod(deepcopy(configs))
-        self.target_learner.quiet = True
-        self.supervised_loss_func = compute_f_linear
-
-    def solve_w(self, X, Y, reg, Z=None, subset_size=None):
-        if subset_size is None:
-            subset_size = self.subset_size
-        if Z is None:
-            Z = np.ones(X.shape[0])/X.shape[0]
-        w = solve_w(X, Y, reg, Z, subset_size)
-        return w
-
-    def compute_predictions(self, X, Y, Z=None, subset_size=None, estimate=False):
-        if not estimate:
-            return Y.copy()
-        if subset_size is None:
-            assert Z is None
-            subset_size = 1
-        w = self.solve_w(X, Y, self.learner_reg, Z, subset_size)
-        return X.dot(w)
-
-    def create_opt_data(self, data):
-        #TODO: this creates W_learner, which isn't necessary for linear method
-        opt_data = super(SupervisedInstanceSelectionLinear, self).create_opt_data(data)
-        opt_data.W_learner = None
-        return opt_data
-
-    @property
-    def prefix(self):
-        s = 'SupervisedInstanceSelectionLinear'
-        return s
-
-class SupervisedInstanceSelectionGreedy(SupervisedInstanceSelectionLinear):
+class SupervisedInstanceSelectionGreedy(SupervisedInstanceSelection):
     def __init__(self, configs=MethodConfigs()):
         super(SupervisedInstanceSelectionGreedy, self).__init__(configs)
-        self.mixture_reg = 1
 
     def optimize(self, opt_data):
-        w = self.solve_w(opt_data.X, opt_data.Y, opt_data.learner_reg)
-        y_pred = opt_data.X.dot(w)
+        y_pred = self.compute_predictions(
+            opt_data.X,
+            opt_data.Y,
+            Z=None,
+            subset_size=None,
+            estimate=True,
+            learner_reg=opt_data.learner_reg
+        )
         y_diff = np.abs(y_pred - opt_data.Y)
+        '''
+        if self.use_linear:
+            w = self.solve_w(opt_data.X, opt_data.Y, opt_data.learner_reg)
+            y_pred = opt_data.X.dot(w)
+            y_diff = np.abs(y_pred - opt_data.Y)
+        '''
         p_x = self.p_x
         if not np.isfinite(self.mixture_reg):
             total_error = p_x.copy()
@@ -281,7 +329,6 @@ class SupervisedInstanceSelectionGreedy(SupervisedInstanceSelectionLinear):
             total_error = -y_diff + opt_data.mixture_reg*p_x
         selected = np.zeros(y_pred.shape)
         assert y_pred.shape >= opt_data.subset_size
-        indicies_to_sample = [np.arange(total_error.size)]
         if self.is_classifier:
             assert False, 'TODO'
             classes = np.unique(opt_data.Y)
@@ -300,12 +347,15 @@ class SupervisedInstanceSelectionGreedy(SupervisedInstanceSelectionLinear):
     @property
     def prefix(self):
         s = 'SupervisedInstanceSelectionLinearGreedy'
+        if self.use_linear:
+            s += '-linear'
         return s
 
-class SupervisedInstanceSelectionCluster(SupervisedInstanceSelectionLinear):
+class SupervisedInstanceSelectionCluster(SupervisedInstanceSelection):
     def __init__(self, configs=MethodConfigs()):
         super(SupervisedInstanceSelectionCluster, self).__init__(configs)
         self.mixture_reg = None
+        self.cv_params = {}
         self.k_means = KMeans()
 
     def optimize(self, opt_data):
@@ -317,12 +367,15 @@ class SupervisedInstanceSelectionCluster(SupervisedInstanceSelectionLinear):
             idx = np.argmin(xi)
             selected[idx] = 1
         assert selected.sum() == opt_data.subset_size
-        self.learned_distribution = compute_p(selected, opt_data)
+        #self.learned_distribution = compute_p(selected, opt_data)
+        self.learned_distribution = selected
         self.optimization_value = 0
 
     @property
     def prefix(self):
         s = 'SupervisedInstanceSelectionCluster'
+        if self.use_linear:
+            s += '-linear'
         return s
 
 def make_uniform_data():
@@ -341,11 +394,17 @@ def plot_approximation(X, learner, use_scatter=True):
 
     if use_scatter:
         pass
-    pl.plot(X, np.ones(X.size) / X.size, 'ro', X, learner.learned_distribution/learner.learned_distribution.sum(), 'bo')
+    pl.plot(X, np.ones(X.size) / X.size, 'ro', label='Original Samples')
+    pl.plot(X, learner.learned_distribution/learner.learned_distribution.sum(), 'bo', label='Subset Samples')
+    pl.legend(loc='center right', fontsize=10)
     pl.show(block=True)
-    pl.plot(X, p_x, 'ro', X, p_s, 'bo')
+    pl.plot(X, p_x, 'ro', label='Original Distribution')
+    pl.plot(X, p_s, 'bo', label='Subset Distribution')
+    pl.legend(loc='center right', fontsize=10)
     pl.show(block=True)
-    pl.plot(X, f_x_estimate, 'r', X, f_s, 'b')
+    pl.plot(X, f_x_estimate, 'r', label='Original Estimate')
+    pl.plot(X, f_s, 'b', label='Subset Estimate')
+    pl.legend(loc='center right', fontsize=10)
     pl.show(block=True)
     # array_functions.plot_line_sub((X, X), (p_x, p_s))
     # array_functions.plot_line_sub((X, X), (f_x, f_s))
@@ -373,77 +432,196 @@ def make_linear_data(n, p):
     return data, w
 
 
-def test_methods(X, Y, X_test=None, Y_test=None):
-    plot_instances = True
-    plot_batch = True
+def test_cluster_purity(X, Y, X_test=None, Y_test=None, label_names=None, mnist=False):
+    num_clusters = 4
+    num_dims = None
+    if mnist and num_dims is not None:
+        pca = PCA(n_components=num_dims)
+        X_orig = X
+        X_pca = pca.fit_transform(X)
+        X = X_pca
+        print 'PCA dims=' + str(num_dims)
+
+    k_means = KMeans()
+    k_means.set_params(n_clusters=num_clusters)
+    print_cluster_purity(k_means, X, Y)
+
+def print_cluster_purity(k_means, X, Y, allow_recurse=True):
+    cluster_inds = k_means.fit_predict(X)
+    avg_variance = 0
+    for i in range(k_means.n_clusters):
+        I = cluster_inds == i
+        yi = Y[I]
+        perc = I.mean()
+        print 'Cluster ' + str(i) + ': perc=' + str(perc)
+        print 'Mean: ' + str(yi.mean())
+        print 'STD: ' + str(yi.std())
+        if array_functions.in_range(yi.mean(), .2, .8) and I.mean() > .2 and allow_recurse:
+            print 'Splitting cluster'
+            k_means_sub = KMeans(n_clusters=4)
+            Xi = X[I, :]
+            Yi = Y[I]
+            array_functions.plot_heatmap(Xi, Yi + .5, subtract_min=False)
+            k_means_sub.fit(Xi)
+            print_cluster_purity(k_means_sub, Xi, Yi, allow_recurse=False)
+        avg_variance += I.mean() * yi.std()
+    print 'Average STD: ' + str(avg_variance)
+
+def test_methods(X, Y, X_test=None, Y_test=None, label_names=None, mnist=False):
+    #import statsmodels.api as sm
+    #from statsmodels.nonparametric import kernel_density, kernels, _kernel_base
+    #W = kernel_density.gpke([.1]*X.shape[1], X.T, X, ['c']* X.shape[1], tosum=False)
+    #kernel_density.KDEMultivariate(X_pca, var_type=['c'] * X.shape[1])
+    # kernels.gaussian()
+
+
+
+    should_print_cluster_purity = True
+    use_linear = False
+    plot_instances = False
+    plot_batch = False
+    if mnist:
+        plot_instances = True
+        plot_batch = True
     num_neighbors = 3
-    num_samples = 10
+    num_samples = 4
+    mixture_reg = 0
+
+    pca = PCA(n_components=2)
+    X_orig = X
+    X_pca = pca.fit_transform(X)
+    X = X_pca
+    X_test = pca.transform(X_test)
+    print 'explained_variance: ' + str(pca.explained_variance_ratio_.sum())
+
+    bandwidths = np.logspace(-4,4,200)
+    best_bandwidth, values = density.get_best_bandwidth(X_pca, bandwidths)
+
+    sub_values = np.zeros(bandwidths.size)
+    num_splits = 10
+    splits = array_functions.create_random_splits(X.shape[0], num_samples, num_splits=num_splits)
+    for i in range(splits.shape[0]):
+        I = splits[i, :]
+        b, v = density.get_best_bandwidth(X_pca[~I, :], bandwidths, X_pca[I, :])
+        sub_values += v
+    sub_values /= num_splits
+    best_sub_idx = np.argmin(sub_values)
+    best_sub_bandwidth = bandwidths[best_sub_idx]
+    p = density.compute_density(X_pca, None, best_bandwidth)
+
+    sis = SupervisedInstanceSelection()
+    sis.use_linear = use_linear
+    cluster = SupervisedInstanceSelectionCluster()
+    cluster.use_linear = use_linear
     methods = [
         SupervisedInstanceSelectionCluster(),
-        SupervisedInstanceSelectionGreedy(),
-        SupervisedInstanceSelectionLinear(),
+        SupervisedInstanceSelection(),
     ]
-    methods[0].subset_size = num_samples
-    methods[1].subset_size = num_samples
+    for m in methods:
+        m.subset_size = num_samples
+        m.num_samples = num_samples
+        if mnist:
+            m.learner_reg = best_bandwidth
+        m.density_reg = best_bandwidth
+        m.subset_density_reg = best_sub_bandwidth
+        #m.pca = pca
+        m.mixture_reg = mixture_reg
+
+    '''
+    from sklearn.model_selection import GridSearchCV
+    params = {'bandwidth': np.logspace(-5, 5)}
+    kde = KernelDensity()
+    grid = GridSearchCV(kde, params)
+    grid.fit(X_pca)
+
+    best_param = grid.best_params_['bandwidth']
+    kde.set_params(bandwidth=best_param)
+    p = kde.fit(X_pca)
+    p = np.exp(kde.score_samples(X_pca))
+    p2 = density.compute_density(X_pca, best_param)
+    '''
+
     data = data_lib.Data(X, Y)
     p = X.shape[1]
     for learner in methods:
         learner.quiet = False
         learner.train_and_test(deepcopy(data))
-
+        learner.train(deepcopy(data))
         p_x = learner.p_x
         p_s = learner.p_s
 
         f_x_estimate = learner.f_x_estimate
         f_s = learner.f_s
+        print 'learner: ' + learner.prefix
+        if use_linear:
+            w_x = learner.solve_w(X, Y, learner.learner_reg, subset_size=1)
+            w_s = learner.solve_w(X, Y, learner.learner_reg, learner.learned_distribution,
+                                  subset_size=learner.learned_distribution.sum())
+            if X_test is not None:
+                assert False, 'Compute error on training set instead?'
+                y_pred = X_test.dot(w_s)
+                #y_pred = np.sign(y_pred)
+                #y_pred[y_pred <= 0] = 0
+                y_pred = np.round(y_pred)
+                err = np.abs(y_pred != Y_test)
+                print 'mean error: ' + str(err.mean())
+                w_err = norm(w_x - w_s) / norm(w_x)
+                print 'w_err: ' + str(w_err)
+        else:
+            if mnist:
+                #Compute error on training set
+                y_pred = learner.f_s
+                y_pred = np.round(y_pred)
+                err = np.abs(y_pred != Y)
+                print 'mean error: ' + str(err.mean())
 
-        w_x = learner.solve_w(X, Y, learner.learner_reg, subset_size=1)
-        w_s = learner.solve_w(X, Y, learner.learner_reg, learner.learned_distribution,
-                              subset_size=learner.learned_distribution.sum())
 
-        if X_test is not None:
-            y_pred = X_test.dot(w_s)
-            y_pred = np.sign(y_pred)
-            y_pred[y_pred == 0] = 1
-            err = np.abs(y_pred != Y_test)
-            print 'mean error: ' + str(err.mean())
-
-        w_err = norm(w_x - w_s) / norm(w_x)
         f_err = norm(f_x_estimate - f_s) / norm(f_x_estimate)
         p_err = norm(p_x - p_s) / norm(p_x)
-        print 'learner: ' + learner.prefix
-        print 'w_err: ' + str(w_err)
+
         print 'f_err: ' + str(f_err)
         print 'p_err: ' + str(p_err)
         print 'sorted learned distriction: '
         sorted_distribution = np.sort(learner.learned_distribution)
         inds = np.argsort(learner.learned_distribution)[::-1]
-        print str(sorted_distribution[-5:] / learner.learned_distribution.sum())
+        print str(sorted_distribution[-num_samples:] / learner.learned_distribution.sum())
 
+        if should_print_cluster_purity:
+            k_means = KMeans(n_clusters=num_samples)
+            k_means.fit(X[learner.learned_distribution > 0, :])
+            print_cluster_purity(k_means, X, Y)
         if plot_instances:
             #plot_vec(w_x, [28, 28])
             #plot_vec(w_s, [28, 28])
             if plot_batch:
                 distance_matrix = array_functions.make_graph_distance(X)
                 to_plot = np.zeros((num_samples, num_neighbors+1, 28*28))
+                labels = np.zeros(to_plot.shape[0:2])
+                labels = labels.astype('string')
             for sample_idx in range(num_samples):
-                xi = X[inds[sample_idx]]
+                curr_idx = inds[sample_idx]
+                xi = X_orig[curr_idx]
                 if plot_batch:
                     to_plot[sample_idx, 0, :] = xi
-                    d = distance_matrix[inds[sample_idx]]
+                    d = distance_matrix[curr_idx]
                     closest_inds = np.argsort(d)[1:num_neighbors+1]
+                    #labels[sample_idx, 0] = data.y[curr_idx]
+                    labels[sample_idx, 0] = label_names[int(data.y[curr_idx])]
                     for neighbor_idx, ind in enumerate(closest_inds):
-                        xj = X[ind, :]
+                        xj = X_orig[ind, :]
+                        yj = data.y[ind]
                         to_plot[sample_idx, neighbor_idx+1, :] = xj
+                        #labels[sample_idx, neighbor_idx+1] = yj
+                        labels[sample_idx, neighbor_idx + 1] = label_names[int(yj)]
                 else:
                     plot_vec(xi, [28, 28])
             if plot_batch:
-                plot_tensor(to_plot, [28, 28])
+                plot_tensor(to_plot, [28, 28], labels)
         if p == 1:
             plot_approximation(X, learner)
     print ''
 
-def plot_tensor(v, size=None):
+def plot_tensor(v, size=None, labels=None):
     fig = pl.figure()
 
     num_rows = v.shape[0]
@@ -452,6 +630,8 @@ def plot_tensor(v, size=None):
     for row in range(num_rows):
         for col in range(num_cols):
             pl.subplot(num_rows, num_cols, row*num_cols + col + 1)
+            #pl.title(str(labels[row, col]))
+            pl.ylabel(str(labels[row, col]))
             x = v[row, col, :]
             plot_vec(x, size, fig, show=False)
     array_functions.move_fig(fig, 1000, 1000, 2500, 100)
@@ -475,19 +655,35 @@ def plot_vec(v, size=None, fig=None, show=True):
     pass
 
 def test_nd_data():
-    n = 30
+    n = 100
     p = 20
     data, w = make_linear_data(n, p)
     X = data.x
     Y = data.y.copy()
     test_methods(X, Y)
 
+def add_label_noise_cluster(data, num_neighbors=10):
+    idx = np.random.choice(data.n)
+    y = data.y[idx]
+    d = array_functions.make_graph_distance(data.x)[idx]
+    sorted_inds = np.argsort(d)
+    data.y[sorted_inds[:num_neighbors]] = 1 - y
+    data.true_y[sorted_inds[:num_neighbors]] = 1 - y
+    return data
+
+def add_label_noise(data, num_noise=30):
+    inds = np.random.choice(data.n, num_noise, replace=False)
+    data.y[inds] = 1 - data.true_y[inds]
+    data.true_y[inds] = 1 - data.true_y[inds]
+    return data
+
+
 
 from utility import helper_functions
 def test_mnist():
-    num_per_class = 30
+    num_per_class = 50
     data = helper_functions.load_object('../data_sets/mnist/raw_data.pkl')
-    classes_to_use = [0, 3, 4, 7]
+    classes_to_use = [0, 4, 8, 7]
     I = array_functions.find_set(data.y, classes_to_use)
     data = data.get_subset(I)
     to_keep = None
@@ -499,13 +695,20 @@ def test_mnist():
         else:
             to_keep = np.concatenate((to_keep, I))
     data.change_labels([classes_to_use[1], classes_to_use[3]], [classes_to_use[0], classes_to_use[2]])
-    data.change_labels([classes_to_use[0], classes_to_use[2]], [-1, 1])
+    data.change_labels([classes_to_use[0], classes_to_use[2]], [0, 1])
     data_test = data.get_subset(~to_keep)
     data = data.get_subset(to_keep)
-    test_methods(data.x, data.y, data_test.x, data_test.y)
+    label_names = [
+        str(classes_to_use[0]) + '+' + str(classes_to_use[1]),
+        str(classes_to_use[2]) + '+' + str(classes_to_use[3]),
+    ]
+
+    #data = add_label_noise_cluster(data, num_neighbors=20)
+    #data = add_label_noise(data, 20)
+    test_methods(data.x, data.y, data_test.x, data_test.y, label_names, mnist=True)
+    #test_cluster_purity(data.x, data.y, data_test.x, data_test.y, label_names, mnist=True)
 
 if __name__ == '__main__':
     #test_1d_data()
     #test_nd_data()
     test_mnist()
-    print 'hello'

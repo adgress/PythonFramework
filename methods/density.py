@@ -7,6 +7,7 @@ import sklearn
 import numpy as np
 from loss_functions import loss_function
 import statsmodels.api as sm
+from utility import array_functions
 
 class KDE(method.Method):
 
@@ -49,3 +50,62 @@ class KDE(method.Method):
         y = self.model.pdf(x)
         o = results.Output(data,y)
         return o
+
+
+def compute_kernel(x, x_predict, bandwidth):
+    if x_predict is None:
+        x_predict = x
+    D = array_functions.make_graph_distance(x_predict, x) / bandwidth
+    use_gaussian = True
+    n, p = x.shape
+    n = float(n)
+    p = float(p)
+    if use_gaussian:
+        K = np.exp(-.5 * D ** 2)
+        #K *= (1 / (x.shape[0] * bandwidth)) * (1 / np.sqrt(2 * np.pi))
+        K /= (n * (bandwidth**(p/2)) * (2 * np.pi)**(p/2))
+    else:
+        K = D
+        K[K <= 1] = .5
+        K[ K > 1] = 0
+        K /= (x.shape[0] * bandwidth)
+    return K
+
+def compute_density(X, X_predict, bandwidth):
+    if X_predict is None:
+        X_predict = X
+    K = compute_kernel(X, X_predict, bandwidth)
+    return K.sum(1)
+
+def avg_neg_log_likelihood(X, X_predict, bandwidth, loo=False):
+    if loo:
+        d = np.zeros(X.shape[0])
+        for i in range(X.shape[0]):
+            Xi = np.delete(X, i, axis=0)
+            d[i] = compute_density(Xi, X[np.newaxis,i,:], bandwidth, )
+    else:
+        d = compute_density(X, X_predict, bandwidth)
+    try:
+        val = -np.log(d).mean()
+    except:
+        pass
+    return val
+
+def get_best_bandwidth(X, bandwidths, X_validation=None):
+    vals = np.zeros(bandwidths.size)
+    for i, b in enumerate(bandwidths):
+        if X_validation is None:
+            vals[i] = avg_neg_log_likelihood(X, None, b, loo=True)
+        else:
+            vals[i] = avg_neg_log_likelihood(X, X_validation, b)
+    idx = vals.argmin()
+    return bandwidths[idx], vals
+
+if __name__ == '__main__':
+    X = np.random.rand(100, 10)
+    X2 = np.random.rand(50, 10)
+    bandwidths = np.logspace(-3, 3)
+    for bandwidth in bandwidths:
+        #print str(avg_neg_log_likelihood(X, X2, bandwidth))
+        print str(avg_neg_log_likelihood(X, None, bandwidth, loo=True))
+    pass

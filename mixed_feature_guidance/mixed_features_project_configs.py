@@ -8,6 +8,8 @@ from sklearn import grid_search
 from utility import helper_functions
 from methods import mixed_feature_guidance
 from copy import deepcopy
+import numpy as np
+
 # Command line arguments for ProjectConfigs
 arguments = None
 
@@ -18,29 +20,33 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
     'disable_relaxed_guidance',
     'disable_tikhonov',
     'random_guidance',
-    'use_training_corr'
+    'use_training_corr',
+    'use_transfer',
+    'target_labels',
+    'source_labels',
 ]
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10_nnz4
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
 #data_set_to_use = bc.DATA_DROSOPHILIA
-#data_set_to_use = bc.DATA_BOSTON_HOUSING
+data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_WINE_RED
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_KC_HOUSING
-data_set_to_use = bc.DATA_DS2
+#data_set_to_use = bc.DATA_DS2
 
 viz_for_paper = False
 
-run_experiments = False
+run_experiments = True
 run_batch_experiments = True
+run_transfer_experiments = True
 
 use_ridge = False
 use_mean = False
 use_quad_feats = False
-mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
+#mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
 #mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT
-#mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
+mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
 viz_w_error = False
 
 VIZ_EXPERIMENT = 0
@@ -48,8 +54,9 @@ VIZ_PAPER_ERROR = 1
 VIZ_PAPER_SIGNS = 2
 VIZ_PAPER_RELATIVE = 3
 VIZ_PAPER_TRAINING_CORR = 4
+VIZ_PAPER_TRANSFER = 5
 
-viz_type = VIZ_PAPER_ERROR
+viz_type = VIZ_PAPER_TRANSFER
 
 all_data_sets = [data_set_to_use]
 if run_batch_experiments:
@@ -62,6 +69,12 @@ if run_batch_experiments:
         bc.DATA_KC_HOUSING,
         bc.DATA_DS2
     ]
+    if run_transfer_experiments:
+        all_data_sets = [
+            bc.DATA_BOSTON_HOUSING,
+            bc.DATA_CONCRETE,
+            bc.DATA_WINE,
+        ]
 
 
 other_pc_configs = {
@@ -69,7 +82,7 @@ other_pc_configs = {
 
 other_method_configs = {
     'num_random_pairs': 0,
-    'num_random_signs': 10,
+    'num_random_signs': 1,
     'use_l1': True,
     'num_features': None,
     'use_nonneg': False,
@@ -86,7 +99,7 @@ other_method_configs = {
     'cvx_method': 'SCS',
     'num_cv_splits': 10,
     'eps': 1e-10,
-    'use_perfect_feature_selection': True
+    'use_perfect_feature_selection': True,
 }
 
 if data_set_to_use == bc.DATA_DROSOPHILIA:
@@ -124,6 +137,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.disable_relaxed_guidance = False
         self.disable_tikhonov = False
         self.random_guidance = False
+        self.use_transfer = run_transfer_experiments
         if use_arguments and arguments is not None:
             apply_arguments(self)
 
@@ -133,41 +147,60 @@ class ProjectConfigs(bc.ProjectConfigs):
 
     def set_data_set(self, data_set):
         self.data_set = data_set
-        if data_set == bc.DATA_BOSTON_HOUSING:
-            self.set_data_set_defaults('boston_housing')
-            self.num_labels = [10, 20, 40, 80]
-            #self.num_labels = [80]
-        elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
-            self.set_data_set_defaults('synthetic_linear_reg500-50-1.01')
-            self.num_labels = [5, 10, 20, 40]
-        elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10:
-            self.set_data_set_defaults('synthetic_linear_reg500-10-1.01')
-            self.num_labels = [5, 10, 20, 40]
-        elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10_nnz4:
-            self.set_data_set_defaults('synthetic_linear_reg500-10-1-nnz=4')
-            self.num_labels = [10, 20, 40]
-            #self.num_labels = [10]
-        elif data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
-            self.set_data_set_defaults('adience_aligned_cnn_1_per_instance_id')
-            self.num_labels = [10, 20, 40]
-        elif data_set == bc.DATA_WINE_RED:
-            self.set_data_set_defaults('wine-red')
-            self.num_labels = [10, 20, 40]
-            #self.num_labels = [160]
-        elif data_set == bc.DATA_CONCRETE:
-            self.set_data_set_defaults('concrete')
-            self.num_labels = [5, 10, 20, 40]
-        elif data_set == bc.DATA_DROSOPHILIA:
-            self.set_data_set_defaults('drosophilia')
-            self.num_labels = [10,20,40]
-            #self.num_labels = [10, 20, 40, 80, 160]
-        elif data_set == bc.DATA_KC_HOUSING:
-            self.set_data_set_defaults('kc_housing')
-            self.num_labels = [10, 20, 40]
-            #self.num_labels = [160]
-        elif data_set == bc.DATA_DS2:
-            self.set_data_set_defaults('DS2-processed')
-            self.num_labels = [10, 20, 40]
+        if run_transfer_experiments:
+            if data_set == bc.DATA_BOSTON_HOUSING:
+                self.set_data_set_defaults('boston_housing-13(transfer)')
+                self.target_labels = np.asarray([0])
+                self.source_labels = np.asarray([1])
+                self.num_labels = [5, 10, 20]
+            elif data_set == bc.DATA_WINE:
+                self.set_data_set_defaults('wine-small-11')
+                self.num_labels = [5, 10, 20]
+                self.target_labels = np.asarray([0])
+                self.source_labels = np.asarray([1])
+            elif data_set == bc.DATA_CONCRETE:
+                self.set_data_set_defaults('concrete-7')
+                self.target_labels = np.asarray([1])
+                self.source_labels = np.asarray([3])
+                self.num_labels = [5, 10, 20]
+            else:
+                assert False, 'unkown transfer data set'
+        else:
+            if data_set == bc.DATA_BOSTON_HOUSING:
+                self.set_data_set_defaults('boston_housing')
+                self.num_labels = [10, 20, 40, 80]
+                #self.num_labels = [80]
+            elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
+                self.set_data_set_defaults('synthetic_linear_reg500-50-1.01')
+                self.num_labels = [5, 10, 20, 40]
+            elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10:
+                self.set_data_set_defaults('synthetic_linear_reg500-10-1.01')
+                self.num_labels = [5, 10, 20, 40]
+            elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10_nnz4:
+                self.set_data_set_defaults('synthetic_linear_reg500-10-1-nnz=4')
+                self.num_labels = [10, 20, 40]
+                #self.num_labels = [10]
+            elif data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
+                self.set_data_set_defaults('adience_aligned_cnn_1_per_instance_id')
+                self.num_labels = [10, 20, 40]
+            elif data_set == bc.DATA_WINE_RED:
+                self.set_data_set_defaults('wine-red')
+                self.num_labels = [10, 20, 40]
+                #self.num_labels = [160]
+            elif data_set == bc.DATA_CONCRETE:
+                self.set_data_set_defaults('concrete')
+                self.num_labels = [5, 10, 20, 40]
+            elif data_set == bc.DATA_DROSOPHILIA:
+                self.set_data_set_defaults('drosophilia')
+                self.num_labels = [10,20,40]
+                #self.num_labels = [10, 20, 40, 80, 160]
+            elif data_set == bc.DATA_KC_HOUSING:
+                self.set_data_set_defaults('kc_housing')
+                self.num_labels = [10, 20, 40]
+                #self.num_labels = [160]
+            elif data_set == bc.DATA_DS2:
+                self.set_data_set_defaults('DS2-processed')
+                self.num_labels = [10, 20, 40]
         '''
         if self.include_size_in_file_name:
             assert len(self.num_labels) == 1
@@ -219,65 +252,92 @@ class BatchConfigs(bc.BatchConfigs):
             return
         else:
             self.config_list = []
-            for data_set in all_data_sets:
-                pc = ProjectConfigs(data_set)
+            if run_transfer_experiments:
+                for data_set in all_data_sets:
+                    pc = ProjectConfigs(data_set)
 
-                num_signs = [.25, .5, 1]
-                for i in num_signs:
                     p = deepcopy(pc)
                     p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
                     p.num_random_pairs = 0
-                    p.num_random_signs = i
+                    p.num_random_signs = 1
                     self.config_list.append(MainConfigs(p))
 
-                p = deepcopy(pc)
-                p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
-                p.num_random_pairs = 0
-                p.num_random_signs = 1
-                p.use_training_corr = True
-                self.config_list.append(MainConfigs(p))
+                    p = deepcopy(pc)
+                    p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
+                    p.num_random_pairs = 0
+                    p.num_random_signs = 1
+                    p.use_transfer = False
+                    self.config_list.append(MainConfigs(p))
 
-                p = deepcopy(pc)
-                p.disable_relaxed_guidance = True
-                p.num_random_signs = 1
-                self.config_list.append(MainConfigs(p))
-
-                num_pairs = num_signs
-                for i in num_pairs:
                     p = deepcopy(pc)
                     p.disable_relaxed_guidance = False
-                    p.num_random_signs = 0
-                    p.num_random_pairs = i
+                    p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
                     self.config_list.append(MainConfigs(p))
 
-                p = deepcopy(p)
-                p.disable_relaxed_guidance = False
-                p.num_random_signs = 0
-                p.num_random_pairs = 0
-                m = MainConfigs(p)
-                m.learner.use_nonneg = True
-                m.learner.use_corr = False
-                self.config_list.append(m)
+                    p = deepcopy(pc)
+                    p.disable_relaxed_guidance = False
+                    p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_LASSO
+                    self.config_list.append(MainConfigs(p))
+            else:
+                for data_set in all_data_sets:
+                    pc = ProjectConfigs(data_set)
 
-                p = deepcopy(pc)
-                p.disable_relaxed_guidance = True
-                p.num_random_signs = 0
-                p.num_random_pairs = 0
-                m = MainConfigs(p)
-                m.learner.use_nonneg = True
-                m.learner.use_corr = False
-                self.config_list.append(m)
+                    num_signs = [.25, .5, 1]
+                    for i in num_signs:
+                        p = deepcopy(pc)
+                        p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
+                        p.num_random_pairs = 0
+                        p.num_random_signs = i
+                        self.config_list.append(MainConfigs(p))
 
-                p = deepcopy(pc)
-                p.disable_relaxed_guidance = False
-                p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
-                self.config_list.append(MainConfigs(p))
+                    p = deepcopy(pc)
+                    p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
+                    p.num_random_pairs = 0
+                    p.num_random_signs = 1
+                    p.use_training_corr = True
+                    self.config_list.append(MainConfigs(p))
 
-                p = deepcopy(pc)
-                p.disable_relaxed_guidance = False
-                p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_LASSO
-                self.config_list.append(MainConfigs(p))
-                #assert False, 'Not Implemented Yet'
+                    p = deepcopy(pc)
+                    p.disable_relaxed_guidance = True
+                    p.num_random_signs = 1
+                    self.config_list.append(MainConfigs(p))
+
+                    num_pairs = num_signs
+                    for i in num_pairs:
+                        p = deepcopy(pc)
+                        p.disable_relaxed_guidance = False
+                        p.num_random_signs = 0
+                        p.num_random_pairs = i
+                        self.config_list.append(MainConfigs(p))
+
+                    p = deepcopy(p)
+                    p.disable_relaxed_guidance = False
+                    p.num_random_signs = 0
+                    p.num_random_pairs = 0
+                    m = MainConfigs(p)
+                    m.learner.use_nonneg = True
+                    m.learner.use_corr = False
+                    self.config_list.append(m)
+
+                    p = deepcopy(pc)
+                    p.disable_relaxed_guidance = True
+                    p.num_random_signs = 0
+                    p.num_random_pairs = 0
+                    m = MainConfigs(p)
+                    m.learner.use_nonneg = True
+                    m.learner.use_corr = False
+                    self.config_list.append(m)
+
+                    p = deepcopy(pc)
+                    p.disable_relaxed_guidance = False
+                    p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
+                    self.config_list.append(MainConfigs(p))
+
+                    p = deepcopy(pc)
+                    p.disable_relaxed_guidance = False
+                    p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_LASSO
+                    self.config_list.append(MainConfigs(p))
+                    #assert False, 'Not Implemented Yet'
 
 class VisualizationConfigs(bc.VisualizationConfigs):
     def __init__(self, data_set=None, **kwargs):
@@ -354,6 +414,10 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['Mixed-feats_method=Ridge.pkl'] = 'Ridge'
             self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_l1.pkl'] = 'Our Method'
             self.files['Mixed-feats_method=Rel_signs=1-use_sign_trainCorr_l1.pkl'] = 'Our Method: Training Correlation'
+        elif viz_type == VIZ_PAPER_TRANSFER:
+            self.files['Mixed-feats_method=Ridge.pkl'] = 'Ridge'
+            self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_l1.pkl'] = 'Our Method'
+            self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_l1_transfer.pkl'] = 'Our Method: Transfer'
 
         #self.files['SKL-DumReg.pkl'] = 'Predict Mean'
 

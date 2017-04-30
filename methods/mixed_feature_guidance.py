@@ -84,6 +84,7 @@ class MixedFeatureGuidanceMethod(method.Method):
         self.disable_relaxed_guidance = getattr(configs, 'disable_relaxed_guidance', False)
         self.disable_tikhonov = getattr(configs, 'disable_tikhonov', False)
         self.random_guidance = getattr(configs, 'random_guidance', False)
+        self.use_transfer = getattr(configs, 'use_transfer', False)
         self.w = None
         self.b = None
         self.stacking_method = method.NadarayaWatsonMethod(configs)
@@ -123,6 +124,8 @@ class MixedFeatureGuidanceMethod(method.Method):
             select_k_best = SelectKBest(f_regression, self.num_features)
             data.x = select_k_best.fit_transform(data.x, data.true_y)
         metadata = getattr(data, 'metadata', dict())
+        source_data = data.get_transfer_subset(self.configs.source_labels, include_unlabeled=False)
+        data = data.get_transfer_subset(self.configs.target_labels, include_unlabeled=True)
         if not 'metadata' in metadata:
             ridge = method.SKLRidgeRegression(self.configs)
             ridge.quiet = True
@@ -144,9 +147,15 @@ class MixedFeatureGuidanceMethod(method.Method):
         if self.use_sign:
             stat_func = scipy.stats.linregress
         for i in range(p):
-            corr[i] = stat_func(data.x[:,i], data.true_y)[0]
+            Xi = data.x[:, i]
+            Yi = data.true_y
             I = data.is_labeled & data.is_train
-            training_corr[i] = stat_func(data.x[I,i], data.true_y[I])[0]
+            training_corr[i] = stat_func(Xi[I], Yi[I])[0]
+            if self.use_transfer:
+                Xi = source_data.x[:, i]
+                Yi = source_data.true_y
+            corr[i] = stat_func(Xi, Yi)[0]
+        print corr
         training_corr[~np.isfinite(training_corr)] = 0
         assert (np.isfinite(training_corr)).all()
         metadata['corr'] = corr
@@ -459,9 +468,14 @@ class MixedFeatureGuidanceMethod(method.Method):
         if not self.running_cv:
             try:
                 print prob.status
+                if prob.status == 'optimal_inaccurate':
+                    #print 'Optimization failed, using ridge'
+                    pass
             except:
                 pass
-        if not self.running_cv and self.method not in {
+
+        compare_to_ridge = False
+        if compare_to_ridge and not self.running_cv and self.method not in {
             MixedFeatureGuidanceMethod.METHOD_RIDGE,
             MixedFeatureGuidanceMethod.METHOD_LASSO
         }:
@@ -532,7 +546,7 @@ class MixedFeatureGuidanceMethod(method.Method):
             s += '_pairs=' + str(num_pairs)
         if getattr(self, 'random_guidance', False) and self.method != MixedFeatureGuidanceMethod.METHOD_RIDGE:
             s += '_random'
-        if getattr(self, 'use_sign', False):
+        if getattr(self, 'use_sign', False) and self.method == MixedFeatureGuidanceMethod.METHOD_RELATIVE:
             s += '-use_sign'
         if getattr(self, 'use_corr', False) and \
                         self.method not in {MixedFeatureGuidanceMethod.METHOD_RIDGE, MixedFeatureGuidanceMethod.METHOD_LASSO}:
@@ -552,6 +566,8 @@ class MixedFeatureGuidanceMethod(method.Method):
             s += '_' + self.cvx_method
         if getattr(self, 'use_l1', False) and self.method == MixedFeatureGuidanceMethod.METHOD_RELATIVE:
             s += '_l1'
+        if getattr(self, 'use_transfer', False) and self.method == MixedFeatureGuidanceMethod.METHOD_RELATIVE:
+            s += '_transfer'
         if getattr(self, 'num_features', -1) > 0:
             s += '_' + str(self.num_features)
         if self.use_validation:

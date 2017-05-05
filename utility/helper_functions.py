@@ -2,6 +2,7 @@ __author__ = 'Evan Racah'
 
 
 import time
+import dill
 import pickle
 import numpy as np
 import os

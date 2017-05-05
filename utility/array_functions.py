@@ -22,6 +22,16 @@ import math
 from sklearn.neighbors import kneighbors_graph, radius_neighbors_graph
 
 
+def to_binary_vec(v):
+    u = np.unique(v)
+    assert u.size <= 2
+    x = np.zeros(v.size)
+    x[v == u[0]] = 0
+    if u.size == 2:
+        x[v == u[1]] = 1
+    return x
+
+
 def make_vec_binary(I, n):
     v = false(n)
     v[I] = True
@@ -374,6 +384,12 @@ def make_graph_radius(x, radius, metric='euclidean', normalize_dists=True):
         dists[dists > radius] = 0
         dists[dists != 0] = 1
     return dists
+
+def find_knn(x, y, k=10, metric='euclidean'):
+    W = make_graph_distance(x, y, metric)
+    sorted_inds = np.argsort(W, 0)
+    return sorted_inds.T[:, :k]
+
 
 def make_graph_distance(x, x2=None, metric='euclidean'):
     x = vec_to_2d(x)

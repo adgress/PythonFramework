@@ -6,7 +6,7 @@ import math
 import abc
 from utility import array_functions
 from numpy.linalg import norm
-
+import scipy
 class LossFunction(object):
     """
     Implements loss functions
@@ -17,10 +17,15 @@ class LossFunction(object):
         self.name = None
         self.short_name = None
 
-    def compute_score(self, output):
-        y1 = np.squeeze(output.y)
-        y2 = np.squeeze(output.true_y)
-        I = ~output.is_train
+    def compute_score(self, output, features=None, instance_subset=None):
+        if features is None:
+            features = ['y', 'true_y']
+        if instance_subset is None:
+            instance_subset = 'is_test'
+        y1 = np.squeeze(getattr(output, features[0]))
+        y2 = np.squeeze(getattr(output, features[1]))
+        #I = ~output.is_train
+        I = getattr(output, instance_subset)
         return self._compute_score(y1[I], y2[I])
         '''
         return loss_function.compute_score(
@@ -90,6 +95,32 @@ class MeanAbsoluteError(LossFunction):
         if y1.size == 0 or not np.isfinite(y1).all() or not np.isfinite(y2).all():
             return np.inf
         return metrics.mean_absolute_error(y1, y2)
+
+class LossAnyOverlap(LossFunction):
+    def __init__(self):
+        self.name = 'Any Overlap'
+        self.short_name = 'AO'
+
+    def _compute_score(self,y1,y2):
+        return float(1 - (y1 & y2).any())
+
+class LossSelectedEntropy(LossFunction):
+    def __init__(self, is_regression=False):
+        self.name = 'Selected Entropy'
+        self.short_name = 'SE'
+        self.is_regression = is_regression
+
+    def _compute_score(self,y1,y2):
+        if self.is_regression:
+            return y1.std()
+        else:
+            v = np.unique(y1)
+            counts = np.zeros(v.size)
+            for i, vi in enumerate(v):
+                counts[i] = (vi == y1).sum()
+            counts /= counts.sum()
+            counts -= 1 / float(v.size)
+            return np.linalg.norm(counts)
 
 class LossFunctionParams(LossFunction):
     def __init__(self):

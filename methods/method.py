@@ -289,13 +289,15 @@ class Method(Saveable):
         errors_on_test_data = None
         if aggregate_test_results:
             errors_on_test_data = np.empty(len(param_grid))
+        features = self.configs.results_features
+        instance_subset = self.configs.instance_subset
         for i in range(len(param_grid)):
-            agg_results = param_results[i].aggregate_error(self.configs.cv_loss_function)
+            agg_results = param_results[i].aggregate_error(self.configs.cv_loss_function, features, instance_subset)
             assert len(agg_results) == 1
             errors[i] = agg_results[0].mean
 
             if aggregate_test_results:
-                agg_results_test = param_results_on_test[i].aggregate_error(self.configs.cv_loss_function)
+                agg_results_test = param_results_on_test[i].aggregate_error(self.configs.cv_loss_function, features)
                 assert len(agg_results_test) == 1
                 errors_on_test_data[i] = agg_results_test[0].mean
 

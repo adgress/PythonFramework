@@ -900,7 +900,7 @@ if __name__ == "__main__":
     '''
     #create_time_series(label_to_use=0, series_to_use=range(8), save_data=False)
     #create_time_series(label_to_use=0, series_to_use=[0,3], save_data=False)
-    #create_ds2_data()
-    create_20ng_data()
+    create_ds2_data()
+    #create_20ng_data()
     from data_sets import create_data_split
     #create_data_split.run_main()

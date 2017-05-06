@@ -24,6 +24,7 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
     'use_transfer',
     'target_labels',
     'source_labels',
+    'use_oracle'
 ]
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10_nnz4
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
@@ -39,14 +40,14 @@ viz_for_paper = False
 
 run_experiments = True
 run_batch_experiments = True
-run_transfer_experiments = True
+run_transfer_experiments = False
 
 use_ridge = False
 use_mean = False
 use_quad_feats = False
-#mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
+mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
 #mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT
-mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
+#mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
 viz_w_error = False
 
 VIZ_EXPERIMENT = 0
@@ -55,8 +56,29 @@ VIZ_PAPER_SIGNS = 2
 VIZ_PAPER_RELATIVE = 3
 VIZ_PAPER_TRAINING_CORR = 4
 VIZ_PAPER_TRANSFER = 5
+VIZ_PAPER_TRAINING_SINGLE = 6
 
-viz_type = VIZ_PAPER_TRANSFER
+viz_type = VIZ_PAPER_TRAINING_CORR
+if viz_type == VIZ_PAPER_TRANSFER:
+    run_transfer_experiments = True
+
+show_legend_on_all = False
+
+max_rows = 1
+
+if max_rows == 1:
+    figsize = (18, 5)
+    borders = (.05, .98, .95, .08)
+    if run_transfer_experiments:
+        figsize = (10, 5)
+        borders = (.08, .98, .95, .08)
+    if viz_type == VIZ_PAPER_TRAINING_SINGLE:
+        figsize = (4, 3)
+        borders = (.15, .9, .9, .15)
+
+else:
+    figsize = (10, 8.9)
+    borders = (.05, .95, .95, .05)
 
 all_data_sets = [data_set_to_use]
 if run_batch_experiments:
@@ -75,6 +97,8 @@ if run_batch_experiments:
             bc.DATA_CONCRETE,
             bc.DATA_WINE,
         ]
+    if viz_type == VIZ_PAPER_TRAINING_SINGLE:
+        all_data_sets = [bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10]
 
 
 other_pc_configs = {
@@ -105,9 +129,6 @@ other_method_configs = {
 if data_set_to_use == bc.DATA_DROSOPHILIA:
     other_method_configs['num_features'] = 50
 
-show_legend_on_all = True
-
-max_rows = 3
 
 if helper_functions.is_laptop():
     use_pool = False
@@ -138,6 +159,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.disable_tikhonov = False
         self.random_guidance = False
         self.use_transfer = run_transfer_experiments
+        self.use_oracle = False
         if use_arguments and arguments is not None:
             apply_arguments(self)
 
@@ -291,6 +313,13 @@ class BatchConfigs(bc.BatchConfigs):
                         self.config_list.append(MainConfigs(p))
 
                     p = deepcopy(pc)
+                    p.use_oracle = True
+                    p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
+                    p.num_random_pairs = 0
+                    p.num_random_signs = 1
+                    self.config_list.append(MainConfigs(p))
+
+                    p = deepcopy(pc)
                     p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
                     p.num_random_pairs = 0
                     p.num_random_signs = 1
@@ -342,14 +371,14 @@ class BatchConfigs(bc.BatchConfigs):
 class VisualizationConfigs(bc.VisualizationConfigs):
     def __init__(self, data_set=None, **kwargs):
         super(VisualizationConfigs, self).__init__(data_set, **kwargs)
-        self.max_rows = 2
+        self.max_rows = max_rows
         pc = ProjectConfigs(data_set)
         self.copy_fields(pc,pc_fields_to_copy)
         if viz_w_error:
             self.loss_function = loss_function.LossFunctionParamsMeanAbsoluteError()
 
-        self.figsize = (10,8.9)
-        self.borders = (.05,.95,.95,.05)
+        self.figsize = figsize
+        self.borders = borders
         self.data_set_to_use = pc.data_set
         self.title = bc.data_name_dict.get(self.data_set_to_use, 'Unknown Data Set')
         self.show_legend_on_all = show_legend_on_all
@@ -413,11 +442,17 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         elif viz_type == VIZ_PAPER_TRAINING_CORR:
             self.files['Mixed-feats_method=Ridge.pkl'] = 'Ridge'
             self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_l1.pkl'] = 'Our Method'
-            self.files['Mixed-feats_method=Rel_signs=1-use_sign_trainCorr_l1.pkl'] = 'Our Method: Training Correlation'
+            self.files['Mixed-feats_method=Rel_signs=1-use_sign_trainCorr_l1.pkl'] = 'Our Method: Training Set Signs'
+            self.files['Mixed-feats_method=Rel_signs=1-use_sign_oracle_l1.pkl'] = 'Our Method: Oracle Signs'
         elif viz_type == VIZ_PAPER_TRANSFER:
             self.files['Mixed-feats_method=Ridge.pkl'] = 'Ridge'
+            self.files['Mixed-feats_method=Lasso.pkl'] = 'Lasso'
+            self.files['Mixed-feats_method=Ridge_transfer'] = 'Ridge: Transfer'
             self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_l1.pkl'] = 'Our Method'
             self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_l1_transfer.pkl'] = 'Our Method: Transfer'
+        elif viz_type == VIZ_PAPER_TRAINING_SINGLE:
+            self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_l1.pkl'] = 'With Outside Guidance'
+            self.files['Mixed-feats_method=Rel_signs=1-use_sign_trainCorr_l1.pkl'] = 'Without Outside Guidance'
 
         #self.files['SKL-DumReg.pkl'] = 'Predict Mean'
 

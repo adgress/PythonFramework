@@ -16,9 +16,10 @@ import importlib
 #import base.transfer_project_configs as configs_library
 
 #import far_transfer.far_transfer_project_configs as configs_library
-import mixed_feature_guidance.mixed_features_project_configs as configs_library
+#import mixed_feature_guidance.mixed_features_project_configs as configs_library
 #import active_base.active_base_project_configs as configs_library
-
+#import active_transfer.active_transfer_project_configs as configs_library
+import instance_selection.instance_selectin_project_configs as configs_library
 
 configs_lib = configs_library
 import boto
@@ -212,7 +213,11 @@ def run_visualization():
                 print file + ' has no results for sizes ' + str(sizes_to_plot) + ', skipping'
 
             #plt.plot([1,2,3], [1,2,3], 'go-', label='line 1', linewidth=2)
-            processed_results = results.compute_error_processed(vis_configs.loss_function)
+            processed_results = results.compute_error_processed(
+                vis_configs.loss_function,
+                vis_configs.results_features,
+                vis_configs.instance_subset
+            )
             sizes = results.sizes
 
             #sizes = sizes[0:4]
@@ -243,9 +248,9 @@ def run_visualization():
         axis[0] = min_x - .1*axis_range
         #show_x_label = num_rows == 1 or subplot_idx > (num_rows-1)*num_cols
         #show_x_label = num_rows == 1 or subplot_idx == 8
-        show_x_label = subplot_idx == 9
-        #show_x_label = True
-        show_y_label = num_cols == 1 or subplot_idx % num_cols == 1
+        #show_x_label = subplot_idx == 9
+        show_x_label = True
+        show_y_label = num_cols == 1 or subplot_idx % num_cols == 1 or vis_configs.always_show_y_label
 
         if show_x_label:
             plt.xlabel(vis_configs.x_axis_string)

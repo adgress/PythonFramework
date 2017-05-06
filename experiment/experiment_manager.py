@@ -161,9 +161,12 @@ def _run_experiment_args(self, results_file, data_and_splits, method_results, i_
     if mpi_utility.is_group_master():
         helper_functions.save_object(_temp_split_file_name(results_file,num_labels,split),curr_results)
         helper_functions.delete_dir_if_exists(temp_dir_root)
+    instance_subset = learner.configs.instance_subset
+    results_features = learner.configs.results_features
     if mpi_utility.is_group_master():
         if hasattr(curr_learner, 'best_params'):
-            print s + '-' + str(curr_learner.best_params) + ' Error: ' + str(curr_results.compute_error(self.configs.loss_function))
+            print s + '-' + str(curr_learner.best_params) + ' Error: ' + \
+                  str(curr_results.compute_error(self.configs.loss_function, results_features, instance_subset))
         else:
             print s + ' Done'
     if mpi_utility.is_master():

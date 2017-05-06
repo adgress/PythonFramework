@@ -22,6 +22,7 @@ class LabeledVector(object):
         self.instance_ids = None
         self.instance_weights = None
         self.is_regression = None
+        self.is_noisy = None
         self.metadata = dict()
 
     def combine(self, o):
@@ -210,6 +211,15 @@ class LabeledData(LabeledVector):
         self.is_regression = None
         self.pairwise_relationships = set()
 
+    def flip_label(self, to_flip):
+        v = np.unique(self.true_y)
+        assert v.size == 2
+        I = self.true_y == v[0]
+        self.true_y[I & to_flip] = v[1]
+        self.true_y[~I & to_flip] = v[0]
+        f = np.isfinite(self.y)
+        self.y[f] = self.true_y[f]
+
     def repair_data(self):
         if self.type is None or len(self.type) == 0:
             self.type = TYPE_TARGET*np.ones(self.y.shape)
@@ -344,6 +354,17 @@ class LabeledData(LabeledVector):
     def set_true_y(self):
         self.true_y = self.y.copy()
 
+    def change_labels_dict(self, d):
+        new_y = self.y.copy()
+        new_true_y = self.true_y.copy()
+        # for i in range(curr_labels.shape[0]):
+        #    l = curr_labels[i,:]
+        for old, new in d.iteritems():
+            new_y[self.y == old] = new
+            new_true_y[self.true_y == old] = new
+        self.y = new_y
+        self.true_y = new_true_y
+
     def change_labels(self, curr_labels, new_labels):
         #assert len(curr_labels) == len(new_labels)
 
@@ -377,7 +398,7 @@ class LabeledData(LabeledVector):
         to_keep = (~to_sample).nonzero()[0]
         to_sample = to_sample.nonzero()[0]
         p = np.random.permutation(to_sample.shape[0])
-        m = np.ceil(perc*p.shape[0])
+        m = int(np.ceil(perc*p.shape[0]))
         to_use = to_sample[p[:m]]
         to_use = np.hstack((to_use,to_keep))
         return self.get_subset(to_use)
@@ -581,9 +602,10 @@ class SplitData(object):
                                     self.target_labels is not None:
                         #labeled_inds = np.nonzero(d.is_train & (d.data_set_ids == self.target_labels))[0]
                         labeled_inds = np.nonzero(d.is_train & (d.data_set_ids == label))[0]
-                    to_clear = labeled_inds[num_labeled:]
-                    d.y[to_clear] = np.nan
-                    d.y[d.is_test] = np.nan
+                    if np.isfinite(num_labeled):
+                        to_clear = labeled_inds[num_labeled:]
+                        d.y[to_clear] = np.nan
+                        d.y[d.is_test] = np.nan
             else:
                 d.y = d.y.astype('float32')
                 d.true_y = d.true_y.astype('float32')
@@ -595,9 +617,9 @@ class SplitData(object):
                     if to_keep is not None:
                         class_inds_train[to_keep] = False
                     class_inds_train = np.nonzero(class_inds_train)[0]
-                    assert len(class_inds_train) >= num_labeled
-
-                    d.y[class_inds_train[num_labeled:]] = np.nan
+                    if np.isfinite(num_labeled):
+                        assert len(class_inds_train) >= num_labeled
+                        d.y[class_inds_train[num_labeled:]] = np.nan
                     class_inds_test = (d.y==c) & ~d.is_train
                     if to_keep is not None:
                         class_inds_test[to_keep] = False

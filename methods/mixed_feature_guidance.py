@@ -74,6 +74,7 @@ class MixedFeatureGuidanceMethod(method.Method):
         self.use_sign = getattr(configs, 'use_sign', True)
         self.use_corr = getattr(configs, 'use_corr', False)
         self.use_training_corr = getattr(configs, 'use_training_corr', False)
+        self.use_oracle = getattr(configs, 'use_oracle', False)
         self.use_nonneg = getattr(configs, 'use_nonneg', False)
         self.use_stacking = getattr(configs, 'use_stacking', False)
         self.can_use_test_error_for_model_selection = True
@@ -124,8 +125,12 @@ class MixedFeatureGuidanceMethod(method.Method):
             select_k_best = SelectKBest(f_regression, self.num_features)
             data.x = select_k_best.fit_transform(data.x, data.true_y)
         metadata = getattr(data, 'metadata', dict())
-        source_data = data.get_transfer_subset(self.configs.source_labels, include_unlabeled=False)
-        data = data.get_transfer_subset(self.configs.target_labels, include_unlabeled=True)
+
+        source_data = None
+        if self.configs.source_labels is not None:
+            source_data = data.get_transfer_subset(self.configs.source_labels, include_unlabeled=False)
+        if self.configs.target_labels is not None:
+            data = data.get_transfer_subset(self.configs.target_labels, include_unlabeled=True)
         if not 'metadata' in metadata:
             ridge = method.SKLRidgeRegression(self.configs)
             ridge.quiet = True
@@ -146,6 +151,7 @@ class MixedFeatureGuidanceMethod(method.Method):
         stat_func = scipy.stats.pearsonr
         if self.use_sign:
             stat_func = scipy.stats.linregress
+        w_oracle = self.solve_w(data.x, data.true_y, 1)
         for i in range(p):
             Xi = data.x[:, i]
             Yi = data.true_y
@@ -154,8 +160,26 @@ class MixedFeatureGuidanceMethod(method.Method):
             if self.use_transfer:
                 Xi = source_data.x[:, i]
                 Yi = source_data.true_y
-            corr[i] = stat_func(Xi, Yi)[0]
-        print corr
+            if self.use_oracle:
+                corr[i] = w_oracle[i]
+            else:
+                corr[i] = stat_func(Xi, Yi)[0]
+
+        if self.method in {
+            MixedFeatureGuidanceMethod.METHOD_RIDGE,
+            MixedFeatureGuidanceMethod.METHOD_LASSO
+        } and self.use_transfer:
+            ridge = method.SKLRidgeRegression(self.configs)
+            ridge.quiet = True
+            ridge.use_validation = False
+            ridge.use_test_error_for_model_selection = False
+            ridge.configs.use_validation = False
+            ridge.configs.use_test_error_for_model_selection = False
+            source_data.data_set_ids[:] = self.configs.target_labels[0]
+            ridge.train_and_test(source_data)
+            source_pred = ridge.predict(data).y
+            data.x = np.append(data.x, source_pred, axis=1)
+        #print corr
         training_corr[~np.isfinite(training_corr)] = 0
         assert (np.isfinite(training_corr)).all()
         metadata['corr'] = corr
@@ -552,6 +576,8 @@ class MixedFeatureGuidanceMethod(method.Method):
                         self.method not in {MixedFeatureGuidanceMethod.METHOD_RIDGE, MixedFeatureGuidanceMethod.METHOD_LASSO}:
             if getattr(self, 'use_training_corr', False):
                 s += '_trainCorr'
+            elif getattr(self, 'use_oracle', False):
+                s += '_oracle'
             else:
                 s += '_corr'
         if getattr(self, 'use_nonneg', False):
@@ -566,7 +592,7 @@ class MixedFeatureGuidanceMethod(method.Method):
             s += '_' + self.cvx_method
         if getattr(self, 'use_l1', False) and self.method == MixedFeatureGuidanceMethod.METHOD_RELATIVE:
             s += '_l1'
-        if getattr(self, 'use_transfer', False) and self.method == MixedFeatureGuidanceMethod.METHOD_RELATIVE:
+        if getattr(self, 'use_transfer', False):
             s += '_transfer'
         if getattr(self, 'num_features', -1) > 0:
             s += '_' + str(self.num_features)

@@ -33,8 +33,8 @@ class MethodResults(ResultsContainer):
         self.results_list = list([ExperimentResults(n_splits) for i in range(n_exp)])
         pass
 
-    def compute_error_processed(self, loss_function):
-        errors = self.compute_error(loss_function)
+    def compute_error_processed(self, loss_function, features=None, instance_subset=None):
+        errors = self.compute_error(loss_function, features, instance_subset)
         '''
         hyper_params = []
         for i, curr_results in enumerate(self.results_list):
@@ -56,10 +56,10 @@ class MethodResults(ResultsContainer):
         highs = [x.high for x in errors]
         return processed_results(means,lows,highs)
 
-    def compute_error(self, loss_function):
+    def compute_error(self, loss_function, features=None, instance_subset=None):
         errors = []
         for i, f in enumerate(self.results_list):
-            e = f.aggregate_error(loss_function)
+            e = f.aggregate_error(loss_function, features, instance_subset)
             if len(self.results_list) == 1 and len(e) > 1:
                 errors = e
             else:
@@ -93,9 +93,9 @@ class ExperimentResults(ResultsContainer):
         self.num_labels = None
         self.is_regression = True
 
-    def aggregate_error(self, loss_function):
+    def aggregate_error(self, loss_function, features=None, instance_subset=None):
         agg_res = []
-        errors = self.compute_error(loss_function)
+        errors = self.compute_error(loss_function, features, instance_subset)
         for i in range(errors.shape[1]):
             #mean = errors.mean()
 
@@ -104,6 +104,7 @@ class ExperimentResults(ResultsContainer):
             sorted = np.sort(e)
             #I = (e <= sorted[-3])
             I = (e <= sorted[-1])
+            #I = (e <= 1e6)
             e = e[I]
 
             #mean = np.percentile(errors[:,i],50)
@@ -127,9 +128,9 @@ class ExperimentResults(ResultsContainer):
             agg_res.append(aggregated_results(mean,low,high))
         return agg_res
 
-    def compute_error(self, loss_function):
+    def compute_error(self, loss_function, features=None, instance_subset=None):
         for i, f in enumerate(self.results_list):
-            e = f.compute_error(loss_function)
+            e = f.compute_error(loss_function, features, instance_subset)
             e = np.asarray(e)
             if i == 0:
                 errors = np.empty((len(self.results_list),e.size))
@@ -143,7 +144,7 @@ class FoldResults(object):
         self.prediction = Output()
         self.estimated_error = None
 
-    def compute_error(self,loss_function):
+    def compute_error(self,loss_function, features=None, instance_subset=None):
         #TODO: Check if we should use y or fu
         if self.prediction.fu.ndim > 1 and isinstance(loss_function, loss_function_lib.LogLoss):
             assert False, 'Update this'
@@ -151,16 +152,16 @@ class FoldResults(object):
             #true_fu = array_functions.make_label_matrix(output.true_y[~self.prediction.is_train]).toarray()
             #return loss_function.compute_score(fu,true_fu)
         #return loss_function.compute_score(self.prediction.y,self.prediction.true_y,~self.prediction.is_train)
-        return self.prediction.compute_error(loss_function)
+        return self.prediction.compute_error(loss_function, features, instance_subset)
 
 class ActiveFoldResults(ResultsContainer):
     def __init__(self, num_iterations):
         super(ActiveFoldResults, self).__init__(num_iterations)
 
-    def compute_error(self,loss_function):
+    def compute_error(self,loss_function,features=None):
         errors = np.empty(len(self.results_list))
         for i, f in enumerate(self.results_list):
-            errors[i] = f.compute_error(loss_function)
+            errors[i] = f.compute_error(loss_function,features)
         assert all(~np.isnan(errors))
         return errors
 
@@ -191,14 +192,15 @@ class Output(data_lib.LabeledVector):
             self.y = y.copy()
             self.fu = y.copy()
 
-    def compute_error_train(self,loss_function):
+    def compute_error_train(self,loss_function, features=['y', 'true_y']):
+        assert len(features) == 2
         return loss_function.compute_score(
-            self.y,
-            self.true_y,
+            getattr(self, features[0]),
+            getattr(self, features[1]),
             self.is_train
         )
 
-    def compute_error(self,loss_function):
+    def compute_error(self,loss_function,features=None,instance_subset=None):
         '''
         return loss_function.compute_score(
             self.y,
@@ -206,7 +208,7 @@ class Output(data_lib.LabeledVector):
             ~self.is_train
         )
         '''
-        return loss_function.compute_score(self)
+        return loss_function.compute_score(self, features, instance_subset)
 
     def assert_input(self):
         assert not array_functions.has_invalid(self.fu)
@@ -237,6 +239,15 @@ class RelativeRegressionOutput(Output):
         #pairwise_loss = (~self.is_pairwise_correct[~self.is_train_pairwise]).sum()*avg_loss / num_pairwise
         pairwise_loss = (~self.is_pairwise_correct[~self.is_train_pairwise]).sum()*avg_loss
         return avg_loss + pairwise_loss
+
+class InstanceSelectionOutput(Output):
+    def __init__(self,data=None,y=None):
+        super(Output, self).__init__()
+        self.p = None
+        self.true_p = None
+        self.optimiztion_value = None
+        self.selected = None
+        self.is_noisy = None
 
 class ClassificationOutput(Output):
     def __init__(self,data=None):

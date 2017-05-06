@@ -20,6 +20,7 @@ DATA_IRS = 13
 DATA_DS2 = 14
 DATA_TAXI = 15
 DATA_ZILLOW = 16
+DATA_MNIST = 17
 
 DATA_PAIR_START = 100
 DATA_PAIR_82_83 = 101
@@ -74,7 +75,8 @@ data_name_dict = {
     DATA_SYNTHETIC_PIECEWISE: 'Synthetic Piecewise',
     DATA_ZILLOW: 'Taxi+Housing',
     DATA_KC_HOUSING: 'King County Housing',
-    DATA_SYNTHETIC_LINEAR_REGRESSION_10: 'Synthetic Linear'
+    DATA_SYNTHETIC_LINEAR_REGRESSION_10: 'Synthetic Linear',
+    DATA_MNIST: 'MNIST'
 }
 
 def is_synthetic_data(data_idx):
@@ -95,6 +97,8 @@ class Configs(object):
             setattr(self, key, value)
         self.overwrite_num_labels = None
         self.split_idx = None
+        self.results_features = ['y', 'true_y']
+        self.instance_subset = 'is_test'
         pass
 
     def copy(self, key=None, value=None):
@@ -244,12 +248,14 @@ pc_fields_to_copy = ['data_dir',
                      'labels_to_keep',
                      'labels_to_not_sample',
                      'target_labels',
+                     'source_labels',
                      'use_pool',
                      'pool_size',
                      'data_set',
                      'overwrite_num_labels',
                      'split_idx',
-                     'method_results_class']
+                     'method_results_class',
+]
 
 class BatchConfigs(Configs):
     def __init__(self):
@@ -339,6 +345,7 @@ class VisualizationConfigs(Configs):
         self.sizes_to_use = None
         self.title = 'Title not set'
         self.baseline_idx = None
+        self.always_show_y_label = False
 
         self.files = [
             'SKL-RidgeReg.pkl'

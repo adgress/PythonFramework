@@ -16,7 +16,7 @@ import cvxpy as cvx
 import scipy
 from data import data as data_lib
 from scipy import optimize
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans, SpectralClustering
 from sklearn.decomposition import PCA
 from sklearn.neighbors import KernelDensity
 from methods import density
@@ -24,6 +24,7 @@ from methods import density
 import matplotlib as plt
 import matplotlib.pylab as pl
 
+bandwidths = np.logspace(-4,4,200)
 
 class OptData(object):
     def __init__(self, X, Y, f_target, p_target, W_learner, W_density, learner_reg, density_reg, mixture_reg, supervised_loss_func, subset_size):
@@ -91,9 +92,14 @@ class SupervisedInstanceSelection(method.Method):
         self.use_linear = False
         self.quiet = False
 
+        self.selected_data = None
+        self.full_data = None
+
         configs = deepcopy(self.configs)
         self.target_learner = method.NadarayaWatsonMethod(deepcopy(configs))
+        self.target_learner.configs.results_features = ['y', 'true_y']
         self.target_learner.quiet = True
+        self.subset_learner = deepcopy(self.target_learner)
         self.mixture_reg = 1
         self.subset_size = 10
         self.density_reg = .1
@@ -101,6 +107,8 @@ class SupervisedInstanceSelection(method.Method):
         self.subset_density_reg = .1
         self.learner_reg = 100
         self.pca = None
+
+        self.is_noisy = None
 
         if self.use_linear:
             self.supervised_loss_func = compute_f_linear
@@ -174,34 +182,15 @@ class SupervisedInstanceSelection(method.Method):
         return opt_data
 
     def train_and_test(self, data):
-        if self.target_learner is not None:
-            self.target_learner.train_and_test(data)
-        X = data.x
-        Y = data.y
+        #data = data.get_subset(data.is_train & data.is_labeled)
+        #data.is_regression = True
 
-        #Compute "correct" density
-        #sigma = self.target_density_bandwidth
-        sigma = self.density_reg
-        X_density = X
-        if self.pca is not None:
-            X_density = self.pca.transform(X_density)
-        self.p_x = density.compute_density(X_density, None, sigma)
+        self.target_learner.train_and_test(data)
+        self.f_x = self.target_learner.predict(data).y
+        self.p_x = density.tune_and_predict_density(data.x, data.x, bandwidths)
 
-        #self.f_x = self.compute_predictions(X, Y, subset_size=X.shape[0])
-        self.f_x = self.compute_predictions(
-            X, Y,
-            subset_size=X.shape[0],
-            learner_reg=self.target_learner.sigma,
-            estimate=False
-        )
-        #f1 = self.f_x
-        #f2 = self.target_learner.predict(data).y
-
-        #self.f_x_estimate = self.compute_predictions(X, Y, subset_size=1, estimate=True)
-        self.f_x_estimate = self.f_x.copy()
-        f_x_estimates = self.f_x_estimate
-        #self.f_x = self.compute_predictions(X, Y)
-        return super(SupervisedInstanceSelection, self).train_and_test(data)
+        ret_val = super(SupervisedInstanceSelection, self).train_and_test(data)
+        return ret_val
 
     def optimize(self, opt_data):
         return self.optimize_nonparametric(opt_data)
@@ -252,10 +241,24 @@ class SupervisedInstanceSelection(method.Method):
         self.optimization_value = a
 
     def train(self, data):
+        data.is_regression = True
         opt_data = self.create_opt_data(data)
         self.optimize(opt_data)
-        self.p_s = compute_p(self.subset_size * self.learned_distribution / self.learned_distribution.sum(), opt_data)
-        self.f_s = self.supervised_loss_func(self.learned_distribution, opt_data)
+        l = np.zeros(data.n)
+        v = data.is_train & data.is_labeled
+        l[v] = self.learned_distribution
+        self.learned_distribution = l
+        I = self.learned_distribution > 0
+        self.selected_data = deepcopy(data)
+        self.selected_data.y[~I] = np.nan
+        self.selected_data.is_train[:] = True
+        self.subset_learner.train_and_test(self.selected_data)
+
+        self.full_data = deepcopy(data)
+        self.target_learner.train_and_test(self.full_data)
+        self.is_noisy = data.is_noisy
+        self.y_orig = data.y_orig
+
 
     def predict_test(self, data_train, data_test):
         opt_data = self.create_opt_data(data_train, data_test)
@@ -263,11 +266,21 @@ class SupervisedInstanceSelection(method.Method):
 
 
     def predict(self, data):
-        o = Output(data)
+        I = self.selected_data.is_labeled
+        self.f_x = self.target_learner.predict(data).y
+        self.p_x = density.tune_and_predict_density(self.full_data.x, data.x, bandwidths)
+        self.f_s = self.subset_learner.predict(data).y
+        self.p_s = density.tune_and_predict_density(self.selected_data.x[I], data.x, bandwidths)
 
-        o.y[:] = self.optimization_value/data.n
-        o.fu = o.y.copy()
-        o.true_y[:] = 0
+        o = Output(data)
+        o.true_p = self.p_x
+        o.p = self.p_s
+        o.true_y = self.f_x
+        o.y = self.f_s
+        o.optimization_value = self.optimization_value/data.n
+        o.is_noisy = self.is_noisy
+        o.is_selected = self.learned_distribution > 0
+        o.y_orig = self.y_orig
         return o
 
     @property
@@ -357,23 +370,188 @@ class SupervisedInstanceSelectionCluster(SupervisedInstanceSelection):
         self.mixture_reg = None
         self.cv_params = {}
         self.k_means = KMeans()
+        self.original_cluster_inds = None
+
+    def cluster(self, X, num_clusters, k_means=None):
+        if k_means is None:
+            k_means = KMeans()
+        k_means.set_params(n_clusters=num_clusters)
+        X_cluster_space = k_means.fit_transform(X)
+        I = k_means.predict(X)
+        return k_means, X_cluster_space, I
 
     def optimize(self, opt_data):
-        self.k_means.set_params(n_clusters=opt_data.subset_size)
-        X_cluster_space = self.k_means.fit_transform(opt_data.X)
-        selected = np.zeros(opt_data.Y.size)
-        for i in range(opt_data.subset_size):
+        self.k_means, X_cluster_space, _ = \
+            self.cluster(opt_data.X, opt_data.subset_size, self.k_means)
+        selected, selected_indices = self.compute_centroids_for_clustering(opt_data.X, self.k_means)
+        assert selected.sum() == opt_data.subset_size
+        #self.learned_distribution = compute_p(selected, opt_data)
+        self.learned_distribution = selected
+        self.optimization_value = 0
+
+    def compute_data_set_centroid(self, X):
+        k_means, X_cluster_space, I = self.cluster(X, 1)
+        return self.compute_centroids_for_clustering(X, k_means)
+
+
+    def compute_centroids_for_clustering(self, X, k_means):
+        X_cluster_space = k_means.transform(X)
+        centroids = np.zeros(X.shape[0])
+        indices = np.zeros(k_means.n_clusters)
+        for i in range(k_means.n_clusters):
             xi = X_cluster_space[:, i]
             idx = np.argmin(xi)
-            selected[idx] = 1
-        assert selected.sum() == opt_data.subset_size
+            centroids[idx] = 1
+            indices[i] = idx
+        return centroids, indices.astype(np.int)
+
+    def compute_purity(self, cluster_inds, Y, num_clusters):
+        avg_variance = 0
+        stds = np.zeros(num_clusters)
+        percs = np.zeros(num_clusters)
+        means = np.zeros(num_clusters)
+        for i in range(num_clusters):
+            I = cluster_inds == i
+            yi = Y[I]
+            means[i] = yi.mean()
+            percs[i] = I.mean()
+            stds[i] = yi.std()
+            avg_variance += I.mean() * yi.std()
+        return percs, means, stds
+
+    @property
+    def prefix(self):
+        s = 'SupervisedInstanceSelectionCluster'
+        if self.use_linear:
+            s += '-linear'
+        return s
+
+class SupervisedInstanceSelectionClusterGraph(SupervisedInstanceSelectionCluster):
+    def __init__(self, configs=MethodConfigs()):
+        super(SupervisedInstanceSelectionClusterGraph, self).__init__(configs)
+        self.mixture_reg = None
+        self.cv_params = {
+            'sigma_x': self.create_cv_params(-5, 5),
+            'sigma_y': self.create_cv_params(-5, 5),
+        }
+        self.spectral_cluster = SpectralClustering()
+        self.original_cluster_inds = None
+
+    def cluster_spectral(self, W, num_clusters, spectral_cluster=None):
+        if spectral_cluster is None:
+            spectral_cluster = SpectralClustering()
+        spectral_cluster.set_params(
+            n_clusters=num_clusters,
+            affinity='precomputed'
+        )
+        try:
+            I = spectral_cluster.fit_predict(W)
+        except:
+            I = spectral_cluster.fit_predict(np.eye(W.shape[0]))
+            print 'Spectral clustering failed, clustering on identity matrix'
+        return spectral_cluster, I
+
+    def compute_data_set_centroid_spectral(self, W):
+        d = W.sum(1)
+        return np.argmax(d)
+
+    def compute_centroids_for_spectral_clustering(self, W, cluster_inds):
+        v = np.unique(cluster_inds)
+        centroid_inds = np.zeros(v.size)
+        for i, vi in enumerate(v):
+            I = (cluster_inds == vi).nonzero()[0]
+            Wi = W[I, :]
+            Wi = Wi[:, I]
+            a = self.compute_data_set_centroid_spectral(Wi)
+            centroid_inds[i] = I[a]
+        centroid_inds = centroid_inds.astype(np.int)
+
+        return array_functions.make_vec_binary(centroid_inds, W.shape[0])
+
+    def optimize(self, opt_data):
+        W_x = array_functions.make_rbf(opt_data.X, self.sigma_x)
+        W_y = array_functions.make_rbf(opt_data.Y, self.sigma_y)
+        W = W_x * W_y
+
+        self.spectral_cluster, cluster_inds = \
+            self.cluster_spectral(W, opt_data.subset_size, self.spectral_cluster)
+
+        selected = self.compute_centroids_for_spectral_clustering(W, cluster_inds)
+        if selected.sum() < opt_data.subset_size:
+            print 'Empty clusters'
         #self.learned_distribution = compute_p(selected, opt_data)
         self.learned_distribution = selected
         self.optimization_value = 0
 
     @property
     def prefix(self):
-        s = 'SupervisedInstanceSelectionCluster'
+        s = 'SupervisedInstanceSelectionClusterGraph'
+        return s
+
+class SupervisedInstanceSelectionClusterSplit(SupervisedInstanceSelectionCluster):
+    def __init__(self, configs=MethodConfigs()):
+        super(SupervisedInstanceSelectionClusterSplit, self).__init__(configs)
+        self.mixture_reg = None
+        self.cv_params = {}
+        self.k_means = KMeans()
+        self.max_std = .4
+        self.sub_cluster_size = 2
+        self.impure_cluster_samples = 2
+        self.original_cluster_inds = None
+
+    def compute_centroids(self, opt_data):
+        num_clusters = opt_data.subset_size
+        X = opt_data.X
+        Y = opt_data.Y
+        self.k_means, X_cluster_space, cluster_inds = \
+            self.cluster(X, num_clusters, self.k_means)
+        percs, means, stds = self.compute_purity(
+            cluster_inds, Y, opt_data.subset_size)
+        is_impure = stds > self.max_std
+        curr_centroids, centroid_indices = self.compute_centroids_for_clustering(X, self.k_means)
+        sub_kmeans = KMeans(n_clusters=self.sub_cluster_size)
+        selected_centroids = np.zeros(curr_centroids.size)
+        self.original_cluster_inds = cluster_inds
+        for i in range(num_clusters):
+            if not is_impure[i]:
+                selected_centroids[centroid_indices[i]] = 1
+                continue
+            I = cluster_inds == i
+            I_inds = I.nonzero()[0]
+            xi = X[I, :]
+            yi = Y[I]
+            sub_kmeans, xi_cluster_space, sub_cluster_inds = \
+                self.cluster(xi, self.sub_cluster_size, sub_kmeans)
+            percs_sub, means_sub, stds_sub = self.compute_purity(sub_cluster_inds, yi, self.sub_cluster_size)
+            if (stds_sub <= self.max_std).all():
+                print 'good subset clustering!'
+                new_centroids, new_indices = self.compute_centroids_for_clustering(xi, sub_kmeans)
+                new_centroids_I = I_inds[new_indices]
+                curr_centroids[new_centroids_I] = 1
+            else:
+                assert self.impure_cluster_samples == 2
+                I0 = (yi <= yi.mean()).nonzero()[0]
+                I1 = (yi > yi.mean()).nonzero()[0]
+                centroid0, centroid0_idx = self.compute_data_set_centroid(xi[I0])
+                centroid1, centroid1_idx = self.compute_data_set_centroid(xi[I1])
+                curr_centroids[I_inds[I0[centroid0_idx[0]]]] = 1
+                curr_centroids[I_inds[I1[centroid1_idx[0]]]] = 1
+        print ''
+        return curr_centroids == 1
+
+
+
+    def optimize(self, opt_data):
+        centroids = self.compute_centroids(opt_data)
+        selected = np.zeros(opt_data.Y.size)
+        selected[centroids] = 1
+        self.learned_distribution = selected
+        self.optimization_value = 0
+
+
+    @property
+    def prefix(self):
+        s = 'SupervisedInstanceSelectionClusterSplit'
         if self.use_linear:
             s += '-linear'
         return s
@@ -476,7 +654,7 @@ def test_methods(X, Y, X_test=None, Y_test=None, label_names=None, mnist=False):
 
 
 
-    should_print_cluster_purity = True
+    should_print_cluster_purity = False
     use_linear = False
     plot_instances = False
     plot_batch = False
@@ -484,7 +662,7 @@ def test_methods(X, Y, X_test=None, Y_test=None, label_names=None, mnist=False):
         plot_instances = True
         plot_batch = True
     num_neighbors = 3
-    num_samples = 4
+    num_samples = 8
     mixture_reg = 0
 
     pca = PCA(n_components=2)
@@ -494,7 +672,7 @@ def test_methods(X, Y, X_test=None, Y_test=None, label_names=None, mnist=False):
     X_test = pca.transform(X_test)
     print 'explained_variance: ' + str(pca.explained_variance_ratio_.sum())
 
-    bandwidths = np.logspace(-4,4,200)
+
     best_bandwidth, values = density.get_best_bandwidth(X_pca, bandwidths)
 
     sub_values = np.zeros(bandwidths.size)
@@ -514,12 +692,16 @@ def test_methods(X, Y, X_test=None, Y_test=None, label_names=None, mnist=False):
     cluster = SupervisedInstanceSelectionCluster()
     cluster.use_linear = use_linear
     methods = [
+        SupervisedInstanceSelectionClusterSplit(),
         SupervisedInstanceSelectionCluster(),
-        SupervisedInstanceSelection(),
+        #SupervisedInstanceSelection(),
     ]
-    for m in methods:
+    for i, m in enumerate(methods):
         m.subset_size = num_samples
         m.num_samples = num_samples
+        if i == 1:
+            m.subset_size = int(2*num_samples)
+            m.num_samples = int(2*num_samples)
         if mnist:
             m.learner_reg = best_bandwidth
         m.density_reg = best_bandwidth
@@ -606,7 +788,12 @@ def test_methods(X, Y, X_test=None, Y_test=None, label_names=None, mnist=False):
                     d = distance_matrix[curr_idx]
                     closest_inds = np.argsort(d)[1:num_neighbors+1]
                     #labels[sample_idx, 0] = data.y[curr_idx]
-                    labels[sample_idx, 0] = label_names[int(data.y[curr_idx])]
+                    label_str = label_names[int(data.y[curr_idx])]
+                    if learner.original_cluster_inds is not None:
+                        label_str += ' (' + str(learner.original_cluster_inds[curr_idx]) + ')'
+                    labels[sample_idx, 0] = label_str
+
+
                     for neighbor_idx, ind in enumerate(closest_inds):
                         xj = X_orig[ind, :]
                         yj = data.y[ind]

@@ -77,16 +77,34 @@ def compute_density(X, X_predict, bandwidth):
     K = compute_kernel(X, X_predict, bandwidth)
     return K.sum(1)
 
+from numpy.linalg import norm
 def avg_neg_log_likelihood(X, X_predict, bandwidth, loo=False):
     if loo:
+        n = float(X.shape[0])
+        '''
         d = np.zeros(X.shape[0])
         for i in range(X.shape[0]):
             Xi = np.delete(X, i, axis=0)
             d[i] = compute_density(Xi, X[np.newaxis,i,:], bandwidth, )
+        '''
+        K2 = compute_kernel(X, X, bandwidth)
+        K2[np.diag_indices_from(K2)] = 0
+        K2 *= n
+        K2 /= (n-1)
+        d2 = K2.sum(1)
+        '''
+        if norm(d) > 0:
+            assert norm(d-d2)/norm(d) < 1e-6
+        '''
+        d = d2
     else:
         d = compute_density(X, X_predict, bandwidth)
+    assert d.size > 0
     try:
-        val = -np.log(d).mean()
+        if (d == 0).any():
+            val = np.inf
+        else:
+            val = -np.log(d).mean()
     except:
         pass
     return val
@@ -100,6 +118,10 @@ def get_best_bandwidth(X, bandwidths, X_validation=None):
             vals[i] = avg_neg_log_likelihood(X, X_validation, b)
     idx = vals.argmin()
     return bandwidths[idx], vals
+
+def tune_and_predict_density(X, X_predict, bandwidths, X_validation=None):
+    b, _ = get_best_bandwidth(X, bandwidths, X_validation)
+    return compute_density(X, X_predict, b)
 
 if __name__ == '__main__':
     X = np.random.rand(100, 10)

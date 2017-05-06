@@ -1,4 +1,7 @@
 import abc
+
+from pygments.lexer import include
+
 from saveable.saveable import Saveable
 from configs.base_configs import MethodConfigs
 from sklearn.linear_model import LinearRegression
@@ -6,6 +9,8 @@ from sklearn import linear_model
 from sklearn import neighbors
 from sklearn import dummy
 from sklearn import grid_search
+from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
 from sklearn.metrics import pairwise
 import numpy as np
 from numpy.linalg import norm
@@ -19,7 +24,7 @@ from utility import array_functions
 from metrics import metrics
 import collections
 import scipy
-from timer.timer import tic,toc
+from timer.timer import tic,toc, toc_str
 from utility import helper_functions
 from copy import deepcopy
 import cvxpy as cvx
@@ -48,6 +53,11 @@ class ActiveMethod(method.Method):
         num_items_per_iteration = self.configs.active_items_per_iteration
         active_iterations = self.configs.active_iterations
         curr_data = deepcopy(data)
+        '''
+        if curr_data.p > 4:
+            pca = PCA(n_components=4)
+            curr_data.x = pca.fit_transform(curr_data.x)
+        '''
         if hasattr(self.base_learner, 'add_random_guidance'):
             self.base_learner.add_random_pairwise = True
             self.base_learner.add_random_guidance(curr_data)
@@ -120,9 +130,170 @@ class ActiveMethod(method.Method):
         s = 'ActiveRandom'
         if getattr(self, 'fix_model', False):
             s += '_fixed-model'
+        s += '_items=' + str(self.configs.active_items_per_iteration)
         s += '+' + self.base_learner.prefix
         return s
 
+
+class ClusterActiveMethod(ActiveMethod):
+    def __init__(self, configs=MethodConfigs()):
+        super(ClusterActiveMethod, self).__init__(configs)
+        self.transform = StandardScaler()
+        self.use_labeled = True
+        self.cluster_scale = 10
+
+    def create_clustering(self, X, n_items):
+        k_means = KMeans(n_clusters=n_items)
+        X_cluster_space = k_means.fit_transform(X)
+        cluster_inds = k_means.fit_predict(X)
+        return X_cluster_space, cluster_inds
+
+    def get_cluster_centroids(self, X):
+        p = X.shape[1]
+        idx = np.zeros(p)
+        for i in range(p):
+            xi = X[:, i]
+            idx[i] = np.argmin(xi)
+        return idx.astype(np.int)
+
+
+    def create_sampling_distribution(self, base_learner, data, fold_results):
+        cluster_scale = self.cluster_scale
+        n_items = self.configs.active_items_per_iteration
+        I = data.is_train & ~data.is_labeled
+        if self.configs.target_labels is not None:
+            I &= data.get_transfer_inds(self.configs.target_labels)
+        I = I.nonzero()[0]
+        if I.size > 1000:
+            I = np.random.choice(I, int(I.size*.5), replace=False)
+            print 'subsampling target data: ' + str(I.size)
+        X_sub = data.x[I, :]
+        X_cluster_space, _ = self.create_clustering(X_sub, int(cluster_scale*n_items))
+        d = np.zeros(data.y.shape)
+        centroid_idx = self.get_cluster_centroids(X_cluster_space)
+        to_use = centroid_idx[:n_items]
+        d[I[to_use]] = 1
+        d = d / d.sum()
+        return d, d.size
+
+    @property
+    def prefix(self):
+        s = 'ActiveCluster'
+        s += '_items=' + str(self.configs.active_items_per_iteration)
+        s += '_scale=' + str(self.cluster_scale)
+        s += '+' + self.base_learner.prefix
+        return s
+
+class ClusterPurityActiveMethod(ClusterActiveMethod):
+    def __init__(self, configs=MethodConfigs()):
+        super(ClusterActiveMethod, self).__init__(configs)
+        self.transform = StandardScaler()
+        self.use_target_variance = True
+        self.use_density = False
+
+    def get_cluster_purity(self, cluster_ids, y, classification=False):
+        num_clusters = cluster_ids.max()+1
+        v = np.zeros(num_clusters)
+        m = np.zeros(num_clusters)
+        for i in range(num_clusters):
+            yi = y[cluster_ids == i]
+            if classification:
+                yi = array_functions.to_binary_vec(yi)
+            v[i] = np.std(yi)
+            m[i] = yi.size
+        return v, m
+
+    def estimate_variance(self, learner, data):
+        num_splits = 30
+        predictions = np.zeros((data.n, num_splits))
+        for i in range(num_splits):
+            sub_data = data.rand_sample(.1)
+            learner.train(sub_data)
+            predictions[:, i] = learner.predict(data).y
+        vars = np.std(predictions, 1)
+        return vars
+
+    def estimate_density(self, data):
+        from methods import density
+        bandwidths = np.logspace(-2, 2)
+        best_bandwidth, vals = density.get_best_bandwidth(data.x, bandwidths)
+        d = density.compute_density(data.x, None, best_bandwidth)
+        return d
+
+    def create_sampling_distribution(self, base_learner, data, fold_results):
+        cluster_scale = self.cluster_scale
+        source_learner = deepcopy(self.base_learner)
+        source_data = data.get_transfer_subset(self.configs.source_labels)
+        if source_data.n > 1000:
+            source_data = source_data.rand_sample(.2)
+            print 'subsampling source data: ' + str(source_data.n)
+        if source_data.is_regression:
+            source_data.data_set_ids[:] = self.configs.target_labels[0]
+        else:
+            source_data.change_labels(self.configs.source_labels, self.configs.target_labels)
+        tic()
+        source_learner.train_and_test(source_data)
+        print 'train source time: ' + toc_str()
+        target_data = data.get_transfer_subset(self.configs.target_labels, include_unlabeled=True)
+        y_pred = source_learner.predict(data).y
+
+        n_items = self.configs.active_items_per_iteration
+        I = data.is_train & ~data.is_labeled
+        if self.configs.target_labels is not None:
+            I &= data.get_transfer_inds(self.configs.target_labels)
+        I = I.nonzero()[0]
+        if I.size > 1000:
+            I = np.random.choice(I, int(I.size*.5), replace=False)
+            print 'subsampling target data: ' + str(I.size)
+        if self.use_density:
+            labeled_target_data = deepcopy(data.get_subset(I))
+            labeled_target_data.y = labeled_target_data.true_y.copy()
+            labeled_target_data.set_train()
+            target_learner = deepcopy(self.base_learner)
+            target_learner.train_and_test(labeled_target_data)
+            vars = self.estimate_variance(target_learner, labeled_target_data, )
+            densities = self.estimate_density(labeled_target_data)
+        else:
+            X_sub = data.x[I, :]
+            tic()
+            X_cluster_space, cluster_ids = self.create_clustering(
+                X_sub,
+                int(cluster_scale * self.configs.active_items_per_iteration)
+            )
+            print 'cluster target time: ' + toc_str()
+            vars, cluster_n = self.get_cluster_purity(cluster_ids, y_pred[I], not target_data.is_regression)
+            true_vars, true_cluster_n = self.get_cluster_purity(cluster_ids, data.true_y[I], not target_data.is_regression)
+            if self.use_target_variance:
+                vars = true_vars
+            centroid_idx = self.get_cluster_centroids(X_cluster_space)
+            densities = cluster_n
+
+        scores = vars / densities
+        scores_sorted_inds = np.argsort(scores)
+
+        # Don't sample instances if cluster size is 1
+        if not self.use_density:
+            scores[cluster_n <= .005*I.size] = np.inf
+            to_use = centroid_idx[scores_sorted_inds[:n_items]]
+        else:
+            to_use = scores_sorted_inds[:n_items]
+
+        d = np.zeros(data.y.shape)
+        d[I[to_use]] = 1
+        d = d / d.sum()
+        return d, d.size
+
+    @property
+    def prefix(self):
+        s = 'ActiveClusterPurity'
+        if getattr(self, 'use_target_variance', False):
+            s += '-targetVar'
+        if getattr(self, 'use_density', False):
+            s += '-density'
+        s += '_items=' + str(self.configs.active_items_per_iteration)
+        s += '_scale=' + str(self.cluster_scale)
+        s += '+' + self.base_learner.prefix
+        return s
 
 class OptimizationData(object):
     def __init__(self, x, C):
@@ -522,7 +693,7 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
         #print t.sum()
         t_old = t
         t[t < 0] = 0
-        t += np.random.uniform(1e-16,1e-15, t.size)
+        t += np.random.uniform(1e-7,1e-6, t.size)
         t /= t.sum()
         #print np.sort(t)[-40:]
         best_inds = np.argsort(t)[-self.configs.active_items_per_iteration:]

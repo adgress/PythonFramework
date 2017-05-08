@@ -86,7 +86,7 @@ class PipelineSelectDataIDs(PipelineSelectSubset):
     def __init__(self, ids=[0]):
         super(PipelineSelectSubset, self).__init__()
         #self.selection_func = lambda data: selection_subset_ids(data, ids)
-        ids = self.ids
+        self.ids = ids
 
     def transform(self, data):
         I = selection_subset_ids(data, self.ids)

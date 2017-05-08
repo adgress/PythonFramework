@@ -25,14 +25,15 @@ classification_data_sets = {
     bc.DATA_MNIST
 }
 
-data_set_to_use = bc.DATA_MNIST
+#data_set_to_use = bc.DATA_MNIST
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
-#data_set_to_use = bc.DATA_CLIMATE_MONTH
+data_set_to_use = bc.DATA_CLIMATE_MONTH
 
 METHOD_CLUSTER = 0
 METHOD_CLUSTER_SPLIT = 1
 METHOD_CLUSTER_GRAPH = 2
+METHOD_CLUSTER_SUBMODULAR = 3
 
 LOSS_Y = 0
 LOSS_P = 1
@@ -40,7 +41,7 @@ LOSS_NOISY = 2
 LOSS_ENTROPY = 3
 
 #instance_selection_method = METHOD_CLUSTER
-instance_selection_method = METHOD_CLUSTER_SPLIT
+instance_selection_method = METHOD_CLUSTER_SUBMODULAR
 
 loss_to_use = LOSS_Y
 
@@ -194,6 +195,17 @@ class MainConfigs(bc.MainConfigs):
             sisc.num_samples = 8
         elif pc.instance_selection_method == METHOD_CLUSTER_GRAPH:
             sisc = instance_selection.SupervisedInstanceSelectionClusterGraph(method_configs)
+            method_configs.results_features = ['y', 'true_y']
+            sisc.configs.results_features = ['res_total', 'res_total']
+            sisc.configs.cv_loss_function = loss_function.LossNorm()
+            sisc.configs.use_training = use_training
+            sisc.subset_size = 8
+            sisc.num_samples = 8
+        elif pc.instance_selection_method == METHOD_CLUSTER_SUBMODULAR:
+            sisc = instance_selection.SupervisedInstanceSelectionSubmodular(method_configs)
+            method_configs.results_features = ['y', 'true_y']
+            sisc.configs.results_features = ['res_total', 'res_total']
+            sisc.configs.cv_loss_function = loss_function.LossNorm()
             sisc.configs.use_training = use_training
             sisc.subset_size = 8
             sisc.num_samples = 8
@@ -230,6 +242,10 @@ class BatchConfigs(bc.BatchConfigs):
 
             p = deepcopy(pc)
             p.instance_selection_method = METHOD_CLUSTER_GRAPH
+            self.config_list.append(MainConfigs(p))
+
+            p = deepcopy(pc)
+            p.instance_selection_method = METHOD_CLUSTER_SUBMODULAR
             self.config_list.append(MainConfigs(p))
 
 

@@ -104,6 +104,14 @@ class LossAnyOverlap(LossFunction):
     def _compute_score(self,y1,y2):
         return float(1 - (y1 & y2).any())
 
+class LossNorm(LossFunction):
+    def __init__(self):
+        self.name = 'Norm'
+        self.short_name = 'Norm'
+
+    def _compute_score(self,y1,y2):
+        return np.linalg.norm(y1)
+
 class LossSelectedEntropy(LossFunction):
     def __init__(self, is_regression=False):
         self.name = 'Selected Entropy'

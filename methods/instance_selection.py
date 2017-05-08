@@ -279,7 +279,13 @@ class SupervisedInstanceSelection(method.Method):
         self.f_s = self.subset_learner.predict(data).y
         self.p_s = density.tune_and_predict_density(self.selected_data.x[I], data.x, bandwidths)
 
+        res_f = np.abs(self.f_x - self.f_s) / np.linalg.norm(self.f_x)
+        res_p = np.abs(self.p_x - self.p_s) / np.linalg.norm(self.p_x)
+
+        res_total = res_f + res_p
+        self.res_total = res_total
         o = Output(data)
+        o.res_total = res_total
         o.true_p = self.p_x
         o.p = self.p_s
         o.true_y = self.f_x
@@ -459,8 +465,13 @@ class SupervisedInstanceSelectionClusterGraph(SupervisedInstanceSelectionCluster
         try:
             I = spectral_cluster.fit_predict(W)
         except:
-            I = spectral_cluster.fit_predict(np.eye(W.shape[0]))
             print 'Spectral clustering failed, clustering on identity matrix'
+            try:
+                #I = spectral_cluster.fit_predict(np.eye(W.shape[0]))
+                I = np.random.choice(range(0, num_clusters), W.shape[0])
+            except:
+                I = np.random.choice(range(0, num_clusters), W.shape[0])
+
         return spectral_cluster, I
 
     def compute_data_set_centroid_spectral(self, W):
@@ -507,6 +518,60 @@ class SupervisedInstanceSelectionClusterGraph(SupervisedInstanceSelectionCluster
     @property
     def prefix(self):
         s = 'SupervisedInstanceSelectionClusterGraph'
+        return s
+
+class SupervisedInstanceSelectionSubmodular(SupervisedInstanceSelection):
+    def __init__(self, configs=MethodConfigs()):
+        super(SupervisedInstanceSelectionSubmodular, self).__init__(configs)
+        self.mixture_reg = None
+        self.cv_params = {
+            'sigma_x': self.create_cv_params(-5, 5),
+            'sigma_y': self.create_cv_params(-5, 5),
+            'C': self.create_cv_params(-2, 2),
+        }
+        #self.cv_params['sigma_x'] = self.create_cv_params(-2, 2)
+        #self.cv_params['sigma_y'] = self.create_cv_params(-2, 2)
+        self.original_cluster_inds = None
+        self.configs.use_saved_cv_output = True
+
+
+    def evaluate_selection(self, W, I):
+        Wpp = W[I, :]
+        Wpp = Wpp[:, ~I]
+        return W[np.ix_(I, ~I)].sum() - self.C*W[np.ix_(I, I)].sum()
+
+    def optimize(self, opt_data):
+        W_x = array_functions.make_rbf(opt_data.X, self.sigma_x)
+        W_y = array_functions.make_rbf(opt_data.Y, self.sigma_y)
+        W = W_x * W_y
+
+
+        selected = array_functions.false(W.shape[0])
+        for i in range(opt_data.subset_size):
+            new_scores = np.zeros(W.shape[0])
+            new_scores[:] = -np.inf
+            for j in range(opt_data.subset_size):
+                if selected[j]:
+                    continue
+                b = array_functions.false(W.shape[0])
+                b[j] = True
+                new_scores[j] = self.evaluate_selection(W, selected | b)
+            best_idx = new_scores.argmax()
+            selected[best_idx] = True
+
+        #selected = self.compute_centroids_for_spectral_clustering(W, cluster_inds)
+        self.W = W
+        self.selected = selected
+        if selected.sum() < opt_data.subset_size:
+            #print 'Empty clusters'
+            pass
+        #self.learned_distribution = compute_p(selected, opt_data)
+        self.learned_distribution = selected
+        self.optimization_value = 0
+
+    @property
+    def prefix(self):
+        s = 'SupervisedInstanceSelectionSubmodular'
         return s
 
 class SupervisedInstanceSelectionClusterSplit(SupervisedInstanceSelectionCluster):

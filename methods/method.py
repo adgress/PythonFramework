@@ -43,6 +43,7 @@ from utility import helper_functions
 from mpipool import core as mpipool
 from utility import mpi_utility
 from mpi4py import MPI
+from numpy.linalg import *
 import math
 import random
 import os
@@ -203,7 +204,10 @@ class Method(Saveable):
         test_data = data.get_test_data()
         #Is this necessary?
         #train_data = train_data.get_subset(train_data.is_train)
-        if self.configs.use_validation:
+        if getattr(self.configs, 'use_training', False):
+            ds = create_data_split.DataSplitter()
+            splits = ds.generate_identity_split(data.is_train)
+        elif self.configs.use_validation:
             I = train_data.is_labeled & train_data.is_train
             #If no validation data, then unlabel random subset of training data
             allow_unlabeling = True
@@ -226,7 +230,8 @@ class Method(Saveable):
         else:
             train_data = data.get_subset(data.is_train)
             splits = self._create_cv_splits(train_data)
-        assert splits[0].is_train.mean() < 1, 'No test data in CV splits!'
+        if getattr(self.configs, 'is_training', False):
+            assert splits[0].is_train.mean() < 1, 'No test data in CV splits!'
         data_and_splits = data_lib.SplitData(train_data,splits)
         param_grid = list(grid_search.ParameterGrid(self.cv_params))
         if not self.cv_params:
@@ -235,6 +240,8 @@ class Method(Saveable):
         my_comm = mpi_utility.get_comm()
         param_results_on_test = [self.experiment_results_class(len(splits)) for i in range(len(param_grid))]
         param_results = [self.experiment_results_class(len(splits)) for i in range(len(param_grid))]
+        save_learner_copies = True
+        learner_copies = []
         if (my_comm is None or my_comm.Get_size() == 1 or my_comm == MPI.COMM_WORLD) \
                 or not self.use_mpi:
             old_temp_dir = self.temp_dir
@@ -249,6 +256,8 @@ class Method(Saveable):
                     self.curr_split = curr_split
                     self.test_data = test_data
                     results, results_on_test = _run_cross_validation_iteration_args(self, params)
+                    if save_learner_copies:
+                        learner_copies.append(deepcopy(self))
                     param_results[param_idx].set(results, i)
                     param_results_on_test[param_idx].set(results_on_test, i)
                     self.warm_start = True
@@ -291,6 +300,8 @@ class Method(Saveable):
             errors_on_test_data = np.empty(len(param_grid))
         features = self.configs.results_features
         instance_subset = self.configs.instance_subset
+        if getattr(self.configs, 'use_training', False):
+            instance_subset = 'is_train'
         for i in range(len(param_grid)):
             agg_results = param_results[i].aggregate_error(self.configs.cv_loss_function, features, instance_subset)
             assert len(agg_results) == 1
@@ -307,6 +318,10 @@ class Method(Saveable):
         if aggregate_test_results:
             performance_on_test_data = errors_on_test_data[errors.argmin()]
         if not self.quiet and mpi_utility.is_group_master():
+            if save_learner_copies:
+                learner_copy = learner_copies[errors.argmin()]
+                print 'Saving :'
+                self.best_cv_learner_copy = learner_copy
             print best_params
             print 'CV Error: ' + str(errors.min())
             if test_data.n == 0:
@@ -355,6 +370,20 @@ class Method(Saveable):
         output = None
         if mpi_utility.is_group_master() or not self.use_mpi:
             output = self.run_method(data)
+            if self.configs.use_saved_cv_output:
+                output2 = self.best_cv_learner_copy.output
+                a = np.stack((output.true_y, output2.true_y)).T
+                print 'true_y error:' + str(norm(output.true_y - output2.true_y)/norm(output.true_y))
+                print 'y error:' + str(norm(output.y - output2.y) / norm(output.y))
+                print 'is_selected error:' + str((output.is_selected != output2.is_selected).sum()/output.is_selected.size)
+                b = np.stack((output.y, output2.y)).T
+                c = np.stack((output.is_selected, output2.is_selected)).T
+                #print str(self.target_learner.sigma)
+                #print str(self.best_cv_learner_copy.target_learner.sigma)
+                print str(self.subset_learner.sigma)
+                print str(self.best_cv_learner_copy.subset_learner.sigma)
+                print ''
+                output = output2
         comm = mpi_utility.get_comm()
         if comm != MPI.COMM_WORLD and self.use_mpi:
             output = comm.bcast(output, root=0)

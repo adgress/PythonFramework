@@ -308,6 +308,7 @@ class MethodConfigs(Configs):
         self.loss_function = pc.loss_function
         self.use_validation = False
         self.metric = 'euclidean'
+        self.use_saved_cv_output = False
 
     @property
     def results_file_name(self):

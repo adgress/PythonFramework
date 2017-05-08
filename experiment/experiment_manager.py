@@ -163,10 +163,11 @@ def _run_experiment_args(self, results_file, data_and_splits, method_results, i_
         helper_functions.delete_dir_if_exists(temp_dir_root)
     instance_subset = learner.configs.instance_subset
     results_features = learner.configs.results_features
+    test_error_to_print = 'is_train'
     if mpi_utility.is_group_master():
         if hasattr(curr_learner, 'best_params'):
             print s + '-' + str(curr_learner.best_params) + ' Error: ' + \
-                  str(curr_results.compute_error(self.configs.loss_function, results_features, instance_subset))
+                  str(curr_results.compute_error(self.configs.loss_function, results_features, test_error_to_print))
         else:
             print s + ' Done'
     if mpi_utility.is_master():

@@ -26,9 +26,9 @@ classification_data_sets = {
 }
 
 data_set_to_use = bc.DATA_MNIST
-data_set_to_use = bc.DATA_BOSTON_HOUSING
-data_set_to_use = bc.DATA_CONCRETE
-data_set_to_use = bc.DATA_CLIMATE_MONTH
+#data_set_to_use = bc.DATA_BOSTON_HOUSING
+#data_set_to_use = bc.DATA_CONCRETE
+#data_set_to_use = bc.DATA_CLIMATE_MONTH
 
 METHOD_CLUSTER = 0
 METHOD_CLUSTER_SPLIT = 1
@@ -46,7 +46,7 @@ loss_to_use = LOSS_Y
 
 run_experiments = True
 run_batch_experiments = True
-
+use_training = True
 all_data_sets = [data_set_to_use]
 
 
@@ -115,7 +115,7 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.num_samples = 10
         elif data_set == bc.DATA_CLIMATE_MONTH:
             self.set_data_set_defaults('climate-month')
-            self.num_labels = [600]
+            self.num_labels = [500]
             self.subset_size = 10
             self.num_samples = 10
         else:
@@ -167,7 +167,7 @@ class MainConfigs(bc.MainConfigs):
                 PipelineSelectLabeled(),
                 PipelineSelectDataIDs(ids=[0]),
                 PipelineAddClusterNoise(
-                    num_clusters=1,
+                    num_clusters=0,
                     n_per_cluster=5,
                     flip_labels=False,
                     y_offset=10,
@@ -194,6 +194,7 @@ class MainConfigs(bc.MainConfigs):
             sisc.num_samples = 8
         elif pc.instance_selection_method == METHOD_CLUSTER_GRAPH:
             sisc = instance_selection.SupervisedInstanceSelectionClusterGraph(method_configs)
+            sisc.configs.use_training = use_training
             sisc.subset_size = 8
             sisc.num_samples = 8
         else:

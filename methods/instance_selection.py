@@ -97,6 +97,7 @@ class SupervisedInstanceSelection(method.Method):
 
         configs = deepcopy(self.configs)
         self.target_learner = method.NadarayaWatsonMethod(deepcopy(configs))
+        self.target_learner.configs.use_validation = True
         self.target_learner.configs.results_features = ['y', 'true_y']
         self.target_learner.quiet = True
         self.subset_learner = deepcopy(self.target_learner)
@@ -107,6 +108,7 @@ class SupervisedInstanceSelection(method.Method):
         self.subset_density_reg = .1
         self.learner_reg = 100
         self.pca = None
+        self.output = None
 
         self.is_noisy = None
 
@@ -255,6 +257,10 @@ class SupervisedInstanceSelection(method.Method):
         self.subset_learner.train_and_test(self.selected_data)
 
         self.full_data = deepcopy(data)
+        #self.full_data.is_train[:] = True
+        #self.full_data.y = self.full_data.true_y
+        assert(self.full_data.is_train.all())
+        assert(self.full_data.is_labeled.all())
         self.target_learner.train_and_test(self.full_data)
         self.is_noisy = data.is_noisy
         self.y_orig = data.y_orig
@@ -267,7 +273,8 @@ class SupervisedInstanceSelection(method.Method):
 
     def predict(self, data):
         I = self.selected_data.is_labeled
-        self.f_x = self.target_learner.predict(data).y
+        #self.f_x = self.target_learner.predict(data).y
+        self.f_x = data.true_y
         self.p_x = density.tune_and_predict_density(self.full_data.x, data.x, bandwidths)
         self.f_s = self.subset_learner.predict(data).y
         self.p_s = density.tune_and_predict_density(self.selected_data.x[I], data.x, bandwidths)
@@ -281,6 +288,7 @@ class SupervisedInstanceSelection(method.Method):
         o.is_noisy = self.is_noisy
         o.is_selected = self.learned_distribution > 0
         o.y_orig = self.y_orig
+        self.output = o
         return o
 
     @property
@@ -434,15 +442,19 @@ class SupervisedInstanceSelectionClusterGraph(SupervisedInstanceSelectionCluster
             'sigma_x': self.create_cv_params(-5, 5),
             'sigma_y': self.create_cv_params(-5, 5),
         }
+        #self.cv_params['sigma_x'] = self.create_cv_params(-2, 2)
+        #self.cv_params['sigma_y'] = self.create_cv_params(-2, 2)
         self.spectral_cluster = SpectralClustering()
         self.original_cluster_inds = None
+        self.configs.use_saved_cv_output = True
 
     def cluster_spectral(self, W, num_clusters, spectral_cluster=None):
         if spectral_cluster is None:
             spectral_cluster = SpectralClustering()
         spectral_cluster.set_params(
             n_clusters=num_clusters,
-            affinity='precomputed'
+            affinity='precomputed',
+            n_init=100
         )
         try:
             I = spectral_cluster.fit_predict(W)
@@ -475,10 +487,19 @@ class SupervisedInstanceSelectionClusterGraph(SupervisedInstanceSelectionCluster
 
         self.spectral_cluster, cluster_inds = \
             self.cluster_spectral(W, opt_data.subset_size, self.spectral_cluster)
+        if not self.running_cv:
+            I = cluster_inds
+            _, I2 = \
+                self.cluster_spectral(W, opt_data.subset_size, self.spectral_cluster)
+            print ''
 
         selected = self.compute_centroids_for_spectral_clustering(W, cluster_inds)
+        self.W = W
+        self.cluster_inds = cluster_inds
+        self.selected = selected
         if selected.sum() < opt_data.subset_size:
-            print 'Empty clusters'
+            #print 'Empty clusters'
+            pass
         #self.learned_distribution = compute_p(selected, opt_data)
         self.learned_distribution = selected
         self.optimization_value = 0
@@ -536,7 +557,7 @@ class SupervisedInstanceSelectionClusterSplit(SupervisedInstanceSelectionCluster
                 centroid1, centroid1_idx = self.compute_data_set_centroid(xi[I1])
                 curr_centroids[I_inds[I0[centroid0_idx[0]]]] = 1
                 curr_centroids[I_inds[I1[centroid1_idx[0]]]] = 1
-        print ''
+        #print ''
         return curr_centroids == 1
 
 

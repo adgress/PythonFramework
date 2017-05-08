@@ -85,7 +85,12 @@ class PipelineSelectSubset(PipelineElement):
 class PipelineSelectDataIDs(PipelineSelectSubset):
     def __init__(self, ids=[0]):
         super(PipelineSelectSubset, self).__init__()
-        self.selection_func = lambda data: selection_subset_ids(data, ids)
+        #self.selection_func = lambda data: selection_subset_ids(data, ids)
+        ids = self.ids
+
+    def transform(self, data):
+        I = selection_subset_ids(data, self.ids)
+        return data.get_subset(I)
 
     @property
     def prefix(self):
@@ -94,7 +99,12 @@ class PipelineSelectDataIDs(PipelineSelectSubset):
 class PipelineSelectClasses(PipelineSelectSubset):
     def __init__(self, classes=[0, 1]):
         super(PipelineSelectSubset, self).__init__()
-        self.selection_func = lambda data: select_classes(data, classes)
+        #self.selection_func = lambda data: select_classes(data, classes)
+        self.classes = classes
+
+    def transform(self, data):
+        I = select_classes(data, self.classes)
+        return data.get_subset(I)
 
     @property
     def prefix(self):
@@ -103,7 +113,11 @@ class PipelineSelectClasses(PipelineSelectSubset):
 class PipelineSelectLabeled(PipelineSelectSubset):
     def __init__(self):
         super(PipelineSelectSubset, self).__init__()
-        self.selection_func = lambda data: select_subset_using_property(data, 'is_labeled')
+        #self.selection_func = lambda data: select_subset_using_property(data, 'is_labeled')
+
+    def transform(self, data):
+        I = select_subset_using_property(data, 'is_labeled')
+        return data.get_subset(I)
 
 class PipelineSKLTransform(PipelineElement):
     def __init__(self, skl_transform=None):

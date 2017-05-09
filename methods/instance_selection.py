@@ -538,7 +538,8 @@ class SupervisedInstanceSelectionSubmodular(SupervisedInstanceSelection):
     def evaluate_selection(self, W, I):
         Wpp = W[I, :]
         Wpp = Wpp[:, ~I]
-        return W[np.ix_(I, ~I)].sum() - self.C*W[np.ix_(I, I)].sum()
+        v = W[np.ix_(I, ~I)].sum() - self.C*W[np.ix_(I, I)].sum()
+        return v
 
     def optimize(self, opt_data):
         W_x = array_functions.make_rbf(opt_data.X, self.sigma_x)
@@ -550,7 +551,7 @@ class SupervisedInstanceSelectionSubmodular(SupervisedInstanceSelection):
         for i in range(opt_data.subset_size):
             new_scores = np.zeros(W.shape[0])
             new_scores[:] = -np.inf
-            for j in range(opt_data.subset_size):
+            for j in range(W.shape[0]):
                 if selected[j]:
                     continue
                 b = array_functions.false(W.shape[0])

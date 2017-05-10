@@ -18,22 +18,25 @@ def create_project_configs():
 
 pc_fields_to_copy = bc.pc_fields_to_copy + [
     'subset_size',
-    'num_samples'
+    'num_samples',
+    'no_f_x',
+    'num_class_splits',
 ]
 
 classification_data_sets = {
     bc.DATA_MNIST
 }
 
-#data_set_to_use = bc.DATA_MNIST
+data_set_to_use = bc.DATA_MNIST
+#data_set_to_use = bc.DATA_CLIMATE_MONTH
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
-data_set_to_use = bc.DATA_CLIMATE_MONTH
 
 METHOD_CLUSTER = 0
 METHOD_CLUSTER_SPLIT = 1
 METHOD_CLUSTER_GRAPH = 2
-METHOD_CLUSTER_SUBMODULAR = 3
+METHOD_SUBMODULAR = 3
+METHOD_GREEDY = 4
 
 LOSS_Y = 0
 LOSS_P = 1
@@ -41,7 +44,8 @@ LOSS_NOISY = 2
 LOSS_ENTROPY = 3
 
 #instance_selection_method = METHOD_CLUSTER
-instance_selection_method = METHOD_CLUSTER_SUBMODULAR
+#instance_selection_method = METHOD_SUBMODULAR
+instance_selection_method = METHOD_GREEDY
 
 loss_to_use = LOSS_Y
 
@@ -89,6 +93,8 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.num_samples = 10
         self.instance_selection_method = instance_selection_method
         self.loss_to_use = loss_to_use
+        self.no_f_x = False
+        self.num_class_splits = None
         if use_arguments and arguments is not None:
             apply_arguments(self)
 
@@ -201,8 +207,16 @@ class MainConfigs(bc.MainConfigs):
             sisc.configs.use_training = use_training
             sisc.subset_size = 8
             sisc.num_samples = 8
-        elif pc.instance_selection_method == METHOD_CLUSTER_SUBMODULAR:
+        elif pc.instance_selection_method == METHOD_SUBMODULAR:
             sisc = instance_selection.SupervisedInstanceSelectionSubmodular(method_configs)
+            method_configs.results_features = ['y', 'true_y']
+            sisc.configs.results_features = ['res_total', 'res_total']
+            sisc.configs.cv_loss_function = loss_function.LossNorm()
+            sisc.configs.use_training = use_training
+            sisc.subset_size = 8
+            sisc.num_samples = 8
+        elif pc.instance_selection_method == METHOD_GREEDY:
+            sisc = instance_selection.SupervisedInstanceSelectionGreedy(method_configs)
             method_configs.results_features = ['y', 'true_y']
             sisc.configs.results_features = ['res_total', 'res_total']
             sisc.configs.cv_loss_function = loss_function.LossNorm()
@@ -245,7 +259,27 @@ class BatchConfigs(bc.BatchConfigs):
             self.config_list.append(MainConfigs(p))
 
             p = deepcopy(pc)
-            p.instance_selection_method = METHOD_CLUSTER_SUBMODULAR
+            p.instance_selection_method = METHOD_CLUSTER_GRAPH
+            p.no_f_x = True
+            self.config_list.append(MainConfigs(p))
+
+            p = deepcopy(pc)
+            p.instance_selection_method = METHOD_SUBMODULAR
+            self.config_list.append(MainConfigs(p))
+
+            p = deepcopy(pc)
+            p.instance_selection_method = METHOD_SUBMODULAR
+            p.no_f_x = True
+            self.config_list.append(MainConfigs(p))
+
+            p = deepcopy(pc)
+            p.instance_selection_method = METHOD_SUBMODULAR
+            p.num_class_splits = 2
+            p.no_f_x = True
+            self.config_list.append(MainConfigs(p))
+
+            p = deepcopy(pc)
+            p.instance_selection_method = METHOD_GREEDY
             self.config_list.append(MainConfigs(p))
 
 
@@ -295,9 +329,15 @@ class VisualizationConfigs(bc.VisualizationConfigs):
 
     def generate_file_names(self, pc):
         self.files = OrderedDict()
-        self.files['Pipeline+SupervisedInstanceSelectionCluster.pkl'] = 'Cluster'
-        self.files['Pipeline+SupervisedInstanceSelectionClusterSplit.pkl'] = 'Cluster Split'
+        #self.files['Pipeline+SupervisedInstanceSelectionCluster.pkl'] = 'Cluster'
+        #self.files['Pipeline+SupervisedInstanceSelectionClusterSplit.pkl'] = 'Cluster Split'
+        self.files['Pipeline+SupervisedInstanceSelectionGreedy.pkl'] = 'Greedy'
+        self.files['Pipeline+SupervisedInstanceSelectionSubmodular.pkl'] = 'Submodular'
+        self.files['Pipeline+SupervisedInstanceSelectionSubmodular-just_px.pkl'] = 'Submodular: Just P(X)'
+        self.files['Pipeline+SupervisedInstanceSelectionSubmodular-just_px-class_splits=2.pkl'] = 'Submodular: Just P(X), 2 splits'
+
         self.files['Pipeline+SupervisedInstanceSelectionClusterGraph.pkl'] = 'Cluster Graph'
+        self.files['Pipeline+SupervisedInstanceSelectionClusterGraph-just_px.pkl'] = 'Cluster Graph: Just P(X)'
 
 
 '''

@@ -117,9 +117,6 @@ class SupervisedInstanceSelection(method.Method):
         else:
             self.supervised_loss_func = compute_f_nw
             self.cv_params['subset_size'] = self.create_cv_params(-5, 5)
-            #self.cv_params['learner_reg'] = self.create_cv_params(-4, 4)
-            #self.cv_params['density_reg'] = self.create_cv_params(-2, 2)
-            #self.cv_params['subset_density_reg'] = self.create_cv_params(-4, 4)
 
     def solve_w(self, X, Y, reg, Z=None, subset_size=None):
         if subset_size is None:
@@ -332,50 +329,54 @@ def compute_f_linear(Z, opt_data):
 class SupervisedInstanceSelectionGreedy(SupervisedInstanceSelection):
     def __init__(self, configs=MethodConfigs()):
         super(SupervisedInstanceSelectionGreedy, self).__init__(configs)
+        self.cv_params = {
+            'sigma_p': np.logspace(-3, 3, 10),
+            'sigma_y': self.create_cv_params(-5, 5),
+            'C': self.create_cv_params(-3, 3),
+        }
+
+    def evaluate_selection(self, W_p, W_y, I, y_true, p_true):
+        p_pred = W_p[:, I].sum(1)
+        S = array_functions.make_smoothing_matrix(W_y[:, I])
+        y_pred = S.dot(y_true[I])
+        error = norm(y_pred - y_true) + self.C * norm(p_pred - p_true)
+        return error
 
     def optimize(self, opt_data):
-        y_pred = self.compute_predictions(
-            opt_data.X,
-            opt_data.Y,
-            Z=None,
-            subset_size=None,
-            estimate=True,
-            learner_reg=opt_data.learner_reg
-        )
-        y_diff = np.abs(y_pred - opt_data.Y)
-        '''
-        if self.use_linear:
-            w = self.solve_w(opt_data.X, opt_data.Y, opt_data.learner_reg)
-            y_pred = opt_data.X.dot(w)
-            y_diff = np.abs(y_pred - opt_data.Y)
-        '''
-        p_x = self.p_x
-        if not np.isfinite(self.mixture_reg):
-            total_error = p_x.copy()
-        else:
-            total_error = -y_diff + opt_data.mixture_reg*p_x
-        selected = np.zeros(y_pred.shape)
-        assert y_pred.shape >= opt_data.subset_size
-        if self.is_classifier:
-            assert False, 'TODO'
-            classes = np.unique(opt_data.Y)
-            indicies_to_sample = []
-            for i in classes:
-                indicies_to_sample.append(
-                    (opt_data.Y == i).nonzero()[0]
-                )
+        #self.sigma_p = 1
+        #self.sigma_y = 1
+        #self.C = 1
+        W_p = density.compute_kernel(opt_data.X, None, self.sigma_p)
+        W_y = array_functions.make_rbf(opt_data.X, self.sigma_y)
+        n = W_p.shape[0]
+        selected = array_functions.false(n)
+        y_true = self.f_x
+        p_true = self.p_x
         for i in range(opt_data.subset_size):
-            idx = np.argmax(total_error)
-            selected[idx] = 1
-            total_error[idx] = -np.inf
-        self.learned_distribution = compute_p(selected, opt_data)
+            new_scores = np.zeros(n)
+            new_scores[:] = np.inf
+            for j in range(n):
+                if selected[j]:
+                    continue
+                b = array_functions.false(n)
+                b[j] = True
+                new_scores[j] = self.evaluate_selection(W_p, W_y, b | selected, y_true, p_true)
+            best_idx = new_scores.argmin()
+            selected[best_idx] = True
+
+        self.selected = selected
+        if selected.sum() < opt_data.subset_size:
+            # print 'Empty clusters'
+            pass
+        # self.learned_distribution = compute_p(selected, opt_data)
+        self.learned_distribution = selected
         self.optimization_value = 0
+
+        #return self.optimize_nonparametric(opt_data)
 
     @property
     def prefix(self):
-        s = 'SupervisedInstanceSelectionLinearGreedy'
-        if self.use_linear:
-            s += '-linear'
+        s = 'SupervisedInstanceSelectionGreedy'
         return s
 
 class SupervisedInstanceSelectionCluster(SupervisedInstanceSelection):
@@ -448,11 +449,12 @@ class SupervisedInstanceSelectionClusterGraph(SupervisedInstanceSelectionCluster
             'sigma_x': self.create_cv_params(-5, 5),
             'sigma_y': self.create_cv_params(-5, 5),
         }
-        #self.cv_params['sigma_x'] = self.create_cv_params(-2, 2)
-        #self.cv_params['sigma_y'] = self.create_cv_params(-2, 2)
         self.spectral_cluster = SpectralClustering()
         self.original_cluster_inds = None
         self.configs.use_saved_cv_output = True
+        self.no_f_x = getattr(configs, 'no_f_x', False)
+        if self.no_f_x:
+            del self.cv_params['sigma_y']
 
     def cluster_spectral(self, W, num_clusters, spectral_cluster=None):
         if spectral_cluster is None:
@@ -493,8 +495,10 @@ class SupervisedInstanceSelectionClusterGraph(SupervisedInstanceSelectionCluster
 
     def optimize(self, opt_data):
         W_x = array_functions.make_rbf(opt_data.X, self.sigma_x)
-        W_y = array_functions.make_rbf(opt_data.Y, self.sigma_y)
-        W = W_x * W_y
+        W = W_x
+        if not self.no_f_x:
+            W_y = array_functions.make_rbf(opt_data.Y, self.sigma_y)
+            W = W_x * W_y
 
         self.spectral_cluster, cluster_inds = \
             self.cluster_spectral(W, opt_data.subset_size, self.spectral_cluster)
@@ -518,6 +522,8 @@ class SupervisedInstanceSelectionClusterGraph(SupervisedInstanceSelectionCluster
     @property
     def prefix(self):
         s = 'SupervisedInstanceSelectionClusterGraph'
+        if getattr(self, 'no_f_x', False):
+            s += '-just_px'
         return s
 
 class SupervisedInstanceSelectionSubmodular(SupervisedInstanceSelection):
@@ -527,13 +533,14 @@ class SupervisedInstanceSelectionSubmodular(SupervisedInstanceSelection):
         self.cv_params = {
             'sigma_x': self.create_cv_params(-5, 5),
             'sigma_y': self.create_cv_params(-5, 5),
-            'C': self.create_cv_params(-2, 2),
+            'C': self.create_cv_params(-3, 3),
         }
-        #self.cv_params['sigma_x'] = self.create_cv_params(-2, 2)
-        #self.cv_params['sigma_y'] = self.create_cv_params(-2, 2)
         self.original_cluster_inds = None
         self.configs.use_saved_cv_output = True
-
+        self.no_f_x = getattr(configs, 'no_f_x', False)
+        self.num_class_splits = getattr(configs, 'num_class_splits', None)
+        if self.no_f_x:
+            del self.cv_params['sigma_y']
 
     def evaluate_selection(self, W, I):
         Wpp = W[I, :]
@@ -541,14 +548,9 @@ class SupervisedInstanceSelectionSubmodular(SupervisedInstanceSelection):
         v = W[np.ix_(I, ~I)].sum() - self.C*W[np.ix_(I, I)].sum()
         return v
 
-    def optimize(self, opt_data):
-        W_x = array_functions.make_rbf(opt_data.X, self.sigma_x)
-        W_y = array_functions.make_rbf(opt_data.Y, self.sigma_y)
-        W = W_x * W_y
-
-
+    def optimize_for_data(self, W, num_to_select):
         selected = array_functions.false(W.shape[0])
-        for i in range(opt_data.subset_size):
+        for i in range(num_to_select):
             new_scores = np.zeros(W.shape[0])
             new_scores[:] = -np.inf
             for j in range(W.shape[0]):
@@ -559,6 +561,28 @@ class SupervisedInstanceSelectionSubmodular(SupervisedInstanceSelection):
                 new_scores[j] = self.evaluate_selection(W, selected | b)
             best_idx = new_scores.argmax()
             selected[best_idx] = True
+        return selected
+
+    def optimize(self, opt_data):
+        W_x = array_functions.make_rbf(opt_data.X, self.sigma_x)
+        W = W_x
+        if not self.no_f_x:
+            W_y = array_functions.make_rbf(opt_data.Y, self.sigma_y)
+            W = W_x * W_y
+        n = W.shape[0]
+        selected = array_functions.false(W.shape[0])
+        splits = [array_functions.true(n)]
+        num_per_split = [opt_data.subset_size]
+        if self.num_class_splits is not None:
+            assert self.num_class_splits == 2
+            I1 = opt_data.Y <= opt_data.Y.mean()
+            splits = [I1, ~I1]
+            num_per_split = [opt_data.subset_size/2, opt_data.subset_size/2]
+        for split, num in zip(splits, num_per_split):
+            W_split = W[np.ix_(split, split)]
+            split_selections = self.optimize_for_data(W_split, num)
+            split_inds = split.nonzero()[0]
+            selected[split_inds[split_selections]] = True
 
         #selected = self.compute_centroids_for_spectral_clustering(W, cluster_inds)
         self.W = W
@@ -573,6 +597,10 @@ class SupervisedInstanceSelectionSubmodular(SupervisedInstanceSelection):
     @property
     def prefix(self):
         s = 'SupervisedInstanceSelectionSubmodular'
+        if getattr(self, 'no_f_x', False):
+            s += '-just_px'
+        if getattr(self, 'num_class_splits', None) is not None:
+            s += '-class_splits=' + str(self.num_class_splits)
         return s
 
 class SupervisedInstanceSelectionClusterSplit(SupervisedInstanceSelectionCluster):

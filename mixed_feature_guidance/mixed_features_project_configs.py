@@ -57,8 +57,9 @@ VIZ_PAPER_RELATIVE = 3
 VIZ_PAPER_TRAINING_CORR = 4
 VIZ_PAPER_TRANSFER = 5
 VIZ_PAPER_TRAINING_SINGLE = 6
+VIZ_PAPER_HARD_CONSTRAINTS = 7
 
-viz_type = VIZ_PAPER_TRAINING_CORR
+viz_type = VIZ_PAPER_HARD_CONSTRAINTS
 if viz_type == VIZ_PAPER_TRANSFER:
     run_transfer_experiments = True
 
@@ -453,6 +454,9 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         elif viz_type == VIZ_PAPER_TRAINING_SINGLE:
             self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_l1.pkl'] = 'With Outside Guidance'
             self.files['Mixed-feats_method=Rel_signs=1-use_sign_trainCorr_l1.pkl'] = 'Without Outside Guidance'
+        elif viz_type == VIZ_PAPER_HARD_CONSTRAINTS:
+            self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_l1.pkl'] = 'Our Method: 100% signs'
+            self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_not-relaxed_l1.pkl'] = 'Signed Ridge'
 
         #self.files['SKL-DumReg.pkl'] = 'Predict Mean'
 

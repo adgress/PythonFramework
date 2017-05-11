@@ -36,7 +36,13 @@ class PipelineMethod(method.Method):
 
     @property
     def prefix(self):
-        return 'Pipeline+' + self.base_learner.prefix
+        s = 'Pipeline'
+        for l in self.preprocessing_pipeline:
+            s2 = l.prefix
+            if s2 != '':
+                s += '_' + s2
+        s += '+' + self.base_learner.prefix
+        return s
 
 
 class PipelineElement(object):
@@ -112,12 +118,62 @@ class PipelineSelectClasses(PipelineSelectSubset):
 
 class PipelineSelectLabeled(PipelineSelectSubset):
     def __init__(self):
-        super(PipelineSelectSubset, self).__init__()
+        super(PipelineSelectLabeled, self).__init__()
         #self.selection_func = lambda data: select_subset_using_property(data, 'is_labeled')
 
     def transform(self, data):
         I = select_subset_using_property(data, 'is_labeled')
         return data.get_subset(I)
+
+class PipelineSampleClasses(PipelineSelectSubset):
+    def __init__(self, num_to_select=None):
+        super(PipelineSampleClasses, self).__init__()
+        #self.selection_func = lambda data: select_subset_using_property(data, 'is_labeled')
+        self.num_to_select = num_to_select
+
+    def transform(self, data):
+        assert not data.is_regression
+        y = data.classes
+        to_keep = array_functions.true(data.n)
+        if self.num_to_select is not None:
+            for yi, perc in zip(y, self.num_to_select):
+                inds = (data.y == yi).nonzero()[0]
+                n_to_keep = np.ceil(inds.size * perc)
+                to_keep[inds[n_to_keep:]] = False
+            data = data.get_subset(to_keep)
+        return data
+
+
+    @property
+    def prefix(self):
+        s = ''
+        if self.num_to_select is not None:
+            s += 'SampleClasses=' + str(self.num_to_select)
+        return s
+
+class PiplineUseVariance(PipelineElement):
+    def __init__(self, use_variance=True):
+        super(PiplineUseVariance, self).__init__()
+        self.base_learner = method.NadarayaWatsonMethod()
+        self.use_variance = use_variance
+
+    def fit(self, data):
+        if self.use_variance:
+            self.base_learner.train_and_test(data)
+
+    def transform(self, data):
+        if self.use_variance:
+            data = deepcopy(data)
+            data.true_y = np.abs(self.base_learner.predict(data).y - data.true_y)
+            data.y[data.is_labeled] = data.true_y[data.is_labeled]
+        return data
+
+    @property
+    def prefix(self):
+        s = ''
+        if self.use_variance:
+            s = 'useVar'
+        return s
 
 class PipelineSKLTransform(PipelineElement):
     def __init__(self, skl_transform=None):
@@ -175,11 +231,12 @@ class PipelineAddClusterNoise(PipelineElement):
             should_add_noise[cluster_inds] = True
         if self.save_y_orig:
             data.y_orig = data.true_y.copy()
-        if self.flip_labels:
-            data.flip_label(should_add_noise)
-        else:
-            data.true_y[should_add_noise] += self.y_offset
-            data.y[should_add_noise] += self.y_offset
+        if should_add_noise.any():
+            if self.flip_labels:
+                data.flip_label(should_add_noise)
+            else:
+                data.true_y[should_add_noise] += self.y_offset
+                data.y[should_add_noise] += self.y_offset
         data.is_noisy = should_add_noise
         return data
 

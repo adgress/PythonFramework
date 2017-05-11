@@ -110,6 +110,8 @@ class SupervisedInstanceSelection(method.Method):
         self.pca = None
         self.output = None
 
+        self.no_f_x = False
+
         self.is_noisy = None
 
         if self.use_linear:
@@ -248,6 +250,7 @@ class SupervisedInstanceSelection(method.Method):
         l[v] = self.learned_distribution
         self.learned_distribution = l
         I = self.learned_distribution > 0
+
         self.selected_data = deepcopy(data)
         self.selected_data.y[~I] = np.nan
         self.selected_data.is_train[:] = True
@@ -263,6 +266,7 @@ class SupervisedInstanceSelection(method.Method):
         self.y_orig = data.y_orig
 
 
+
     def predict_test(self, data_train, data_test):
         opt_data = self.create_opt_data(data_train, data_test)
         return self.supervised_loss_func(self.learned_distribution, opt_data)
@@ -275,10 +279,19 @@ class SupervisedInstanceSelection(method.Method):
         self.p_x = density.tune_and_predict_density(self.full_data.x, data.x, bandwidths)
         self.f_s = self.subset_learner.predict(data).y
         self.p_s = density.tune_and_predict_density(self.selected_data.x[I], data.x, bandwidths)
+        self.var_x = np.abs(data.true_y - self.target_learner.predict(data).y)
+        self.var_s = np.abs(data.true_y - self.f_s)
 
-        res_f = np.abs(self.f_x - self.f_s) / np.linalg.norm(self.f_x)
         res_p = np.abs(self.p_x - self.p_s) / np.linalg.norm(self.p_x)
-
+        '''
+        if self.use_var:
+            res_var = np.abs(self.var_x - self.var_s) / np.linalg.norm(self.var_x)
+            res_total = res_p + res_var
+        else:
+            res_f = np.abs(self.f_x - self.f_s) / np.linalg.norm(self.f_x)
+            res_total = res_f + res_p
+        '''
+        res_f = np.abs(self.f_x - self.f_s) / np.linalg.norm(self.f_x)
         res_total = res_f + res_p
         self.res_total = res_total
         o = Output(data)
@@ -287,6 +300,8 @@ class SupervisedInstanceSelection(method.Method):
         o.p = self.p_s
         o.true_y = self.f_x
         o.y = self.f_s
+        o.var_x = self.var_x
+        o.var_s = self.var_s
         o.optimization_value = self.optimization_value/data.n
         o.is_noisy = self.is_noisy
         o.is_selected = self.learned_distribution > 0
@@ -294,9 +309,16 @@ class SupervisedInstanceSelection(method.Method):
         self.output = o
         return o
 
+    def get_shared_suffix(self):
+        s = ''
+        if getattr(self, 'no_f_x'):
+            s += '-just_px'
+        return s
+
     @property
     def prefix(self):
         s = 'SupervisedInstanceSelection'
+        s += self.get_shared_suffix()
         if self.use_linear:
             s += '-linear'
         return s
@@ -377,6 +399,7 @@ class SupervisedInstanceSelectionGreedy(SupervisedInstanceSelection):
     @property
     def prefix(self):
         s = 'SupervisedInstanceSelectionGreedy'
+        s += self.get_shared_suffix()
         return s
 
 class SupervisedInstanceSelectionCluster(SupervisedInstanceSelection):
@@ -437,6 +460,7 @@ class SupervisedInstanceSelectionCluster(SupervisedInstanceSelection):
     @property
     def prefix(self):
         s = 'SupervisedInstanceSelectionCluster'
+        s += self.get_shared_suffix()
         if self.use_linear:
             s += '-linear'
         return s
@@ -522,8 +546,7 @@ class SupervisedInstanceSelectionClusterGraph(SupervisedInstanceSelectionCluster
     @property
     def prefix(self):
         s = 'SupervisedInstanceSelectionClusterGraph'
-        if getattr(self, 'no_f_x', False):
-            s += '-just_px'
+        s += self.get_shared_suffix()
         return s
 
 class SupervisedInstanceSelectionSubmodular(SupervisedInstanceSelection):
@@ -543,8 +566,6 @@ class SupervisedInstanceSelectionSubmodular(SupervisedInstanceSelection):
             del self.cv_params['sigma_y']
 
     def evaluate_selection(self, W, I):
-        Wpp = W[I, :]
-        Wpp = Wpp[:, ~I]
         v = W[np.ix_(I, ~I)].sum() - self.C*W[np.ix_(I, I)].sum()
         return v
 
@@ -597,8 +618,7 @@ class SupervisedInstanceSelectionSubmodular(SupervisedInstanceSelection):
     @property
     def prefix(self):
         s = 'SupervisedInstanceSelectionSubmodular'
-        if getattr(self, 'no_f_x', False):
-            s += '-just_px'
+        s += self.get_shared_suffix()
         if getattr(self, 'num_class_splits', None) is not None:
             s += '-class_splits=' + str(self.num_class_splits)
         return s
@@ -667,6 +687,7 @@ class SupervisedInstanceSelectionClusterSplit(SupervisedInstanceSelectionCluster
     @property
     def prefix(self):
         s = 'SupervisedInstanceSelectionClusterSplit'
+        s += self.get_shared_suffix()
         if self.use_linear:
             s += '-linear'
         return s

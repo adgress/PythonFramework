@@ -20,6 +20,7 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
     'subset_size',
     'num_samples',
     'no_f_x',
+    'use_var',
     'num_class_splits',
 ]
 
@@ -53,7 +54,9 @@ run_experiments = True
 run_batch_experiments = True
 use_training = True
 all_data_sets = [data_set_to_use]
-
+#label_imbalance = .2
+label_imbalance = None
+use_var = True
 
 max_rows = 1
 
@@ -94,6 +97,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.instance_selection_method = instance_selection_method
         self.loss_to_use = loss_to_use
         self.no_f_x = False
+        self.use_var = use_var
         self.num_class_splits = None
         if use_arguments and arguments is not None:
             apply_arguments(self)
@@ -108,6 +112,8 @@ class ProjectConfigs(bc.ProjectConfigs):
         if data_set == bc.DATA_MNIST:
             self.set_data_set_defaults('mnist')
             self.num_labels = [50]
+            if label_imbalance is not None:
+                self.num_labels = [100]
             self.subset_size = 10
             self.num_samples = 10
         elif data_set == bc.DATA_BOSTON_HOUSING:
@@ -154,6 +160,9 @@ class MainConfigs(bc.MainConfigs):
 
         pipeline = PipelineMethod(method_configs)
         max_std = None
+        imbalance = [1, label_imbalance]
+        if label_imbalance is None:
+            imbalance = None
         if pc.data_set == bc.DATA_MNIST:
             pipeline.preprocessing_pipeline = [
                 PipelineChangeClasses({
@@ -162,8 +171,10 @@ class MainConfigs(bc.MainConfigs):
                 }),
                 PipelineSelectClasses([4, 7]),
                 PipelineSelectLabeled(),
+                PipelineSampleClasses(imbalance),
                 PipelineMakeRegression(),
                 PipelineSKLTransform(PCA(n_components=2)),
+                PiplineUseVariance(use_var),
                 PipelineAddClusterNoise(
                     num_clusters=0,
                     n_per_cluster=15
@@ -173,6 +184,7 @@ class MainConfigs(bc.MainConfigs):
             pipeline.preprocessing_pipeline = [
                 PipelineSelectLabeled(),
                 PipelineSelectDataIDs(ids=[0]),
+                PiplineUseVariance(use_var),
                 PipelineAddClusterNoise(
                     num_clusters=0,
                     n_per_cluster=5,
@@ -187,6 +199,7 @@ class MainConfigs(bc.MainConfigs):
                 PipelineSelectLabeled(),
                 PipelineSKLTransform(StandardScaler()),
                 PipelineSKLTransform(PCA(n_components=2)),
+                PiplineUseVariance(use_var),
                 PipelineAddClusterNoise(
                     num_clusters=0,
                     n_per_cluster=15,
@@ -197,38 +210,26 @@ class MainConfigs(bc.MainConfigs):
             ]
         if pc.instance_selection_method == METHOD_CLUSTER:
             sisc = instance_selection.SupervisedInstanceSelectionCluster(method_configs)
-            sisc.subset_size = 8
-            sisc.num_samples = 8
         elif pc.instance_selection_method == METHOD_CLUSTER_GRAPH:
             sisc = instance_selection.SupervisedInstanceSelectionClusterGraph(method_configs)
-            method_configs.results_features = ['y', 'true_y']
-            sisc.configs.results_features = ['res_total', 'res_total']
-            sisc.configs.cv_loss_function = loss_function.LossNorm()
-            sisc.configs.use_training = use_training
-            sisc.subset_size = 8
-            sisc.num_samples = 8
         elif pc.instance_selection_method == METHOD_SUBMODULAR:
             sisc = instance_selection.SupervisedInstanceSelectionSubmodular(method_configs)
-            method_configs.results_features = ['y', 'true_y']
-            sisc.configs.results_features = ['res_total', 'res_total']
-            sisc.configs.cv_loss_function = loss_function.LossNorm()
-            sisc.configs.use_training = use_training
-            sisc.subset_size = 8
-            sisc.num_samples = 8
         elif pc.instance_selection_method == METHOD_GREEDY:
             sisc = instance_selection.SupervisedInstanceSelectionGreedy(method_configs)
-            method_configs.results_features = ['y', 'true_y']
-            sisc.configs.results_features = ['res_total', 'res_total']
-            sisc.configs.cv_loss_function = loss_function.LossNorm()
-            sisc.configs.use_training = use_training
-            sisc.subset_size = 8
-            sisc.num_samples = 8
         else:
+            assert False, 'Not using cluster split anymore'
             sisc = instance_selection.SupervisedInstanceSelectionClusterSplit(method_configs)
             sisc.subset_size = 5
             sisc.num_samples = 5
             if max_std is not None:
                 sisc.max_std = max_std
+
+        sisc.configs.results_features = ['res_total', 'res_total']
+        sisc.configs.cv_loss_function = loss_function.LossNorm()
+        sisc.configs.use_training = use_training
+        sisc.subset_size = 8
+        sisc.num_samples = 8
+
         pipeline.base_learner = sisc
         self.learner = pipeline
 
@@ -246,14 +247,16 @@ class BatchConfigs(bc.BatchConfigs):
         self.config_list = [MainConfigs(pc)]
         if run_batch_experiments:
             self.config_list = []
+            '''
             p = deepcopy(pc)
             p.instance_selection_method = METHOD_CLUSTER
             self.config_list.append(MainConfigs(p))
-
+            '''
+            '''
             p = deepcopy(pc)
             p.instance_selection_method = METHOD_CLUSTER_SPLIT
             self.config_list.append(MainConfigs(p))
-
+            '''
             p = deepcopy(pc)
             p.instance_selection_method = METHOD_CLUSTER_GRAPH
             self.config_list.append(MainConfigs(p))
@@ -305,8 +308,12 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         if not hasattr(self, 'loss_to_use'):
             self.loss_to_use = loss_to_use
         if self.loss_to_use == LOSS_Y:
-            results_features = ['y', 'true_y']
-            self.y_axis_string = 'Prediction Error'
+            if pc.use_var:
+                results_features = ['y', 'true_y']
+                self.y_axis_string = 'Variance Error'
+            else:
+                results_features = ['y', 'true_y']
+                self.y_axis_string = 'Prediction Error'
         elif self.loss_to_use == LOSS_P:
             results_features = ['p', 'true_p']
             self.y_axis_string = 'P(X) Error'
@@ -331,13 +338,18 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files = OrderedDict()
         #self.files['Pipeline+SupervisedInstanceSelectionCluster.pkl'] = 'Cluster'
         #self.files['Pipeline+SupervisedInstanceSelectionClusterSplit.pkl'] = 'Cluster Split'
-        self.files['Pipeline+SupervisedInstanceSelectionGreedy.pkl'] = 'Greedy'
-        self.files['Pipeline+SupervisedInstanceSelectionSubmodular.pkl'] = 'Submodular'
-        self.files['Pipeline+SupervisedInstanceSelectionSubmodular-just_px.pkl'] = 'Submodular: Just P(X)'
-        self.files['Pipeline+SupervisedInstanceSelectionSubmodular-just_px-class_splits=2.pkl'] = 'Submodular: Just P(X), 2 splits'
+        pipeline_str = ''
+        if label_imbalance is not None:
+            pipeline_str = '_SampleClasses=[1, 0.2]'
+        if pc.use_var:
+            pipeline_str += '_useVar'
+        self.files['Pipeline%s+SupervisedInstanceSelectionGreedy.pkl' % pipeline_str] = 'Greedy'
+        self.files['Pipeline%s+SupervisedInstanceSelectionSubmodular.pkl' % pipeline_str] = 'Submodular'
+        self.files['Pipeline%s+SupervisedInstanceSelectionSubmodular-just_px.pkl' % pipeline_str] = 'Submodular: Just P(X)'
+        self.files['Pipeline%s+SupervisedInstanceSelectionSubmodular-just_px-class_splits=2.pkl' % pipeline_str] = 'Submodular: Just P(X), 2 splits'
 
-        self.files['Pipeline+SupervisedInstanceSelectionClusterGraph.pkl'] = 'Cluster Graph'
-        self.files['Pipeline+SupervisedInstanceSelectionClusterGraph-just_px.pkl'] = 'Cluster Graph: Just P(X)'
+        self.files['Pipeline%s+SupervisedInstanceSelectionClusterGraph.pkl' % pipeline_str] = 'Cluster Graph'
+        self.files['Pipeline%s+SupervisedInstanceSelectionClusterGraph-just_px.pkl' % pipeline_str] = 'Cluster Graph: Just P(X)'
 
 
 '''

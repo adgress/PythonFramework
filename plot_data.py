@@ -18,10 +18,14 @@ import numpy as np
 #data_file_dir = 'pollution-[3 4]-500-norm'
 
 #data_file_dir = 'zillow-traffic'
-data_file_dir = 'climate-month'
+#data_file_dir = 'climate-month'
+#data_file_dir = 'irs-income'
+data_file_dir = 'kc-housing-spatial-floors'
 
 plot_climate = False
 plot_gradients = True
+plot_values = True
+plot_differences = True
 plot_features = False
 dot_sizes = 70
 def vis_data():
@@ -30,13 +34,22 @@ def vis_data():
     x = data.x
     y = data.y
     titles = ['', '']
+    label_idx = [0, 1]
     if plot_climate:
         img_path = 'C:/PythonFramework/far_transfer/figures/climate-terrain.png'
         image = imread(img_path)
         label_idx = [0, 4]
-    titles = ['Max Temperature Gradient: January', 'Max Temperature Gradient: April']
+    if data_file_dir == 'climate-month':
+        titles = ['Max Temperature Gradient: January', 'Max Temperature Gradient: April']
+        label_idx = [0, 4]
+    elif data_file_dir == 'irs-income':
+        titles = ['Income', 'Household Size']
+    elif data_file_dir == 'zillow-traffic':
+        titles = ['Morning Taxi Pickups', 'Housing Prices']
+    elif data_file_dir == 'kc-housing-spatial-floors':
+        titles = ['House Prices: 1 Floor', 'House Prices: 2 or More Floors']
 
-    label_idx =  [0, 1]
+
     if plot_features:
 
         for i in range(data.p):
@@ -49,20 +62,34 @@ def vis_data():
         for i, title in zip(label_idx, titles):
             #plt.close()
             I = data.data_set_ids == i
-            if plot_gradients:
-                g = estimate_gradients(x, y, I)
+            if plot_gradients or plot_values:
+                g, v = estimate_gradients(x, y, I)
+                if plot_values:
+                    g = v
                 #g = np.log(g)
                 #g -= g.min()
                 #g += g.max()/10.0
                 #g /= g.max()
-                if i == 0:
-                    g -= g.min()
-                    g /= g.max()
-                    g = np.sqrt(g)
+                if data_file_dir == 'zillow-traffic':
+                    if i == 0:
+                        pass
+                        g -= g.min()
+                        g /= g.max()
+                        #g **= .5
+                    else:
+                        pass
+                        g -= g.min()
+                        g /= g.max()
+                        #g **= .5
                 else:
-                    g -= g.min()
-                    g /= g.max()
-                    g **= 1
+                    if i == 0:
+                        g -= g.min()
+                        g /= g.max()
+                        g = np.sqrt(g)
+                    else:
+                        g -= g.min()
+                        g /= g.max()
+                        g **= 1
                 #array_functions.plot_heatmap(g, sizes=dot_sizes, fig=fig, title=title)
                 fig = plt.figure(i)
                 plt.title(title)
@@ -89,7 +116,10 @@ def estimate_gradients(x, y, I):
     data.set_train()
     data.is_regression = True
     nw = method.NadarayaWatsonMethod()
+    nw.cv_params = {}
+    nw.sigma = 1000
     nw.train_and_test(data)
+
     num_x0 = 40
     num_x1 = int(num_x0*range[1]/range[0])
     v = np.zeros((num_x0, num_x1))
@@ -108,7 +138,7 @@ def estimate_gradients(x, y, I):
     gradients = np.gradient(v)
     g = gradients[0]**2 + gradients[1]**2
     g = np.sqrt(g)
-    return g
+    return g, v
 
 
 if __name__ == '__main__':

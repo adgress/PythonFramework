@@ -33,23 +33,32 @@ def smoothness_shift_data(x):
     y_target[x_target > .6] -= 10
     return x_source, y_source, x_target, y_target
 
-def plot_shift(func, x):
+def plot_shift(func, x, legend_labels=None):
     x_source, y_source, x_target, y_target = func(x)
-    plt.plot(x_source, y_source, c='b')
-    plt.plot(x_target, y_target, c='r')
+    line1 = plt.plot(x_source, y_source, c='b')[0]
+    line2 = plt.plot(x_target, y_target, c='r')[0]
+    if legend_labels is not None:
+        plt.legend([line1, line2], legend_labels)
+    plt.ylabel('f(x)')
 
 fig = plt.figure()
 x = np.linspace(0, 1, 100)
 x = np.expand_dims(x, 1)
 ax1 = plt.subplot(3, 1, 1)
-plot_shift(covariate_shift_data, x)
+plot_shift(covariate_shift_data, x, ['Source', 'Target'])
 plt.title('Covariate Shift')
+plt.xticks([], [])
 ax1 = plt.subplot(3, 1, 2)
-plt.title('Location-Scale Shift')
+plt.title('Location-Scale')
+plt.xticks([], [])
 plot_shift(model_shift_data, x)
 ax1 = plt.subplot(3, 1, 3)
-plt.title('Smoothness Shift')
+plt.title('Regional')
 plot_shift(smoothness_shift_data, x)
+plt.xlabel('x')
+#plt.axis([0, 1, 0, 1])
+gap = .1
+plt.subplots_adjust(left=gap, bottom=gap, right=1-gap, top=1-gap, wspace=0, hspace=.2)
 plt.show(block=True)
 
 

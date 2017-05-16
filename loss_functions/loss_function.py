@@ -128,7 +128,7 @@ class LossSelectedEntropy(LossFunction):
                 counts[i] = (vi == y1).sum()
             counts /= counts.sum()
             counts -= 1 / float(v.size)
-            return np.linalg.norm(counts)
+            return np.linalg.norm(counts, 1)
 
 class LossFunctionParams(LossFunction):
     def __init__(self):

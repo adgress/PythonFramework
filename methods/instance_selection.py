@@ -306,6 +306,7 @@ class SupervisedInstanceSelection(method.Method):
         o.is_noisy = self.is_noisy
         o.is_selected = self.learned_distribution > 0
         o.y_orig = self.y_orig
+        o.x_orig = getattr(data, 'x_orig', None)
         self.output = o
         return o
 

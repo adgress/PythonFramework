@@ -179,17 +179,22 @@ class PipelineSKLTransform(PipelineElement):
     def __init__(self, skl_transform=None):
         super(PipelineSKLTransform, self).__init__()
         self.skl_transform = skl_transform
+        self.save_original_x = True
 
     def fit(self, data):
         self.skl_transform.fit(data.x)
 
     def transform(self, data):
+        data.x_orig = data.x.copy()
         data.x = self.skl_transform.transform(data.x)
         return data
 
     @property
     def prefix(self):
-        return ''
+        s = ''
+        if getattr(self, 'save_original_x', False):
+            s += '_saveOrigX'
+        return s
 
 class PipelineMakeRegression(PipelineElement):
     def __init__(self):

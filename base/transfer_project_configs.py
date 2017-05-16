@@ -59,8 +59,8 @@ PLOT_SMS = 4
 PLOT_TABLE = 5
 PLOT_TABLE_VAL = 6
 PLOT_ALPHA = 7
-#plot_idx = PLOT_PARAMETRIC
-plot_idx = PLOT_TABLE
+plot_idx = PLOT_PARAMETRIC
+#plot_idx = PLOT_TABLE
 max_rows = 1
 fontsize = 20
 
@@ -68,16 +68,16 @@ vis_table = plot_idx in {PLOT_TABLE, PLOT_TABLE_VAL}
 size_to_vis = 10
 sizes_to_use = [5, 10, 20, 30]
 
-run_experiments = False
+run_experiments = True
 #show_legend_on_all = False
 show_legend_on_all = True
 
-run_batch_exps = False
-vis_batch = True
+run_batch_exps = True
+vis_batch = False
 use_1d_data = False
 use_sms_plot_data_sets = plot_idx == PLOT_SMS
 
-use_validation = False
+use_validation = True
 
 use_constraints = False
 use_fused_lasso = False
@@ -85,7 +85,7 @@ no_C3 = False
 use_radius = False
 include_scale = False
 constant_b = False
-linear_b = True
+linear_b = False
 clip_b = True
 separate_target_domains = False
 multitask = False
@@ -425,7 +425,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.metric = 'euclidean'
         method_configs.no_reg = False
         method_configs.use_g_learner = True
-        method_configs.use_validation = False
+        method_configs.use_validation = use_validation
         method_configs.use_reg2 = True
 
         method_configs.use_fused_lasso = use_fused_lasso
@@ -670,6 +670,15 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files = OrderedDict()
             self.files['LocalTransferDelta_radius_l2_linear-b_clip-b.pkl'] = 'Ours: Linear'
             self.files['LocalTransferDelta_C3=0_radius_l2_linear-b.pkl'] = 'Ours: Linear, alpha=0'
+
+        if use_validation:
+            test_files = OrderedDict()
+            for f, leg in self.files.iteritems():
+                f = helper_functions.remove_suffix(f, '.pkl')
+                f += '_use-val.pkl'
+                #leg = 'VALIDATION: ' + leg
+                test_files[f] = leg
+            self.files = test_files
 
         if use_sms_plot_data_sets:
             if max_rows == 3:

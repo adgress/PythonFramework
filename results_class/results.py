@@ -177,10 +177,16 @@ class Output(data_lib.LabeledVector):
     def __init__(self,data=None,y=None):
         super(Output, self).__init__()
         if data is not None:
-            self.y = data.y.copy()
+            if data.y is not None:
+                self.y = data.y.copy()
+            else:
+                self.y = np.empty(0)
             self.is_train = data.is_train.copy()
             self.true_y = data.true_y.copy()
-            self.type = data.type.copy()
+            if data.type is not None:
+                self.type = data.type.copy()
+            else:
+                self.type = np.empty(0)
             self.fu = np.zeros(data.x.shape[0])
         else:
             self.y = np.empty(0)

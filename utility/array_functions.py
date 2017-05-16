@@ -185,7 +185,7 @@ def make_smoothing_matrix(W):
     try:
         D_inv = 1 / D
     except:
-        D_inv = np.on
+        D_inv = np.eye(D.shape[0])
     D_inv = replace_invalid(D_inv,x_min=1,x_max=1)
     S = (W.swapaxes(0, 1) * D_inv).swapaxes(0, 1)
     return S

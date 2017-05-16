@@ -196,7 +196,7 @@ class LocalTransferDelta(HypothesisTransfer):
         self.radius = None
         self.cv_params = {}
         self.cv_params['radius'] = np.asarray([.05, .1, .2],dtype='float64')
-        vals = [0] + list(range(-6,6))
+        vals = [0] + list(range(-5,5))
         vals.reverse()
         self.cv_params['C'] = 10**np.asarray(vals,dtype='float64')
         self.cv_params['C3'] = np.asarray([0, .2, .4, .6, .8, 1])

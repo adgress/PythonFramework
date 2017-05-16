@@ -193,7 +193,7 @@ class PipelineSKLTransform(PipelineElement):
     def prefix(self):
         s = ''
         if getattr(self, 'save_original_x', False):
-            s += '_saveOrigX'
+            s += 'saveOrigX'
         return s
 
 class PipelineMakeRegression(PipelineElement):

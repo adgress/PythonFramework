@@ -39,13 +39,13 @@ data_set_to_use = None
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_TRANSFER
 #data_set_to_use = bc.DATA_NG
 
-data_set_to_use = bc.DATA_BOSTON_HOUSING
+#data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_WINE
 #data_set_to_use = bc.DATA_BIKE_SHARING
 #data_set_to_use = bc.DATA_PAIR_82_83
 
-#data_set_to_use = bc.DATA_SYNTHETIC_CURVE
+data_set_to_use = bc.DATA_SYNTHETIC_CURVE
 #data_set_to_use = bc.DATA_SYNTHETIC_SLANT
 #data_set_to_use = bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER
 #data_set_to_use = bc.DATA_SYNTHETIC_DELTA_LINEAR
@@ -62,7 +62,7 @@ PLOT_ALPHA = 7
 plot_idx = PLOT_PARAMETRIC
 #plot_idx = PLOT_TABLE
 max_rows = 1
-fontsize = 20
+fontsize = 10
 
 vis_table = plot_idx in {PLOT_TABLE, PLOT_TABLE_VAL}
 size_to_vis = 10
@@ -73,8 +73,8 @@ run_experiments = True
 show_legend_on_all = True
 
 run_batch_exps = True
-vis_batch = False
-use_1d_data = False
+vis_batch = True
+use_1d_data = True
 use_sms_plot_data_sets = plot_idx == PLOT_SMS
 
 use_validation = True
@@ -89,6 +89,8 @@ linear_b = False
 clip_b = True
 separate_target_domains = False
 multitask = False
+
+use_delta_new = True
 
 synthetic_data_sets = [
     bc.DATA_SYNTHETIC_CURVE,
@@ -124,7 +126,8 @@ if run_batch_exps:
             bc.DATA_SYNTHETIC_CROSS,
         ]
     elif use_1d_data:
-        data_sets_for_exps = all_1d
+        #data_sets_for_exps = all_1d
+        data_sets_for_exps = synthetic_data_sets
     else:
         data_sets_for_exps = real_data_sets_full
 #data_sets_for_exps = real_data_sets_full
@@ -521,18 +524,22 @@ class MainConfigs(bc.MainConfigs):
         ssl_regression = semisupervised.SemisupervisedRegressionMethod(method_configs)
         ssl_regression.preprocessor = preprocessing.TargetOnlyPreprocessor()
 
-        #self.learner = target_nw
-        #self.learner = hyp_transfer
-        #self.learner = local_transfer
-        #self.learner = iwl_transfer
-        #self.learner = sms_transfer
-        self.learner = local_transfer_delta
-        #self.learner = dt_sms
-        #self.learner = ssl_regression
-        #self.learner = cov_shift
-        #self.learner = offset_transfer
-        #self.learner = stacked_transfer
-        #self.learner = gaussian_process
+        if use_delta_new:
+            self.learner = methods.local_transfer_methods.LocalTransferDeltaNew(method_configs)
+        else:
+            #self.learner = target_nw
+            #self.learner = hyp_transfer
+            #self.learner = local_transfer
+            #self.learner = iwl_transfer
+            #self.learner = sms_transfer
+
+            self.learner = local_transfer_delta
+            #self.learner = dt_sms
+            #self.learner = ssl_regression
+            #self.learner = cov_shift
+            #self.learner = offset_transfer
+            #self.learner = stacked_transfer
+            #self.learner = gaussian_process
 
 
 class MethodConfigs(bc.MethodConfigs):
@@ -613,7 +620,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files.append(('LocalTransferDelta_radius_l2_linear-b_clip-b.pkl','Ours: Linear'))
             self.files.append(('LocalTransferDelta_radius_l2_lap-reg.pkl','Ours: Nonparametric'))
             '''
-            self.files['LocalTransferDelta_radius_l2_constant-b.pkl'] = 'Ours: Constant'
+            #self.files['LocalTransferDelta_radius_l2_constant-b.pkl'] = 'Ours: Constant'
             self.files['LocalTransferDelta_radius_l2_linear-b_clip-b.pkl'] = 'Ours: Linear'
             self.files['LocalTransferDelta_l2_lap-reg.pkl'] = 'Ours: Nonparametric, rbf'
             #self.files['LocalTransferDelta_radius_l2.pkl'] = 'Ours: Nonparametric'
@@ -621,7 +628,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             #self.files['LocalTransferDelta_l2_constant-b.pkl'] = 'Ours: Constant'
             self.files['OffsetTransfer-jointCV.pkl'] = 'Offset Transfer'
             #self.files['LocalTransferDelta_C3=0_radius_l2_linear-b.pkl'] = 'Ours: Linear, alpha=0'
-
+            self.files['LocalTransferNew.pkl'] = 'Local Transfer New'
             '''
             self.files['LocalTransferDelta_l2_constant-b_sep-target.pkl'] = 'Ours: Constant, Separate Target Domains'
             self.files['LocalTransferDelta_l2_linear-b_clip-b_multitask.pkl'] = 'Ours: Linear, Multitask'
@@ -675,7 +682,12 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             test_files = OrderedDict()
             for f, leg in self.files.iteritems():
                 f = helper_functions.remove_suffix(f, '.pkl')
-                f += '_use-val.pkl'
+                if f == 'OffsetTransfer-jointCV':
+                    f += '-VAL.pkl'
+                elif f == 'LocalTransferDelta_l2_lap-reg':
+                    f = 'LocalTransferDelta_l2_use-val_lap-reg.pkl'
+                else:
+                    f += '_use-val.pkl'
                 #leg = 'VALIDATION: ' + leg
                 test_files[f] = leg
             self.files = test_files

@@ -288,7 +288,7 @@ class ScipyOptNonparametricHypothesisTransfer(ScipyOptMethod):
             fu = np.multiply(a_t, y_target) + np.multiply(b_s, y_source + self.bias)
         return fu
 
-    def predict_g(self, x):
+    def predict_g(self, x, data_set_ids=None):
         data = data_lib.Data()
         data.x = x
         data.is_regression = True
@@ -454,7 +454,7 @@ class ScipyOptCombinePrediction(ScipyOptMethod):
         s = ScipyOptCombinePrediction.sigmoid(x,self.w,self.b,self.max_value)
         return np.multiply(s,y_source) + np.multiply(1-s,y_target)
 
-    def predict_g(self, x):
+    def predict_g(self, x, data_set_ids=None):
         if x.ndim == 1:
             x = np.expand_dims(x,1)
         #g = scipy.special.expit(x.dot(self.w) + self.b)

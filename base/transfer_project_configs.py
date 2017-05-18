@@ -66,7 +66,7 @@ fontsize = 10
 
 vis_table = plot_idx in {PLOT_TABLE, PLOT_TABLE_VAL}
 size_to_vis = 10
-sizes_to_use = [5, 10, 20, 30]
+sizes_to_use = [5, 10, 20, 30, 40, 80, 160]
 
 run_experiments = True
 #show_legend_on_all = False
@@ -74,7 +74,7 @@ show_legend_on_all = True
 
 run_batch_exps = True
 vis_batch = True
-use_1d_data = True
+use_1d_data = False
 use_sms_plot_data_sets = plot_idx == PLOT_SMS
 
 use_validation = True
@@ -90,7 +90,7 @@ clip_b = True
 separate_target_domains = False
 multitask = False
 
-use_delta_new = True
+use_delta_new = False
 
 synthetic_data_sets = [
     bc.DATA_SYNTHETIC_CURVE,
@@ -113,6 +113,7 @@ real_data_sets_full = [
     bc.DATA_BOSTON_HOUSING,
     bc.DATA_CONCRETE,
     bc.DATA_WINE,
+    bc.DATA_KC_HOUSING,
 ]
 
 all_1d = synthetic_data_sets + real_data_sets_1d
@@ -126,8 +127,8 @@ if run_batch_exps:
             bc.DATA_SYNTHETIC_CROSS,
         ]
     elif use_1d_data:
-        #data_sets_for_exps = all_1d
-        data_sets_for_exps = synthetic_data_sets
+        data_sets_for_exps = all_1d
+        #data_sets_for_exps = synthetic_data_sets
     else:
         data_sets_for_exps = real_data_sets_full
 #data_sets_for_exps = real_data_sets_full
@@ -221,6 +222,9 @@ class ProjectConfigs(bc.ProjectConfigs):
         elif data_set == bc.DATA_SYNTHETIC_CURVE:
             self.set_synthetic_regression('synthetic_curve')
             self.num_labels = np.asarray([10,20,30])
+        elif data_set == bc.DATA_KC_HOUSING:
+            self.set_data_set_defaults('kc-housing-spatial-floors', source_labels=[0], target_labels=[1], is_regression=True)
+            self.num_labels = np.asarray([20, 40, 80, 160])
         elif data_set == bc.DATA_SYNTHETIC_SLANT_MULTITASK:
             self.set_synthetic_regression('synthetic_slant_multitask')
             self.target_labels = np.asarray([0,1])
@@ -533,11 +537,11 @@ class MainConfigs(bc.MainConfigs):
             #self.learner = iwl_transfer
             #self.learner = sms_transfer
 
-            self.learner = local_transfer_delta
+            #self.learner = local_transfer_delta
             #self.learner = dt_sms
             #self.learner = ssl_regression
             #self.learner = cov_shift
-            #self.learner = offset_transfer
+            self.learner = offset_transfer
             #self.learner = stacked_transfer
             #self.learner = gaussian_process
 
@@ -628,7 +632,9 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             #self.files['LocalTransferDelta_l2_constant-b.pkl'] = 'Ours: Constant'
             self.files['OffsetTransfer-jointCV.pkl'] = 'Offset Transfer'
             #self.files['LocalTransferDelta_C3=0_radius_l2_linear-b.pkl'] = 'Ours: Linear, alpha=0'
-            self.files['LocalTransferNew.pkl'] = 'Local Transfer New'
+            self.files['LocalTransferNew-grad-bounds.pkl'] = 'Local Transfer New'
+            self.files['LocalTransferNew-grad-bounds-opt_ft.pkl'] = 'Local Transfer New: Opt f_t'
+            self.files['LocalTransferNew-grad.pkl'] = 'Local Transfer New: No Bounds'
             '''
             self.files['LocalTransferDelta_l2_constant-b_sep-target.pkl'] = 'Ours: Constant, Separate Target Domains'
             self.files['LocalTransferDelta_l2_linear-b_clip-b_multitask.pkl'] = 'Ours: Linear, Multitask'
@@ -682,10 +688,12 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             test_files = OrderedDict()
             for f, leg in self.files.iteritems():
                 f = helper_functions.remove_suffix(f, '.pkl')
-                if f == 'OffsetTransfer-jointCV':
+                if f == 'OffsetTransfer-jointCV' or f.find('LocalTransferNew') == 0:
                     f += '-VAL.pkl'
                 elif f == 'LocalTransferDelta_l2_lap-reg':
                     f = 'LocalTransferDelta_l2_use-val_lap-reg.pkl'
+                elif f == 'TargetTransfer+NW':
+                    f += '.pkl'
                 else:
                     f += '_use-val.pkl'
                 #leg = 'VALIDATION: ' + leg

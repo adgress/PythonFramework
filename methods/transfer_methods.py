@@ -132,7 +132,7 @@ class StackingTransfer(FuseTransfer):
         self.only_use_source_prediction = False
         self.use_all_source = True
         self.source_only = False
-        self.target_only = True
+        self.target_only = False
         self.just_bias = False
         self.linear_source = False
         if self.target_only or self.source_only or self.linear_source:

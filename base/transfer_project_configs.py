@@ -90,7 +90,7 @@ clip_b = True
 separate_target_domains = False
 multitask = False
 
-use_delta_new = False
+use_delta_new = True
 
 synthetic_data_sets = [
     bc.DATA_SYNTHETIC_CURVE,
@@ -224,6 +224,7 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.num_labels = np.asarray([10,20,30])
         elif data_set == bc.DATA_KC_HOUSING:
             self.set_data_set_defaults('kc-housing-spatial-floors', source_labels=[0], target_labels=[1], is_regression=True)
+            #self.num_labels = np.asarray([20, 40, 80, 160])
             self.num_labels = np.asarray([20, 40, 80, 160])
         elif data_set == bc.DATA_SYNTHETIC_SLANT_MULTITASK:
             self.set_synthetic_regression('synthetic_slant_multitask')
@@ -531,7 +532,7 @@ class MainConfigs(bc.MainConfigs):
         if use_delta_new:
             self.learner = methods.local_transfer_methods.LocalTransferDeltaNew(method_configs)
         else:
-            #self.learner = target_nw
+            self.learner = target_nw
             #self.learner = hyp_transfer
             #self.learner = local_transfer
             #self.learner = iwl_transfer
@@ -541,7 +542,7 @@ class MainConfigs(bc.MainConfigs):
             #self.learner = dt_sms
             #self.learner = ssl_regression
             #self.learner = cov_shift
-            self.learner = offset_transfer
+            #self.learner = offset_transfer
             #self.learner = stacked_transfer
             #self.learner = gaussian_process
 
@@ -616,6 +617,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         if plot_idx == PLOT_PARAMETRIC:
             self.files = OrderedDict()
             self.files['TargetTransfer+NW.pkl'] = 'Target Only'
+            self.files['StackTransfer+SKL-RidgeReg.pkl'] = 'Stacking'
             #self.files['SLL-NW.pkl'] = 'LLGC'
             #self.files['CovShift.pkl'] = 'Reweighting'
             #self.files['OffsetTransfer.pkl'] = 'Offset'
@@ -694,6 +696,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                     f = 'LocalTransferDelta_l2_use-val_lap-reg.pkl'
                 elif f == 'TargetTransfer+NW':
                     f += '.pkl'
+                elif f == 'StackTransfer+SKL-RidgeReg':
+                    f += '-VAL.pkl'
                 else:
                     f += '_use-val.pkl'
                 #leg = 'VALIDATION: ' + leg

@@ -504,7 +504,7 @@ def f_delta_new(alpha, b, ft, y_s, S_b, S_a):
     return f
 
 check_gradient_new = False
-
+from timer.timer import tic, toc
 def gradient_delta_new(v, opt_data):
     n = opt_data['y'].size
     b, alpha, ft = unpack_v(v, n)
@@ -524,29 +524,36 @@ def gradient_delta_new(v, opt_data):
     C_alpha = opt_data['C_alpha']
     A = opt_data['A']
 
+    #S_aa = S_a.dot(alpha)
 
 
-
-    D_a = np.diag(alpha)
     D_ft = np.diag(S_x.dot(ft))
-    D_b = np.diag(b)
-    A = D_ft.dot(S_a)
-    #B = (S_b.dot(D_b) + np.diag(y_s)).dot(S_a)
-    B = (np.diag(S_b.dot(b)) + np.diag(y_s)).dot(S_a)
+    #A2 = D_ft.dot(S_a)
+    A = S_x.dot(ft)[:, None] * S_a
+    #print norm(A-A2)/norm(A2)
+
+    #B = (np.diag(S_b.dot(b)) + np.diag(y_s)).dot(S_a)
+    #B2 = np.diag(S_b.dot(b) + y_s).dot(S_a)
+    B = (S_b.dot(b) + y_s)[:, None] * S_a
+    #print norm(B-B2)/norm(B)
     C = S_x.dot(ft) - y
     D = B - A
-    da = 2*(D.T.dot(D).dot(alpha) + D.T.dot(C))
 
-    #M_a = (np.eye(n) - S_a.dot(D_a)).dot(ft) + S_a.dot(D_a).dot(y_s) - y
-    #M_a = (1 - alpha) * ft + (S_a.dot(alpha)) * y_s - y
+    da = 2 * (D.T.dot(D.dot(alpha)) + D.T.dot(C))
+
     M_a = (1 - S_a.dot(alpha)) * S_x.dot(ft) + (S_a.dot(alpha)) * y_s - y
-    #M_b = S_a.dot(D_a).dot(S_b)
-    M_b = np.diag(S_a.dot(alpha)).dot(S_b)
+    #M_b2 = np.diag(S_a.dot(alpha)).dot(S_b)
+    M_b = S_a.dot(alpha)[:, None] * S_b
+    #print norm(M_b-M_b2) / norm(M_b2)
 
-    db = 2*(M_b.T.dot(M_b).dot(b) + M_b.T.dot(M_a))
+    #M_a = (1 - S_aa) * S_x.dot(ft) + S_aa * y_s - y
+    #M_b = np.diag(S_aa).dot(S_b)
+    #db = 2*(M_b.T.dot(M_b).dot(b) + M_b.T.dot(M_a))
+    db = 2 * (M_b.T.dot(M_b.dot(b)) + M_b.T.dot(M_a))
     g = np.concatenate((db, da))
     if learn_ft:
-        G = np.diag(1 - S_a.dot(alpha)).dot(S_x)
+        print 'TODO: Accelerate this!'
+        G= np.diag(1 - S_a.dot(alpha)).dot(S_x)
         F = S_a.dot(alpha) * (S_b.dot(b) + y_s) - y
         df = 2*(G.T.dot(G).dot(ft) + G.T.dot(F))
         g = np.concatenate(g, df)

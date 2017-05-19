@@ -90,7 +90,7 @@ clip_b = True
 separate_target_domains = False
 multitask = False
 
-use_delta_new = False
+use_delta_new = True
 
 synthetic_data_sets = [
     bc.DATA_SYNTHETIC_CURVE,

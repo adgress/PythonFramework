@@ -623,7 +623,7 @@ def eval_delta_new(v, opt_data):
     '''
     return loss_f
 
-
+from sklearn.preprocessing import StandardScaler
 class LocalTransferDeltaNew(LocalTransferDelta):
     def __init__(self, configs=None):
         super(LocalTransferDelta, self).__init__(configs)
@@ -664,6 +664,7 @@ class LocalTransferDeltaNew(LocalTransferDelta):
         self.quiet = False
         self.train_source_learner = True
         self.use_stacking = False
+        self.transform =  StandardScaler()
 
 
     def train_and_test(self, data):
@@ -683,6 +684,9 @@ class LocalTransferDeltaNew(LocalTransferDelta):
         y_s = self.source_learner.predict(target_data_labeled).y
         y = target_data_labeled.true_y
         x = target_data_labeled.x
+        if self.transform is not None:
+            x = self.transform.fit_transform(x)
+
         W_x = array_functions.make_rbf(x, self.sigma_target)
         S_x = array_functions.make_smoothing_matrix(W_x)
         y_t = S_x.dot(y)
@@ -777,12 +781,15 @@ class LocalTransferDeltaNew(LocalTransferDelta):
         o = self.source_learner.predict(data)
         y_s = o.y
         x = self.x
-        W_x = array_functions.make_rbf(x, self.sigma_target, x2=data.x).T
+        x2 = data.x
+        if self.transform is not None:
+            x2 = self.transform.transform(x2)
+        W_x = array_functions.make_rbf(x, self.sigma_target, x2=x2).T
         S_x = array_functions.make_smoothing_matrix(W_x)
         ft = S_x.dot(self.y)
-        W_b = array_functions.make_rbf(x, self.sigma_b, x2=data.x).T
+        W_b = array_functions.make_rbf(x, self.sigma_b, x2=x2).T
         S_b = array_functions.make_smoothing_matrix(W_b)
-        W_a = array_functions.make_rbf(x, self.sigma_alpha, x2=data.x).T
+        W_a = array_functions.make_rbf(x, self.sigma_alpha, x2=x2).T
         S_a = array_functions.make_smoothing_matrix(W_a)
 
         if self.linear_b:

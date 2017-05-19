@@ -90,7 +90,7 @@ clip_b = True
 separate_target_domains = False
 multitask = False
 
-use_delta_new = True
+use_delta_new = False
 
 synthetic_data_sets = [
     bc.DATA_SYNTHETIC_CURVE,
@@ -106,14 +106,15 @@ real_data_sets_1d = [
     bc.DATA_BOSTON_HOUSING,
     bc.DATA_CONCRETE,
     bc.DATA_BIKE_SHARING,
-    bc.DATA_WINE
+    bc.DATA_WINE,
 ]
 
 real_data_sets_full = [
     bc.DATA_BOSTON_HOUSING,
     bc.DATA_CONCRETE,
     bc.DATA_WINE,
-    bc.DATA_KC_HOUSING,
+    #bc.DATA_KC_HOUSING,
+    bc.DATA_TAXI,
 ]
 
 all_1d = synthetic_data_sets + real_data_sets_1d
@@ -226,6 +227,14 @@ class ProjectConfigs(bc.ProjectConfigs):
             self.set_data_set_defaults('kc-housing-spatial-floors', source_labels=[0], target_labels=[1], is_regression=True)
             #self.num_labels = np.asarray([20, 40, 80, 160])
             self.num_labels = np.asarray([20, 40, 80, 160])
+        elif data_set == bc.DATA_TAXI:
+            #self.set_data_set_defaults('taxi2-20', source_labels=[1], target_labels=[0], is_regression=True)
+            #self.set_data_set_defaults('taxi2-50', source_labels=[1], target_labels=[0], is_regression=True)
+            #self.set_data_set_defaults('taxi2', source_labels=[0], target_labels=[1], is_regression=True)
+            self.set_data_set_defaults('taxi3', source_labels=[1], target_labels=[0], is_regression=True)
+            #self.num_labels = np.asarray([5, 10, 20, 40, 100, 200, 400, 800])
+            self.num_labels = np.asarray([10, 20, 40, 80])
+            #self.num_labels = np.asarray([50, 100, 200, 400])
         elif data_set == bc.DATA_SYNTHETIC_SLANT_MULTITASK:
             self.set_synthetic_regression('synthetic_slant_multitask')
             self.target_labels = np.asarray([0,1])
@@ -532,7 +541,10 @@ class MainConfigs(bc.MainConfigs):
         if use_delta_new:
             self.learner = methods.local_transfer_methods.LocalTransferDeltaNew(method_configs)
         else:
-            self.learner = target_nw
+            #self.learner = target_nw
+            self.learner = offset_transfer
+            #self.learner = stacked_transfer
+
             #self.learner = hyp_transfer
             #self.learner = local_transfer
             #self.learner = iwl_transfer
@@ -542,8 +554,6 @@ class MainConfigs(bc.MainConfigs):
             #self.learner = dt_sms
             #self.learner = ssl_regression
             #self.learner = cov_shift
-            #self.learner = offset_transfer
-            #self.learner = stacked_transfer
             #self.learner = gaussian_process
 
 
@@ -617,26 +627,18 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         if plot_idx == PLOT_PARAMETRIC:
             self.files = OrderedDict()
             self.files['TargetTransfer+NW.pkl'] = 'Target Only'
-            self.files['StackTransfer+SKL-RidgeReg.pkl'] = 'Stacking'
+            #self.files['StackTransfer+SKL-RidgeReg.pkl'] = 'Stacking'
             #self.files['SLL-NW.pkl'] = 'LLGC'
             #self.files['CovShift.pkl'] = 'Reweighting'
-            #self.files['OffsetTransfer.pkl'] = 'Offset'
-            '''
-            self.files.append(('LocalTransferDelta_radius_l2_constant-b.pkl','Ours: Constant'))
-            self.files.append(('LocalTransferDelta_radius_l2_linear-b_clip-b.pkl','Ours: Linear'))
-            self.files.append(('LocalTransferDelta_radius_l2_lap-reg.pkl','Ours: Nonparametric'))
-            '''
             #self.files['LocalTransferDelta_radius_l2_constant-b.pkl'] = 'Ours: Constant'
-            self.files['LocalTransferDelta_radius_l2_linear-b_clip-b.pkl'] = 'Ours: Linear'
-            self.files['LocalTransferDelta_l2_lap-reg.pkl'] = 'Ours: Nonparametric, rbf'
-            #self.files['LocalTransferDelta_radius_l2.pkl'] = 'Ours: Nonparametric'
-            #self.files['LocalTransferDelta_radius_l2_linear-b_clip-b-TESTING_REFACTOR.pkl'] = 'Ours: Linear (Refactored)'
-            #self.files['LocalTransferDelta_l2_constant-b.pkl'] = 'Ours: Constant'
+            #self.files['LocalTransferDelta_radius_l2_linear-b_clip-b.pkl'] = 'Ours: Linear'
+            #self.files['LocalTransferDelta_l2_lap-reg.pkl'] = 'Ours: Nonparametric, rbf'
             self.files['OffsetTransfer-jointCV.pkl'] = 'Offset Transfer'
             #self.files['LocalTransferDelta_C3=0_radius_l2_linear-b.pkl'] = 'Ours: Linear, alpha=0'
             self.files['LocalTransferNew-grad-bounds.pkl'] = 'Local Transfer New'
             self.files['LocalTransferNew-grad-bounds-opt_ft.pkl'] = 'Local Transfer New: Opt f_t'
-            self.files['LocalTransferNew-grad.pkl'] = 'Local Transfer New: No Bounds'
+            #self.files['LocalTransferNew-grad.pkl'] = 'Local Transfer New: No Bounds'
+            self.files['LocalTransferNew-bounds-linearB.pkl'] = 'Local Transfer New: Linear, no grad'
             '''
             self.files['LocalTransferDelta_l2_constant-b_sep-target.pkl'] = 'Ours: Constant, Separate Target Domains'
             self.files['LocalTransferDelta_l2_linear-b_clip-b_multitask.pkl'] = 'Ours: Linear, Multitask'

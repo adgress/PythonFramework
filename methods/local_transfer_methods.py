@@ -487,11 +487,14 @@ def pack_v(ft, b, alpha):
     #return np.concatenate((b, alpha, ft))
     return np.concatenate((b, alpha))
 
-def unpack_v(v, n):
+def unpack_v(v, n, p, opt_data):
     #assert v.size / 2 == n
-    b = v[:n]
-    alpha = v[n:2*n]
-    ft = v[2*n:]
+    b_end = n
+    if opt_data['linear_b']:
+        b_end = p + 1
+    b = v[:b_end]
+    alpha = v[b_end:b_end+n]
+    ft = v[b_end+n:]
     if ft.size == 0:
         ft = None
     return b, alpha, ft
@@ -500,14 +503,15 @@ from numpy.linalg import norm
 
 def f_delta_new(alpha, b, ft, y_s, S_b, S_a):
     a_smooth = S_a.dot(alpha)
-    f = (1 - a_smooth) * ft + a_smooth * (S_b.dot(b) + y_s)
+    f = (1 - a_smooth) * ft + a_smooth * (b + y_s)
     return f
 
-check_gradient_new = False
+check_gradient_new = True
 from timer.timer import tic, toc
 def gradient_delta_new(v, opt_data):
-    n = opt_data['y'].size
-    b, alpha, ft = unpack_v(v, n)
+    n, p = opt_data['x'].shape
+
+    b, alpha, ft = unpack_v(v, n, p, opt_data)
     learn_ft = True
     if ft is None:
         learn_ft = False
@@ -522,34 +526,41 @@ def gradient_delta_new(v, opt_data):
     S_a = opt_data['S_a']
     C_ft = opt_data['C_ft']
     C_alpha = opt_data['C_alpha']
+    C_b = opt_data['C_b']
     A = opt_data['A']
+    linear_b = opt_data['linear_b']
 
-    #S_aa = S_a.dot(alpha)
-
-
-    D_ft = np.diag(S_x.dot(ft))
-    #A2 = D_ft.dot(S_a)
+    if linear_b:
+        b_w = b[:p]
+        b_c = b[-1]
+        b_pred = x.dot(b_w) + b_c
+    else:
+        b_pred = S_b.dot(b)
     A = S_x.dot(ft)[:, None] * S_a
-    #print norm(A-A2)/norm(A2)
-
-    #B = (np.diag(S_b.dot(b)) + np.diag(y_s)).dot(S_a)
-    #B2 = np.diag(S_b.dot(b) + y_s).dot(S_a)
-    B = (S_b.dot(b) + y_s)[:, None] * S_a
-    #print norm(B-B2)/norm(B)
+    B = (b_pred + y_s)[:, None] * S_a
     C = S_x.dot(ft) - y
     D = B - A
-
     da = 2 * (D.T.dot(D.dot(alpha)) + D.T.dot(C))
 
-    M_a = (1 - S_a.dot(alpha)) * S_x.dot(ft) + (S_a.dot(alpha)) * y_s - y
-    #M_b2 = np.diag(S_a.dot(alpha)).dot(S_b)
-    M_b = S_a.dot(alpha)[:, None] * S_b
-    #print norm(M_b-M_b2) / norm(M_b2)
 
-    #M_a = (1 - S_aa) * S_x.dot(ft) + S_aa * y_s - y
-    #M_b = np.diag(S_aa).dot(S_b)
-    #db = 2*(M_b.T.dot(M_b).dot(b) + M_b.T.dot(M_a))
-    db = 2 * (M_b.T.dot(M_b.dot(b)) + M_b.T.dot(M_a))
+    if linear_b:
+        S_aa = S_a.dot(alpha)
+        S_ft = S_x.dot(ft)
+        M_a = (1-S_aa)*S_ft + S_aa*y_s - y
+        M_b = S_aa[:, None] * x
+        dw = 2*(M_b.T.dot(M_b.dot(b_w)) + M_b.T.dot(M_a) + M_b.T.dot(S_aa)*b_c + C_b*b_w )
+        dc = 2*(M_a.T.dot(S_aa) + b_w.T.dot(M_b.T).dot(S_aa) + S_aa.T.dot(S_aa)*b_c)
+        db = np.append(dw, dc)
+
+        f = f_delta_new(alpha, x.dot(b_w) + b_c, S_x.dot(ft), y_s, S_b, S_a)
+        loss_f = norm(f - y) ** 2 + C_b * norm(b_w) ** 2
+        loss_f2 = norm(M_a + M_b.dot(b_w) + S_aa*b_c)**2 + C_b*norm(b_w)**2
+        print ''
+
+    else:
+        M_a = (1 - S_a.dot(alpha)) * S_x.dot(ft) + (S_a.dot(alpha)) * y_s - y
+        M_b = S_a.dot(alpha)[:, None] * S_b
+        db = 2 * (M_b.T.dot(M_b.dot(b)) + M_b.T.dot(M_a))
     g = np.concatenate((db, da))
     if learn_ft:
         print 'TODO: Accelerate this!'
@@ -559,10 +570,10 @@ def gradient_delta_new(v, opt_data):
         g = np.concatenate(g, df)
     if check_gradient_new:
         g_approx = optimize.approx_fprime(v, lambda x: eval_delta_new(x, opt_data), 1e-8)
-        rel_err = norm(g[:]-g_approx[:])/norm(g_approx[:])
+        rel_err = norm(g[:2]-g_approx[:2])/norm(g_approx[:2])
         print 'rel err: ' + str(rel_err)
         #rel_err_a = norm(g[20:]-g_approx[20:])/norm(g_approx[20:])
-        #rel_err_b = norm(g[:20] - g_approx[:20]) / norm(g_approx[:20])
+        rel_err_b = norm(g[:2] - g_approx[:2]) / norm(g_approx[:2])
         '''
         if np.isfinite(rel_err_a) and rel_err_a > 1e-4:
             print 'Grad error alpha: ' + str(rel_err_a)
@@ -573,8 +584,8 @@ def gradient_delta_new(v, opt_data):
     return g
 
 def eval_delta_new(v, opt_data):
-    n = opt_data['y'].size
-    b, alpha, ft = unpack_v(v, n)
+    n, p = opt_data['x'].shape
+    b, alpha, ft = unpack_v(v, n, p, opt_data)
     learn_ft = True
     if ft is None:
         ft = opt_data['y_t']
@@ -588,36 +599,23 @@ def eval_delta_new(v, opt_data):
     S_b = opt_data['S_b']
     S_a = opt_data['S_a']
     C_ft = opt_data['C_ft']
+    C_b = opt_data['C_b']
     C_alpha = opt_data['C_alpha']
     A = opt_data['A']
+    linear_b = opt_data['linear_b']
 
-    f = f_delta_new(alpha, b, S_x.dot(ft), y_s, S_b, S_a)
+    if linear_b:
+        b_w = b[:p]
+        b_c = b[-1]
+        f = f_delta_new(alpha, x.dot(b_w) + b_c, S_x.dot(ft), y_s, S_b, S_a)
+    else:
+        f = f_delta_new(alpha, S_b.dot(b), S_x.dot(ft), y_s, S_b, S_a)
+
     loss_f = norm(f - y)**2
+    if linear_b:
+        loss_f += C_b * norm(b_w)**2
     if check_gradient_new:
-        D_a = np.diag(alpha)
-        D_ft = np.diag(ft)
-        D_b = np.diag(b)
-        A = D_ft.dot(S_a)
-        B = (np.diag(S_b.dot(b)) + np.diag(y_s)).dot(S_a)
-        C = ft - y
-        D = B - A
-        loss_a = norm(C + D.dot(alpha))**2
-        #a_smooth = S_a.dot(alpha)
-        #loss_a = norm((1-a_smooth)*ft + a_smooth*(S_b.dot(b) + y_s) - y )**2
-
-        #M_a = (np.eye(n) - S_a.dot(D_a)).dot(ft) + S_a.dot(D_a).dot(y_s) - y
-        v1 =  np.diag(S_a.dot(alpha)).dot(y_s)
-        v2 = (S_a.dot(alpha)) * y_s
-        M_a = (1 - S_a.dot(alpha))*ft + (S_a.dot(alpha)) * y_s - y
-        M_b = np.diag(S_a.dot(alpha)).dot(S_b)
-        #M_b = S_a.dot(alpha) * S_b.dot(b)
-        loss_b = norm(M_b.dot(b) + M_a)**2
-        #loss_b = norm(M_b + M_a) ** 2
-        err_a = (loss_a - loss_f) ** 2 / loss_f ** 2
-        err_b = (loss_b - loss_f) ** 2 / loss_f ** 2
-        assert err_a < 1e-6
-        assert err_b < 1e-6
-        #print ''
+        pass
     '''
     loss_ft = norm(ft - S_x.dot(y))**2
     loss_a = norm(S_x.dot(alpha) - A)**2
@@ -638,13 +636,23 @@ class LocalTransferDeltaNew(LocalTransferDelta):
         #self.cv_params['C_ft'] = self.create_cv_params(-5, 5, append_zero=True)
         #self.cv_params['C_alpha'] = self.create_cv_params(-5, 5, append_zero=True)
         #self.cv_params['A'] = np.asarray([0, .25, .5, .75, 1])
+        self.sigma_target = 1
+        self.sigma_b = 1
+        self.sigma_alpha = 1
         self.A = 0
         self.C_alpha = 0
+        self.C_b = 0
         self.C_ft = 0
+
         self.sigma_alpha = 1
         self.use_grad = True
         self.use_bounds = True
         self.optimize_ft = False
+        self.linear_b = False
+
+        if self.linear_b:
+            del self.cv_params['sigma_b']
+            self.cv_params['C_b'] = self.create_cv_params(-5, 5, append_zero=True)
 
         configs = deepcopy(configs)
         #configs.use_validation = False
@@ -708,15 +716,28 @@ class LocalTransferDeltaNew(LocalTransferDelta):
             'x': x,
             'A': A,
             'y_t': y_t,
+            'linear_b': self.linear_b,
+            'C_b': self.C_b,
         }
 
         f = lambda v: eval_delta_new(v, opt_data)
         g = lambda v: gradient_delta_new(v, opt_data)
-        f0 = np.zeros(2*y.size)
+        p = x.shape[1]
+        b_size = y.size
+        if self.linear_b:
+            b_size = p + 1
+        f0 = np.zeros(y.size + b_size)
+        if self.optimize_ft:
+            f0 = np.zeros(2*y.size + b_size)
+        if self.linear_b:
+            assert not self.optimize_ft
 
         bounds = None
         if self.use_bounds:
-            bounds = [(None, None) for i in range(y.size)] + [(0, 1 ) for i in range(y.size)]
+            bounds = [(None, None) for i in range(b_size)] + [(0, 1 ) for i in range(y.size)]
+            if self.optimize_ft:
+                bounds += [(None, None) for i in range(y.size)]
+
         if self.use_grad:
             results = optimize.minimize(
                 f,
@@ -742,7 +763,7 @@ class LocalTransferDeltaNew(LocalTransferDelta):
 
         #rel_err = norm(results.x - results2.x)/norm(results.x)
 
-        b, alpha, ft = unpack_v(results.x, y.size)
+        b, alpha, ft = unpack_v(results.x, y.size, x.shape[1], opt_data)
         if ft is None:
             ft = y_t
         self.b = b
@@ -764,7 +785,11 @@ class LocalTransferDeltaNew(LocalTransferDelta):
         W_a = array_functions.make_rbf(x, self.sigma_alpha, x2=data.x).T
         S_a = array_functions.make_smoothing_matrix(W_a)
 
-        f = f_delta_new(self.alpha, self.b, ft, y_s, S_b, S_a)
+        if self.linear_b:
+            b = data.x.dot(self.b[:-1]) + self.b[-1]
+        else:
+            b = S_b.dot(self.b)
+        f = f_delta_new(self.alpha, b, ft, y_s, S_b, S_a)
         o.y = f.copy()
         o.fu = f.copy()
         return o
@@ -778,6 +803,8 @@ class LocalTransferDeltaNew(LocalTransferDelta):
             s += '-bounds'
         if getattr(self, 'optimize_ft'):
             s += '-opt_ft'
+        if getattr(self, 'linear_b'):
+            s += '-linearB'
         if getattr(self.configs, 'use_validation', False):
             s += '-VAL'
         return s

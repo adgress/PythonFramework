@@ -506,7 +506,7 @@ def f_delta_new(alpha, b, ft, y_s, S_b, S_a):
     f = (1 - a_smooth) * ft + a_smooth * (b + y_s)
     return f
 
-check_gradient_new = True
+check_gradient_new = False
 from timer.timer import tic, toc
 def gradient_delta_new(v, opt_data):
     n, p = opt_data['x'].shape

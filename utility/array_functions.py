@@ -646,7 +646,7 @@ def plot_line_sub(x_list, y_list, title=None, y_axes = None,fig=None,show=True):
         move_fig(fig)
         pl.show(block=True)
 
-def plot_heatmap(x, y_mat, alpha=1,title=None,sizes=None,share_axis=False, fig=None, subtract_min=True):
+def plot_heatmap(x, y_mat, alpha=1,title=None,sizes=None,share_axis=False, fig=None, subtract_min=True, make_subplot=True):
     if sizes is None:
         sizes = 60
     if y_mat.ndim == 1:
@@ -668,13 +668,14 @@ def plot_heatmap(x, y_mat, alpha=1,title=None,sizes=None,share_axis=False, fig=N
     #y_mat = np.log(y_mat)
     #y_max = finite_y.max()
     for index, y in enumerate(y_mat.T):
-        if index == 0:
-            ax1 = pl.subplot(y_mat.shape[1], 1, index + 1)
-        else:
-            if share_axis:
-                pl.subplot(y_mat.shape[1], 1, index + 1, sharex=ax1, sharey=ax1)
+        if make_subplot:
+            if index == 0:
+                ax1 = pl.subplot(y_mat.shape[1], 1, index + 1)
             else:
-                pl.subplot(y_mat.shape[1], 1, index + 1)
+                if share_axis:
+                    pl.subplot(y_mat.shape[1], 1, index + 1, sharex=ax1, sharey=ax1)
+                else:
+                    pl.subplot(y_mat.shape[1], 1, index + 1)
         red_values = normalize(y, min_override=y_min, max_override=y_max)
         I = np.isfinite(y) & np.isfinite(x[:,0]) & np.isfinite(x[:,1])
         colors = np.zeros((red_values.size, 4))

@@ -74,7 +74,7 @@ show_legend_on_all = True
 
 run_batch_exps = True
 vis_batch = True
-use_1d_data = False
+use_1d_data = True
 use_sms_plot_data_sets = plot_idx == PLOT_SMS
 
 use_validation = True
@@ -94,10 +94,10 @@ use_delta_new = True
 
 synthetic_data_sets = [
     bc.DATA_SYNTHETIC_CURVE,
-    bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER,
+    #bc.DATA_SYNTHETIC_STEP_LINEAR_TRANSFER,
     bc.DATA_SYNTHETIC_DELTA_LINEAR,
-    bc.DATA_SYNTHETIC_CROSS,
-    bc.DATA_SYNTHETIC_SLANT,
+    #bc.DATA_SYNTHETIC_CROSS,
+    #bc.DATA_SYNTHETIC_SLANT,
 ]
 
 #bc.DATA_SYNTHETIC_SLANT_MULTITASK
@@ -637,6 +637,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             #self.files['LocalTransferDelta_C3=0_radius_l2_linear-b.pkl'] = 'Ours: Linear, alpha=0'
             self.files['LocalTransferNew-grad-bounds.pkl'] = 'Local Transfer New'
             self.files['LocalTransferNew-grad-bounds-opt_ft.pkl'] = 'Local Transfer New: Opt f_t'
+            self.files['LocalTransferNew-grad-bounds-loo.pkl'] = 'Local Transfer New: LOO'
             #self.files['LocalTransferNew-grad.pkl'] = 'Local Transfer New: No Bounds'
             self.files['LocalTransferNew-bounds-linearB.pkl'] = 'Local Transfer New: Linear, no grad'
             '''

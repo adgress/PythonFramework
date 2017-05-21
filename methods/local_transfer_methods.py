@@ -18,6 +18,8 @@ from methods import delta_transfer
 import scipy
 import transfer_methods
 from copy import deepcopy
+from configs.base_configs import MethodConfigs
+
 if helper_functions.is_laptop():
     enable_plotting = False
 else:
@@ -563,14 +565,14 @@ def gradient_delta_new(v, opt_data):
         db = 2 * (M_b.T.dot(M_b.dot(b)) + M_b.T.dot(M_a))
     g = np.concatenate((db, da))
     if learn_ft:
-        print 'TODO: Accelerate this!'
+        #print 'TODO: Accelerate this!'
         G= np.diag(1 - S_a.dot(alpha)).dot(S_x)
         F = S_a.dot(alpha) * (S_b.dot(b) + y_s) - y
         df = 2*(G.T.dot(G).dot(ft) + G.T.dot(F))
-        g = np.concatenate(g, df)
+        g = np.concatenate((g, df))
     if check_gradient_new:
         g_approx = optimize.approx_fprime(v, lambda x: eval_delta_new(x, opt_data), 1e-8)
-        rel_err = norm(g[:2]-g_approx[:2])/norm(g_approx[:2])
+        rel_err = norm(g[:]-g_approx[:])/norm(g_approx[:])
         print 'rel err: ' + str(rel_err)
         #rel_err_a = norm(g[20:]-g_approx[20:])/norm(g_approx[20:])
         rel_err_b = norm(g[:2] - g_approx[:2]) / norm(g_approx[:2])
@@ -625,7 +627,7 @@ def eval_delta_new(v, opt_data):
 
 from sklearn.preprocessing import StandardScaler
 class LocalTransferDeltaNew(LocalTransferDelta):
-    def __init__(self, configs=None):
+    def __init__(self, configs=MethodConfigs()):
         super(LocalTransferDelta, self).__init__(configs)
 
         self.quiet = False
@@ -649,6 +651,7 @@ class LocalTransferDeltaNew(LocalTransferDelta):
         self.use_bounds = True
         self.optimize_ft = False
         self.linear_b = False
+        self.loo = True
 
         if self.linear_b:
             del self.cv_params['sigma_b']
@@ -688,12 +691,16 @@ class LocalTransferDeltaNew(LocalTransferDelta):
             x = self.transform.fit_transform(x)
 
         W_x = array_functions.make_rbf(x, self.sigma_target)
-        S_x = array_functions.make_smoothing_matrix(W_x)
-        y_t = S_x.dot(y)
         W_b = array_functions.make_rbf(x, self.sigma_b)
-        S_b = array_functions.make_smoothing_matrix(W_b)
         W_a = array_functions.make_rbf(x, self.sigma_alpha)
+        if self.loo:
+            W_x[np.diag_indices_from(W_x)] = 0
+            W_b[np.diag_indices_from(W_b)] = 0
+            W_a[np.diag_indices_from(W_a)] = 0
+        S_x = array_functions.make_smoothing_matrix(W_x)
+        S_b = array_functions.make_smoothing_matrix(W_b)
         S_a = array_functions.make_smoothing_matrix(W_a)
+        y_t = S_x.dot(y)
         C_ft = self.C_ft
         C_alpha = self.C_alpha
 
@@ -776,7 +783,6 @@ class LocalTransferDeltaNew(LocalTransferDelta):
         self.y = y
         self.x = x
 
-
     def predict(self, data):
         o = self.source_learner.predict(data)
         y_s = o.y
@@ -799,6 +805,10 @@ class LocalTransferDeltaNew(LocalTransferDelta):
         f = f_delta_new(self.alpha, b, ft, y_s, S_b, S_a)
         o.y = f.copy()
         o.fu = f.copy()
+        o.b = b
+        o.alpha = S_a.dot(self.alpha)
+        o.ft = ft
+        o.y_s = y_s
         return o
 
     @property
@@ -812,6 +822,8 @@ class LocalTransferDeltaNew(LocalTransferDelta):
             s += '-opt_ft'
         if getattr(self, 'linear_b'):
             s += '-linearB'
+        if getattr(self, 'loo'):
+            s += '-loo'
         if getattr(self.configs, 'use_validation', False):
             s += '-VAL'
         return s

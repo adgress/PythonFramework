@@ -158,10 +158,10 @@ class ActiveFoldResults(ResultsContainer):
     def __init__(self, num_iterations):
         super(ActiveFoldResults, self).__init__(num_iterations)
 
-    def compute_error(self,loss_function,features=None):
+    def compute_error(self, loss_function, features=None, subset_to_use=None):
         errors = np.empty(len(self.results_list))
         for i, f in enumerate(self.results_list):
-            errors[i] = f.compute_error(loss_function,features)
+            errors[i] = f.compute_error(loss_function,features,subset_to_use)
         assert all(~np.isnan(errors))
         return errors
 
@@ -170,8 +170,8 @@ class ActiveIterationResults(object):
         self.fold_results = fold_results
         self.queried_idx = queried_idx
 
-    def compute_error(self,loss_function):
-        return self.fold_results.compute_error(loss_function)
+    def compute_error(self, loss_function, features=None, subset_to_use=None):
+        return self.fold_results.compute_error(loss_function, features, subset_to_use)
 
 class Output(data_lib.LabeledVector):
     def __init__(self,data=None,y=None):

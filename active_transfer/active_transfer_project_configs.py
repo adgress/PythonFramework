@@ -27,7 +27,7 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 
 all_data_sets = [
     bc.DATA_BOSTON_HOUSING,
-    bc.DATA_MNIST,
+    #bc.DATA_MNIST,
     bc.DATA_CONCRETE,
     bc.DATA_WINE,
     bc.DATA_ZILLOW,
@@ -54,7 +54,7 @@ active_method = ACTIVE_RANDOM
 viz_for_paper = True
 
 run_batchs_datasets = True
-run_experiments = True
+run_experiments = False
 use_test_error_for_model_selection = False
 
 use_relative = True
@@ -270,7 +270,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #self.files['ActiveClusterPurity+TargetOnlyWrapper+NW.pkl'] = 'Cluster Purity NW'
         self.files['ActiveRandom_items=%d+TargetOnlyWrapper+NW.pkl' % active_items_per_iteration] = 'Random NW'
         self.files['ActiveCluster_items=%d_scale=10+TargetOnlyWrapper+NW.pkl' % active_items_per_iteration] = 'Cluster NW'
-        self.files['ActiveClusterPurity-targetVar_items=%d_scale=10+TargetOnlyWrapper+NW.pkl' % active_items_per_iteration] = 'Cluster Purity NW: Target Variance'
+        #self.files['ActiveClusterPurity-targetVar_items=%d_scale=10+TargetOnlyWrapper+NW.pkl' % active_items_per_iteration] = 'Cluster Purity NW: Target Variance'
+        self.files['ActiveClusterPurity-instanceSel_items=%d+TargetOnlyWrapper+NW.pkl' % active_items_per_iteration] = 'Supervised Cluster NW'
         #self.files['ActiveClusterPurity-targetVar+TargetOnlyWrapper+NW.pkl'] = 'Cluster Purity NW: Target Variance'
         #self.files['ActiveClusterPurity-targetVar-density+TargetOnlyWrapper+NW.pkl'] = 'Cluster Purity NW: Density, Target Variance'
 

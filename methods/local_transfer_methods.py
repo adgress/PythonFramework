@@ -652,6 +652,7 @@ class LocalTransferDeltaNew(LocalTransferDelta):
         self.optimize_ft = False
         self.linear_b = False
         self.loo = True
+        self.use_transform = False
 
         if self.linear_b:
             del self.cv_params['sigma_b']
@@ -687,7 +688,7 @@ class LocalTransferDeltaNew(LocalTransferDelta):
         y_s = self.source_learner.predict(target_data_labeled).y
         y = target_data_labeled.true_y
         x = target_data_labeled.x
-        if self.transform is not None:
+        if self.transform is not None and self.use_transform:
             x = self.transform.fit_transform(x)
 
         W_x = array_functions.make_rbf(x, self.sigma_target)
@@ -788,7 +789,7 @@ class LocalTransferDeltaNew(LocalTransferDelta):
         y_s = o.y
         x = self.x
         x2 = data.x
-        if self.transform is not None:
+        if self.transform is not None and self.use_transform:
             x2 = self.transform.transform(x2)
         W_x = array_functions.make_rbf(x, self.sigma_target, x2=x2).T
         S_x = array_functions.make_smoothing_matrix(W_x)
@@ -824,6 +825,8 @@ class LocalTransferDeltaNew(LocalTransferDelta):
             s += '-linearB'
         if getattr(self, 'loo'):
             s += '-loo'
+        if not getattr(self, 'use_transform', True):
+            s += '-noTransform'
         if getattr(self.configs, 'use_validation', False):
             s += '-VAL'
         return s

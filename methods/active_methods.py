@@ -184,12 +184,16 @@ class ClusterActiveMethod(ActiveMethod):
         s += '+' + self.base_learner.prefix
         return s
 
+
+from instance_selection import SupervisedInstanceSelectionClusterGraph
 class ClusterPurityActiveMethod(ClusterActiveMethod):
     def __init__(self, configs=MethodConfigs()):
         super(ClusterActiveMethod, self).__init__(configs)
         self.transform = StandardScaler()
         self.use_target_variance = True
         self.use_density = False
+        self.use_instance_selection = True
+        self.instance_selector = SupervisedInstanceSelectionClusterGraph(deepcopy(configs))
 
     def get_cluster_purity(self, cluster_ids, y, classification=False):
         num_clusters = cluster_ids.max()+1
@@ -245,10 +249,25 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
         if I.size > 1000:
             I = np.random.choice(I, int(I.size*.5), replace=False)
             print 'subsampling target data: ' + str(I.size)
-        if self.use_density:
-            labeled_target_data = deepcopy(data.get_subset(I))
-            labeled_target_data.y = labeled_target_data.true_y.copy()
-            labeled_target_data.set_train()
+
+        labeled_target_data = deepcopy(data.get_subset(I))
+        labeled_target_data.y = labeled_target_data.true_y.copy()
+        labeled_target_data.set_train()
+        labeled_target_data.is_noisy = array_functions.false(labeled_target_data.n)
+        labeled_target_data.y_orig = labeled_target_data.true_y.copy()
+        if self.use_instance_selection:
+            self.instance_selector.subset_size = n_items
+            self.instance_selector.num_samples = n_items
+            self.instance_selector.configs.use_validation = False
+            self.instance_selector.configs.use_training = True
+            self.instance_selector.train_and_test(labeled_target_data)
+            is_selected = self.instance_selector.predict(labeled_target_data).is_selected
+            scores = np.ones(is_selected.size)
+            #Lower score is better
+            scores[is_selected] = 0
+            scores_sorted_inds = np.argsort(scores)
+            print ''
+        elif self.use_density:
             target_learner = deepcopy(self.base_learner)
             target_learner.train_and_test(labeled_target_data)
             vars = self.estimate_variance(target_learner, labeled_target_data, )
@@ -267,12 +286,14 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
                 vars = true_vars
             centroid_idx = self.get_cluster_centroids(X_cluster_space)
             densities = cluster_n
-
-        scores = vars / densities
-        scores_sorted_inds = np.argsort(scores)
+        if self.use_instance_selection:
+            pass
+        else:
+            scores = vars / densities
+            scores_sorted_inds = np.argsort(scores)
 
         # Don't sample instances if cluster size is 1
-        if not self.use_density:
+        if not self.use_density and not self.use_instance_selection:
             scores[cluster_n <= .005*I.size] = np.inf
             to_use = centroid_idx[scores_sorted_inds[:n_items]]
         else:
@@ -286,14 +307,20 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
     @property
     def prefix(self):
         s = 'ActiveClusterPurity'
-        if getattr(self, 'use_target_variance', False):
-            s += '-targetVar'
-        if getattr(self, 'use_density', False):
-            s += '-density'
+        use_inst_sel = getattr(self, 'use_instance_selection', False)
+        if use_inst_sel:
+            s += '-instanceSel'
+        else:
+            if getattr(self, 'use_target_variance', False):
+                s += '-targetVar'
+            if getattr(self, 'use_density', False):
+                s += '-density'
         s += '_items=' + str(self.configs.active_items_per_iteration)
-        s += '_scale=' + str(self.cluster_scale)
+        if not use_inst_sel:
+            s += '_scale=' + str(self.cluster_scale)
         s += '+' + self.base_learner.prefix
         return s
+
 
 class OptimizationData(object):
     def __init__(self, x, C):

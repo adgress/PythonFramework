@@ -74,7 +74,7 @@ show_legend_on_all = True
 
 run_batch_exps = True
 vis_batch = True
-use_1d_data = True
+use_1d_data = False
 use_sms_plot_data_sets = plot_idx == PLOT_SMS
 
 use_validation = True

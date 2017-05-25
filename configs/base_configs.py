@@ -340,6 +340,7 @@ class VisualizationConfigs(Configs):
         self.fontsize = None
         self.data_set_to_use = pc.data_set
         self.show_legend_on_all = True
+        self.show_legend_on_missing_files = True
         self.max_rows = 3
         self.vis_table = False
         self.size_to_vis = None

@@ -59,22 +59,30 @@ PLOT_SMS = 4
 PLOT_TABLE = 5
 PLOT_TABLE_VAL = 6
 PLOT_ALPHA = 7
-plot_idx = PLOT_PARAMETRIC
+plot_idx = PLOT_CONSTRAINED
 #plot_idx = PLOT_TABLE
 max_rows = 1
 fontsize = 10
 
 vis_table = plot_idx in {PLOT_TABLE, PLOT_TABLE_VAL}
 size_to_vis = 10
-sizes_to_use = [5, 10, 20, 30, 40, 80, 160]
+sizes_to_use = [5, 10, 20, 30]
+data_set_sizes_to_use = {
+    bc.DATA_TAXI: [10, 20, 40, 80, 160],
+    bc.DATA_BIKE_SHARING: [5, 10, 20, 40],
+}
 
 run_experiments = True
 #show_legend_on_all = False
-show_legend_on_all = True
+show_legend_on_all = False
+
+crash_on_missing_files = False
+
 
 run_batch_exps = True
 vis_batch = True
 use_1d_data = False
+use_all_data = True
 use_sms_plot_data_sets = plot_idx == PLOT_SMS
 
 use_validation = True
@@ -83,9 +91,9 @@ use_constraints = False
 use_fused_lasso = False
 no_C3 = False
 use_radius = False
-include_scale = False
+include_scale = True
 constant_b = False
-linear_b = False
+linear_b = True
 clip_b = True
 separate_target_domains = False
 multitask = False
@@ -100,13 +108,14 @@ synthetic_data_sets = [
     #bc.DATA_SYNTHETIC_SLANT,
 ]
 
+
 #bc.DATA_SYNTHETIC_SLANT_MULTITASK
 
 real_data_sets_1d = [
     bc.DATA_BOSTON_HOUSING,
     bc.DATA_CONCRETE,
-    bc.DATA_BIKE_SHARING,
     bc.DATA_WINE,
+    bc.DATA_BIKE_SHARING,
 ]
 
 real_data_sets_full = [
@@ -117,7 +126,28 @@ real_data_sets_full = [
     bc.DATA_TAXI,
 ]
 
+synthetic_names = [
+    'Curve',
+    'Delta'
+]
+
+real_1d_names = [
+    'BH 1D',
+    'Concrete 1D',
+    'Wine 1D',
+    'Bike'
+]
+
+real_full_names = [
+    'BH',
+    'Concrete',
+    'Wine',
+    'Taxi'
+]
+
 all_1d = synthetic_data_sets + real_data_sets_1d
+all_1d_names = synthetic_names + real_1d_names
+names_for_table = None
 
 data_sets_for_exps = [data_set_to_use]
 if run_batch_exps:
@@ -132,6 +162,8 @@ if run_batch_exps:
         #data_sets_for_exps = synthetic_data_sets
     else:
         data_sets_for_exps = real_data_sets_full
+if plot_idx == PLOT_TABLE:
+    names_for_table = all_1d_names + real_full_names
 #data_sets_for_exps = real_data_sets_full
 
 synthetic_dim = 1
@@ -542,18 +574,21 @@ class MainConfigs(bc.MainConfigs):
             self.learner = methods.local_transfer_methods.LocalTransferDeltaNew(method_configs)
         else:
             #self.learner = target_nw
-            self.learner = offset_transfer
+            #self.learner = offset_transfer
             #self.learner = stacked_transfer
+            #self.learner = ssl_regression
+            #self.learner = cov_shift
+            self.learner = dt_sms
+
+
 
             #self.learner = hyp_transfer
             #self.learner = local_transfer
             #self.learner = iwl_transfer
-            #self.learner = sms_transfer
+
 
             #self.learner = local_transfer_delta
-            #self.learner = dt_sms
-            #self.learner = ssl_regression
-            #self.learner = cov_shift
+            #self.learner = sms_transfer
             #self.learner = gaussian_process
 
 
@@ -573,6 +608,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.vis_table = vis_table
         self.size_to_vis = size_to_vis
         self.sizes_to_use = sizes_to_use
+        if pc.data_set in data_set_sizes_to_use:
+            self.sizes_to_use = data_set_sizes_to_use[pc.data_set]
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
         self.fontsize = fontsize
@@ -599,30 +636,6 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         }
 
         self.files = OrderedDict()
-        self.files['TargetTransfer+NW.pkl'] = 'Target Only'
-
-        #self.files['LocalTransferDelta_radius_cons_l2.pkl'] = 'Our Method, ball graph, l2 loss, constrained'
-
-        self.files['LocalTransferDelta_radius_l2_constant-b.pkl'] = 'Our Method, constant b'
-        #self.files.append(('LocalTransferDelta_C3=0_radius_l2_constant-b.pkl','Our Method, constant b, alpha=0'))
-
-        #self.files['LocalTransferDelta_C3=0_radius_l2_linear-b_clip-b.pkl'] = 'Our Method, linear b, alpha=0, clipped'
-        self.files['LocalTransferDelta_radius_l2_linear-b_clip-b.pkl'] = 'Our Method, linear b, clipped'
-        #self.files.append(('LocalTransferDelta_radius_l2_linear-b_clip-b_use-val.pkl','Our Method, linear b, clipped, used validation'))
-
-        #self.files.append(('LocalTransferDelta_radius_l2_lap-reg.pkl', 'Ours, ball, lap-reg'))
-        #self.files.append(('LocalTransferDelta_C3=0_radius_l2_lap-reg.pkl', 'Ours, ball, alpha=0, lap-reg'))
-        #self.files.append(('LocalTransferDelta_C3=0_radius_l2_use-val_lap-reg.pkl', 'Ours, ball, alpha=0, lap-reg, use validation'))
-
-        #self.files.append(('LocalTransferDelta_C3=0_radius_l2.pkl', 'Our Method, ball graph, alpha=0'))
-        #self.files.append(('LocalTransferDelta_C3=0_radius_l2_use-val.pkl', 'Our Method, ball graph, alpha=0, used validation'))
-        self.files['LocalTransferDelta_radius_l2.pkl'] = 'Our Method, ball graph, l2 loss'
-        #self.files.append(('LocalTransferDelta_radius_l2_use-val.pkl', 'Our method, ball graph, l2 loss, used validation'))
-
-        #self.files.append(('LocalTransferDelta_radius_l2_lap-reg.pkl','Our Method, ball graph, LapReg'))
-        #self.files.append(('LocalTransferDelta_radius_l2_use-val_lap-reg.pkl', 'Our method, ball graph, LapReg, used validation'))
-
-        #self.files.append(('LocalTransferDeltaSMS_scale.pkl', 'SMS, scale'))
 
         if plot_idx == PLOT_PARAMETRIC:
             self.files = OrderedDict()
@@ -630,20 +643,16 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             #self.files['StackTransfer+SKL-RidgeReg.pkl'] = 'Stacking'
             #self.files['SLL-NW.pkl'] = 'LLGC'
             #self.files['CovShift.pkl'] = 'Reweighting'
-            #self.files['LocalTransferDelta_radius_l2_constant-b.pkl'] = 'Ours: Constant'
-            #self.files['LocalTransferDelta_radius_l2_linear-b_clip-b.pkl'] = 'Ours: Linear'
-            #self.files['LocalTransferDelta_l2_lap-reg.pkl'] = 'Ours: Nonparametric, rbf'
-            self.files['OffsetTransfer-jointCV.pkl'] = 'Offset Transfer'
-            #self.files['LocalTransferDelta_C3=0_radius_l2_linear-b.pkl'] = 'Ours: Linear, alpha=0'
-            self.files['LocalTransferNew-grad-bounds.pkl'] = 'Local Transfer New'
-            self.files['LocalTransferNew-grad-bounds-opt_ft.pkl'] = 'Local Transfer New: Opt f_t'
-            self.files['LocalTransferNew-grad-bounds-loo.pkl'] = 'Local Transfer New: LOO'
+            #self.files['LocalTransferDeltaSMS_scale'] = 'SMS'
+#
+            #self.files['OffsetTransfer-jointCV.pkl'] = 'Offset Transfer'
+            self.files['LocalTransferNew-grad-bounds.pkl'] = 'Our Method'
+            self.files['LocalTransferNew-grad-bounds-opt_ft.pkl'] = 'Our Method: Optimize Target'
+            #self.files['LocalTransferNew-grad-bounds-loo.pkl'] = 'Local Transfer New: LOO'
+            self.files['LocalTransferNew-grad-bounds-scaleB.pkl'] = 'Our Method: Scale'
+            #self.files['LocalTransferNew-grad-bounds-loo-noTransform.pkl'] = 'Local Transfer New: LOO, no Transform'
             #self.files['LocalTransferNew-grad.pkl'] = 'Local Transfer New: No Bounds'
-            self.files['LocalTransferNew-bounds-linearB.pkl'] = 'Local Transfer New: Linear, no grad'
-            '''
-            self.files['LocalTransferDelta_l2_constant-b_sep-target.pkl'] = 'Ours: Constant, Separate Target Domains'
-            self.files['LocalTransferDelta_l2_linear-b_clip-b_multitask.pkl'] = 'Ours: Linear, Multitask'
-            '''
+            self.files['LocalTransferNew-bounds-linearB.pkl'] = 'Our Method: Linear'
         elif plot_idx == PLOT_VALIDATION:
             self.files = OrderedDict()
             self.files['TargetTransfer+NW.pkl'] = 'Target Only'
@@ -653,13 +662,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         elif plot_idx == PLOT_CONSTRAINED:
             self.files = OrderedDict()
             self.files['TargetTransfer+NW.pkl'] = 'Target Only'
-            #self.files['SLL-NW.pkl'] = 'LLGC'
-
-            #self.files['LocalTransferDelta_radius_l2_linear-b_clip-b.pkl'] = 'Ours: Linear'
-            #self.files['LocalTransferDelta_radius_l2_lap-reg.pkl'] = 'Ours: Nonparametric'
-            #self.files['LocalTransferDelta_radius_cons_l2_lap-reg.pkl'] = 'Ours: Nonparametric, constrained'
-            self.files['LocalTransferDelta_l2_lap-reg.pkl'] = 'Ours: Nonparametric, rbf'
-            self.files['LocalTransferDelta_cons_l2_lap-reg.pkl'] = 'Ours: Nonparametric, rbf, constrained'
+            self.files['LocalTransferNew-grad-bounds.pkl'] = 'Our Method'
+            self.files['LocalTransferNew-grad-bounds-boundB'] = 'Ours Method: Bounds'
         elif plot_idx == PLOT_SMS:
             self.files = OrderedDict()
             self.files['TargetTransfer+NW.pkl'] = 'Target Only'
@@ -668,17 +672,28 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['LocalTransferDeltaSMS.pkl'] = 'SMS no scale'
             #self.files['LocalTransferDelta_C3=0_radius_l2_constant-b.pkl'] = 'Constant b, alpha=0'
         elif plot_idx == PLOT_TABLE:
-            self.baseline_idx = 1
+            self.baseline_idx = 4
+            self.data_names_for_table = names_for_table
+            self.method_names_for_table = [
+                'Ours', 'Ours: Opt ft', 'Ours: Scale', 'Ours: Linear b', 'Target Only', 'Stacking','LLGC', 'Reweighting', 'Offset', 'SMS'
+            ]
             self.files = OrderedDict()
-            self.files['LocalTransferDelta_radius_l2_linear-b_clip-b.pkl'] = 'Ours: Linear'
+
+            self.files['LocalTransferNew-grad-bounds.pkl'] = 'Local Transfer New'
+            self.files['LocalTransferNew-grad-bounds-opt_ft.pkl'] = 'Local Transfer New: Opt f_t'
+            self.files['LocalTransferNew-grad-bounds-scaleB.pkl'] = 'Local Transfer New: Scale'
+            self.files['LocalTransferNew-bounds-linearB.pkl'] = 'Local Transfer New: Linear B'
+            # self.files['LocalTransferNew-grad-bounds-loo-noTransform.pkl'] = 'Local Transfer New: LOO, no Transform'
+            # self.files['LocalTransferNew-grad.pkl'] = 'Local Transfer New: No Bounds'
+            # self.files['LocalTransferNew-bounds-linearB.pkl'] = 'Local Transfer New: Linear, no grad'
+
             self.files['TargetTransfer+NW.pkl'] = 'Target Only'
+            self.files['StackTransfer+SKL-RidgeReg.pkl'] = 'Stacking'
             self.files['SLL-NW.pkl'] = 'LLGC'
             self.files['CovShift.pkl'] = 'Reweighting'
-            self.files['OffsetTransfer-jointCV.pkl'] = 'Offset'
-            #self.files['LocalTransferDeltaSMS.pkl'] = 'SMS no scale'
-            self.files['LocalTransferDeltaSMS_scale.pkl'] = 'SMS scale'
-            self.files['StackTransfer+SKL-RidgeReg.pkl'] = 'Stacking'
-            self.files['LocalTransferDelta_radius_l2_linear-b_clip-b-stacking.pkl'] = 'Our: Linear, Stacking'
+            self.files['OffsetTransfer-jointCV.pkl'] = 'Offset Transfer'
+            self.files['LocalTransferDeltaSMS_scale'] = 'SMS'
+
         elif plot_idx == PLOT_TABLE_VAL:
             self.files = OrderedDict()
             self.files['LocalTransferDelta_radius_l2_linear-b_clip-b_use-val-stacking.pkl'] = 'Ours: Linear, Stacking, VAL'
@@ -702,7 +717,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                 elif f == 'StackTransfer+SKL-RidgeReg':
                     f += '-VAL.pkl'
                 else:
-                    f += '_use-val.pkl'
+                    #f += '_use-val.pkl'
+                    f += '-VAL.pkl'
                 #leg = 'VALIDATION: ' + leg
                 test_files[f] = leg
             self.files = test_files
@@ -735,12 +751,14 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                 self.figsize = (4,4)
                 self.borders = (.15,.9,.95,.05)
             else:
-                self.figsize = (8,3)
-                self.borders = (.1,.95,.9,.15)
+                self.figsize = (14,6)
+                self.borders = (.05,.95,.95,.08)
 
         self.data_set_to_use = pc.data_set
         self.title = bc.data_name_dict.get(self.data_set_to_use, 'Unknown Data Set')
         self.show_legend_on_all = show_legend_on_all
+        self.show_legend_on_missing_files = False
+        self.crash_on_missing_files = crash_on_missing_files
         if self.use_1d_data and self.data_set_to_use < bc.DATA_SYNTHETIC_START:
             self.title += ' 1D'
         self.x_axis_string = 'Number of labeled target instances'
@@ -782,9 +800,17 @@ class BatchConfigs(bc.BatchConfigs):
     def __init__(self, pc):
         super(BatchConfigs, self).__init__()
         self.config_list = []
-        for i in data_sets_for_exps:
-            pc = ProjectConfigs(i)
-            self.config_list += [MainConfigs(pc)]
+        if use_all_data:
+            for i in all_1d:
+                pc = ProjectConfigs(i, use_1d_data=True)
+                self.config_list += [MainConfigs(pc)]
+            for i in real_data_sets_full:
+                pc = ProjectConfigs(i, use_1d_data=False)
+                self.config_list += [MainConfigs(pc)]
+        else:
+            for i in data_sets_for_exps:
+                pc = ProjectConfigs(i)
+                self.config_list += [MainConfigs(pc)]
         assert len(self.config_list) > 0
 
 

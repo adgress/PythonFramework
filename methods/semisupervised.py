@@ -105,7 +105,10 @@ class SemisupervisedRegressionMethod(SemisupervisedMethod):
 
     @property
     def prefix(self):
-        return 'SLL-NW'
+        s = 'SLL-NW'
+        if getattr(self.configs, 'use_validation', False):
+            s += '-VAL'
+        return s
 
 class LaplacianRidgeMethod(SemisupervisedMethod):
     def __init__(self, configs=None):

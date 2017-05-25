@@ -547,5 +547,8 @@ class ReweightedTransfer(method.Method):
 
     @property
     def prefix(self):
-        return 'CovShift'
+        s = 'CovShift'
+        if getattr(self.configs, 'use_validation', False):
+            s += '-VAL'
+        return s
 

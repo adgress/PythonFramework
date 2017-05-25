@@ -96,34 +96,34 @@ def create_table():
         method_idx = 0
         mean_perf = []
         for file, legend_str in vis_configs.results_files:
+            if len(cols) <= method_idx:
+                cols.append(legend_str)
             if not os.path.isfile(file):
                 print file + ' doesn''t exist - skipping'
                 #assert False, 'Creating Table doesn''t work with missing files'
                 cell_text[data_set_idx][method_idx] = 'Missing'
-                method_idx += 1
-                continue
-            results = helper_functions.load_object(file)
-            if len(cols) <= method_idx:
-                cols.append(legend_str)
-            sized_results = get_sized_results(file)
-            results = combine_results(results, sized_results)
-            # plt.plot([1,2,3], [1,2,3], 'go-', label='line 1', linewidth=2)
-            processed_results = results.compute_error_processed(vis_configs.loss_function)
-            sizes = results.sizes
-            assert size_to_vis in sizes
-            size_idx = array_functions.find_first_element(sizes, size_to_vis)
-            # sizes = sizes[0:4]
-            s = legend_str
-            if s is None:
-                s = results.configs.learner.name_string
-            highs = np.asarray(processed_results.means) + np.asarray(processed_results.highs)
-            lows = np.asarray(processed_results.means) - np.asarray(processed_results.lows)
-            mean_val = processed_results.means[size_idx]
-            var = (highs-lows)[size_idx]/2
+                mean_val = np.nan
+            else:
+                results = helper_functions.load_object(file)
+                sized_results = get_sized_results(file)
+                results = combine_results(results, sized_results)
+                processed_results = results.compute_error_processed(vis_configs.loss_function)
+                sizes = results.sizes
+                #assert size_to_vis in sizes
+                #size_idx = array_functions.find_first_element(sizes, size_to_vis)
+                size_idx = 0
+                # sizes = sizes[0:4]
+                s = legend_str
+                if s is None:
+                    s = results.configs.learner.name_string
+                highs = np.asarray(processed_results.means) + np.asarray(processed_results.highs)
+                lows = np.asarray(processed_results.means) - np.asarray(processed_results.lows)
+                mean_val = processed_results.means[size_idx]
+                var = (highs-lows)[size_idx]/2
             latex_str = '-'
             if mean_val < 1000:
                 #latex_str = '%.1f \\pm %.1f' % (mean_val, var)
-                latex_str = '%.1f (%.1f)' % (mean_val, var)
+                latex_str = '%.2f (%.1f)' % (mean_val, var)
             cell_text[data_set_idx][method_idx] = latex_str
             if method_idx == vis_configs.baseline_idx:
                 baseline_perf.append(mean_val)
@@ -134,11 +134,13 @@ def create_table():
     relative_improvement = np.zeros((len(all_perf), all_perf[0].size))
     for i in range(relative_improvement.shape[0]):
         relative_improvement[i, :] = (baseline_perf[i] - all_perf[i]) / baseline_perf[i]
-    latex_text = ' & Ours: Linear & Target Only & LLGC & Reweighting & Offset & SMS & Stacking & Ours with Stacking\\\\ \hline \n'
-    data_names = [
-        'Curve', 'Step', 'Delta', 'Cross', 'Slant', 'BH 1D', 'Concrete 1D', 'Bike 1D',
-        'Wine 1D', 'BH', 'Concrete', 'Wine'
-    ]
+    method_names_for_table = vis_configs.method_names_for_table
+    latex_text = ''
+    for method_name in method_names_for_table:
+        latex_text += ' & ' + method_name
+    latex_text += '\\\\ \hline \n'
+    #latex_text = ' & Ours: Linear & Target Only & LLGC & Reweighting & Offset & SMS & Stacking & Ours with Stacking\\\\ \hline \n'
+    data_names = vis_configs.data_names_for_table
     for row_idx, row_str in enumerate(cell_text):
         latex_text += data_names[row_idx] + ' & '
         for i, cell_str in enumerate(row_str):
@@ -189,11 +191,17 @@ def run_visualization():
         min_x = np.inf
         max_x = -np.inf
         marker_idx = -1
+        is_file_missing = False
         for file, legend_str in vis_configs.results_files:
             marker_idx += 1
             if not os.path.isfile(file):
+                is_file_missing = True
                 print file + ' doesn''t exist - skipping'
-                assert len(viz_params) == 1 or vis_configs.show_legend_on_all, 'Just to be safe, set show_legend_on_all=True if files are missing'
+                assert len(viz_params) == 1 or \
+                       vis_configs.show_legend_on_all or \
+                       vis_configs.show_legend_on_missing_files  or \
+                       not vis_configs.crash_on_missing_files, \
+                    'Just to be safe, crashing because files are missing'
                 continue
             results = helper_functions.load_object(file)
             sized_results = get_sized_results(file)
@@ -248,7 +256,7 @@ def run_visualization():
         #show_x_label = num_rows == 1 or subplot_idx > (num_rows-1)*num_cols
         #show_x_label = num_rows == 1 or subplot_idx == 8
         #show_x_label = subplot_idx == 9
-        show_x_label = True
+        show_x_label = subplot_idx == 8
         show_y_label = num_cols == 1 or subplot_idx % num_cols == 1 or vis_configs.always_show_y_label
 
         if show_x_label:
@@ -262,7 +270,8 @@ def run_visualization():
             axis[2] = ylims[0]
             axis[3] = ylims[1]
         plt.axis(axis)
-        if config_idx == 2 or vis_configs.show_legend_on_all or len(viz_params) == 1:
+        if config_idx == 2 or vis_configs.show_legend_on_all or len(viz_params) == 1\
+                or (vis_configs.show_legend_on_missing_files and is_file_missing):
             plt.legend(loc='upper right', fontsize=vis_configs.fontsize)
     #fig.tight_layout(rect=[.05,.05,.95,.95])
     if getattr(vis_configs,'borders',None):

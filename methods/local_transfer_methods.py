@@ -483,7 +483,25 @@ class LocalTransferDelta(HypothesisTransfer):
         #s += '-TESTING_REFACTOR'
         return s
 
+def unpack_b(b, opt_data):
+    b_scale = 1
+    b_translate = b
+    if opt_data['scale_b']:
+        b_scale = b_translate[0]
+        b_translate = b_translate[1:]
+    return b_scale, b_translate
 
+def pack_b(b_scale, b_translate, opt_data):
+    if not opt_data['scale_b']:
+        return b_translate
+    val = None
+    try:
+        val = np.concatenate((b_scale, b_translate))
+    except:
+        b_scale = np.asarray([b_scale])
+    if val is None:
+        val = np.concatenate((b_scale, b_translate))
+    return val
 
 def pack_v(ft, b, alpha):
     #return np.concatenate((b, alpha, ft))
@@ -494,6 +512,8 @@ def unpack_v(v, n, p, opt_data):
     b_end = n
     if opt_data['linear_b']:
         b_end = p + 1
+    if opt_data['scale_b']:
+        b_end += 1
     b = v[:b_end]
     alpha = v[b_end:b_end+n]
     ft = v[b_end+n:]
@@ -531,23 +551,29 @@ def gradient_delta_new(v, opt_data):
     C_b = opt_data['C_b']
     A = opt_data['A']
     linear_b = opt_data['linear_b']
+    scale_b = opt_data['scale_b']
+
+    b_scale, b_translate = unpack_b(b, opt_data)
 
     if linear_b:
-        b_w = b[:p]
-        b_c = b[-1]
+        b_w = b_translate[:p]
+        b_c = b_translate[-1]
         b_pred = x.dot(b_w) + b_c
     else:
-        b_pred = S_b.dot(b)
+        b_pred = S_b.dot(b_translate)
+
+    S_aa = S_a.dot(alpha)
+    S_ft = S_x.dot(ft)
     A = S_x.dot(ft)[:, None] * S_a
-    B = (b_pred + y_s)[:, None] * S_a
+    B = (b_pred + b_scale*y_s)[:, None] * S_a
     C = S_x.dot(ft) - y
     D = B - A
     da = 2 * (D.T.dot(D.dot(alpha)) + D.T.dot(C))
 
 
     if linear_b:
-        S_aa = S_a.dot(alpha)
-        S_ft = S_x.dot(ft)
+        assert not scale_b, 'Incorporate Scaling term'
+        assert False, 'Is linear b gradient fixed?'
         M_a = (1-S_aa)*S_ft + S_aa*y_s - y
         M_b = S_aa[:, None] * x
         dw = 2*(M_b.T.dot(M_b.dot(b_w)) + M_b.T.dot(M_a) + M_b.T.dot(S_aa)*b_c + C_b*b_w )
@@ -560,22 +586,30 @@ def gradient_delta_new(v, opt_data):
         print ''
 
     else:
-        M_a = (1 - S_a.dot(alpha)) * S_x.dot(ft) + (S_a.dot(alpha)) * y_s - y
-        M_b = S_a.dot(alpha)[:, None] * S_b
-        db = 2 * (M_b.T.dot(M_b.dot(b)) + M_b.T.dot(M_a))
+        #assert not scale_b, 'Incorporate Scaling term'
+        M_a = (1 - S_aa) * S_ft + S_aa * y_s*b_scale - y
+        M_b = S_aa[:, None] * S_b
+        db_translate = 2 * (M_b.T.dot(M_b.dot(b_translate)) + M_b.T.dot(M_a))
+
+        M_a_scale = (1-S_aa)*S_ft + S_aa * b_pred - y
+        M_b_scale = S_aa * y_s
+        db_scale = 2 * (M_b_scale.T.dot(M_b_scale)*b_scale + M_b_scale.T.dot(M_a_scale))
+        db = pack_b(db_scale, db_translate, opt_data)
     g = np.concatenate((db, da))
     if learn_ft:
         #print 'TODO: Accelerate this!'
         G= np.diag(1 - S_a.dot(alpha)).dot(S_x)
-        F = S_a.dot(alpha) * (S_b.dot(b) + y_s) - y
+        F = S_a.dot(alpha) * (S_b.dot(b) + b_scale*y_s) - y
         df = 2*(G.T.dot(G).dot(ft) + G.T.dot(F))
         g = np.concatenate((g, df))
     if check_gradient_new:
         g_approx = optimize.approx_fprime(v, lambda x: eval_delta_new(x, opt_data), 1e-8)
         rel_err = norm(g[:]-g_approx[:])/norm(g_approx[:])
-        print 'rel err: ' + str(rel_err)
-        #rel_err_a = norm(g[20:]-g_approx[20:])/norm(g_approx[20:])
-        rel_err_b = norm(g[:2] - g_approx[:2]) / norm(g_approx[:2])
+        if norm(g_approx) == 0:
+            print 'norm=0'
+        else:
+            print 'rel err: ' + str(rel_err)
+            print ''
         '''
         if np.isfinite(rel_err_a) and rel_err_a > 1e-4:
             print 'Grad error alpha: ' + str(rel_err_a)
@@ -605,13 +639,16 @@ def eval_delta_new(v, opt_data):
     C_alpha = opt_data['C_alpha']
     A = opt_data['A']
     linear_b = opt_data['linear_b']
+    scale_b = opt_data['scale_b']
+
+    b_scale, b_translate = unpack_b(b, opt_data)
 
     if linear_b:
-        b_w = b[:p]
-        b_c = b[-1]
-        f = f_delta_new(alpha, x.dot(b_w) + b_c, S_x.dot(ft), y_s, S_b, S_a)
+        b_w = b_translate[:p]
+        b_c = b_translate[-1]
+        f = f_delta_new(alpha, x.dot(b_w) + b_c, S_x.dot(ft), b_scale*y_s, S_b, S_a)
     else:
-        f = f_delta_new(alpha, S_b.dot(b), S_x.dot(ft), y_s, S_b, S_a)
+        f = f_delta_new(alpha, S_b.dot(b_translate), S_x.dot(ft), b_scale*y_s, S_b, S_a)
 
     loss_f = norm(f - y)**2
     if linear_b:
@@ -651,8 +688,10 @@ class LocalTransferDeltaNew(LocalTransferDelta):
         self.use_bounds = True
         self.optimize_ft = False
         self.linear_b = False
-        self.loo = True
-        self.use_transform = False
+        self.scale_b = False
+        self.loo = False
+        self.use_transform = True
+        self.bound_b = True
 
         if self.linear_b:
             del self.cv_params['sigma_b']
@@ -668,7 +707,7 @@ class LocalTransferDeltaNew(LocalTransferDelta):
         self.quiet = False
         self.train_source_learner = True
         self.use_stacking = False
-        self.transform =  StandardScaler()
+        self.transform = StandardScaler()
 
 
     def train_and_test(self, data):
@@ -682,7 +721,7 @@ class LocalTransferDeltaNew(LocalTransferDelta):
 
 
     def train(self, data):
-
+        #self.sigma_target = self.sigma_b = self.sigma_alpha = 1
         target_data_all = self.get_target_subset(data)
         target_data_labeled = target_data_all.get_subset(target_data_all.is_train & target_data_all.is_labeled)
         y_s = self.source_learner.predict(target_data_labeled).y
@@ -730,6 +769,7 @@ class LocalTransferDeltaNew(LocalTransferDelta):
             'y_t': y_t,
             'linear_b': self.linear_b,
             'C_b': self.C_b,
+            'scale_b': self.scale_b,
         }
 
         f = lambda v: eval_delta_new(v, opt_data)
@@ -738,6 +778,8 @@ class LocalTransferDeltaNew(LocalTransferDelta):
         b_size = y.size
         if self.linear_b:
             b_size = p + 1
+        if self.scale_b:
+            b_size += 1
         f0 = np.zeros(y.size + b_size)
         if self.optimize_ft:
             f0 = np.zeros(2*y.size + b_size)
@@ -746,7 +788,16 @@ class LocalTransferDeltaNew(LocalTransferDelta):
 
         bounds = None
         if self.use_bounds:
-            bounds = [(None, None) for i in range(b_size)] + [(0, 1 ) for i in range(y.size)]
+            if self.bound_b:
+                diff = target_data_all.true_y.mean() - self.source_learner.y.mean()
+                diff *= .25
+                if diff > 0:
+                    bounds = [(diff, None) for i in range(b_size)]
+                else:
+                    bounds = [(None, diff) for i in range(b_size)]
+            else:
+                bounds = [(None, None) for i in range(b_size)]
+            bounds += [(0, 1 ) for i in range(y.size)]
             if self.optimize_ft:
                 bounds += [(None, None) for i in range(y.size)]
 
@@ -799,11 +850,14 @@ class LocalTransferDeltaNew(LocalTransferDelta):
         W_a = array_functions.make_rbf(x, self.sigma_alpha, x2=x2).T
         S_a = array_functions.make_smoothing_matrix(W_a)
 
+        b_scale, b_translate = unpack_b(
+            self.b, {'scale_b': self.scale_b}
+        )
         if self.linear_b:
-            b = data.x.dot(self.b[:-1]) + self.b[-1]
+            b = data.x.dot(b_translate[:-1]) + b_translate[-1]
         else:
-            b = S_b.dot(self.b)
-        f = f_delta_new(self.alpha, b, ft, y_s, S_b, S_a)
+            b = S_b.dot(b_translate)
+        f = f_delta_new(self.alpha, b, ft, b_scale*y_s, S_b, S_a)
         o.y = f.copy()
         o.fu = f.copy()
         o.b = b
@@ -823,6 +877,10 @@ class LocalTransferDeltaNew(LocalTransferDelta):
             s += '-opt_ft'
         if getattr(self, 'linear_b'):
             s += '-linearB'
+        if getattr(self, 'scale_b'):
+            s += '-scaleB'
+        if getattr(self, 'bound_b'):
+            s += '-boundB'
         if getattr(self, 'loo'):
             s += '-loo'
         if not getattr(self, 'use_transform', True):
@@ -901,7 +959,7 @@ class LocalTransferDeltaSMS(LocalTransferDelta):
         self.C2 = 0
         self.include_scale = getattr(configs, 'include_scale', False)
         self.cv_params = {}
-        vals = list(range(-7,8))
+        vals = list(range(-5,5))
         vals.reverse()
         #vals = [0,1,2]
         self.cv_params['sigma'] = 10**np.asarray(vals,dtype='float64')

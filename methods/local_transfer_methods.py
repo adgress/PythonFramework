@@ -686,6 +686,7 @@ class LocalTransferDeltaNew(LocalTransferDelta):
         self.sigma_alpha = 1
         self.use_grad = True
         self.use_bounds = True
+        self.bound_percentile = 80
         self.optimize_ft = False
         self.linear_b = False
         self.scale_b = False
@@ -789,12 +790,13 @@ class LocalTransferDeltaNew(LocalTransferDelta):
         bounds = None
         if self.use_bounds:
             if self.bound_b:
-                diff = target_data_all.true_y.mean() - self.source_learner.y.mean()
-                diff *= .25
-                if diff > 0:
-                    bounds = [(diff, None) for i in range(b_size)]
+                diff = target_data_all.true_y - self.source_learner.predict(target_data_all).y
+                #diff *= .25
+                val = np.percentile(diff, self.bound_percentile)
+                if val > 0:
+                    bounds = [(val, None) for i in range(b_size)]
                 else:
-                    bounds = [(None, diff) for i in range(b_size)]
+                    bounds = [(None, val) for i in range(b_size)]
             else:
                 bounds = [(None, None) for i in range(b_size)]
             bounds += [(0, 1 ) for i in range(y.size)]
@@ -880,7 +882,10 @@ class LocalTransferDeltaNew(LocalTransferDelta):
         if getattr(self, 'scale_b'):
             s += '-scaleB'
         if getattr(self, 'bound_b'):
-            s += '-boundB'
+            if getattr(self, 'bound_percentile'):
+                s += '-boundPerc=' + str(self.bound_percentile)
+            else:
+                s += '-boundB'
         if getattr(self, 'loo'):
             s += '-loo'
         if not getattr(self, 'use_transform', True):

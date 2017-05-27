@@ -26,11 +26,9 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
     'source_labels',
     'use_oracle'
 ]
-#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10_nnz4
-#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
-#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
+data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
 #data_set_to_use = bc.DATA_DROSOPHILIA
-data_set_to_use = bc.DATA_BOSTON_HOUSING
+#data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_WINE_RED
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_KC_HOUSING
@@ -58,8 +56,9 @@ VIZ_PAPER_TRAINING_CORR = 4
 VIZ_PAPER_TRANSFER = 5
 VIZ_PAPER_TRAINING_SINGLE = 6
 VIZ_PAPER_HARD_CONSTRAINTS = 7
+VIZ_DUAL = 8
 
-viz_type = VIZ_PAPER_TRAINING_CORR
+viz_type = VIZ_DUAL
 if viz_type == VIZ_PAPER_TRANSFER:
     run_transfer_experiments = True
 
@@ -125,6 +124,8 @@ other_method_configs = {
     'num_cv_splits': 10,
     'eps': 1e-10,
     'use_perfect_feature_selection': True,
+    'mean_b': False,
+    'solve_dual': False,
 }
 
 if data_set_to_use == bc.DATA_DROSOPHILIA:
@@ -367,6 +368,23 @@ class BatchConfigs(bc.BatchConfigs):
                     p.disable_relaxed_guidance = False
                     p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_LASSO
                     self.config_list.append(MainConfigs(p))
+
+                    #Dual and Primal Mean B exps
+                    p = deepcopy(pc)
+                    p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
+                    p.num_random_pairs = 0
+                    p.num_random_signs = 1
+                    p.solve_dual = True
+                    p.mean_b = True
+                    self.config_list.append(MainConfigs(p))
+
+                    p = deepcopy(pc)
+                    p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
+                    p.num_random_pairs = 0
+                    p.num_random_signs = 1
+                    p.solve_dual = False
+                    p.mean_b = True
+                    self.config_list.append(MainConfigs(p))
                     #assert False, 'Not Implemented Yet'
 
 class VisualizationConfigs(bc.VisualizationConfigs):
@@ -410,7 +428,11 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #self.files['SLL-NW.pkl'] = 'LLGC'
         #self.files['NW.pkl'] = 'NW'
 
-        if viz_type == VIZ_EXPERIMENT:
+
+        if viz_type == VIZ_DUAL:
+            self.files['Mixed-feats_method=Rel_meanB_signs=1-use_sign_corr_l1.pkl'] = 'Primal: Signs, meanB'
+            self.files['Mixed-feats_method=Rel_dual_meanB_signs=1-use_sign_corr_l1.pkl'] = 'Dual: Signs, meanB'
+        elif viz_type == VIZ_EXPERIMENT:
             self.files['Mixed-feats_method=Ridge.pkl'] = 'Mixed: Ridge'
             self.files['Mixed-feats_method=Lasso.pkl'] = 'Mixed: Lasso'
             '''

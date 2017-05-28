@@ -59,7 +59,8 @@ class MixedFeatureGuidanceMethod(method.Method):
     }
     def __init__(self,configs=MethodConfigs()):
         super(MixedFeatureGuidanceMethod, self).__init__(configs)
-        self.cv_params['C'] = self.create_cv_params(-5, 5, append_zero=True)
+        #self.cv_params['C'] = self.create_cv_params(-5, 5, append_zero=True)
+        self.cv_params['C'] = self.create_cv_params(-5, 5, append_zero=False)
         self.cv_params['C2'] = self.create_cv_params(-5, 10, append_zero=True, prepend_inf=True)
         #self.cv_params['C2'] = np.asarray([np.inf])
         self.cv_params['C3'] = self.create_cv_params(-5, 5, append_zero=True)
@@ -320,8 +321,10 @@ class MixedFeatureGuidanceMethod(method.Method):
         self.C = .001
         self.C2 = 1
         '''
+        '''
         self.C = .001
         self.C2 = 1
+        '''
         no_constraints = False
         self.C = float(self.C)
         self.C2 = float(self.C2)
@@ -510,9 +513,10 @@ class MixedFeatureGuidanceMethod(method.Method):
                     Q = E.dot(E.T) - B.T.dot(M).dot(B)
                     eigen_values = eig(Q)[0]
                     delta = 2*C*M.dot(y_dual) - M.dot(x).dot(E.T)*alpha
-                    print 'min eigenvalue: ' + str(eigen_values.min())
+                    #print 'min eigenvalue: ' + str(eigen_values.min())
                     #dual_objective = cvx.quad_form(alpha, Q) + y_dual.T.dot(M).dot(B)*alpha + C2*gamma
-                    dual_objective = .25*C*cvx.quad_form(alpha, Q) + y_dual.T.dot(M).dot(B) * alpha
+                    #dual_objective = .25*C*cvx.quad_form(alpha, Q) + y_dual.T.dot(M).dot(B) * alpha
+                    dual_objective = (.25/C) * cvx.quad_form(alpha, Q) + y_dual.T.dot(M).dot(B) * alpha
 
                     #works for no sign guidance
                     '''
@@ -524,6 +528,8 @@ class MixedFeatureGuidanceMethod(method.Method):
                         #alpha <= gamma, gamma==C2
                         alpha <= C2
                     ]
+                    if not self.mean_b:
+                        constraints.append(cvx.sum_entries(delta) == 0)
                     if no_constraints:
                         dual_constraints += [alpha == 0, gamma == 0]
                     dual_obj = cvx.Minimize(dual_objective)
@@ -537,9 +543,13 @@ class MixedFeatureGuidanceMethod(method.Method):
                         self.w = w_dual
                     except:
                         self.w = np.zeros(p)
+                        self.b = 0
                         if not self.running_cv:
                             print 'Dual solver failed - setting to 0'
-                    print_accuracy = True
+                    if not self.mean_b:
+                        K = x.dot(self.w) - y_dual
+                        self.b = -K.mean()
+                    print_accuracy = False
                     if (not self.running_cv or print_accuracy) and delta.value is not None:
                         '''
                         print w_dual
@@ -548,9 +558,12 @@ class MixedFeatureGuidanceMethod(method.Method):
                         print 'dual error: ' + str(relative_error(w_anal, w_dual))
                         print ''
                         '''
-                        print w_anal
-                        print w_dual
-                        print w_primal
+
+                        #print w_anal
+                        #print w_dual
+                        #print w_primal
+                        print 'anal, dual, primal'
+                        print np.stack((w_anal, w_dual, w_primal)).T
                         print 'dual nonneg error: ' + str(relative_error(w_primal, w_dual))
                         print ''
                     '''
@@ -603,8 +616,11 @@ class MixedFeatureGuidanceMethod(method.Method):
             else:
                 assert self.method == MixedFeatureGuidanceMethod.METHOD_RIDGE
                 self.w = self.solve_w(x, y, C)
-        assert self.mean_b
-        self.b = y.mean()
+        if self.mean_b:
+            self.b = y.mean()
+        else:
+            if not self.solve_dual:
+                self.b = b.value
         if not self.running_cv:
             try:
                 print prob.status

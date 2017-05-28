@@ -32,6 +32,18 @@ class optimize_data(object):
     def get_reg(self):
         return self.reg_ridge, self.reg_a, self.reg_mixed
 
+
+
+def eval_quad(alpha, opt_data):
+    y_dual = opt_data['y']
+    M = opt_data['M']
+    B = opt_data['B']
+    Q = opt_data['Q']
+    C = opt_data['C']
+    dual_objective = (.25 / C) * alpha.T.dot(Q).dot(alpha) + y_dual.T.dot(M).dot(B).dot(alpha)
+    return dual_objective
+
+
 class MixedFeatureGuidanceMethod(method.Method):
     METHOD_RELATIVE = 1
     METHOD_HARD_CONSTRAINT = 2
@@ -97,6 +109,7 @@ class MixedFeatureGuidanceMethod(method.Method):
         self.use_l1 = getattr(configs, 'use_l1', False)
         self.solve_dual = getattr(configs, 'solve_dual', False)
         self.mean_b = getattr(configs, 'mean_b', False)
+        self.solve_scipy = True
         if self.method == MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT:
             self.configs.scipy_opt_method = 'SLSQP'
         if self.method in MixedFeatureGuidanceMethod.METHODS_UNIFORM_C:
@@ -526,8 +539,9 @@ class MixedFeatureGuidanceMethod(method.Method):
                     dual_constraints = [
                         alpha >= 0, gamma >= 0,
                         #alpha <= gamma, gamma==C2
-                        alpha <= C2
                     ]
+                    if np.isfinite(C2):
+                        dual_constraints.append(alpha <= C2)
                     if not self.mean_b:
                         constraints.append(cvx.sum_entries(delta) == 0)
                     if no_constraints:
@@ -535,7 +549,13 @@ class MixedFeatureGuidanceMethod(method.Method):
                     dual_obj = cvx.Minimize(dual_objective)
                     dual_problem = cvx.Problem(dual_obj, dual_constraints)
                     try:
-                        dual_problem.solve(solver=self.cvx_method)
+                        #cvx.SCS
+                        dual_problem.solve(
+                            solver=self.cvx_method,
+                            verbose=False,
+                            eps=1e-6,
+                            alpha=1.8
+                        )
                         w_dual = (1 / (2 * C)) * (x.T.dot(delta.value) + E.T.dot(alpha.value))
                         w_dual = np.squeeze(np.asarray(w_dual).T)
                         w_primal = self.w
@@ -566,6 +586,37 @@ class MixedFeatureGuidanceMethod(method.Method):
                         print np.stack((w_anal, w_dual, w_primal)).T
                         print 'dual nonneg error: ' + str(relative_error(w_primal, w_dual))
                         print ''
+                    if self.solve_scipy:
+                        opt_data = {
+                            'C': C,
+                            'C2': C2,
+                            'x': x,
+                            'y': y_dual,
+                            'E': E,
+                            'n': n,
+                            'p': p,
+                            'Q': Q,
+                            'M': M,
+                            'B': B
+                        }
+                        x0 = np.zeros(E.shape[0])
+                        bounds = [(0, C2)] * E.shape[0]
+                        results = optimize.minimize(
+                            lambda x: eval_quad(x, opt_data),
+                            x0,
+                            method=self.configs.scipy_opt_method,
+                            jac=None,
+                            options=None,
+                            bounds=bounds,
+                            constraints=None
+                        )
+                        alpha_dual_scipy = results.x
+                        delta = 2 * C * M.dot(y_dual) - M.dot(x).dot(E.T).dot(alpha_dual_scipy)
+                        w_dual_scipy = (1 / (2 * C)) * (x.T.dot(delta) + E.T.dot(alpha_dual_scipy))
+                        if alpha.value is not None:
+                            print self.w
+                            print w_dual_scipy
+                            print ''
                     '''
                 if b.value is not None:
                     assert abs(b.value - y.mean())/abs(b.value) <= 1e-3
@@ -692,6 +743,8 @@ class MixedFeatureGuidanceMethod(method.Method):
             s += '_method=Rel'
             if getattr(self, 'solve_dual') and num_signs > 0:
                 s += '_dual'
+                if getattr(self, 'solve_scipy'):
+                    s += 'Scipy'
             if getattr(self, 'mean_b'):
                 s += '_meanB'
         elif self.method == MixedFeatureGuidanceMethod.METHOD_ORACLE:

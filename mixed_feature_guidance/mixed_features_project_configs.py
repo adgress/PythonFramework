@@ -375,7 +375,7 @@ class BatchConfigs(bc.BatchConfigs):
                     p.num_random_pairs = 0
                     p.num_random_signs = 1
                     p.solve_dual = True
-                    p.mean_b = True
+                    p.mean_b = False
                     self.config_list.append(MainConfigs(p))
 
                     p = deepcopy(pc)
@@ -383,7 +383,7 @@ class BatchConfigs(bc.BatchConfigs):
                     p.num_random_pairs = 0
                     p.num_random_signs = 1
                     p.solve_dual = False
-                    p.mean_b = True
+                    p.mean_b = False
                     self.config_list.append(MainConfigs(p))
                     #assert False, 'Not Implemented Yet'
 
@@ -432,6 +432,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         if viz_type == VIZ_DUAL:
             self.files['Mixed-feats_method=Rel_meanB_signs=1-use_sign_corr_l1.pkl'] = 'Primal: Signs, meanB'
             self.files['Mixed-feats_method=Rel_dual_meanB_signs=1-use_sign_corr_l1.pkl'] = 'Dual: Signs, meanB'
+            self.files['Mixed-feats_method=Rel_dual_signs=1-use_sign_corr_l1.pkl'] = 'Dual: Signs'
         elif viz_type == VIZ_EXPERIMENT:
             self.files['Mixed-feats_method=Ridge.pkl'] = 'Mixed: Ridge'
             self.files['Mixed-feats_method=Lasso.pkl'] = 'Mixed: Lasso'

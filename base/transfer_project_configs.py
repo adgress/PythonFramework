@@ -664,6 +664,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['TargetTransfer+NW.pkl'] = 'Target Only'
             self.files['LocalTransferNew-grad-bounds.pkl'] = 'Our Method'
             self.files['LocalTransferNew-grad-bounds-boundB'] = 'Ours Method: Bounds'
+            self.files['LocalTransferNew-grad-bounds-boundPerc=80'] = 'Our Method: Bounds 80%'
         elif plot_idx == PLOT_SMS:
             self.files = OrderedDict()
             self.files['TargetTransfer+NW.pkl'] = 'Target Only'

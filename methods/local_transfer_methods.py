@@ -693,6 +693,7 @@ class LocalTransferDeltaNew(LocalTransferDelta):
         self.loo = False
         self.use_transform = True
         self.bound_b = True
+        self.bound_upper = True
 
         if self.linear_b:
             del self.cv_params['sigma_b']
@@ -793,7 +794,9 @@ class LocalTransferDeltaNew(LocalTransferDelta):
                 diff = target_data_all.true_y - self.source_learner.predict(target_data_all).y
                 #diff *= .25
                 val = np.percentile(diff, self.bound_percentile)
-                if val > 0:
+                if self.bound_upper:
+                    bounds = [(None, val) for i in range(b_size)]
+                elif val > 0:
                     bounds = [(val, None) for i in range(b_size)]
                 else:
                     bounds = [(None, val) for i in range(b_size)]
@@ -883,7 +886,10 @@ class LocalTransferDeltaNew(LocalTransferDelta):
             s += '-scaleB'
         if getattr(self, 'bound_b'):
             if getattr(self, 'bound_percentile'):
-                s += '-boundPerc=' + str(self.bound_percentile)
+                if getattr(self, 'bound_upper'):
+                    s += '-boundUpper=' + str(self.bound_percentile)
+                else:
+                    s += '-boundPerc=' + str(self.bound_percentile)
             else:
                 s += '-boundB'
         if getattr(self, 'loo'):

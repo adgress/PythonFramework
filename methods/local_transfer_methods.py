@@ -686,14 +686,14 @@ class LocalTransferDeltaNew(LocalTransferDelta):
         self.sigma_alpha = 1
         self.use_grad = True
         self.use_bounds = True
-        self.bound_percentile = 80
+        self.bound_percentile = [10, 90]
         self.optimize_ft = False
         self.linear_b = False
         self.scale_b = False
         self.loo = False
         self.use_transform = True
         self.bound_b = True
-        self.bound_upper = True
+        #self.bound_upper = True
 
         if self.linear_b:
             del self.cv_params['sigma_b']
@@ -793,13 +793,12 @@ class LocalTransferDeltaNew(LocalTransferDelta):
             if self.bound_b:
                 diff = target_data_all.true_y - self.source_learner.predict(target_data_all).y
                 #diff *= .25
-                val = np.percentile(diff, self.bound_percentile)
-                if self.bound_upper:
-                    bounds = [(None, val) for i in range(b_size)]
-                elif val > 0:
-                    bounds = [(val, None) for i in range(b_size)]
-                else:
-                    bounds = [(None, val) for i in range(b_size)]
+                percs = self.bound_percentile
+                vals = [None, None]
+                for i in range(2):
+                    if percs[i] is not None:
+                        vals[i] = np.percentile(diff, percs[i])
+                bounds = [vals for i in range(b_size)]
             else:
                 bounds = [(None, None) for i in range(b_size)]
             bounds += [(0, 1 ) for i in range(y.size)]
@@ -886,10 +885,7 @@ class LocalTransferDeltaNew(LocalTransferDelta):
             s += '-scaleB'
         if getattr(self, 'bound_b'):
             if getattr(self, 'bound_percentile'):
-                if getattr(self, 'bound_upper'):
-                    s += '-boundUpper=' + str(self.bound_percentile)
-                else:
-                    s += '-boundPerc=' + str(self.bound_percentile)
+                s += '-boundPerc=' + str(self.bound_percentile)
             else:
                 s += '-boundB'
         if getattr(self, 'loo'):

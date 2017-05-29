@@ -33,15 +33,78 @@ class optimize_data(object):
         return self.reg_ridge, self.reg_a, self.reg_mixed
 
 
+def compute_quad_matrices(alpha, opt_data):
+    E = opt_data['E']
+    x = opt_data['x']
+    y = opt_data['y']
+    n = opt_data['n']
+    p = opt_data['p']
+    C = opt_data['C']
+    D_alpha = np.diag(alpha)
+    F = D_alpha.T.dot(E)
+    A = 2 * C * np.eye(p) - F - F.T
+    try:
+        A_inv = inv(A)
+    except:
+        try:
+            A_inv = inv(A + 1e-3 * np.eye(A.shape[0]))
+        except:
+            A_inv = np.eye(A.shape[0])
+    B = A_inv.dot(x.T)
+    V = .5 * n * np.eye(n) - 2 * C * B.T.dot(B) + 2 * B.T.dot(F).dot(B)
+    try:
+        V_inv = inv(V)
+    except:
+        try:
+            V_inv = inv(V + 1e-3*np.eye(V.shape[0]))
+        except:
+            V_inv = np.eye(V.shape[0])
+    delta = V_inv.dot(y)
+    return A_inv, B, F, delta
 
 def eval_quad(alpha, opt_data):
-    y_dual = opt_data['y']
-    M = opt_data['M']
-    B = opt_data['B']
-    Q = opt_data['Q']
     C = opt_data['C']
-    dual_objective = (.25 / C) * alpha.T.dot(Q).dot(alpha) + y_dual.T.dot(M).dot(B).dot(alpha)
+    y_dual = opt_data['y']
+    if not opt_data['use_pairwise_same_signs']:
+        M = opt_data['M']
+        B = opt_data['B']
+        Q = opt_data['Q']
+        dual_objective = (.25 / C) * alpha.T.dot(Q).dot(alpha) + y_dual.T.dot(M).dot(B).dot(alpha)
+    else:
+        n = opt_data['n']
+        x = opt_data['x']
+        A_inv, B, F, delta = compute_quad_matrices(alpha, opt_data)
+        dual_objective = -.25*n*norm(delta)**2 + C*norm(B.dot(delta))**2 - delta.T.dot(x).dot(B).dot(delta) \
+                         + delta.dot(y_dual) - delta.T.dot(B.T).dot(F).dot(B).dot(delta)
     return dual_objective
+
+
+def eval_same_sign_primal(w, opt_data):
+    x = opt_data['x']
+    y = opt_data['y']
+    E = opt_data['E']
+    C = opt_data['C']
+    C2 = opt_data['C2']
+    if np.isinf(C2):
+        return 0
+    loss = (norm(x.dot(w) - y)**2).mean()
+    reg1 = C*norm(w)**2
+    reg2 = C2*w.T.dot(E).dot(w)
+    return loss + reg1 - reg2
+
+def grad_same_sign_primal(w, opt_data):
+    x = opt_data['x']
+    y = opt_data['y']
+    E = opt_data['E']
+    C = opt_data['C']
+    C2 = opt_data['C2']
+    if np.isinf(C2):
+        return np.zeros(w.shape)
+    n = opt_data['n']
+    loss_grad = (2.0/n)*x.T.dot(x.dot(w)) - 2*x.T.dot(y)
+    reg1_grad = 2*C*w
+    reg2_grad = C2*(E.dot(w) + E.T.dot(w))
+    return loss_grad + reg1_grad - reg2_grad
 
 
 class MixedFeatureGuidanceMethod(method.Method):
@@ -73,7 +136,7 @@ class MixedFeatureGuidanceMethod(method.Method):
         super(MixedFeatureGuidanceMethod, self).__init__(configs)
         #self.cv_params['C'] = self.create_cv_params(-5, 5, append_zero=True)
         self.cv_params['C'] = self.create_cv_params(-5, 5, append_zero=False)
-        self.cv_params['C2'] = self.create_cv_params(-5, 10, append_zero=True, prepend_inf=True)
+        self.cv_params['C2'] = self.create_cv_params(-10, 10, append_zero=True, prepend_inf=True)
         #self.cv_params['C2'] = np.asarray([np.inf])
         self.cv_params['C3'] = self.create_cv_params(-5, 5, append_zero=True)
         self.transform = StandardScaler()
@@ -109,7 +172,8 @@ class MixedFeatureGuidanceMethod(method.Method):
         self.use_l1 = getattr(configs, 'use_l1', False)
         self.solve_dual = getattr(configs, 'solve_dual', False)
         self.mean_b = getattr(configs, 'mean_b', False)
-        self.solve_scipy = True
+        self.solve_scipy = getattr(configs, 'solve_scipy', False)
+        self.use_pairwise_same_signs = getattr(configs, 'use_pairwise_same_signs', False)
         if self.method == MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT:
             self.configs.scipy_opt_method = 'SLSQP'
         if self.method in MixedFeatureGuidanceMethod.METHODS_UNIFORM_C:
@@ -410,7 +474,9 @@ class MixedFeatureGuidanceMethod(method.Method):
                 z = cvx.Variable(len(feats_to_constraint) + len(pairs))
 
                 E = np.zeros((z.size[0], p))
-                if self.solve_dual:
+                if len(pairs) > 0:
+                    E = np.zeros((p, p))
+                if self.solve_dual and not self.use_pairwise_same_signs:
                     assert len(pairs) == 0
                     alpha = cvx.Variable(z.size[0])
                     #delta = cvx.Variable(n)
@@ -432,88 +498,98 @@ class MixedFeatureGuidanceMethod(method.Method):
                 if self.use_training_corr:
                     corr = data.metadata['training_corr']
                 if self.method != MixedFeatureGuidanceMethod.METHOD_RIDGE:
+                    w_constraints = corr.copy()
+                    if not self.use_corr:
+                        w_constraints = true_w.copy()
                     for j, k in pairs:
-                        if self.use_corr:
-                            jk_order = corr[j] > corr[k]
-                            if self.random_guidance and np.random.rand() > .5:
-                                jk_order = not jk_order
-                            if jk_order:
-                                constraints.append(w[j] - w[k] + z[idx] >= 0)
-                            else:
-                                constraints.append(w[k] - w[j] + z[idx] >= 0)
-                        else:
-                            assert not self.random_guidance
+                        jk_order = w_constraints[j] > w_constraints[k]
+                        if self.random_guidance and np.random.rand() > .5:
+                            jk_order = not jk_order
+                        if jk_order:
                             constraints.append(w[j] - w[k] + z[idx] >= 0)
-                        idx += 1
-                    for j in feats_to_constraint:
-                        #assert not self.use_nonneg
-                        if self.use_nonneg:
-                            constraints.append(w[j] + z[idx] >= 0)
-                            E[idx, j] = 1
-                        elif self.use_corr:
-                            s = np.sign(corr[j])
-                            if self.random_guidance and np.random.rand() > .5:
-                                s *= -1
-                            #print 'just using nonneg'
-                            #s = 1
-                            constraints.append(w[j] * s + z[idx] >= 0)
-                            E[idx, j] = s
                         else:
-                            assert not self.random_guidance
-                            constraints.append(w[j]*np.sign(true_w[j]) + z[idx] >= 0)
-                            E[idx, j] = np.sign(true_w[j])
+                            constraints.append(w[k] - w[j] + z[idx] >= 0)
+                        if self.use_pairwise_same_signs:
+                            s = np.sign(w_constraints[j]*w_constraints[k])
+                            E[j, k] = s
                         idx += 1
-                reg = cvx.norm2(w) ** 2
+                    if self.use_nonneg:
+                        w_constraints[:] = 1
+                    for j in feats_to_constraint:
+                        s = np.sign(corr[j])
+                        if self.random_guidance and np.random.rand() > .5:
+                            s *= -1
+                        constraints.append(w[j] * s + z[idx] >= 0)
+                        E[idx, j] = s
+                        idx += 1
+                if not self.solve_dual:
+                    if self.use_pairwise_same_signs:
+                        assert self.solve_scipy
+                        y_primal = y.copy()
+                        if self.mean_b:
+                            y_primal -= y_primal.mean()
+                        opt_data = {
+                            'C': C,
+                            'C2': C2,
+                            'x': x,
+                            'y': y_primal,
+                            'E': E,
+                            'n': n,
+                            'p': p,
+                        }
+                        w0 = np.zeros(p)
+                        '''
+                        results_eval = optimize.minimize(
+                            lambda w: eval_same_sign_primal(w, opt_data),
+                            w0,
+                            method=self.configs.scipy_opt_method,
+                            jac=lambda w: grad_same_sign_primal(w, opt_data),
+                            options=None,
+                            bounds=None,
+                            constraints=None
+                        )
+                        '''
+                        results = optimize.minimize(
+                            lambda w: eval_same_sign_primal(w, opt_data),
+                            w0,
+                            method=self.configs.scipy_opt_method,
+                            jac=None,
+                            #jac=lambda w: grad_same_sign_primal(w, opt_data),
+                            options=None,
+                            bounds=None,
+                            constraints=None
+                        )
+                        #print results_eval.x
+                        #print results.x
+                        w = results.x
+                        self.w = w
+                    else:
+                        reg = cvx.norm2(w) ** 2
 
-                if self.use_l1:
-                    reg_guidance = cvx.norm1(z)
-                else:
-                    reg_guidance = cvx.norm2(z) ** 2
-                if np.isinf(C2):
-                    constraints.append(z == 0)
-                    obj = cvx.Minimize(loss + C * reg)
-                else:
-                    constraints.append(z >= 0)
-
-                    #constraints.append(cvx.norm1(z) <= C2)
-                    #obj = cvx.Minimize(loss + C * reg)
-
-                    obj = cvx.Minimize(loss + C * reg + C2 * reg_guidance)
-                if self.use_nonneg:
-                    constraints.append(w >= 0)
-                '''
-                if self.solve_dual:
-                    if no_constraints:
-                        constraints = []
-                    constraints.append(b == 0)
-                '''
-                if self.mean_b:
-                    constraints.append(b == y.mean())
-                prob = cvx.Problem(obj, constraints)
-                try:
-                    #prob.solve(solver='SCS')
-                    prob.solve(solver=self.cvx_method)
-                    assert w.value is not None
-                    self.w = np.squeeze(np.asarray(w.value))
-                except:
-                    self.w = np.zeros(p)
-                    '''
-                    if not self.running_cv:
-                        assert False, 'Failed to converge when done with CV!'
-                    '''
+                        if self.use_l1:
+                            reg_guidance = cvx.norm1(z)
+                        else:
+                            reg_guidance = cvx.norm2(z) ** 2
+                        if np.isinf(C2):
+                            constraints.append(z == 0)
+                            obj = cvx.Minimize(loss + C * reg)
+                        else:
+                            constraints.append(z >= 0)
+                            obj = cvx.Minimize(loss + C * reg + C2 * reg_guidance)
+                        if self.use_nonneg:
+                            constraints.append(w >= 0)
+                        if self.mean_b:
+                            constraints.append(b == y.mean())
+                        prob = cvx.Problem(obj, constraints)
+                        try:
+                            prob.solve(solver=self.cvx_method)
+                            assert w.value is not None
+                            self.w = np.squeeze(np.asarray(w.value))
+                        except:
+                            self.w = np.zeros(p)
                 if self.solve_dual:
                     if no_constraints:
                         C2 = 0
-                    #old math
-                    '''
-                    M = np.linalg.inv(.5*n * np.eye(x.shape[0]) + .5*(1 / C) * x.dot(x.T))
-                    B = scipy.linalg.sqrtm(M).dot(x).dot(E.T)
-                    D = (.125/(C**2)) * B.T.dot(B)
-                    F = (.25/C) * E.T.dot(E) - D
-                    F_sq = scipy.linalg.sqrtm(F)
-                    delta = -(1.0/(2.0*C)) * (M.dot(x).dot(E.T))*alpha + M.dot(y)
-                    dual_objective = cvx.norm2(F_sq * alpha) ** 2 + .5 * C * y.T.dot(M.T).dot(x).dot(E.T) * alpha + C2 * gamma
-                    '''
                     y_dual = y.copy()
                     if self.mean_b:
                         y_dual -= y_dual.mean()
@@ -524,69 +600,42 @@ class MixedFeatureGuidanceMethod(method.Method):
                         M = np.linalg.inv(n * (C + 1e-6) * np.eye(x.shape[0]) + x.dot(x.T))
                     B = x.dot(E.T)
                     Q = E.dot(E.T) - B.T.dot(M).dot(B)
-                    eigen_values = eig(Q)[0]
-                    delta = 2*C*M.dot(y_dual) - M.dot(x).dot(E.T)*alpha
-                    #print 'min eigenvalue: ' + str(eigen_values.min())
-                    #dual_objective = cvx.quad_form(alpha, Q) + y_dual.T.dot(M).dot(B)*alpha + C2*gamma
-                    #dual_objective = .25*C*cvx.quad_form(alpha, Q) + y_dual.T.dot(M).dot(B) * alpha
-                    dual_objective = (.25/C) * cvx.quad_form(alpha, Q) + y_dual.T.dot(M).dot(B) * alpha
-
-                    #works for no sign guidance
-                    '''
-                    dual_objective = (n*.25) * cvx.norm2(delta)**2 + .25*(1/C)*cvx.norm2(x.T*delta)**2 + .25*(1/C)*cvx.norm2(E.T*alpha)**2 \
-                                     + (1/(8*C**2))*cvx.norm2(B*alpha)**2 - delta.T * y + gamma * C2
-                    '''
-                    dual_constraints = [
-                        alpha >= 0, gamma >= 0,
-                        #alpha <= gamma, gamma==C2
-                    ]
-                    if np.isfinite(C2):
-                        dual_constraints.append(alpha <= C2)
-                    if not self.mean_b:
-                        constraints.append(cvx.sum_entries(delta) == 0)
-                    if no_constraints:
-                        dual_constraints += [alpha == 0, gamma == 0]
-                    dual_obj = cvx.Minimize(dual_objective)
-                    dual_problem = cvx.Problem(dual_obj, dual_constraints)
-                    try:
-                        #cvx.SCS
-                        dual_problem.solve(
-                            solver=self.cvx_method,
-                            verbose=False,
-                            eps=1e-6,
-                            alpha=1.8
-                        )
-                        w_dual = (1 / (2 * C)) * (x.T.dot(delta.value) + E.T.dot(alpha.value))
-                        w_dual = np.squeeze(np.asarray(w_dual).T)
-                        w_primal = self.w
-                        w_anal = inv(x.T.dot(x) / n + C * np.eye(p)).dot(x.T).dot(y) / n
-                        self.w = w_dual
-                    except:
-                        self.w = np.zeros(p)
-                        self.b = 0
-                        if not self.running_cv:
-                            print 'Dual solver failed - setting to 0'
-                    if not self.mean_b:
-                        K = x.dot(self.w) - y_dual
-                        self.b = -K.mean()
-                    print_accuracy = False
-                    if (not self.running_cv or print_accuracy) and delta.value is not None:
-                        '''
-                        print w_dual
-                        print w_primal
-                        print 'primal error: ' + str(relative_error(w_anal, w_primal))
-                        print 'dual error: ' + str(relative_error(w_anal, w_dual))
-                        print ''
-                        '''
-
-                        #print w_anal
-                        #print w_dual
-                        #print w_primal
-                        print 'anal, dual, primal'
-                        print np.stack((w_anal, w_dual, w_primal)).T
-                        print 'dual nonneg error: ' + str(relative_error(w_primal, w_dual))
-                        print ''
-                    if self.solve_scipy:
+                    if not self.solve_scipy:
+                        delta = 2 * C * M.dot(y_dual) - M.dot(x).dot(E.T) * alpha
+                        dual_objective = (.25 / C) * cvx.quad_form(alpha, Q) + y_dual.T.dot(M).dot(B) * alpha
+                        dual_constraints = [
+                            alpha >= 0, gamma >= 0,
+                        ]
+                        if np.isfinite(C2):
+                            dual_constraints.append(alpha <= C2)
+                        if not self.mean_b:
+                            constraints.append(cvx.sum_entries(delta) == 0)
+                        if no_constraints:
+                            dual_constraints += [alpha == 0, gamma == 0]
+                        dual_obj = cvx.Minimize(dual_objective)
+                        dual_problem = cvx.Problem(dual_obj, dual_constraints)
+                        try:
+                            #cvx.SCS
+                            dual_problem.solve(
+                                solver=self.cvx_method,
+                                verbose=False,
+                                eps=1e-6,
+                                alpha=1.8
+                            )
+                            w_dual = (1 / (2 * C)) * (x.T.dot(delta.value) + E.T.dot(alpha.value))
+                            w_dual = np.squeeze(np.asarray(w_dual).T)
+                            w_primal = self.w
+                            w_anal = inv(x.T.dot(x) / n + C * np.eye(p)).dot(x.T).dot(y) / n
+                            self.w = w_dual
+                        except:
+                            self.w = np.zeros(p)
+                            self.b = 0
+                            if not self.running_cv:
+                                print 'Dual solver failed - setting to 0'
+                        if not self.mean_b:
+                            K = x.dot(self.w) - y_dual
+                            self.b = -K.mean()
+                    else:
                         opt_data = {
                             'C': C,
                             'C2': C2,
@@ -597,7 +646,8 @@ class MixedFeatureGuidanceMethod(method.Method):
                             'p': p,
                             'Q': Q,
                             'M': M,
-                            'B': B
+                            'B': B,
+                            'use_pairwise_same_signs': self.use_pairwise_same_signs
                         }
                         x0 = np.zeros(E.shape[0])
                         bounds = [(0, C2)] * E.shape[0]
@@ -611,12 +661,14 @@ class MixedFeatureGuidanceMethod(method.Method):
                             constraints=None
                         )
                         alpha_dual_scipy = results.x
-                        delta = 2 * C * M.dot(y_dual) - M.dot(x).dot(E.T).dot(alpha_dual_scipy)
-                        w_dual_scipy = (1 / (2 * C)) * (x.T.dot(delta) + E.T.dot(alpha_dual_scipy))
-                        if alpha.value is not None:
-                            print self.w
-                            print w_dual_scipy
-                            print ''
+                        if self.use_pairwise_same_signs:
+                            A_inv, B, F, delta = compute_quad_matrices(alpha_dual_scipy, opt_data)
+                            w_dual_scipy = A_inv.dot(x.T).dot(delta)
+                        else:
+                            delta = 2 * C * M.dot(y_dual) - M.dot(x).dot(E.T).dot(alpha_dual_scipy)
+                            w_dual_scipy = (1 / (2 * C)) * (x.T.dot(delta) + E.T.dot(alpha_dual_scipy))
+                        self.w = w_dual_scipy
+                        #print ''
                     '''
                 if b.value is not None:
                     assert abs(b.value - y.mean())/abs(b.value) <= 1e-3
@@ -756,7 +808,13 @@ class MixedFeatureGuidanceMethod(method.Method):
         if self.method in MixedFeatureGuidanceMethod.METHODS_USES_SIGNS and num_signs > 0:
             s += '_signs=' + str(num_signs)
         if self.method in MixedFeatureGuidanceMethod.METHODS_USES_PAIRS and num_pairs > 0:
-            s += '_pairs=' + str(num_pairs)
+            if getattr(self, 'use_pairwise_same_signs'):
+                if not self.solve_dual:
+                    s += '_pairsSameSignPrimal=' + str(num_pairs)
+                else:
+                    s += '_pairsSameSign=' + str(num_pairs)
+            else:
+                s += '_pairs=' + str(num_pairs)
         if getattr(self, 'random_guidance', False) and self.method != MixedFeatureGuidanceMethod.METHOD_RIDGE:
             s += '_random'
         if getattr(self, 'use_sign', False) and self.method == MixedFeatureGuidanceMethod.METHOD_RELATIVE:

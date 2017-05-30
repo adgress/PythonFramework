@@ -72,7 +72,7 @@ data_set_sizes_to_use = {
     bc.DATA_BIKE_SHARING: [5, 10, 20, 40],
 }
 
-run_experiments = True
+run_experiments = False
 #show_legend_on_all = False
 show_legend_on_all = False
 
@@ -663,9 +663,10 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files = OrderedDict()
             self.files['TargetTransfer+NW.pkl'] = 'Target Only'
             self.files['LocalTransferNew-grad-bounds.pkl'] = 'Our Method'
-            self.files['LocalTransferNew-grad-bounds-boundB'] = 'Ours Method: Bounds'
+            #self.files['LocalTransferNew-grad-bounds-boundB'] = 'Ours Method: Bounds'
             #self.files['LocalTransferNew-grad-bounds-boundPerc=80'] = 'Our Method: Bounds 80%'
-            self.files['LocalTransferNew-grad-bounds-boundUpper=80'] = 'Our Method: Bound Upper 80%'
+            #self.files['LocalTransferNew-grad-bounds-boundUpper=80'] = 'Our Method: Bound Upper 80%'
+            self.files['LocalTransferNew-grad-bounds-boundPerc=[10, 90].pkl'] = 'Our Method: Bound [10, 90]'
         elif plot_idx == PLOT_SMS:
             self.files = OrderedDict()
             self.files['TargetTransfer+NW.pkl'] = 'Target Only'

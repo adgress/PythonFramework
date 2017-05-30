@@ -17,6 +17,7 @@ from copy import deepcopy
 import preprocessing
 from sklearn.feature_selection import SelectKBest, f_regression
 from sklearn.linear_model import Lasso
+from qcqp import *
 
 class optimize_data(object):
     def __init__(self, x, y, reg_ridge, reg_a, reg_mixed):
@@ -34,6 +35,7 @@ class optimize_data(object):
 
 
 def compute_quad_matrices(alpha, opt_data):
+    assert False, 'Using different E - update this!'
     E = opt_data['E']
     x = opt_data['x']
     y = opt_data['y']
@@ -80,6 +82,7 @@ def eval_quad(alpha, opt_data):
 
 
 def eval_same_sign_primal(w, opt_data):
+    assert False, 'Using different E - update this!'
     x = opt_data['x']
     y = opt_data['y']
     E = opt_data['E']
@@ -93,6 +96,7 @@ def eval_same_sign_primal(w, opt_data):
     return loss + reg1 - reg2
 
 def grad_same_sign_primal(w, opt_data):
+    assert False, 'Using different E - update this!'
     x = opt_data['x']
     y = opt_data['y']
     E = opt_data['E']
@@ -106,6 +110,39 @@ def grad_same_sign_primal(w, opt_data):
     reg2_grad = C2*(E.dot(w) + E.T.dot(w))
     return loss_grad + reg1_grad - reg2_grad
 
+
+def unpack_same_sign_hinge_primal(v, opt_data):
+    p = opt_data['p']
+    w = v[:p]
+    z = v[p:]
+    return w, z
+
+def pack_same_sign_hinge_primal(w, z, opt_data):
+    return np.concatenate((w, z))
+
+def eval_same_sign_hinge_primal(v, opt_data):
+    n = opt_data['n']
+    x = opt_data['x']
+    y = opt_data['y']
+    E = opt_data['E']
+    C = opt_data['C']
+    C2 = opt_data['C2']
+    C3 = opt_data['C3']
+
+    w, z = unpack_same_sign_hinge_primal(v, opt_data)
+    loss = (1.0/n)*norm(x.dot(w) - y)**2
+    reg1 = C*norm(w)**2
+    reg2 = C2*z.sum()
+    loss_guidance = 0
+    for idx, ei in enumerate(E):
+        #w_ei = ei*w
+        i,j = ei.nonzero()[0]
+        s = ei[i]
+        l = s*w[i]*w[j]
+        l += z[idx]
+        loss_guidance += max(-l, 0)
+    loss_guidance *= C3
+    return loss + loss_guidance + reg1 + reg2
 
 class MixedFeatureGuidanceMethod(method.Method):
     METHOD_RELATIVE = 1
@@ -136,7 +173,8 @@ class MixedFeatureGuidanceMethod(method.Method):
         super(MixedFeatureGuidanceMethod, self).__init__(configs)
         #self.cv_params['C'] = self.create_cv_params(-5, 5, append_zero=True)
         self.cv_params['C'] = self.create_cv_params(-5, 5, append_zero=False)
-        self.cv_params['C2'] = self.create_cv_params(-10, 10, append_zero=True, prepend_inf=True)
+        #self.cv_params['C2'] = self.create_cv_params(-8, 8, append_zero=True, prepend_inf=True)
+        self.cv_params['C2'] = self.create_cv_params(-8, 8, append_zero=True, prepend_inf=False)
         #self.cv_params['C2'] = np.asarray([np.inf])
         self.cv_params['C3'] = self.create_cv_params(-5, 5, append_zero=True)
         self.transform = StandardScaler()
@@ -174,12 +212,13 @@ class MixedFeatureGuidanceMethod(method.Method):
         self.mean_b = getattr(configs, 'mean_b', False)
         self.solve_scipy = getattr(configs, 'solve_scipy', False)
         self.use_pairwise_same_signs = getattr(configs, 'use_pairwise_same_signs', False)
+        self.use_hinge_primal = getattr(configs, 'use_hinge_primal', False)
         if self.method == MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT:
             self.configs.scipy_opt_method = 'SLSQP'
         if self.method in MixedFeatureGuidanceMethod.METHODS_UNIFORM_C:
             self.C = 1
             del self.cv_params['C']
-        if self.method in MixedFeatureGuidanceMethod.METHODS_NO_C3:
+        if self.method in MixedFeatureGuidanceMethod.METHODS_NO_C3 and not self.use_hinge_primal:
             self.C3 = 0
             del self.cv_params['C3']
         if self.method in MixedFeatureGuidanceMethod.METHODS_NO_C2:
@@ -476,11 +515,10 @@ class MixedFeatureGuidanceMethod(method.Method):
                 E = np.zeros((z.size[0], p))
                 if len(pairs) > 0:
                     E = np.zeros((p, p))
-                if self.solve_dual and not self.use_pairwise_same_signs:
+                #if self.solve_dual and not self.use_pairwise_same_signs:
+                if self.solve_dual:
                     assert len(pairs) == 0
                     alpha = cvx.Variable(z.size[0])
-                    #delta = cvx.Variable(n)
-                    gamma = cvx.Variable(1)
                 '''
                 loss = cvx.sum_entries(
                     cvx.power(
@@ -505,13 +543,17 @@ class MixedFeatureGuidanceMethod(method.Method):
                         jk_order = w_constraints[j] > w_constraints[k]
                         if self.random_guidance and np.random.rand() > .5:
                             jk_order = not jk_order
-                        if jk_order:
-                            constraints.append(w[j] - w[k] + z[idx] >= 0)
-                        else:
-                            constraints.append(w[k] - w[j] + z[idx] >= 0)
                         if self.use_pairwise_same_signs:
-                            s = np.sign(w_constraints[j]*w_constraints[k])
-                            E[j, k] = s
+                            s = np.sign(w_constraints[j] * w_constraints[k])
+                            #E[j, k] = s
+                            E[idx, j] = s
+                            E[idx, k] = s
+                            constraints.append(w[j]*w[k] + z[idx] >= 0)
+                        else:
+                            if jk_order:
+                                constraints.append(w[j] - w[k] + z[idx] >= 0)
+                            else:
+                                constraints.append(w[k] - w[j] + z[idx] >= 0)
                         idx += 1
                     if self.use_nonneg:
                         w_constraints[:] = 1
@@ -523,7 +565,7 @@ class MixedFeatureGuidanceMethod(method.Method):
                         E[idx, j] = s
                         idx += 1
                 if not self.solve_dual:
-                    if self.use_pairwise_same_signs:
+                    if self.use_pairwise_same_signs and self.solve_scipy:
                         assert self.solve_scipy
                         y_primal = y.copy()
                         if self.mean_b:
@@ -531,43 +573,53 @@ class MixedFeatureGuidanceMethod(method.Method):
                         opt_data = {
                             'C': C,
                             'C2': C2,
+                            'C3': C3,
                             'x': x,
                             'y': y_primal,
                             'E': E,
                             'n': n,
                             'p': p,
                         }
-                        w0 = np.zeros(p)
-                        '''
-                        results_eval = optimize.minimize(
-                            lambda w: eval_same_sign_primal(w, opt_data),
-                            w0,
-                            method=self.configs.scipy_opt_method,
-                            jac=lambda w: grad_same_sign_primal(w, opt_data),
-                            options=None,
-                            bounds=None,
-                            constraints=None
-                        )
-                        '''
-                        results = optimize.minimize(
-                            lambda w: eval_same_sign_primal(w, opt_data),
-                            w0,
-                            method=self.configs.scipy_opt_method,
-                            jac=None,
-                            #jac=lambda w: grad_same_sign_primal(w, opt_data),
-                            options=None,
-                            bounds=None,
-                            constraints=None
-                        )
-                        #print results_eval.x
-                        #print results.x
-                        w = results.x
+                        if self.use_hinge_primal:
+                            v0 = np.zeros(p + E.shape[0])
+                            bounds = [(None, None)]*p + [(0, None)]*E.shape[0]
+                            results = optimize.minimize(
+                                lambda v: eval_same_sign_hinge_primal(v, opt_data),
+                                v0,
+                                method=self.configs.scipy_opt_method,
+                                jac=None,
+                                # jac=lambda w: grad_same_sign_primal(w, opt_data),
+                                options=None,
+                                bounds=bounds,
+                                constraints=None
+                            )
+                            # print results_eval.x
+                            # print results.x
+                            w, z = unpack_same_sign_hinge_primal(results.x, opt_data)
+                            pass
+                        else:
+                            w0 = np.zeros(p)
+                            results = optimize.minimize(
+                                lambda w: eval_same_sign_primal(w, opt_data),
+                                w0,
+                                method=self.configs.scipy_opt_method,
+                                jac=None,
+                                #jac=lambda w: grad_same_sign_primal(w, opt_data),
+                                options=None,
+                                bounds=None,
+                                constraints=None
+                            )
+                            #print results_eval.x
+                            #print results.x
+                            w = results.x
                         self.w = w
                     else:
-                        reg = cvx.norm2(w) ** 2
+                        #reg = cvx.norm2(w) ** 2
+                        reg = cvx.sum_squares(w)
 
                         if self.use_l1:
-                            reg_guidance = cvx.norm1(z)
+                            #reg_guidance = cvx.norm1(z)
+                            reg_guidance = cvx.sum_entries(z)
                         else:
                             reg_guidance = cvx.norm2(z) ** 2
                         if np.isinf(C2):
@@ -581,12 +633,29 @@ class MixedFeatureGuidanceMethod(method.Method):
                         if self.mean_b:
                             constraints.append(b == y.mean())
                         prob = cvx.Problem(obj, constraints)
-                        try:
-                            prob.solve(solver=self.cvx_method)
-                            assert w.value is not None
-                            self.w = np.squeeze(np.asarray(w.value))
-                        except:
-                            self.w = np.zeros(p)
+                        if self.use_pairwise_same_signs:
+                            qcqp = QCQP(prob)
+                            num_runs = 1
+                            if not self.running_cv:
+                                num_runs = 10
+                            best_value = np.inf
+                            for run_idx in range(num_runs):
+                                qcqp.suggest()
+                                f_cd, v_cd = qcqp.improve(DCCP)
+                                assert w.value is not None
+                                if obj.value < best_value:
+                                    self.w = np.squeeze(np.asarray(w.value))
+                                    best_value = obj.value
+                            if not self.running_cv:
+                                print self.w
+                                print np.squeeze(np.asarray(z.value))
+                        else:
+                            try:
+                                prob.solve(solver=self.cvx_method)
+                                assert w.value is not None
+                                self.w = np.squeeze(np.asarray(w.value))
+                            except:
+                                self.w = np.zeros(p)
                 if self.solve_dual:
                     if no_constraints:
                         C2 = 0
@@ -604,14 +673,14 @@ class MixedFeatureGuidanceMethod(method.Method):
                         delta = 2 * C * M.dot(y_dual) - M.dot(x).dot(E.T) * alpha
                         dual_objective = (.25 / C) * cvx.quad_form(alpha, Q) + y_dual.T.dot(M).dot(B) * alpha
                         dual_constraints = [
-                            alpha >= 0, gamma >= 0,
+                            alpha >= 0
                         ]
                         if np.isfinite(C2):
                             dual_constraints.append(alpha <= C2)
                         if not self.mean_b:
                             constraints.append(cvx.sum_entries(delta) == 0)
                         if no_constraints:
-                            dual_constraints += [alpha == 0, gamma == 0]
+                            dual_constraints += [alpha == 0]
                         dual_obj = cvx.Minimize(dual_objective)
                         dual_problem = cvx.Problem(dual_obj, dual_constraints)
                         try:
@@ -810,7 +879,13 @@ class MixedFeatureGuidanceMethod(method.Method):
         if self.method in MixedFeatureGuidanceMethod.METHODS_USES_PAIRS and num_pairs > 0:
             if getattr(self, 'use_pairwise_same_signs'):
                 if not self.solve_dual:
-                    s += '_pairsSameSignPrimal=' + str(num_pairs)
+                    if self.solve_scipy:
+                        if getattr(self, 'use_hinge_primal'):
+                            s += '-pairsSameSignPrimalHinge=' + str(num_pairs)
+                        else:
+                            s += '_pairsSameSignPrimal=' + str(num_pairs)
+                    else:
+                        s += '-pairsSameSignQCQP=' + str(num_pairs)
                 else:
                     s += '_pairsSameSign=' + str(num_pairs)
             else:

@@ -85,7 +85,6 @@ if run_batch_experiments:
     all_data_sets = [
         bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10,
         bc.DATA_BOSTON_HOUSING,
-        #bc.DATA_DROSOPHILIA,
         bc.DATA_WINE_RED,
         bc.DATA_CONCRETE,
         bc.DATA_KC_HOUSING,
@@ -125,7 +124,10 @@ other_method_configs = {
     'eps': 1e-10,
     'use_perfect_feature_selection': True,
     'mean_b': False,
+    'solve_scipy': False,
     'solve_dual': False,
+    'use_pairwise_same_signs': False,
+    'use_hinge_primal': False
 }
 
 if data_set_to_use == bc.DATA_DROSOPHILIA:
@@ -246,6 +248,12 @@ class MainConfigs(bc.MainConfigs):
         method_configs = MethodConfigs(pc)
         for key in other_method_configs.keys():
             setattr(method_configs, key, getattr(pc,key))
+
+        method_configs.solve_scipy = pc.solve_scipy
+        method_configs.solve_dual = pc.solve_dual
+        method_configs.use_pairwise_same_signs = pc.use_pairwise_same_signs
+        method_configs.use_hinge_primal = pc.use_hinge_primal
+        method_configs.mean_b = pc.mean_b
 
         ridge = method.SKLRidgeRegression(method_configs)
         mean_estimator = method.SKLMeanRegressor(method_configs)
@@ -385,6 +393,22 @@ class BatchConfigs(bc.BatchConfigs):
                     p.solve_dual = False
                     p.mean_b = False
                     self.config_list.append(MainConfigs(p))
+
+                    #Dual same sign exps
+                    v = [.25, .5, 1, 2]
+                    #v = [1, .5, .25]
+                    v = [1]
+                    for i in v:
+                        p = deepcopy(pc)
+                        p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
+                        p.num_random_pairs = i
+                        p.num_random_signs = 0
+                        p.solve_dual = False
+                        p.mean_b = True
+                        p.solve_scipy = True
+                        p.use_pairwise_same_signs = True
+                        p.use_hinge_primal = True
+                        self.config_list.append(MainConfigs(p))
                     #assert False, 'Not Implemented Yet'
 
 class VisualizationConfigs(bc.VisualizationConfigs):
@@ -430,9 +454,16 @@ class VisualizationConfigs(bc.VisualizationConfigs):
 
 
         if viz_type == VIZ_DUAL:
-            self.files['Mixed-feats_method=Rel_meanB_signs=1-use_sign_corr_l1.pkl'] = 'Primal: Signs, meanB'
-            self.files['Mixed-feats_method=Rel_dual_meanB_signs=1-use_sign_corr_l1.pkl'] = 'Dual: Signs, meanB'
+            self.files['Mixed-feats_method=Ridge.pkl'] = 'Ridge'
+            #self.files['Mixed-feats_method=Rel_meanB_signs=1-use_sign_corr_l1.pkl'] = 'Primal: Signs, meanB'
+            ##self.files['Mixed-feats_method=Rel_dual_meanB_signs=1-use_sign_corr_l1.pkl'] = 'Dual: Signs, meanB'
             self.files['Mixed-feats_method=Rel_dual_signs=1-use_sign_corr_l1.pkl'] = 'Dual: Signs'
+            #self.files['Mixed-feats_method=Rel_meanB_pairsSameSignPrimal=0.25-use_sign_corr_l1.pkl'] = 'Same Sign Primal: meanB, 25% pairs'
+            #self.files['Mixed-feats_method=Rel_meanB_pairsSameSignPrimal=0.5-use_sign_corr_l1.pkl'] = 'Same Sign Primal: meanB, 50% pairs'
+            #self.files['Mixed-feats_method=Rel_meanB_pairsSameSignPrimal=1-use_sign_corr_l1.pkl'] = 'Same Sign Primal: meanB, 100% pairs'
+            #self.files['Mixed-feats_method=Rel_meanB_pairsSameSignPrimal=2-use_sign_corr_l1.pkl'] = 'Same Sign Primal: meanB, 200% pairs'
+            #self.files['Mixed-feats_method=Rel_meanB-pairsSameSignQCQP=1-use_sign_corr_l1.pkl'] =  'Same sign QCQP'
+            self.files['Mixed-feats_method=Rel_meanB-pairsSameSignPrimalHinge=1-use_sign_corr_l1.pkl'] = 'Same Sign Hinge'
         elif viz_type == VIZ_EXPERIMENT:
             self.files['Mixed-feats_method=Ridge.pkl'] = 'Mixed: Ridge'
             self.files['Mixed-feats_method=Lasso.pkl'] = 'Mixed: Lasso'

@@ -686,7 +686,7 @@ class LocalTransferDeltaNew(LocalTransferDelta):
         self.sigma_alpha = 1
         self.use_grad = True
         self.use_bounds = True
-        self.bound_percentile = [10, 90]
+        self.bound_percentile = [0, 100]
         self.optimize_ft = False
         self.linear_b = False
         self.scale_b = False

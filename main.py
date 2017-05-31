@@ -13,9 +13,9 @@ import importlib
 #import new_project.new_project_configs as configs_library
 #import higher_order_transfer.higher_order_transfer_configs as configs_library
 
-#import base.transfer_project_configs as configs_library
+import base.transfer_project_configs as configs_library
 #import far_transfer.far_transfer_project_configs as configs_library
-import mixed_feature_guidance.mixed_features_project_configs as configs_library
+#import mixed_feature_guidance.mixed_features_project_configs as configs_library
 #import active_base.active_base_project_configs as configs_library
 #import active_transfer.active_transfer_project_configs as configs_library
 #import instance_selection.instance_selectin_project_configs as configs_library
@@ -149,6 +149,11 @@ def create_table():
                 latex_text += ' &'
         latex_text += ' \\\\ \\hline\n'
     print latex_text
+    mean_relative_improvement = ''
+    for ri in relative_improvement.T:
+        v = ri[np.isfinite(ri)].mean() * 100
+        mean_relative_improvement += ('$%.2f$ & ' % v)
+    print 'relative improvement: ' + mean_relative_improvement
 
     fig, axs = plt.subplots()
     axs.axis('tight')

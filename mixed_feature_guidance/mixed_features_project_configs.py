@@ -43,6 +43,7 @@ run_transfer_experiments = False
 use_ridge = False
 use_mean = False
 use_quad_feats = False
+run_alt_guidance_exps = False
 mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
 #mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT
 #mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
@@ -57,8 +58,9 @@ VIZ_PAPER_TRANSFER = 5
 VIZ_PAPER_TRAINING_SINGLE = 6
 VIZ_PAPER_HARD_CONSTRAINTS = 7
 VIZ_DUAL = 8
+VIZ_SAME_SIGN = 9
 
-viz_type = VIZ_DUAL
+viz_type = VIZ_SAME_SIGN
 if viz_type == VIZ_PAPER_TRANSFER:
     run_transfer_experiments = True
 
@@ -88,7 +90,9 @@ if run_batch_experiments:
         bc.DATA_WINE_RED,
         bc.DATA_CONCRETE,
         bc.DATA_KC_HOUSING,
-        bc.DATA_DS2
+        bc.DATA_DS2,
+        #bc.DATA_PROSTATE,
+        bc.DATA_HEART,
     ]
     if run_transfer_experiments:
         all_data_sets = [
@@ -127,7 +131,9 @@ other_method_configs = {
     'solve_scipy': False,
     'solve_dual': False,
     'use_pairwise_same_signs': False,
-    'use_hinge_primal': False
+    'use_hinge_primal': False,
+    'fix_C2': False,
+    'fix_C3': False,
 }
 
 if data_set_to_use == bc.DATA_DROSOPHILIA:
@@ -227,6 +233,12 @@ class ProjectConfigs(bc.ProjectConfigs):
             elif data_set == bc.DATA_DS2:
                 self.set_data_set_defaults('DS2-processed')
                 self.num_labels = [10, 20, 40]
+            elif data_set == bc.DATA_PROSTATE:
+                self.set_data_set_defaults('prostate')
+                self.num_labels = [10, 20, 40]
+            elif data_set == bc.DATA_HEART:
+                self.set_data_set_defaults('heart')
+                self.num_labels = [5, 10, 20, 40]
         '''
         if self.include_size_in_file_name:
             assert len(self.num_labels) == 1
@@ -254,6 +266,8 @@ class MainConfigs(bc.MainConfigs):
         method_configs.use_pairwise_same_signs = pc.use_pairwise_same_signs
         method_configs.use_hinge_primal = pc.use_hinge_primal
         method_configs.mean_b = pc.mean_b
+        method_configs.fix_C2 = pc.fix_C2
+        method_configs.fix_C3 = pc.fix_C3
 
         ridge = method.SKLRidgeRegression(method_configs)
         mean_estimator = method.SKLMeanRegressor(method_configs)
@@ -377,6 +391,8 @@ class BatchConfigs(bc.BatchConfigs):
                     p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_LASSO
                     self.config_list.append(MainConfigs(p))
 
+                    if not run_alt_guidance_exps:
+                        continue
                     #Dual and Primal Mean B exps
                     p = deepcopy(pc)
                     p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
@@ -408,6 +424,8 @@ class BatchConfigs(bc.BatchConfigs):
                         p.solve_scipy = True
                         p.use_pairwise_same_signs = True
                         p.use_hinge_primal = True
+                        p.fix_C2 = False
+                        p.fix_C3 = True
                         self.config_list.append(MainConfigs(p))
                     #assert False, 'Not Implemented Yet'
 
@@ -453,7 +471,11 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #self.files['NW.pkl'] = 'NW'
 
 
-        if viz_type == VIZ_DUAL:
+        if viz_type == VIZ_SAME_SIGN:
+            self.files['Mixed-feats_method=Ridge.pkl'] = 'Ridge'
+            self.files[
+                'Mixed-feats_method=Rel_meanB-pairsSameSignPrimalHinge=1-use_sign_corr_l1.pkl'] = 'Mixed: 100% Same Signs'
+        elif viz_type == VIZ_DUAL:
             self.files['Mixed-feats_method=Ridge.pkl'] = 'Ridge'
             #self.files['Mixed-feats_method=Rel_meanB_signs=1-use_sign_corr_l1.pkl'] = 'Primal: Signs, meanB'
             ##self.files['Mixed-feats_method=Rel_dual_meanB_signs=1-use_sign_corr_l1.pkl'] = 'Dual: Signs, meanB'
@@ -464,6 +486,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             #self.files['Mixed-feats_method=Rel_meanB_pairsSameSignPrimal=2-use_sign_corr_l1.pkl'] = 'Same Sign Primal: meanB, 200% pairs'
             #self.files['Mixed-feats_method=Rel_meanB-pairsSameSignQCQP=1-use_sign_corr_l1.pkl'] =  'Same sign QCQP'
             self.files['Mixed-feats_method=Rel_meanB-pairsSameSignPrimalHinge=1-use_sign_corr_l1.pkl'] = 'Same Sign Hinge'
+            self.files['Mixed-feats_method=Rel_meanB-pairsSameSignPrimalHinge=1-use_sign_corr_l1_fixC3'] = 'Same Sign Hinge: Fix C2'
         elif viz_type == VIZ_EXPERIMENT:
             self.files['Mixed-feats_method=Ridge.pkl'] = 'Mixed: Ridge'
             self.files['Mixed-feats_method=Lasso.pkl'] = 'Mixed: Lasso'

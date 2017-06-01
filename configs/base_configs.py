@@ -21,6 +21,8 @@ DATA_DS2 = 14
 DATA_TAXI = 15
 DATA_ZILLOW = 16
 DATA_MNIST = 17
+DATA_PROSTATE = 18
+DATA_HEART = 19
 
 DATA_PAIR_START = 100
 DATA_PAIR_82_83 = 101
@@ -76,7 +78,9 @@ data_name_dict = {
     DATA_ZILLOW: 'Taxi+Housing',
     DATA_KC_HOUSING: 'King County Housing',
     DATA_SYNTHETIC_LINEAR_REGRESSION_10: 'Synthetic Linear',
-    DATA_MNIST: 'MNIST'
+    DATA_MNIST: 'MNIST',
+    DATA_PROSTATE: 'Prostate',
+    DATA_HEART: 'Heart',
 }
 
 def is_synthetic_data(data_idx):

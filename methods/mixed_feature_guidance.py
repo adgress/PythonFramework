@@ -213,16 +213,18 @@ class MixedFeatureGuidanceMethod(method.Method):
         self.solve_scipy = getattr(configs, 'solve_scipy', False)
         self.use_pairwise_same_signs = getattr(configs, 'use_pairwise_same_signs', False)
         self.use_hinge_primal = getattr(configs, 'use_hinge_primal', False)
+        self.fix_C2 = getattr(configs, 'fix_C2', False)
+        self.fix_C3 = getattr(configs, 'fix_C3', False)
         if self.method == MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT:
             self.configs.scipy_opt_method = 'SLSQP'
         if self.method in MixedFeatureGuidanceMethod.METHODS_UNIFORM_C:
             self.C = 1
             del self.cv_params['C']
-        if self.method in MixedFeatureGuidanceMethod.METHODS_NO_C3 and not self.use_hinge_primal:
-            self.C3 = 0
+        if (self.method in MixedFeatureGuidanceMethod.METHODS_NO_C3 and not self.use_hinge_primal) or self.fix_C3:
+            self.C3 = 1
             del self.cv_params['C3']
-        if self.method in MixedFeatureGuidanceMethod.METHODS_NO_C2:
-            self.C2 = 0
+        if self.method in MixedFeatureGuidanceMethod.METHODS_NO_C2 or self.fix_C2:
+            self.C2 = 1
             del self.cv_params['C2']
         if self.disable_relaxed_guidance:
             self.C2 = np.inf
@@ -788,11 +790,13 @@ class MixedFeatureGuidanceMethod(method.Method):
             else:
                 assert self.method == MixedFeatureGuidanceMethod.METHOD_RIDGE
                 self.w = self.solve_w(x, y, C)
-        if self.mean_b:
+        if self.mean_b or self.method in {MixedFeatureGuidanceMethod.METHOD_RIDGE, MixedFeatureGuidanceMethod.METHOD_LASSO}:
             self.b = y.mean()
         else:
             if not self.solve_dual:
                 self.b = b.value
+            else:
+                assert False
         if not self.running_cv:
             try:
                 print prob.status
@@ -914,6 +918,10 @@ class MixedFeatureGuidanceMethod(method.Method):
             s += '_' + self.cvx_method
         if getattr(self, 'use_l1', False) and self.method == MixedFeatureGuidanceMethod.METHOD_RELATIVE:
             s += '_l1'
+        if getattr(self, 'fix_C2'):
+            s += '_fixC2'
+        if getattr(self, 'fix_C3'):
+            s += '_fixC3'
         if getattr(self, 'use_transfer', False):
             s += '_transfer'
         if getattr(self, 'num_features', -1) > 0:

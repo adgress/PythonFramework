@@ -43,7 +43,7 @@ run_transfer_experiments = False
 use_ridge = False
 use_mean = False
 use_quad_feats = False
-run_alt_guidance_exps = False
+run_alt_guidance_exps = True
 mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
 #mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_HARD_CONSTRAINT
 #mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RIDGE
@@ -394,6 +394,7 @@ class BatchConfigs(bc.BatchConfigs):
                     if not run_alt_guidance_exps:
                         continue
                     #Dual and Primal Mean B exps
+                    '''
                     p = deepcopy(pc)
                     p.mixed_feature_method = mixed_feature_guidance.MixedFeatureGuidanceMethod.METHOD_RELATIVE
                     p.num_random_pairs = 0
@@ -409,7 +410,7 @@ class BatchConfigs(bc.BatchConfigs):
                     p.solve_dual = False
                     p.mean_b = False
                     self.config_list.append(MainConfigs(p))
-
+                    '''
                     #Dual same sign exps
                     v = [.25, .5, 1, 2]
                     #v = [1, .5, .25]

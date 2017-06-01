@@ -36,7 +36,7 @@ def vis_data():
     data.y[I_target] = np.nan
     data.y[I_to_use] = data.true_y[I_to_use]
     learner = local_transfer_methods.LocalTransferDeltaNew(c)
-    v = 5
+    v = 1
     learner.cv_params['sigma_target'] = learner.create_cv_params(-v, v)
     learner.cv_params['sigma_b'] = learner.create_cv_params(-v, v)
     learner.cv_params['sigma_alpha'] = learner.create_cv_params(-v, v)
@@ -57,14 +57,19 @@ def vis_data():
         output.b,
     ]
     titles = [
-        'Prediction', 'Prediction error', 'Target error', 'Adapted Source error', r'$\alpha$', 'Adaptation'
+        r'Prediction: $\hat{f}(x)$',
+        r'Prediction error: $|\hat{f}(x) - f^*(x)|$',
+        r'Target error: $|\hat{f}_T(x) - f^*(x)|$',
+        r'Adapted Source error: $|\hat{b}(f_S(x), x) - f^*(x)|$',
+        r'Mixture: $\hat{\alpha}(x)$',
+        r'Adaptation: $\hat{b}(f_S(x), x)$'
     ]
     print output.b
     print output.alpha
     for i, vals in enumerate(vals_to_plot):
         ax = plt.subplot(1, len(vals_to_plot), i+1)
 
-        ax.set_title(titles[i])
+        ax.set_title(titles[i], fontsize=10)
         array_functions.plot_heatmap(data.x[I_target], vals, fig=fig, make_subplot=False, sizes=20)
         #plt.matshow(vals / vals.max())
         ax.set_xlabel('Latitude')

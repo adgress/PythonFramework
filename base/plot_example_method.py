@@ -30,11 +30,11 @@ def run_main():
         f_final,
     ]
     titles = [
-        'Target',
-        'Source',
-        'Adaptation',
-        'Mixture',
-        'Final'
+        r'Target: $f_T(x)$',
+        r'Source: $f_S(x)$',
+        r'Adaptation: $b(f_S(x), x)$',
+        r'Mixture: $\alpha(x)$',
+        r'Final: $ (1- \alpha(x))f_T(x) + \alpha(x) b(f_S(x), x)$'
     ]
     plot_ground_truth = [
         True,

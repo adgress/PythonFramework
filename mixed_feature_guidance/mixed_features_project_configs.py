@@ -475,7 +475,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         if viz_type == VIZ_SAME_SIGN:
             self.files['Mixed-feats_method=Ridge.pkl'] = 'Ridge'
             self.files[
-                'Mixed-feats_method=Rel_meanB-pairsSameSignPrimalHinge=1-use_sign_corr_l1.pkl'] = 'Mixed: 100% Same Signs'
+                'Mixed-feats_method=Rel_meanB-pairsSameSignPrimalHinge=1-use_sign_corr_l1.pkl'] = 'Our Method: 100% pairwise signs'
         elif viz_type == VIZ_DUAL:
             self.files['Mixed-feats_method=Ridge.pkl'] = 'Ridge'
             #self.files['Mixed-feats_method=Rel_meanB_signs=1-use_sign_corr_l1.pkl'] = 'Primal: Signs, meanB'

@@ -682,17 +682,22 @@ class LocalTransferDeltaNew(LocalTransferDelta):
         self.C_alpha = 0
         self.C_b = 0
         self.C_ft = 0
-
         self.sigma_alpha = 1
-        self.use_grad = True
+
+        #I don't think this is currently used
+        self.loo = False
+
+        #Use bounds for alpha.  This should always be True
         self.use_bounds = True
+
+        self.use_grad = False
         self.bound_percentile = [0, 100]
         self.optimize_ft = False
-        self.linear_b = False
+        self.linear_b = True
         self.scale_b = False
-        self.loo = False
+
         self.use_transform = True
-        self.bound_b = True
+        self.bound_b = False
         #self.bound_upper = True
 
         if self.linear_b:

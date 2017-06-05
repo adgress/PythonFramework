@@ -60,8 +60,8 @@ PLOT_TABLE_COMPETING_METHODS = 5
 PLOT_TABLE_VAL = 6
 PLOT_ALPHA = 7
 PLOT_TABLE_OUR_METHODS = 8
-#plot_idx = PLOT_CONSTRAINED
-plot_idx = PLOT_TABLE_OUR_METHODS
+plot_idx = PLOT_TABLE_COMPETING_METHODS
+#plot_idx = PLOT_TABLE_OUR_METHODS
 
 max_rows = 1
 fontsize = 10
@@ -478,6 +478,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.use_g_learner = True
         method_configs.use_validation = use_validation
         method_configs.use_reg2 = True
+        method_configs.joint_cv = True
 
         method_configs.use_fused_lasso = use_fused_lasso
         method_configs.no_C3 = no_C3
@@ -577,10 +578,10 @@ class MainConfigs(bc.MainConfigs):
         else:
             #self.learner = target_nw
             #self.learner = offset_transfer
-            #self.learner = stacked_transfer
+            self.learner = stacked_transfer
             #self.learner = ssl_regression
             #self.learner = cov_shift
-            self.learner = dt_sms
+            #self.learner = dt_sms
 
 
 
@@ -669,6 +670,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             #self.files['LocalTransferNew-grad-bounds-boundPerc=80'] = 'Our Method: Bounds 80%'
             #self.files['LocalTransferNew-grad-bounds-boundUpper=80'] = 'Our Method: Bound Upper 80%'
             self.files['LocalTransferNew-grad-bounds-boundPerc=[10, 90].pkl'] = 'Our Method: Bound Constraints'
+            #self.files['LocalTransferNew-grad-bounds-boundPerc=[0, 100].pkl'] = 'Our Method: Bound Constraints [0, 100]'
         elif plot_idx == PLOT_SMS:
             self.files = OrderedDict()
             self.files['TargetTransfer+NW.pkl'] = 'Target Only'
@@ -690,7 +692,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             #self.files['LocalTransferNew-bounds-linearB.pkl'] = 'Local Transfer New: Linear B'
 
             self.files['TargetTransfer+NW.pkl'] = 'Target Only'
-            self.files['StackTransfer+SKL-RidgeReg.pkl'] = 'Stacking'
+            self.files['StackTransfer+SKL-RidgeReg-jointCV.pkl'] = 'Stacking'
             self.files['SLL-NW.pkl'] = 'LLGC'
             self.files['CovShift.pkl'] = 'Reweighting'
             self.files['OffsetTransfer-jointCV.pkl'] = 'Offset Transfer'

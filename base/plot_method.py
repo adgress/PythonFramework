@@ -67,13 +67,13 @@ def vis_data():
     print output.b
     print output.alpha
     for i, vals in enumerate(vals_to_plot):
-        ax = plt.subplot(1, len(vals_to_plot), i+1)
+        ax = plt.subplot(2, len(vals_to_plot)/2, i+1)
 
         ax.set_title(titles[i], fontsize=10)
         array_functions.plot_heatmap(data.x[I_target], vals, fig=fig, make_subplot=False, sizes=20)
         #plt.matshow(vals / vals.max())
         ax.set_xlabel('Latitude')
-        if i == 0:
+        if i in {0, 3}:
             ax.set_ylabel('Longitude')
         else:
             ax.set_ylabel('')

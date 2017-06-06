@@ -40,6 +40,7 @@ class OptData(object):
         self.compute_f = supervised_loss_func
         self.subset_size = subset_size
         self.pca = None
+        self.instances_to_keep = None
 
 def create_eval(opt_data):
     return lambda x: eval(x, opt_data, return_losses=False)
@@ -159,6 +160,7 @@ class SupervisedInstanceSelection(method.Method):
         I = data.is_labeled & data.is_train
         X = data.x[I]
         Y = data.y[I]
+        instances_to_keep = getattr(data, 'instances_to_keep', None)
         #W_learner = self.target_learner.compute_kernel(X, X, self.learner_reg)
         if data_test is None:
             W_learner = density.compute_kernel(X, X, self.learner_reg)
@@ -180,6 +182,7 @@ class SupervisedInstanceSelection(method.Method):
             self.learner_reg, self.density_reg, self.mixture_reg,
             self.supervised_loss_func, self.subset_size
         )
+        opt_data.instances_to_keep = instances_to_keep
         return opt_data
 
     def train_and_test(self, data):
@@ -197,6 +200,7 @@ class SupervisedInstanceSelection(method.Method):
         return self.optimize_nonparametric(opt_data)
 
     def optimize_nonparametric(self, opt_data):
+        assert opt_data.instances_to_keep is None, 'Not implemented yet!'
         X = opt_data.X
         f = create_eval(opt_data)
         method = 'SLSQP'
@@ -369,6 +373,7 @@ class SupervisedInstanceSelectionGreedy(SupervisedInstanceSelection):
         #self.sigma_p = 1
         #self.sigma_y = 1
         #self.C = 1
+        assert opt_data.instances_to_keep is None, 'Not implemented yet!'
         W_p = density.compute_kernel(opt_data.X, None, self.sigma_p)
         W_y = array_functions.make_rbf(opt_data.X, self.sigma_y)
         n = W_p.shape[0]
@@ -420,6 +425,7 @@ class SupervisedInstanceSelectionCluster(SupervisedInstanceSelection):
         return k_means, X_cluster_space, I
 
     def optimize(self, opt_data):
+        assert opt_data.instances_to_keep is None, 'Not implemented yet!'
         self.k_means, X_cluster_space, _ = \
             self.cluster(opt_data.X, opt_data.subset_size, self.k_means)
         selected, selected_indices = self.compute_centroids_for_clustering(opt_data.X, self.k_means)
@@ -519,21 +525,38 @@ class SupervisedInstanceSelectionClusterGraph(SupervisedInstanceSelectionCluster
         return array_functions.make_vec_binary(centroid_inds, W.shape[0])
 
     def optimize(self, opt_data):
+        instances_to_keep = getattr(opt_data, 'instances_to_keep', None)
         W_x = array_functions.make_rbf(opt_data.X, self.sigma_x)
         W = W_x
         if not self.no_f_x:
             W_y = array_functions.make_rbf(opt_data.Y, self.sigma_y)
             W = W_x * W_y
 
+        num_clusters = opt_data.subset_size
+        if instances_to_keep is not None:
+            num_clusters += instances_to_keep.sum()
         self.spectral_cluster, cluster_inds = \
-            self.cluster_spectral(W, opt_data.subset_size, self.spectral_cluster)
+            self.cluster_spectral(W, num_clusters, self.spectral_cluster)
         if not self.running_cv:
             I = cluster_inds
             _, I2 = \
-                self.cluster_spectral(W, opt_data.subset_size, self.spectral_cluster)
+                self.cluster_spectral(W, num_clusters, self.spectral_cluster)
             print ''
 
         selected = self.compute_centroids_for_spectral_clustering(W, cluster_inds)
+
+        #If there are instances we have to select
+        if instances_to_keep is not None:
+            for i in range(num_clusters):
+                this_cluster = cluster_inds == i
+                selected_this_cluster = selected & this_cluster
+                to_keep_this_cluster = instances_to_keep & this_cluster
+                has_fixed_instances = to_keep_this_cluster.any()
+                if has_fixed_instances:
+                    selected[selected_this_cluster] = False
+            if selected.sum() > opt_data.subset_size:
+                selected[selected.nonzero()[0][opt_data.subset_size:]] = False
+            selected[instances_to_keep] = True
         self.W = W
         self.cluster_inds = cluster_inds
         self.selected = selected
@@ -586,6 +609,7 @@ class SupervisedInstanceSelectionSubmodular(SupervisedInstanceSelection):
         return selected
 
     def optimize(self, opt_data):
+        assert opt_data.instances_to_keep is None, 'Not implemented yet!'
         W_x = array_functions.make_rbf(opt_data.X, self.sigma_x)
         W = W_x
         if not self.no_f_x:
@@ -678,6 +702,7 @@ class SupervisedInstanceSelectionClusterSplit(SupervisedInstanceSelectionCluster
 
 
     def optimize(self, opt_data):
+        assert opt_data.instances_to_keep is None, 'Not implemented yet!'
         centroids = self.compute_centroids(opt_data)
         selected = np.zeros(opt_data.Y.size)
         selected[centroids] = 1

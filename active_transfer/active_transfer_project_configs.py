@@ -51,9 +51,10 @@ ACTIVE_CLUSTER_PURITY = 2
 
 active_method = ACTIVE_RANDOM
 
+num_starting_labels = 2
 active_iterations = 2
 active_items_per_iteration = 5
-cluster_scale = 10
+cluster_scale = 2
 
 viz_for_paper = True
 
@@ -131,39 +132,39 @@ class ProjectConfigs(bc.ProjectConfigs):
 
         if data_set == bc.DATA_MNIST:
             self.set_data_set_defaults('mnist')
-            self.num_labels = [1]
+            self.num_labels = [num_starting_labels/2]
             self.target_labels = np.asarray([1, 3])
             self.source_labels = np.asarray([7, 8])
             self.loss_function = loss_function.ZeroOneError()
             self.cv_loss_function = loss_function.ZeroOneError()
         elif data_set == bc.DATA_BOSTON_HOUSING:
             self.set_data_set_defaults('boston_housing-13(transfer)')
-            self.num_labels = [2]
+            self.num_labels = [num_starting_labels]
             self.target_labels = np.asarray([0])
             self.source_labels = np.asarray([1])
         elif data_set == bc.DATA_WINE:
             self.set_data_set_defaults('wine-small-11')
-            self.num_labels = [2]
+            self.num_labels = [num_starting_labels]
             self.target_labels = np.asarray([0])
             self.source_labels = np.asarray([1])
         elif data_set == bc.DATA_CONCRETE:
             self.set_data_set_defaults('concrete-7')
-            self.num_labels = [2]
+            self.num_labels = [num_starting_labels]
             self.target_labels = np.asarray([1])
             self.source_labels = np.asarray([3])
         elif data_set == bc.DATA_CLIMATE_MONTH:
             self.set_data_set_defaults('climate-month', source_labels=[0], target_labels=[4], is_regression=True)
-            self.num_labels = np.asarray([2])
+            self.num_labels = np.asarray([num_starting_labels])
         elif data_set == bc.DATA_IRS:
             self.set_data_set_defaults('irs-income', source_labels=[0], target_labels=[1], is_regression=True)
-            self.num_labels = np.asarray([2])
+            self.num_labels = np.asarray([num_starting_labels])
         elif data_set == bc.DATA_KC_HOUSING:
             self.set_data_set_defaults('kc-housing-spatial-floors', source_labels=[0], target_labels=[1], is_regression=True)
-            self.num_labels = np.asarray([2])
+            self.num_labels = np.asarray([num_starting_labels])
         elif data_set == bc.DATA_ZILLOW:
             self.set_data_set_defaults('zillow-traffic', source_labels=[1], target_labels=[0], is_regression=True)
             #self.set_data_set_defaults('zillow', source_labels=[1], target_labels=[0], is_regression=True)
-            self.num_labels = np.asarray([2])
+            self.num_labels = np.asarray([num_starting_labels])
         elif data_set == bc.DATA_TAXI:
             #self.set_data_set_defaults('taxi2-20', source_labels=[1], target_labels=[0], is_regression=True)
             #self.set_data_set_defaults('taxi2-50', source_labels=[1], target_labels=[0], is_regression=True)
@@ -171,7 +172,7 @@ class ProjectConfigs(bc.ProjectConfigs):
             #self.set_data_set_defaults('taxi3', source_labels=[1], target_labels=[0], is_regression=True)
             self.set_data_set_defaults('taxi', source_labels=[1], target_labels=[0], is_regression=True)
             #self.num_labels = np.asarray([5, 10, 20, 40, 100, 200, 400, 800])
-            self.num_labels = np.asarray([2])
+            self.num_labels = np.asarray([num_starting_labels])
         else:
             assert False, 'unknown transfer data set'
 
@@ -195,6 +196,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.active_iterations = active_iterations
         method_configs.active_items_per_iteration = active_items_per_iteration
         method_configs.metric = 'euclidean'
+        method_configs.num_starting_labels = num_starting_labels
 
         for key in other_method_configs.keys():
             setattr(method_configs, key, getattr(pc,key))
@@ -241,6 +243,11 @@ class BatchConfigs(bc.BatchConfigs):
                 p = deepcopy(pc2)
                 p.active_method = i
                 self.config_list.append(MainConfigs(p))
+            p = deepcopy(pc2)
+            p.active_method = ACTIVE_CLUSTER_PURITY
+            m = MainConfigs(p)
+            m.learner.use_warm_start = True
+            self.config_list.append(m)
 
 
 class VisualizationConfigs(bc.VisualizationConfigs):
@@ -268,12 +275,21 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #self.files['ActiveRandom+TargetOnlyWrapper+NW.pkl'] = 'Random NW'
         #self.files['ActiveCluster+TargetOnlyWrapper+NW.pkl'] = 'Cluster NW'
         #self.files['ActiveClusterPurity+TargetOnlyWrapper+NW.pkl'] = 'Cluster Purity NW'
-        self.files['ActiveRandom_items=%d+TargetOnlyWrapper+NW.pkl' % active_items_per_iteration] = 'Random NW'
-        self.files['ActiveCluster_items=%d_scale=10+TargetOnlyWrapper+NW.pkl' % active_items_per_iteration] = 'Cluster NW'
         #self.files['ActiveClusterPurity-targetVar_items=%d_scale=10+TargetOnlyWrapper+NW.pkl' % active_items_per_iteration] = 'Cluster Purity NW: Target Variance'
-        self.files['ActiveClusterPurity-instanceSel_items=%d+TargetOnlyWrapper+NW.pkl' % active_items_per_iteration] = 'Supervised Cluster NW'
         #self.files['ActiveClusterPurity-targetVar+TargetOnlyWrapper+NW.pkl'] = 'Cluster Purity NW: Target Variance'
         #self.files['ActiveClusterPurity-targetVar-density+TargetOnlyWrapper+NW.pkl'] = 'Cluster Purity NW: Density, Target Variance'
+
+        '''
+        self.files['ActiveClusterPurity-instanceSel_items=%d_iters=%d+TargetOnlyWrapper+NW.pkl' % (active_items_per_iteration, active_iterations)] = 'Supervised Cluster NW'
+        self.files['ActiveRandom_items=%d_iters=%d+TargetOnlyWrapper+NW.pkl' % (
+        active_items_per_iteration, active_iterations)] = 'Random NW'
+        self.files['ActiveCluster_items=%d_iters=%d_scale=10+TargetOnlyWrapper+NW.pkl' % (
+        active_items_per_iteration, active_iterations)] = 'Cluster NW'
+        '''
+        self.files['ActiveRandom_items=5_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Random'
+        self.files['ActiveCluster_n=2_items=5_iters=2_scale=2+TargetOnlyWrapper+NW.pkl'] = 'Cluster'
+        self.files['ActiveClusterPurity-instanceSel_n=2_items=5_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Our Method'
+        self.files['ActiveClusterPurity-instanceSel_warmStart_n=2_items=5_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Our Method, warm start'
 
 #viz_params = [dict()]
 viz_params = [

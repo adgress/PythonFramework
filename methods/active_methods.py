@@ -125,13 +125,19 @@ class ActiveMethod(method.Method):
         assert False, 'Not implemented for ActiveMethod'
         pass
 
+    def active_options_suffix(self):
+        s = ''
+        s += '_n=' + str(getattr(self.configs, 'num_starting_labels', '???'))
+        s += '_items=' + str(self.configs.active_items_per_iteration)
+        s += '_iters=' + str(self.configs.active_iterations)
+        return s
+
     @property
     def prefix(self):
         s = 'ActiveRandom'
         if getattr(self, 'fix_model', False):
             s += '_fixed-model'
-        s += '_items=' + str(self.configs.active_items_per_iteration)
-        s += '_iters=' + str(self.configs.active_iterations)
+        s += self.active_options_suffix()
         s += '+' + self.base_learner.prefix
         return s
 
@@ -180,8 +186,7 @@ class ClusterActiveMethod(ActiveMethod):
     @property
     def prefix(self):
         s = 'ActiveCluster'
-        s += '_items=' + str(self.configs.active_items_per_iteration)
-        s += '_iters=' + str(self.configs.active_iterations)
+        s += self.active_options_suffix()
         s += '_scale=' + str(self.cluster_scale)
         s += '+' + self.base_learner.prefix
         return s
@@ -256,12 +261,14 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
             print 'subsampling target data: ' + str(I.size)
 
         labeled_target_data = deepcopy(data.get_subset(I))
+        instances_to_keep = labeled_target_data.is_labeled
         labeled_target_data.set_train()
         labeled_target_data.is_noisy = array_functions.false(labeled_target_data.n)
 
         labeled_target_data.y = y_pred[I].copy()
         labeled_target_data.true_y = y_pred[I].copy()
         labeled_target_data.y_orig = y_pred[I].copy()
+        labeled_target_data.instances_to_keep = instances_to_keep
 
         #labeled_target_data.y_orig = labeled_target_data.true_y.copy()
         if self.use_instance_selection:
@@ -326,8 +333,7 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
                 s += '-density'
         if getattr(self, 'use_warm_start', False):
             s += '_warmStart'
-        s += '_items=' + str(self.configs.active_items_per_iteration)
-        s += '_iters=' + str(self.configs.active_iterations)
+        s += self.active_options_suffix()
         if not use_inst_sel:
             s += '_scale=' + str(self.cluster_scale)
         s += '+' + self.base_learner.prefix

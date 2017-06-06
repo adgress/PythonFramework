@@ -131,6 +131,7 @@ class ActiveMethod(method.Method):
         if getattr(self, 'fix_model', False):
             s += '_fixed-model'
         s += '_items=' + str(self.configs.active_items_per_iteration)
+        s += '_iters=' + str(self.configs.active_iterations)
         s += '+' + self.base_learner.prefix
         return s
 
@@ -180,6 +181,7 @@ class ClusterActiveMethod(ActiveMethod):
     def prefix(self):
         s = 'ActiveCluster'
         s += '_items=' + str(self.configs.active_items_per_iteration)
+        s += '_iters=' + str(self.configs.active_iterations)
         s += '_scale=' + str(self.cluster_scale)
         s += '+' + self.base_learner.prefix
         return s
@@ -194,6 +196,7 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
         self.use_density = False
         self.use_instance_selection = True
         self.instance_selector = SupervisedInstanceSelectionClusterGraph(deepcopy(configs))
+        self.use_warm_start = False
 
     def get_cluster_purity(self, cluster_ids, y, classification=False):
         num_clusters = cluster_ids.max()+1
@@ -242,7 +245,9 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
         y_pred = source_learner.predict(data).y
 
         n_items = self.configs.active_items_per_iteration
-        I = data.is_train & ~data.is_labeled
+        I = data.is_train
+        if not self.use_warm_start:
+            I &= ~data.is_labeled
         if self.configs.target_labels is not None:
             I &= data.get_transfer_inds(self.configs.target_labels)
         I = I.nonzero()[0]
@@ -251,10 +256,14 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
             print 'subsampling target data: ' + str(I.size)
 
         labeled_target_data = deepcopy(data.get_subset(I))
-        labeled_target_data.y = labeled_target_data.true_y.copy()
         labeled_target_data.set_train()
         labeled_target_data.is_noisy = array_functions.false(labeled_target_data.n)
-        labeled_target_data.y_orig = labeled_target_data.true_y.copy()
+
+        labeled_target_data.y = y_pred[I].copy()
+        labeled_target_data.true_y = y_pred[I].copy()
+        labeled_target_data.y_orig = y_pred[I].copy()
+
+        #labeled_target_data.y_orig = labeled_target_data.true_y.copy()
         if self.use_instance_selection:
             self.instance_selector.subset_size = n_items
             self.instance_selector.num_samples = n_items
@@ -315,7 +324,10 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
                 s += '-targetVar'
             if getattr(self, 'use_density', False):
                 s += '-density'
+        if getattr(self, 'use_warm_start', False):
+            s += '_warmStart'
         s += '_items=' + str(self.configs.active_items_per_iteration)
+        s += '_iters=' + str(self.configs.active_iterations)
         if not use_inst_sel:
             s += '_scale=' + str(self.cluster_scale)
         s += '+' + self.base_learner.prefix

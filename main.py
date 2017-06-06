@@ -13,13 +13,13 @@ import importlib
 #import new_project.new_project_configs as configs_library
 #import higher_order_transfer.higher_order_transfer_configs as configs_library
 
-import base.transfer_project_configs as configs_library
+#import base.transfer_project_configs as configs_library
 #import far_transfer.far_transfer_project_configs as configs_library
 #import mixed_feature_guidance.mixed_features_project_configs as configs_library
 
 #import active_base.active_base_project_configs as configs_library
-#import active_transfer.active_transfer_project_configs as configs_library
 #import instance_selection.instance_selectin_project_configs as configs_library
+import active_transfer.active_transfer_project_configs as configs_library
 
 configs_lib = configs_library
 import boto
@@ -124,7 +124,7 @@ def create_table():
             latex_str = '-'
             if mean_val < 1000:
                 #latex_str = '%.1f \\pm %.1f' % (mean_val, var)
-                latex_str = '%.2f (%.1f)' % (mean_val, var)
+                latex_str = '%.3f (%.3f)' % (mean_val, var)
             cell_text[data_set_idx][method_idx] = latex_str
             if method_idx == vis_configs.baseline_idx:
                 baseline_perf.append(mean_val)

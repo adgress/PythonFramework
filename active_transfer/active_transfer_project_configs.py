@@ -51,10 +51,14 @@ ACTIVE_CLUSTER_PURITY = 2
 
 active_method = ACTIVE_RANDOM
 
+active_iterations = 2
+active_items_per_iteration = 5
+cluster_scale = 10
+
 viz_for_paper = True
 
 run_batchs_datasets = True
-run_experiments = False
+run_experiments = True
 use_test_error_for_model_selection = False
 
 use_relative = True
@@ -81,10 +85,6 @@ other_method_configs = {
 run_batch = True
 if helper_functions.is_laptop():
     run_batch = True
-
-active_iterations = 2
-active_items_per_iteration = 5
-cluster_scale = 10
 
 show_legend_on_all = True
 

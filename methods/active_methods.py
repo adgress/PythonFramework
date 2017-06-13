@@ -202,6 +202,7 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
         self.use_instance_selection = True
         self.instance_selector = SupervisedInstanceSelectionClusterGraph(deepcopy(configs))
         self.use_warm_start = False
+        self.use_oracle_labels = True
 
     def get_cluster_purity(self, cluster_ids, y, classification=False):
         num_clusters = cluster_ids.max()+1
@@ -248,6 +249,8 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
         print 'train source time: ' + toc_str()
         target_data = data.get_transfer_subset(self.configs.target_labels, include_unlabeled=True)
         y_pred = source_learner.predict(data).y
+        if self.use_oracle_labels:
+            y_pred = data.true_y.copy()
 
         n_items = self.configs.active_items_per_iteration
         I = data.is_train
@@ -336,6 +339,8 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
         s += self.active_options_suffix()
         if not use_inst_sel:
             s += '_scale=' + str(self.cluster_scale)
+        if getattr(self, 'use_oracle_labels'):
+            s += '_oracleY'
         s += '+' + self.base_learner.prefix
         return s
 

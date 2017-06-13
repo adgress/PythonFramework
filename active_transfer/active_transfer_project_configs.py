@@ -243,12 +243,16 @@ class BatchConfigs(bc.BatchConfigs):
                 p = deepcopy(pc2)
                 p.active_method = i
                 self.config_list.append(MainConfigs(p))
+
+
+            #Warm start exps
+            '''
             p = deepcopy(pc2)
             p.active_method = ACTIVE_CLUSTER_PURITY
             m = MainConfigs(p)
             m.learner.use_warm_start = True
             self.config_list.append(m)
-
+            '''
 
 class VisualizationConfigs(bc.VisualizationConfigs):
     PLOT_PAIRWISE = 1
@@ -286,7 +290,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files['ActiveCluster_items=%d_iters=%d_scale=10+TargetOnlyWrapper+NW.pkl' % (
         active_items_per_iteration, active_iterations)] = 'Cluster NW'
         '''
-        self.files['ActiveRandom_items=5_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Random'
+        self.files['ActiveRandom_n=2_items=5_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Random'
         self.files['ActiveCluster_n=2_items=5_iters=2_scale=2+TargetOnlyWrapper+NW.pkl'] = 'Cluster'
         self.files['ActiveClusterPurity-instanceSel_n=2_items=5_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Our Method'
         self.files['ActiveClusterPurity-instanceSel_warmStart_n=2_items=5_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Our Method, warm start'

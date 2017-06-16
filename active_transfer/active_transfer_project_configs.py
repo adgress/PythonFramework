@@ -26,6 +26,7 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 #data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 
 all_data_sets = [
+    bc.DATA_SYNTHETIC_PIECEWISE,
     bc.DATA_BOSTON_HOUSING,
     #bc.DATA_MNIST,
     bc.DATA_CONCRETE,
@@ -130,7 +131,12 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.data_set = data_set
 
 
-        if data_set == bc.DATA_MNIST:
+        if data_set == bc.DATA_SYNTHETIC_PIECEWISE:
+            self.set_data_set_defaults('synthetic_piecewise')
+            self.num_labels = np.asarray([num_starting_labels])
+            self.target_labels = np.zeros([1])
+            self.source_labels = np.ones([1])
+        elif data_set == bc.DATA_MNIST:
             self.set_data_set_defaults('mnist')
             self.num_labels = [num_starting_labels/2]
             self.target_labels = np.asarray([1, 3])
@@ -293,7 +299,9 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files['ActiveRandom_n=2_items=5_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Random'
         self.files['ActiveCluster_n=2_items=5_iters=2_scale=2+TargetOnlyWrapper+NW.pkl'] = 'Cluster'
         self.files['ActiveClusterPurity-instanceSel_n=2_items=5_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Our Method'
-        self.files['ActiveClusterPurity-instanceSel_warmStart_n=2_items=5_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Our Method, warm start'
+        #self.files['ActiveClusterPurity-instanceSel_warmStart_n=2_items=5_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Our Method, warm start'
+        self.files['ActiveClusterPurity-instanceSel_n=2_items=5_iters=2_oracleY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Y'
+        self.files['ActiveClusterPurity-instanceSel_n=2_items=5_iters=2_oracleTargetY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target'
 
 #viz_params = [dict()]
 viz_params = [

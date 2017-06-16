@@ -12,9 +12,11 @@ use_monthly = True
 y_names = ['TAVG', 'TMIN', 'TMAX', 'PRCP']
 y_to_use = np.asarray([1,3])
 
+
 plot_data = True
-plot_2d = True
-plot_multiple_stations = True
+plot_monthly_variance = True
+plot_2d = False
+plot_multiple_stations = False
 y_to_plot = 3
 
 def to_date(date_str):
@@ -108,7 +110,23 @@ for i, name in enumerate(unique_series_ids):
 times_series_vals[times_series_vals < 0] = np.nan
 
 if plot_data:
-    if plot_2d:
+    if plot_monthly_variance:
+        all_vals = np.squeeze(times_series_vals[:, :, y_to_plot])
+        is_all_finite = np.isfinite(all_vals).all(0)
+        vals_to_use = all_vals[:, is_all_finite]
+        site_variance = vals_to_use.var(0)
+        normalized_vals = vals_to_use.copy()
+        for i in range(normalized_vals.shape[0]):
+            v = normalized_vals[i, :]
+            v -= v.mean()
+            v /= v.var()
+            normalized_vals[i, :] = v
+        normalized_site_variance = normalized_vals.var(0)
+        #array_functions.plot_heatmap(unique_locs[is_all_finite], site_variance / site_variance.max(), alpha=1, title=None, sizes=None, share_axis=True)
+        normalized_site_variance += .2
+        array_functions.plot_heatmap(unique_locs[is_all_finite], normalized_site_variance / normalized_site_variance.max(), alpha=1, title=None, sizes=None,share_axis=True)
+        print ''
+    elif plot_2d:
         for i in range(num_time_intervals):
             if use_monthly:
                 y_val = times_series_vals[[i, i+1], :, y_to_plot]

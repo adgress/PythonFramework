@@ -476,6 +476,44 @@ class RelativeActiveMethod(ActiveMethod):
         return s
 
 
+class RelativeActiveOracleMethod(RelativeActiveMethod):
+    def __init__(self, configs=MethodConfigs()):
+        super(RelativeActiveOracleMethod, self).__init__(configs)
+
+    def create_sampling_distribution(self, base_learner, data, fold_results):
+        all_pairs = self.create_pairs(data, base_learner)
+        curr_learner = deepcopy(base_learner)
+        baseline_results = base_learner.predict(data)
+        I = data.is_train & ~data.is_labeled
+        loss_function = self.configs.loss_function
+        baseline_error = loss_function._compute_score(baseline_results.y[I], baseline_results.true_y[I])
+        new_errors = np.zeros(len(all_pairs))
+        for idx, (i, j) in enumerate(all_pairs):
+            curr_data = deepcopy(data)
+            xi = data.x[i, :]
+            xj = data.x[j, :]
+            curr_data.pairwise_relationships = np.append(
+                curr_data.pairwise_relationships,
+                constrained_methods.PairwiseConstraint(xi, xj, i, j)
+            )
+            curr_learner.train(curr_data)
+            curr_results = curr_learner.predict(curr_data)
+            new_errors[idx] = loss_function._compute_score(curr_results.y[I], curr_results.true_y[I])
+        d = np.zeros(all_pairs.shape[0])
+        d[np.argsort(new_errors)[:self.configs.active_items_per_iteration]] = 1
+        d = d / d.sum()
+        return d, all_pairs
+
+    @property
+    def prefix(self):
+        s = 'RelActiveOracle'
+        if getattr(self, 'fix_model', False):
+            s += '_fixed-model'
+        s += '-' + self.active_options_suffix()
+        s += '+' + self.base_learner.prefix
+        return s
+
+
 class RelativeActiveUncertaintyMethod(RelativeActiveMethod):
     def __init__(self, configs=MethodConfigs()):
         super(RelativeActiveUncertaintyMethod, self).__init__(configs)

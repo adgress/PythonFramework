@@ -64,6 +64,7 @@ other_method_configs = {
     'use_validation': True,
     'use_uncertainty': False,
     'use_oed': False,
+    'use_oracle': False,
     'num_features': None,
     'num_pairwise': 0,
     'use_true_y': False
@@ -73,8 +74,8 @@ run_batch = True
 if helper_functions.is_laptop():
     run_batch = True
 
-active_iterations = 2
-active_items_per_iteration = 20
+active_iterations = 6
+active_items_per_iteration = 10
 
 show_legend_on_all = True
 
@@ -116,31 +117,32 @@ class ProjectConfigs(bc.ProjectConfigs):
 
     def set_data_set(self, data_set):
         self.data_set = data_set
+        num_labels = 20
         if data_set == bc.DATA_BOSTON_HOUSING:
             self.set_boston_housing()
-            self.num_labels = [5]
+            self.num_labels = [num_labels]
         elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10:
             self.set_synthetic_linear_reg_10()
-            self.num_labels = [5]
+            self.num_labels = [num_labels]
         elif data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
             self.set_synthetic_linear_reg()
-            self.num_labels = [5]
+            self.num_labels = [num_labels]
         elif data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
             self.set_adience_aligned_cnn_1()
-            self.num_labels = [5]
+            self.num_labels = [num_labels]
         elif data_set == bc.DATA_WINE_RED:
             self.set_wine_red()
-            self.num_labels = [5]
+            self.num_labels = [num_labels]
         elif data_set == bc.DATA_CONCRETE:
             self.set_concrete()
-            self.num_labels = [5]
+            self.num_labels = [num_labels]
         elif data_set == bc.DATA_DROSOPHILIA:
             self.set_drosophilia()
-            self.num_labels = [5]
+            self.num_labels = [num_labels]
         elif data_set ==  bc.DATA_DS2:
             self.set_data_path_results('DS2-processed')
             #self.num_labels = [10]
-            self.num_labels = [5]
+            self.num_labels = [num_labels]
         else:
             assert False
 
@@ -236,7 +238,9 @@ class MainConfigs(bc.MainConfigs):
         use_uncertainty = method_configs.use_uncertainty
         method_configs.use_test_error_for_model_selection = pc.use_test_error_for_model_selection
 
-        if use_pairwise_active:
+        if method_configs.use_oracle:
+            active = active_methods.RelativeActiveOracleMethod(method_configs)
+        elif use_pairwise_active:
             if use_oed:
                 active = active_methods.RelativeActiveOEDMethod(method_configs)
             elif use_uncertainty:
@@ -262,7 +266,7 @@ class MainConfigs(bc.MainConfigs):
 
 
             #del active.base_learner.cv_params['C']
-            del active.base_learner.cv_params['C2']
+            #del active.base_learner.cv_params['C2']
             if pc.data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10:
                 active.base_learner.C = .001
                 active.base_learner.C2 = 100
@@ -313,6 +317,7 @@ class BatchConfigs(bc.BatchConfigs):
                     {'use_oed': True, 'use_uncertainty': False},
                     {'use_oed': False, 'use_uncertainty': False},
                     {'use_oed': False, 'use_uncertainty': True},
+                    {'use_oracle': True}
                 ]
         else:
             new_params = [{'unused': None}]
@@ -376,7 +381,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         active_opts_stf = '-10-' + str(active_iterations) + '-' + str(active_items_per_iteration)
         if data_set in {bc.DATA_DS2}:
             active_opts_stf = '-5-' + str(active_iterations) + '-' + str(active_items_per_iteration)
-        active_opts_stf = '-5-' + str(active_iterations) + '-' + str(active_items_per_iteration)
+        active_opts_stf = '-20-' + str(active_iterations) + '-' + str(active_items_per_iteration)
         #rand_pairs_str = '-numRandPairs=1'
         #rand_pairs_str = '-numRandPairs=2'
         rand_pairs_str = '-numRandPairs=0'
@@ -388,6 +393,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                 #('RelActiveOED%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'OED, pairwise, Relative=0'),
                 #('RelActiveOED-grad%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad, pairwise, Relative=0'),
                 ('RelActiveOED-grad-labeled%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad-labeled, pairwise, Relative=0'),
+                ('RelActiveOracle%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10.pkl','Oracle, pairwise, Relative=0'),
                 #('RelActiveOED-grad-labeled-trueY%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad-labeled-trueY, pairwise, Relative=0'),
                 #('RelActiveOED-labeled%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-labeled, pairwise, Relative=0'),
                 #('RelActiveOED-E%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-E-grad, pairwise, Relative=0'),

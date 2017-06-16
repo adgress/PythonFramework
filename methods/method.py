@@ -1245,7 +1245,9 @@ class RelativeRegressionMethod(Method):
         x = labeled_train.x
         y = labeled_train.y
         x_orig = x
-        x = self.transform.fit_transform(x, y)
+        #x = self.transform.fit_transform(x, y)
+        self.transform.fit(data.x)
+        x = self.transform.transform(x)
         if self.num_features > 0:
             dim_to_use = min(self.num_features, x.shape[0] - 1)
 

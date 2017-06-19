@@ -561,7 +561,7 @@ class SupervisedInstanceSelectionClusterGraph(SupervisedInstanceSelectionCluster
         self.cluster_inds = cluster_inds
         self.selected = selected
         if selected.sum() < opt_data.subset_size:
-            #print 'Empty clusters'
+            print 'Empty clusters'
             pass
         #self.learned_distribution = compute_p(selected, opt_data)
         self.learned_distribution = selected

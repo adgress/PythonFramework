@@ -252,13 +252,12 @@ class BatchConfigs(bc.BatchConfigs):
 
 
             #Warm start exps
-            '''
+
             p = deepcopy(pc2)
             p.active_method = ACTIVE_CLUSTER_PURITY
             m = MainConfigs(p)
-            m.learner.use_warm_start = True
+            m.learner.use_oracle_target = True
             self.config_list.append(m)
-            '''
 
 class VisualizationConfigs(bc.VisualizationConfigs):
     PLOT_PAIRWISE = 1
@@ -302,6 +301,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #self.files['ActiveClusterPurity-instanceSel_warmStart_n=2_items=5_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Our Method, warm start'
         self.files['ActiveClusterPurity-instanceSel_n=2_items=5_iters=2_oracleY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Y'
         self.files['ActiveClusterPurity-instanceSel_n=2_items=5_iters=2_oracleTargetY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target'
+        self.files['ActiveClusterPurity-instanceSel_n=2_items=5_iters=2_oracleTargetY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y'
 
 #viz_params = [dict()]
 viz_params = [

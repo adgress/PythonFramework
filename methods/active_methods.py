@@ -201,9 +201,10 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
         self.use_density = False
         self.use_instance_selection = True
         self.instance_selector = SupervisedInstanceSelectionClusterGraph(deepcopy(configs))
+        self.instance_selector.quiet = False
         self.use_warm_start = False
         self.use_oracle_labels = False
-        self.use_oracle_target = True
+        self.use_oracle_target = False
 
     def get_cluster_purity(self, cluster_ids, y, classification=False):
         num_clusters = cluster_ids.max()+1

@@ -52,7 +52,7 @@ ACTIVE_CLUSTER_PURITY = 2
 
 active_method = ACTIVE_RANDOM
 
-num_starting_labels = 2
+num_starting_labels = 0
 active_iterations = 2
 active_items_per_iteration = 5
 cluster_scale = 2
@@ -60,7 +60,7 @@ cluster_scale = 2
 viz_for_paper = True
 
 run_batchs_datasets = True
-run_experiments = True
+run_experiments = False
 use_test_error_for_model_selection = False
 
 use_relative = True
@@ -295,13 +295,13 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files['ActiveCluster_items=%d_iters=%d_scale=10+TargetOnlyWrapper+NW.pkl' % (
         active_items_per_iteration, active_iterations)] = 'Cluster NW'
         '''
-        self.files['ActiveRandom_n=2_items=5_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Random'
-        self.files['ActiveCluster_n=2_items=5_iters=2_scale=2+TargetOnlyWrapper+NW.pkl'] = 'Cluster'
-        self.files['ActiveClusterPurity-instanceSel_n=2_items=5_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Our Method'
+        self.files['ActiveRandom_n=0_items=5_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Random'
+        self.files['ActiveCluster_n=0_items=5_iters=2_scale=2+TargetOnlyWrapper+NW.pkl'] = 'Cluster'
+        self.files['ActiveClusterPurity-instanceSel_n=0_items=5_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Our Method'
         #self.files['ActiveClusterPurity-instanceSel_warmStart_n=2_items=5_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Our Method, warm start'
-        self.files['ActiveClusterPurity-instanceSel_n=2_items=5_iters=2_oracleY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Y'
-        self.files['ActiveClusterPurity-instanceSel_n=2_items=5_iters=2_oracleTargetY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target'
-        self.files['ActiveClusterPurity-instanceSel_n=2_items=5_iters=2_oracleTargetY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y'
+        self.files['ActiveClusterPurity-instanceSel_n=0_items=5_iters=2_oracleY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Y'
+        self.files['ActiveClusterPurity-instanceSel_n=0_items=5_iters=2_oracleTargetY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target'
+        self.files['ActiveClusterPurity-instanceSel_n=0_items=5_iters=2_oracleTargetY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y'
 
 #viz_params = [dict()]
 viz_params = [

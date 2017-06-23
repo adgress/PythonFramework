@@ -62,7 +62,10 @@ class ActiveMethod(method.Method):
             self.base_learner.add_random_pairwise = True
             self.base_learner.add_random_guidance(curr_data)
             self.base_learner.add_random_pairwise = False
-        active_fold_results = results_lib.ActiveFoldResults(active_iterations)
+        active_itations_offset = 0
+        if not ((curr_data.data_set_ids == 0) & curr_data.is_labeled).any():
+            active_itations_offset = -1
+        active_fold_results = results_lib.ActiveFoldResults(active_iterations + active_itations_offset)
         for iter_idx in range(active_iterations):
             I = np.empty(0)
             if iter_idx > 0:
@@ -95,12 +98,16 @@ class ActiveMethod(method.Method):
                 except Exception as err:
                     assert False, 'Other Error'
                     assert not curr_data.is_labeled[I].any()
-            if iter_idx == 0 or not self.fix_model:
+
+            if iter_idx + active_itations_offset == -1:
+                fold_results = None
+                continue
+            elif iter_idx + active_itations_offset == 0 or not self.fix_model:
                 fold_results = self.base_learner.train_and_test(curr_data)
             else:
                 fold_results = self.base_learner.run_method(curr_data)
             active_iteration_results = results_lib.ActiveIterationResults(fold_results,I)
-            active_fold_results.set(active_iteration_results, iter_idx)
+            active_fold_results.set(active_iteration_results, iter_idx + active_itations_offset)
         return active_fold_results
 
     def create_sampling_distribution(self, base_learner, data, fold_results):

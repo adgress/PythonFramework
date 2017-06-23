@@ -493,7 +493,7 @@ class SupervisedInstanceSelectionClusterGraph(SupervisedInstanceSelectionCluster
         spectral_cluster.set_params(
             n_clusters=num_clusters,
             affinity='precomputed',
-            n_init=100
+            n_init=10
         )
         try:
             I = spectral_cluster.fit_predict(W)

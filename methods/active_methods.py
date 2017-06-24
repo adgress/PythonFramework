@@ -63,7 +63,7 @@ class ActiveMethod(method.Method):
             self.base_learner.add_random_guidance(curr_data)
             self.base_learner.add_random_pairwise = False
         active_itations_offset = 0
-        if not ((curr_data.data_set_ids == 0) & curr_data.is_labeled).any():
+        if not (curr_data.get_transfer_inds(self.configs.target_labels) & curr_data.is_labeled).any():
             active_itations_offset = -1
         active_fold_results = results_lib.ActiveFoldResults(active_iterations + active_itations_offset)
         for iter_idx in range(active_iterations):

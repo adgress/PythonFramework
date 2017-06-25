@@ -54,13 +54,22 @@ active_method = ACTIVE_RANDOM
 
 num_starting_labels = 0
 active_iterations = 2
-active_items_per_iteration = 5
+active_items_per_iteration = 10
 cluster_scale = 2
+max_target_items_for_large_data_sets = 300
+large_data_sets = {
+    bc.DATA_ZILLOW,
+    bc.DATA_CLIMATE_MONTH,
+    bc.DATA_IRS,
+    bc.DATA_KC_HOUSING,
+    bc.DATA_TAXI
+}
+
 
 viz_for_paper = True
 
 run_batchs_datasets = True
-run_experiments = False
+run_experiments = True
 use_test_error_for_model_selection = False
 
 use_relative = True
@@ -247,8 +256,11 @@ class BatchConfigs(bc.BatchConfigs):
             ]
             for i in all_active_methods:
                 p = deepcopy(pc2)
-                p.active_method = i
-                self.config_list.append(MainConfigs(p))
+                p.active_method = deepcopy(i)
+                m = MainConfigs(p)
+                if d in large_data_sets:
+                    m.learner.max_items_for_instance_selection = max_target_items_for_large_data_sets
+                self.config_list.append(m)
 
 
             #Warm start exps
@@ -257,6 +269,8 @@ class BatchConfigs(bc.BatchConfigs):
             p.active_method = ACTIVE_CLUSTER_PURITY
             m = MainConfigs(p)
             m.learner.use_oracle_target = True
+            if d in large_data_sets:
+                m.learner.max_items_for_instance_selection = max_target_items_for_large_data_sets
             self.config_list.append(m)
 
 class VisualizationConfigs(bc.VisualizationConfigs):
@@ -295,13 +309,23 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files['ActiveCluster_items=%d_iters=%d_scale=10+TargetOnlyWrapper+NW.pkl' % (
         active_items_per_iteration, active_iterations)] = 'Cluster NW'
         '''
-        self.files['ActiveRandom_n=0_items=5_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Random'
-        self.files['ActiveCluster_n=0_items=5_iters=2_scale=2+TargetOnlyWrapper+NW.pkl'] = 'Cluster'
-        self.files['ActiveClusterPurity-instanceSel_n=0_items=5_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Our Method'
-        #self.files['ActiveClusterPurity-instanceSel_warmStart_n=2_items=5_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Our Method, warm start'
-        self.files['ActiveClusterPurity-instanceSel_n=0_items=5_iters=2_oracleY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Y'
-        self.files['ActiveClusterPurity-instanceSel_n=0_items=5_iters=2_oracleTargetY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target'
-        self.files['ActiveClusterPurity-instanceSel_n=0_items=5_iters=2_oracleTargetY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y'
+        self.files['ActiveRandom_n=%d_items=5_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Random'
+        self.files['ActiveCluster_n=%d_items=5_iters=2_scale=2+TargetOnlyWrapper+NW.pkl'] = 'Cluster'
+        self.files['ActiveClusterPurity-instanceSel_n=%d_items=5_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Our Method'
+        self.files['ActiveClusterPurity-instanceSel_n=%d_items=5_iters=2_oracleTargetY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y'
+        self.files['ActiveClusterPurity-instanceSel_n=%d_items=5_iters=2_targetSubsample=300+TargetOnlyWrapper+NW.pkl'] = 'Our Method, 300 subsample'
+        self.files['ActiveClusterPurity-instanceSel_n=%d_items=5_iters=2_oracleTargetY_targetSubsample=300+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y, 300 subsample'
+
+        new_files = OrderedDict()
+        for key, value in self.files.iteritems():
+            new_files[key % num_starting_labels] = value
+        self.files = new_files
+
+
+
+
+        # self.files['ActiveClusterPurity-instanceSel_warmStart_n=2_items=5_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Our Method, warm start'
+        # self.files['ActiveClusterPurity-instanceSel_n=0_items=5_iters=2_oracleY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Y'
 
 #viz_params = [dict()]
 viz_params = [

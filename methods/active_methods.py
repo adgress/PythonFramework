@@ -212,6 +212,7 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
         self.use_warm_start = False
         self.use_oracle_labels = False
         self.use_oracle_target = False
+        self.max_items_for_instance_selection = None
 
     def get_cluster_purity(self, cluster_ids, y, classification=False):
         num_clusters = cluster_ids.max()+1
@@ -276,8 +277,9 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
         if self.configs.target_labels is not None:
             I &= data.get_transfer_inds(self.configs.target_labels)
         I = I.nonzero()[0]
-        if I.size > 1000:
-            I = np.random.choice(I, int(I.size*.5), replace=False)
+        if self.max_items_for_instance_selection is not None and \
+                        I.size > self.max_items_for_instance_selection:
+            I = np.random.choice(I, self.max_items_for_instance_selection, replace=False)
             print 'subsampling target data: ' + str(I.size)
 
         labeled_target_data = deepcopy(data.get_subset(I))
@@ -360,6 +362,8 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
             s += '_oracleY'
         if getattr(self, 'use_oracle_target'):
             s += '_oracleTargetY'
+        if getattr(self, 'max_items_for_instance_selection'):
+            s += '_targetSubsample=' + str(self.max_items_for_instance_selection)
         s += '+' + self.base_learner.prefix
         return s
 

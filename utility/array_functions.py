@@ -680,11 +680,15 @@ def plot_heatmap(x, y_mat, alpha=1,title=None,sizes=None,share_axis=False, fig=N
         red_values = y
         I = np.isfinite(y) & np.isfinite(x[:,0]) & np.isfinite(x[:,1])
         colors = np.zeros((red_values.size, 4))
-        #colors[:,0] = red_values
-        colors[:, 0] = 0
-        alpha = red_values
+
+        colors[:,0] = red_values
         colors[:, 3] = 1
+
+        '''
+        alpha = red_values
+        colors[:, 0] = 0
         colors[:,:3] = alpha[:, None]
+        '''
         pl.ylabel(str(index))
         if I.mean > 0:
             print 'Percent skipped due to nans: ' + str(1-I.mean())

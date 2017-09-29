@@ -36,7 +36,7 @@ data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
 
 viz_for_paper = False
 
-run_experiments = True
+run_experiments = False
 run_batch_experiments = True
 run_transfer_experiments = False
 
@@ -60,8 +60,14 @@ VIZ_PAPER_HARD_CONSTRAINTS = 7
 VIZ_DUAL = 8
 VIZ_SAME_SIGN = 9
 
-viz_type = VIZ_SAME_SIGN
-if viz_type == VIZ_PAPER_TRANSFER:
+VIZ_PAPER_TABLE = 10
+VIZ_PAPER_TABLE_TRANSFER = 11
+VIZ_PAPER_TABLE_TRAINING_CORR = 12
+VIZ_PAPER_TABLE_HARD_CONSTRAINTS = 13
+
+viz_type = VIZ_PAPER_TRANSFER
+
+if viz_type in {VIZ_PAPER_TRANSFER, VIZ_PAPER_TABLE_TRANSFER}:
     run_transfer_experiments = True
 
 show_legend_on_all = False
@@ -196,7 +202,7 @@ class ProjectConfigs(bc.ProjectConfigs):
                 self.source_labels = np.asarray([3])
                 self.num_labels = [5, 10, 20]
             else:
-                assert False, 'unkown transfer data set'
+                print 'Nnknown transfer data set!  May cause errors.'
         else:
             if data_set == bc.DATA_BOSTON_HOUSING:
                 self.set_data_set_defaults('boston_housing')
@@ -474,8 +480,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
 
         if viz_type == VIZ_SAME_SIGN:
             self.files['Mixed-feats_method=Ridge.pkl'] = 'Ridge'
-            self.files[
-                'Mixed-feats_method=Rel_meanB-pairsSameSignPrimalHinge=1-use_sign_corr_l1.pkl'] = 'Our Method: 100% pairwise signs'
+            self.files['Mixed-feats_method=Rel_meanB-pairsSameSignPrimalHinge=1-use_sign_corr_l1.pkl'] = 'Our Method: 100% pairwise signs'
         elif viz_type == VIZ_DUAL:
             self.files['Mixed-feats_method=Ridge.pkl'] = 'Ridge'
             #self.files['Mixed-feats_method=Rel_meanB_signs=1-use_sign_corr_l1.pkl'] = 'Primal: Signs, meanB'
@@ -508,33 +513,80 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['Mixed-feats_method=Rel-use_sign_nonneg_not-relaxed_l1.pkl'] = 'Nonnegative'
             self.files['Mixed-feats_method=Ridge.pkl'] = 'Ridge'
             self.files['Mixed-feats_method=Lasso.pkl'] = 'Lasso'
-            self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_l1.pkl'] = 'Our Method: 100% signs'
-            self.files['Mixed-feats_method=Rel_pairs=1-use_sign_corr_l1.pkl'] = 'Our Method: 100% pairs'
+            self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_l1.pkl'] = 'PSCR: $p$ signs'
+            self.files['Mixed-feats_method=Rel_pairs=1-use_sign_corr_l1.pkl'] = 'PRCR: $p$ pairs'
+            self.files['Mixed-feats_method=Rel_meanB-pairsSameSignPrimalHinge=1-use_sign_corr_l1.pkl'] = 'PPSCR: $p$ sign pairs'
         elif viz_type == VIZ_PAPER_SIGNS:
-            self.files['Mixed-feats_method=Rel_signs=0.25-use_sign_corr_l1.pkl'] = 'Our Method: 25% signs'
-            self.files['Mixed-feats_method=Rel_signs=0.5-use_sign_corr_l1.pkl'] = 'Our Method: 50% signs'
-            self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_l1.pkl'] = 'Our Method: 100% signs'
+            self.files['Mixed-feats_method=Rel_signs=0.25-use_sign_corr_l1.pkl'] = 'PSCR: $.25p$ signs'
+            self.files['Mixed-feats_method=Rel_signs=0.5-use_sign_corr_l1.pkl'] = 'PSCR: $.5p$ signs'
+            self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_l1.pkl'] = 'PSCR: $p$ signs'
         elif viz_type == VIZ_PAPER_RELATIVE:
-            self.files['Mixed-feats_method=Rel_pairs=0.25-use_sign_corr_l1.pkl'] = 'Our Method: 25% pairs'
-            self.files['Mixed-feats_method=Rel_pairs=0.5-use_sign_corr_l1.pkl'] = 'Our Method: 50% pairs'
-            self.files['Mixed-feats_method=Rel_pairs=1-use_sign_corr_l1.pkl'] = 'Our Method: 100% pairs'
+            self.files['Mixed-feats_method=Rel_pairs=0.25-use_sign_corr_l1.pkl'] = 'PRCR: $.25p$ pairs'
+            self.files['Mixed-feats_method=Rel_pairs=0.5-use_sign_corr_l1.pkl'] = 'PRCR: $.5p$ pairs'
+            self.files['Mixed-feats_method=Rel_pairs=1-use_sign_corr_l1.pkl'] = 'PRCR: $p$ pairs'
         elif viz_type == VIZ_PAPER_TRAINING_CORR:
-            self.files['Mixed-feats_method=Ridge.pkl'] = 'Ridge'
-            self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_l1.pkl'] = 'Our Method'
-            self.files['Mixed-feats_method=Rel_signs=1-use_sign_trainCorr_l1.pkl'] = 'Our Method: Training Set Signs'
-            self.files['Mixed-feats_method=Rel_signs=1-use_sign_oracle_l1.pkl'] = 'Our Method: Oracle Signs'
+            self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_l1.pkl'] = 'PSCR: $p$ signs'
+            self.files['Mixed-feats_method=Rel_signs=1-use_sign_trainCorr_l1.pkl'] = 'PSCR: $p$ signs, Training Guidance'
         elif viz_type == VIZ_PAPER_TRANSFER:
+            self.files['Mixed-feats_method=Ridge_transfer'] = 'Ridge: Transfer'
+            self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_l1.pkl'] = 'PSCR: $p$ signs'
+            self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_l1_transfer.pkl'] = 'Transfer PSCR: $p$ signs'
+        elif viz_type == VIZ_PAPER_TRAINING_SINGLE:
+            self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_l1.pkl'] = 'With Outside Guidance'
+            self.files['Mixed-feats_method=Rel_signs=1-use_sign_trainCorr_l1.pkl'] = 'Without Outside Guidance'
+        elif viz_type == VIZ_PAPER_HARD_CONSTRAINTS:
+            self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_l1.pkl'] = 'PSCR: $p$ signs'
+            self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_not-relaxed_l1.pkl'] = 'Signed Ridge: $p$'
+        elif viz_type == VIZ_PAPER_TABLE:
+            self.vis_table = True
+            self.data_names_for_table = [
+                'Synthetic', 'BH', 'Wine', 'Concrete', 'Housing', 'ITS', 'Heart'
+            ]
+            self.method_names_for_table = [
+                'Nonnegative', 'Ridge', 'Lasso', 'PSCR: $p$ Signs', 'PRCR: $p$ Pairs', 'PPSCR: $p$ pairs'
+            ]
+            self.files = OrderedDict()
+
+            self.files['Mixed-feats_method=Rel-use_sign_nonneg_not-relaxed_l1.pkl'] = 'Nonnegative'
+            self.files['Mixed-feats_method=Ridge.pkl'] = 'Ridge'
+            self.files['Mixed-feats_method=Lasso.pkl'] = 'Lasso'
+            self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_l1.pkl'] = 'Our Method: 100% signs'
+            self.files['Mixed-feats_method=Rel_pairs=1-use_sign_corr_l1.pkl'] = 'Our Method: 100% pairs'
+            self.files['Mixed-feats_method=Rel_meanB-pairsSameSignPrimalHinge=1-use_sign_corr_l1.pkl'] = 'Our Method: 100% pairwise signs'
+        elif viz_type == VIZ_PAPER_TABLE_TRANSFER:
+            self.vis_table = True
+            self.data_names_for_table = [
+                'Synthetic', 'BH', 'Wine', 'Concrete', 'Housing', 'ITS', 'Heart'
+            ]
+            self.method_names_for_table = [
+                'Ridge', 'Lasso', 'Transfer Ridge', 'PSCR: $p$ Signs', 'Transfer PSCR: $p$ Signs'
+            ]
             self.files['Mixed-feats_method=Ridge.pkl'] = 'Ridge'
             self.files['Mixed-feats_method=Lasso.pkl'] = 'Lasso'
             self.files['Mixed-feats_method=Ridge_transfer'] = 'Ridge: Transfer'
             self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_l1.pkl'] = 'Our Method'
             self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_l1_transfer.pkl'] = 'Our Method: Transfer'
-        elif viz_type == VIZ_PAPER_TRAINING_SINGLE:
-            self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_l1.pkl'] = 'With Outside Guidance'
-            self.files['Mixed-feats_method=Rel_signs=1-use_sign_trainCorr_l1.pkl'] = 'Without Outside Guidance'
-        elif viz_type == VIZ_PAPER_HARD_CONSTRAINTS:
+        elif viz_type == VIZ_PAPER_TABLE_TRAINING_CORR:
+            self.vis_table = True
+            self.data_names_for_table = [
+                'Synthetic', 'BH', 'Wine', 'Concrete', 'Housing', 'ITS', 'Heart'
+            ]
+            self.method_names_for_table = [
+                'PSCR: $p$ Signs', 'PSCR: Training Set Guidance, $p$ Signs'
+            ]
+            self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_l1.pkl'] = 'Our Method'
+            self.files['Mixed-feats_method=Rel_signs=1-use_sign_trainCorr_l1.pkl'] = 'Our Method: Training Set Signs'
+        elif viz_type == VIZ_PAPER_TABLE_HARD_CONSTRAINTS:
+            self.vis_table = True
+            self.data_names_for_table = [
+                'Synthetic', 'BH', 'Wine', 'Concrete', 'Housing', 'ITS', 'Heart'
+            ]
+            self.method_names_for_table = [
+                'PSCR: $p$ Signs', 'Signed Ridge'
+            ]
             self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_l1.pkl'] = 'Our Method: 100% signs'
             self.files['Mixed-feats_method=Rel_signs=1-use_sign_corr_not-relaxed_l1.pkl'] = 'Signed Ridge'
+
 
         #self.files['SKL-DumReg.pkl'] = 'Predict Mean'
 

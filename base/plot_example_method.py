@@ -20,19 +20,21 @@ def run_main():
     f_target = lambda x: 2.5*x + 2
     f_source = lambda x: -np.cos(5*x) + 2 + -x
     f_adapt = lambda x: f_ground_truth(x) - f_source(x)
+    f_adapted_source = lambda x: f_ground_truth(x) + (1 - x)
     f_mixture = lambda x: sigmoid(10*(x - .5))
-    f_final = lambda x: (1-f_mixture(x))*f_target(x) + f_mixture(x)*(f_source(x) + f_adapt(x))
+    #f_final = lambda x: (1-f_mixture(x))*f_target(x) + f_mixture(x)*(f_source(x) + f_adapt(x))
+    f_final = lambda x: (1 - f_mixture(x)) * f_target(x) + f_mixture(x) * f_adapted_source(x)
     source_funcs = [
         f_target,
         f_source,
-        f_adapt,
+        f_adapted_source,
         f_mixture,
         f_final,
     ]
     titles = [
         r'Target: $f_T(x)$',
         r'Source: $f_S(x)$',
-        r'Adaptation: $b(f_S(x), x)$',
+        r'Adapted Source: $b(f_S(x), x)$',
         r'Mixture: $\alpha(x)$',
         r'Final: $ (1- \alpha(x))f_T(x) + \alpha(x) b(f_S(x), x)$'
     ]

@@ -60,13 +60,18 @@ PLOT_TABLE_COMPETING_METHODS = 5
 PLOT_TABLE_VAL = 6
 PLOT_ALPHA = 7
 PLOT_TABLE_OUR_METHODS = 8
-plot_idx = PLOT_TABLE_COMPETING_METHODS
-#plot_idx = PLOT_TABLE_OUR_METHODS
+PLOT_TABLE_CONSTRAINED = 9
+PLOT_COMPETING_METHODS = 10
+
+
+plot_idx = PLOT_COMPETING_METHODS
+#plot_idx = PLOT_TABLE_COMPETING_METHODS
+#plot_idx = PLOT_TABLE_CONSTRAINED
 
 max_rows = 1
 fontsize = 10
 
-vis_table = plot_idx in {PLOT_TABLE_COMPETING_METHODS, PLOT_TABLE_VAL, PLOT_TABLE_OUR_METHODS}
+vis_table = plot_idx in {PLOT_TABLE_COMPETING_METHODS, PLOT_TABLE_VAL, PLOT_TABLE_OUR_METHODS, PLOT_TABLE_CONSTRAINED}
 size_to_vis = 10
 sizes_to_use = [5, 10, 20, 30]
 data_set_sizes_to_use = {
@@ -164,7 +169,7 @@ if run_batch_exps:
         #data_sets_for_exps = synthetic_data_sets
     else:
         data_sets_for_exps = real_data_sets_full
-if plot_idx in {PLOT_TABLE_COMPETING_METHODS, PLOT_TABLE_OUR_METHODS}:
+if plot_idx in {PLOT_TABLE_COMPETING_METHODS, PLOT_TABLE_OUR_METHODS, PLOT_TABLE_CONSTRAINED}:
     names_for_table = all_1d_names + real_full_names
 #data_sets_for_exps = real_data_sets_full
 
@@ -649,7 +654,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             #self.files['LocalTransferDeltaSMS_scale'] = 'SMS'
 #
             #self.files['OffsetTransfer-jointCV.pkl'] = 'Offset Transfer'
-            self.files['LocalTransferNew-grad-bounds.pkl'] = 'Our Method'
+            self.files['LocalTransferNew-grad-bounds.pkl'] = 'Ours'
             self.files['LocalTransferNew-grad-bounds-opt_ft.pkl'] = 'Our Method: Optimize Target'
             #self.files['LocalTransferNew-grad-bounds-loo.pkl'] = 'Local Transfer New: LOO'
             self.files['LocalTransferNew-grad-bounds-scaleB.pkl'] = 'Our Method: Scale'
@@ -678,6 +683,15 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['LocalTransferDeltaSMS_scale.pkl'] ='SMS scale'
             self.files['LocalTransferDeltaSMS.pkl'] = 'SMS no scale'
             #self.files['LocalTransferDelta_C3=0_radius_l2_constant-b.pkl'] = 'Constant b, alpha=0'
+        elif plot_idx == PLOT_COMPETING_METHODS:
+            self.files = OrderedDict()
+            self.files['LocalTransferNew-grad-bounds-opt_ft.pkl'] = 'Ours'
+            #self.files['TargetTransfer+NW.pkl'] = 'Target Only'
+            self.files['StackTransfer+SKL-RidgeReg-jointCV.pkl'] = 'Stacking'
+            #self.files['SLL-NW.pkl'] = 'LLGC'
+            #self.files['CovShift.pkl'] = 'Reweighting'
+            self.files['OffsetTransfer-jointCV.pkl'] = 'Offset'
+            #self.files['LocalTransferDeltaSMS_scale'] = 'SMS'
         elif plot_idx == PLOT_TABLE_COMPETING_METHODS:
             self.baseline_idx = 1
             self.data_names_for_table = names_for_table
@@ -701,7 +715,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.baseline_idx = 0
             self.data_names_for_table = names_for_table
             self.method_names_for_table = [
-                'Ours', 'Ours: Fixed $f_T$', 'Ours: Fixed $f_T$+Scaling', 'Ours: Fixed $f_T$+linear $b$'
+                'Ours', 'Ours: Fixed $f_T$', 'Ours: Fixed $f_T$+Scaling', 'Ours: Fixed $f_T$+linear $b$', 'Ours: Bound Constraints'
             ]
             self.files = OrderedDict()
 
@@ -709,6 +723,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['LocalTransferNew-grad-bounds.pkl'] = 'Local Transfer New'
             self.files['LocalTransferNew-grad-bounds-scaleB.pkl'] = 'Local Transfer New: Scale'
             self.files['LocalTransferNew-bounds-linearB.pkl'] = 'Local Transfer New: Linear B'
+            self.files['LocalTransferNew-grad-bounds-boundPerc=[10, 90].pkl'] = 'Our Method: Bound Constraints'
 
         elif plot_idx == PLOT_TABLE_VAL:
             self.files = OrderedDict()
@@ -719,6 +734,15 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files = OrderedDict()
             self.files['LocalTransferDelta_radius_l2_linear-b_clip-b.pkl'] = 'Ours: Linear'
             self.files['LocalTransferDelta_C3=0_radius_l2_linear-b.pkl'] = 'Ours: Linear, alpha=0'
+        elif plot_idx == PLOT_TABLE_CONSTRAINED:
+            self.baseline_idx = 1
+            self.data_names_for_table = names_for_table
+            self.method_names_for_table = [
+                'Ours: Fixed $f_T$', 'Ours: Fixed $F_T$, Constraints'
+            ]
+            self.files = OrderedDict()
+            self.files['LocalTransferNew-grad-bounds.pkl'] = 'Our Method'
+            self.files['LocalTransferNew-grad-bounds-boundPerc=[10, 90].pkl'] = 'Our Method: Bound Constraints'
 
         if use_validation:
             test_files = OrderedDict()

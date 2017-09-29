@@ -2,6 +2,7 @@ from configs import base_configs as bc
 from utility import helper_functions
 from utility import array_functions
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 from scipy.misc import imread
 from methods import method
 from methods import local_transfer_methods
@@ -49,35 +50,43 @@ def vis_data():
 
     I_target = data.get_transfer_inds(c.target_labels)
     vals_to_plot = [
-        output.y,
-        np.abs(output.y - output.true_y)**2,
-        np.abs(output.ft - output.true_y)**2,
-        np.abs(output.y_s + output.b - output.true_y)**2,
+        np.abs(output.ft - output.true_y)**1,
+        np.abs(output.y_s + output.b - output.true_y)**1,
         output.alpha,
-        output.b,
+        np.abs(output.y - output.true_y)**1,
     ]
     titles = [
-        r'Prediction: $\hat{f}(x)$',
-        r'Prediction error: $|\hat{f}(x) - f^*(x)|$',
-        r'Target error: $|\hat{f}_T(x) - f^*(x)|$',
-        r'Adapted Source error: $|\hat{b}(f_S(x), x) - f^*(x)|$',
-        r'Mixture: $\hat{\alpha}(x)$',
-        r'Adaptation: $\hat{b}(f_S(x), x)$'
+        'Target Function \nError',
+        'Adapted Source \nFunction Error',
+        'Mixture Function \n',
+        'Final Prediction \nError',
     ]
+    min_error = min([vals_to_plot[i].min() for i in [0, 1, 3]])
+    max_error = max([vals_to_plot[i].max() for i in [0, 1, 3]])
     print output.b
     print output.alpha
     for i, vals in enumerate(vals_to_plot):
-        ax = plt.subplot(2, len(vals_to_plot)/2, i+1)
+        ax = plt.subplot(1, len(vals_to_plot), i+1)
 
-        ax.set_title(titles[i], fontsize=10)
-        array_functions.plot_heatmap(data.x[I_target], vals, fig=fig, make_subplot=False, sizes=20)
-        #plt.matshow(vals / vals.max())
+        ax.set_title(titles[i], fontsize=15)
+        #array_functions.plot_heatmap(data.x[I_target], vals, fig=fig, make_subplot=False, sizes=20)
+        #vals -= min_error
+        #vals /= max_error
+        vals -= vals.min()
+        vals /= vals.max()
+        vals_reshaped = np.reshape(vals, (40, 40))
+        plt.pcolormesh(vals_reshaped, cmap=cm.gray,shading='flat', norm=None)
         ax.set_xlabel('Latitude')
-        if i in {0, 3}:
+        if i == 0:
             ax.set_ylabel('Longitude')
         else:
             ax.set_ylabel('')
-    array_functions.move_fig(fig, 1800, 400)
+        plt.xticks([], [])
+        plt.yticks([], [])
+    array_functions.move_fig(fig, 1200, 400)
+    #plt.tight_layout(pad=0, h_pad=0, w_pad=0)
+    #plt.wsp
+    plt.subplots_adjust(left=0.05, right=0.95, top=0.8, bottom=0.1)
     plt.show(block=True)
     print ''
 

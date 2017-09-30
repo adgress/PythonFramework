@@ -352,6 +352,7 @@ class VisualizationConfigs(Configs):
         self.title = 'Title not set'
         self.baseline_idx = None
         self.always_show_y_label = False
+        self.use_tight_layout = True
 
         self.files = [
             'SKL-RidgeReg.pkl'

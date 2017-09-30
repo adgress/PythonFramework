@@ -484,8 +484,11 @@ class SupervisedInstanceSelectionClusterGraph(SupervisedInstanceSelectionCluster
         self.original_cluster_inds = None
         self.configs.use_saved_cv_output = True
         self.no_f_x = getattr(configs, 'no_f_x', False)
+        self.fixed_sigma_x = getattr(configs, 'fixed_sigma_x', False)
         if self.no_f_x:
             del self.cv_params['sigma_y']
+        if self.fixed_sigma_x:
+            self.cv_params['sigma_x'] = np.asarray([1], dtype=np.float)
 
     def cluster_spectral(self, W, num_clusters, spectral_cluster=None):
         if spectral_cluster is None:
@@ -537,6 +540,12 @@ class SupervisedInstanceSelectionClusterGraph(SupervisedInstanceSelectionCluster
             num_clusters += instances_to_keep.sum()
         self.spectral_cluster, cluster_inds = \
             self.cluster_spectral(W, num_clusters, self.spectral_cluster)
+        '''
+        print [self.sigma_x, self.sigma_y]
+        array_functions.plot_histogram(cluster_inds, 21)
+        from matplotlib import pyplot as plt
+        plt.close()
+        '''
         if not self.running_cv:
             I = cluster_inds
             _, I2 = \
@@ -571,6 +580,8 @@ class SupervisedInstanceSelectionClusterGraph(SupervisedInstanceSelectionCluster
     def prefix(self):
         s = 'SupervisedInstanceSelectionClusterGraph'
         s += self.get_shared_suffix()
+        if getattr(self, 'fixed_sigma_x'):
+            s += '-fixedSigX'
         return s
 
 class SupervisedInstanceSelectionSubmodular(SupervisedInstanceSelection):

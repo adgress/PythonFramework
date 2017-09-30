@@ -38,7 +38,8 @@ all_data_sets = [
     bc.DATA_TAXI
 ]
 
-data_set_to_use = bc.DATA_MNIST
+data_set_to_use = bc.DATA_TAXI
+#data_set_to_use = bc.DATA_MNIST
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
@@ -50,12 +51,12 @@ ACTIVE_RANDOM = 0
 ACTIVE_CLUSTER = 1
 ACTIVE_CLUSTER_PURITY = 2
 
-active_method = ACTIVE_RANDOM
+active_method = ACTIVE_CLUSTER_PURITY
 
 num_starting_labels = 0
 active_iterations = 2
-active_items_per_iteration = 10
-cluster_scale = 2
+active_items_per_iteration = 21
+cluster_scale = 1
 max_target_items_for_large_data_sets = 300
 large_data_sets = {
     bc.DATA_ZILLOW,
@@ -65,11 +66,15 @@ large_data_sets = {
     bc.DATA_TAXI
 }
 
+fixed_sigma_x = True
 
 viz_for_paper = True
 
-run_batchs_datasets = True
 run_experiments = True
+
+run_batchs_datasets = not run_experiments or True
+run_batch_methods = not run_experiments
+
 use_test_error_for_model_selection = False
 
 use_relative = True
@@ -97,7 +102,7 @@ run_batch = True
 if helper_functions.is_laptop():
     run_batch = True
 
-show_legend_on_all = True
+show_legend_on_all = False
 
 max_rows = 1
 
@@ -212,6 +217,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.active_items_per_iteration = active_items_per_iteration
         method_configs.metric = 'euclidean'
         method_configs.num_starting_labels = num_starting_labels
+        method_configs.fixed_sigma_x = fixed_sigma_x
 
         for key in other_method_configs.keys():
             setattr(method_configs, key, getattr(pc,key))
@@ -254,6 +260,10 @@ class BatchConfigs(bc.BatchConfigs):
                 ACTIVE_CLUSTER,
                 ACTIVE_CLUSTER_PURITY
             ]
+            if not run_batch_methods:
+                all_active_methods = [
+                    active_method
+                ]
             for i in all_active_methods:
                 p = deepcopy(pc2)
                 p.active_method = deepcopy(i)
@@ -286,7 +296,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.max_rows = max_rows
         pc = ProjectConfigs(data_set)
         self.copy_fields(pc,pc_fields_to_copy)
-
+        self.use_tight_layout = False
         self.figsize = (10,8.9)
         self.borders = (.05,.95,.95,.05)
         self.data_set_to_use = pc.data_set
@@ -309,16 +319,17 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files['ActiveCluster_items=%d_iters=%d_scale=10+TargetOnlyWrapper+NW.pkl' % (
         active_items_per_iteration, active_iterations)] = 'Cluster NW'
         '''
-        self.files['ActiveRandom_n=%d_items=5_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Random'
-        self.files['ActiveCluster_n=%d_items=5_iters=2_scale=2+TargetOnlyWrapper+NW.pkl'] = 'Cluster'
-        self.files['ActiveClusterPurity-instanceSel_n=%d_items=5_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Our Method'
-        self.files['ActiveClusterPurity-instanceSel_n=%d_items=5_iters=2_oracleTargetY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y'
-        self.files['ActiveClusterPurity-instanceSel_n=%d_items=5_iters=2_targetSubsample=300+TargetOnlyWrapper+NW.pkl'] = 'Our Method, 300 subsample'
-        self.files['ActiveClusterPurity-instanceSel_n=%d_items=5_iters=2_oracleTargetY_targetSubsample=300+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y, 300 subsample'
+
+        self.files['ActiveRandom_n=%d_items=%d_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Random'
+        self.files['ActiveCluster_n=%d_items=%d_iters=2_scale=1+TargetOnlyWrapper+NW.pkl'] = 'Cluster'
+        self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Our Method'
+        self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_oracleTargetY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y'
+        self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_targetSubsample=300+TargetOnlyWrapper+NW.pkl'] = 'Our Method, 300 subsample'
+        self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_oracleTargetY_targetSubsample=300+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y, 300 subsample'
 
         new_files = OrderedDict()
         for key, value in self.files.iteritems():
-            new_files[key % num_starting_labels] = value
+            new_files[key % (num_starting_labels, active_items_per_iteration)] = value
         self.files = new_files
 
 

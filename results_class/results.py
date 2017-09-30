@@ -33,8 +33,8 @@ class MethodResults(ResultsContainer):
         self.results_list = list([ExperimentResults(n_splits) for i in range(n_exp)])
         pass
 
-    def compute_error_processed(self, loss_function, features=None, instance_subset=None):
-        errors = self.compute_error(loss_function, features, instance_subset)
+    def compute_error_processed(self, loss_function, features=None, instance_subset=None, normalize_output=False):
+        errors = self.compute_error(loss_function, features, instance_subset, normalize_output=normalize_output)
         '''
         hyper_params = []
         for i, curr_results in enumerate(self.results_list):
@@ -56,10 +56,10 @@ class MethodResults(ResultsContainer):
         highs = [x.high for x in errors]
         return processed_results(means,lows,highs)
 
-    def compute_error(self, loss_function, features=None, instance_subset=None):
+    def compute_error(self, loss_function, features=None, instance_subset=None, normalize_output=False):
         errors = []
         for i, f in enumerate(self.results_list):
-            e = f.aggregate_error(loss_function, features, instance_subset)
+            e = f.aggregate_error(loss_function, features, instance_subset, normalize_output=normalize_output)
             if len(self.results_list) == 1 and len(e) > 1:
                 errors = e
             else:
@@ -93,9 +93,9 @@ class ExperimentResults(ResultsContainer):
         self.num_labels = None
         self.is_regression = True
 
-    def aggregate_error(self, loss_function, features=None, instance_subset=None):
+    def aggregate_error(self, loss_function, features=None, instance_subset=None, normalize_output=False):
         agg_res = []
-        errors = self.compute_error(loss_function, features, instance_subset)
+        errors = self.compute_error(loss_function, features, instance_subset, normalize_output=normalize_output)
         for i in range(errors.shape[1]):
             #mean = errors.mean()
 
@@ -128,9 +128,9 @@ class ExperimentResults(ResultsContainer):
             agg_res.append(aggregated_results(mean,low,high))
         return agg_res
 
-    def compute_error(self, loss_function, features=None, instance_subset=None):
+    def compute_error(self, loss_function, features=None, instance_subset=None, normalize_output=False):
         for i, f in enumerate(self.results_list):
-            e = f.compute_error(loss_function, features, instance_subset)
+            e = f.compute_error(loss_function, features, instance_subset, normalize_output=normalize_output)
             e = np.asarray(e)
             if i == 0:
                 errors = np.empty((len(self.results_list),e.size))
@@ -144,7 +144,7 @@ class FoldResults(object):
         self.prediction = Output()
         self.estimated_error = None
 
-    def compute_error(self,loss_function, features=None, instance_subset=None):
+    def compute_error(self,loss_function, features=None, instance_subset=None, normalize_output=False):
         #TODO: Check if we should use y or fu
         if self.prediction.fu.ndim > 1 and isinstance(loss_function, loss_function_lib.LogLoss):
             assert False, 'Update this'
@@ -152,16 +152,16 @@ class FoldResults(object):
             #true_fu = array_functions.make_label_matrix(output.true_y[~self.prediction.is_train]).toarray()
             #return loss_function.compute_score(fu,true_fu)
         #return loss_function.compute_score(self.prediction.y,self.prediction.true_y,~self.prediction.is_train)
-        return self.prediction.compute_error(loss_function, features, instance_subset)
+        return self.prediction.compute_error(loss_function, features, instance_subset, normalize_output=normalize_output)
 
 class ActiveFoldResults(ResultsContainer):
     def __init__(self, num_iterations):
         super(ActiveFoldResults, self).__init__(num_iterations)
 
-    def compute_error(self, loss_function, features=None, subset_to_use=None):
+    def compute_error(self, loss_function, features=None, subset_to_use=None, normalize_output=False):
         errors = np.empty(len(self.results_list))
         for i, f in enumerate(self.results_list):
-            errors[i] = f.compute_error(loss_function,features,subset_to_use)
+            errors[i] = f.compute_error(loss_function,features,subset_to_use, normalize_output)
         assert all(~np.isnan(errors))
         return errors
 
@@ -170,8 +170,8 @@ class ActiveIterationResults(object):
         self.fold_results = fold_results
         self.queried_idx = queried_idx
 
-    def compute_error(self, loss_function, features=None, subset_to_use=None):
-        return self.fold_results.compute_error(loss_function, features, subset_to_use)
+    def compute_error(self, loss_function, features=None, subset_to_use=None, normalize_output=False):
+        return self.fold_results.compute_error(loss_function, features, subset_to_use, normalize_output)
 
 class Output(data_lib.LabeledVector):
     def __init__(self,data=None,y=None):
@@ -198,15 +198,16 @@ class Output(data_lib.LabeledVector):
             self.y = y.copy()
             self.fu = y.copy()
 
-    def compute_error_train(self,loss_function, features=['y', 'true_y']):
+    def compute_error_train(self,loss_function, features=['y', 'true_y'], normalize_output=False):
         assert len(features) == 2
         return loss_function.compute_score(
             getattr(self, features[0]),
             getattr(self, features[1]),
-            self.is_train
+            self.is_train,
+            normalize_output=normalize_output
         )
 
-    def compute_error(self,loss_function,features=None,instance_subset=None):
+    def compute_error(self,loss_function,features=None,instance_subset=None, normalize_output=False):
         '''
         return loss_function.compute_score(
             self.y,
@@ -214,7 +215,7 @@ class Output(data_lib.LabeledVector):
             ~self.is_train
         )
         '''
-        return loss_function.compute_score(self, features, instance_subset)
+        return loss_function.compute_score(self, features, instance_subset, normalize_output=normalize_output)
 
     def assert_input(self):
         assert not array_functions.has_invalid(self.fu)

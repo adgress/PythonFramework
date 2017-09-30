@@ -17,7 +17,7 @@ class LossFunction(object):
         self.name = None
         self.short_name = None
 
-    def compute_score(self, output, features=None, instance_subset=None):
+    def compute_score(self, output, features=None, instance_subset=None, normalize_output=False):
         if features is None:
             features = ['y', 'true_y']
         if instance_subset is None:
@@ -26,6 +26,18 @@ class LossFunction(object):
         y2 = np.squeeze(getattr(output, features[1]))
         #I = ~output.is_train
         I = getattr(output, instance_subset)
+        if normalize_output:
+            yI = y2[I]
+            yI = yI[np.isfinite(yI)]
+            min_val = yI.min()
+            #mean_abs_y1 = np.percentile(yI - min_val, 50)
+            mean_abs_y1 = (yI - min_val).mean()
+            if mean_abs_y1 == 0 or not np.isfinite(mean_abs_y1):
+                print 'Normalization Error, setting mean to 1'
+                mean_abs_y1 = 1
+            norm_func = lambda x: (x - min_val)/mean_abs_y1
+            y2 = norm_func(y2)
+            y1 = norm_func(y1)
         return self._compute_score(y1[I], y2[I])
         '''
         return loss_function.compute_score(

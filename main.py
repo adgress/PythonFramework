@@ -89,6 +89,7 @@ def create_table():
     size_to_vis = vis_configs.size_to_vis
     baseline_perf = []
     all_perf = []
+    data_names = []
     for data_set_idx, curr_viz_params in enumerate(viz_params):
         vis_configs = configs_lib.VisualizationConfigs(**curr_viz_params)
         param_text = []
@@ -96,6 +97,9 @@ def create_table():
             rows.append(vis_configs.results_dir)
         method_idx = 0
         mean_perf = []
+
+        # Used for column names if not provided by users
+        data_names.append(vis_configs.title)
         for file, legend_str in vis_configs.results_files:
             if len(cols) <= method_idx:
                 cols.append(legend_str)
@@ -108,7 +112,7 @@ def create_table():
                 results = helper_functions.load_object(file)
                 sized_results = get_sized_results(file)
                 results = combine_results(results, sized_results)
-                processed_results = results.compute_error_processed(vis_configs.loss_function)
+                processed_results = results.compute_error_processed(vis_configs.loss_function, normalize_output=True)
                 sizes = results.sizes
                 #assert size_to_vis in sizes
                 #size_idx = array_functions.find_first_element(sizes, size_to_vis)
@@ -124,7 +128,8 @@ def create_table():
             latex_str = '-'
             if mean_val < 1000:
                 #latex_str = '%.1f \\pm %.1f' % (mean_val, var)
-                latex_str = '%.3f (%.3f)' % (mean_val, var)
+                #latex_str = '%.3f (%.3f)' % (mean_val, var)
+                latex_str = '%.2f(%.2f)' % (mean_val, var)
             cell_text[data_set_idx][method_idx] = latex_str
             if method_idx == vis_configs.baseline_idx:
                 baseline_perf.append(mean_val)
@@ -133,15 +138,19 @@ def create_table():
         all_perf.append(np.asarray(mean_perf))
         #cell_text.append(param_text)
     relative_improvement = np.zeros((len(all_perf), all_perf[0].size))
-    for i in range(relative_improvement.shape[0]):
-        relative_improvement[i, :] = (baseline_perf[i] - all_perf[i]) / baseline_perf[i]
+
+
+    # Create table
     method_names_for_table = vis_configs.method_names_for_table
     latex_text = ''
     for method_name in method_names_for_table:
         latex_text += ' & ' + method_name
     latex_text += '\\\\ \hline \n'
     #latex_text = ' & Ours: Linear & Target Only & LLGC & Reweighting & Offset & SMS & Stacking & Ours with Stacking\\\\ \hline \n'
-    data_names = vis_configs.data_names_for_table
+
+    # If data names are provided, use them instead of ones in config file
+    if vis_configs.data_names_for_table is not None:
+        data_names = vis_configs.data_names_for_table
     for row_idx, row_str in enumerate(cell_text):
         latex_text += data_names[row_idx] + ' & '
         for i, cell_str in enumerate(row_str):
@@ -150,11 +159,17 @@ def create_table():
                 latex_text += ' &'
         latex_text += ' \\\\ \\hline\n'
     print latex_text
-    mean_relative_improvement = ''
-    for ri in relative_improvement.T:
-        v = ri[np.isfinite(ri)].mean() * 100
-        mean_relative_improvement += ('$%.2f$ & ' % v)
-    print 'relative improvement: ' + mean_relative_improvement
+
+    # If we don't want the "baseline improvement" row
+    if vis_configs.baseline_idx is not None:
+        for i in range(relative_improvement.shape[0]):
+            #relative_improvement[i, :] = (baseline_perf[i] - all_perf[i]) / baseline_perf[i]
+            relative_improvement[i, :] = (baseline_perf[i] - all_perf[i]) / baseline_perf[i]
+        mean_relative_improvement = ''
+        for ri in relative_improvement.T:
+            v = ri[np.isfinite(ri)].mean() * 100
+            mean_relative_improvement += ('$%.2f$ & ' % v)
+        print 'relative improvement: ' + mean_relative_improvement
 
     fig, axs = plt.subplots()
     axs.axis('tight')
@@ -229,7 +244,8 @@ def run_visualization():
             processed_results = results.compute_error_processed(
                 vis_configs.loss_function,
                 vis_configs.results_features,
-                vis_configs.instance_subset
+                vis_configs.instance_subset,
+                normalize_output=True
             )
             sizes = results.sizes
 
@@ -283,6 +299,8 @@ def run_visualization():
     if getattr(vis_configs,'borders',None):
         left,right,top,bottom = vis_configs.borders
         fig.subplots_adjust(left=left,right=right,top=top,bottom=bottom)
+    if vis_configs.use_tight_layout:
+        plt.tight_layout()
     plt.show()
     x = 1
 

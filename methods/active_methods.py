@@ -208,8 +208,9 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
         self.use_density = False
         self.use_instance_selection = True
         self.use_greedy_instance_selection = True
+        self.use_p_x = True
         if self.use_greedy_instance_selection:
-            configs.use_p_x = False
+            configs.use_p_x = self.use_p_x
             self.instance_selector =  SupervisedInstanceSelectionGreedy(configs)
         else:
             self.instance_selector = SupervisedInstanceSelectionClusterGraph(deepcopy(configs))
@@ -373,13 +374,17 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
             s += '_oracleTargetY'
         if getattr(self, 'max_items_for_instance_selection'):
             s += '_targetSubsample=' + str(self.max_items_for_instance_selection)
-        if use_inst_sel and not use_greedy_inst_secl:
-            if getattr(self.configs, 'no_f_x', False):
-                s += '_noY'
-            if getattr(self.configs, 'no_spectral_kernel', False):
-                s += '_noSpectralX'
-            elif getattr(self.configs, 'fixed_sigma_x', False):
-                s += '_fixedSigX'
+        if use_inst_sel:
+            if use_greedy_inst_secl:
+                if getattr(self, 'use_p_x', False):
+                    s += '_pX'
+            else:
+                if getattr(self.configs, 'no_f_x', False):
+                    s += '_noY'
+                if getattr(self.configs, 'no_spectral_kernel', False):
+                    s += '_noSpectralX'
+                elif getattr(self.configs, 'fixed_sigma_x', False):
+                    s += '_fixedSigX'
         s += '+' + self.base_learner.prefix
         return s
 

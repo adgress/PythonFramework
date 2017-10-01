@@ -140,6 +140,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.no_spectral_kernel = no_spectral_kernel
         self.no_f_x = no_f_x
         self.use_greedy_instance_selection = use_greedy_instance_selection
+        self.active_items_per_iteration = active_items_per_iteration
         if use_arguments and arguments is not None:
             apply_arguments(self)
 
@@ -223,7 +224,7 @@ class MainConfigs(bc.MainConfigs):
         from methods import semisupervised
         method_configs = MethodConfigs(pc)
         method_configs.active_iterations = active_iterations
-        method_configs.active_items_per_iteration = active_items_per_iteration
+        method_configs.active_items_per_iteration = pc.active_items_per_iteration
         method_configs.metric = 'euclidean'
         method_configs.num_starting_labels = num_starting_labels
         method_configs.fixed_sigma_x = pc.fixed_sigma_x
@@ -361,11 +362,19 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             'ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_noY_noSpectralX+TargetOnlyWrapper+NW.pkl'] = 'Spectral Cluster'
         self.files[
             'ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_targetSubsample=300_noY_noSpectralX+TargetOnlyWrapper+NW.pkl'] = 'Spectral Cluster, 300 subsample'
+        '''
         self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Our Method'
         self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_oracleTargetY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y'
         self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_targetSubsample=300+TargetOnlyWrapper+NW.pkl'] = 'Our Method, 300 subsample'
         self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_oracleTargetY_targetSubsample=300+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y, 300 subsample'
-
+        '''
+        self.files['ActiveClusterPurity-greedyInstanceSel_n=%d_items=%d_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Greedy'
+        self.files[
+            'ActiveClusterPurity-greedyInstanceSel_n=%d_items=%d_iters=2_oracleTargetY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Greedy, Oracle Target Y'
+        self.files[
+            'ActiveClusterPurity-greedyInstanceSel_n=%d_items=%d_iters=2_targetSubsample=300+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Greedy, 300 subsample'
+        self.files[
+            'ActiveClusterPurity-greedyInstanceSel_n=%d_items=%d_iters=2_oracleTargetY_targetSubsample=300+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Greedy, Oracle Target Y, 300 subsample'
         new_files = OrderedDict()
         for key, value in self.files.iteritems():
             new_files[key % (num_starting_labels, active_items_per_iteration)] = value

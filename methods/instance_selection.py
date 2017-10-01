@@ -485,9 +485,10 @@ class SupervisedInstanceSelectionClusterGraph(SupervisedInstanceSelectionCluster
         self.configs.use_saved_cv_output = True
         self.no_f_x = getattr(configs, 'no_f_x', False)
         self.fixed_sigma_x = getattr(configs, 'fixed_sigma_x', False)
+        self.no_spectral_kernel = getattr(configs, 'no_spectral_kernel', False)
         if self.no_f_x:
             del self.cv_params['sigma_y']
-        if self.fixed_sigma_x:
+        if self.fixed_sigma_x or self.no_spectral_kernel:
             self.cv_params['sigma_x'] = np.asarray([1], dtype=np.float)
 
     def cluster_spectral(self, W, num_clusters, spectral_cluster=None):
@@ -529,7 +530,10 @@ class SupervisedInstanceSelectionClusterGraph(SupervisedInstanceSelectionCluster
 
     def optimize(self, opt_data):
         instances_to_keep = getattr(opt_data, 'instances_to_keep', None)
-        W_x = array_functions.make_rbf(opt_data.X, self.sigma_x)
+        if self.no_spectral_kernel:
+            W_x = array_functions.make_graph_distance(opt_data.X)
+        else:
+            W_x = array_functions.make_rbf(opt_data.X, self.sigma_x)
         W = W_x
         if not self.no_f_x:
             W_y = array_functions.make_rbf(opt_data.Y, self.sigma_y)

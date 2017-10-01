@@ -66,17 +66,18 @@ large_data_sets = {
     bc.DATA_TAXI
 }
 
-fixed_sigma_x = True
+fixed_sigma_x = False
 
 # f_x here means f(x)
-no_f_x = True
+no_f_x = False
+no_spectral_kernel = False
 
 viz_for_paper = True
 
 run_experiments = True
 
 run_batchs_datasets = not run_experiments or True
-run_batch_methods = not run_experiments
+run_batch_methods = True
 
 use_test_error_for_model_selection = False
 
@@ -134,6 +135,9 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.set_data_set(data_set)
         self.num_splits = 30
         self.active_method = active_method
+        self.fixed_sigma_x = fixed_sigma_x
+        self.no_spectral_kernel = no_spectral_kernel
+        self.no_f_x = no_f_x
         if use_arguments and arguments is not None:
             apply_arguments(self)
 
@@ -220,8 +224,9 @@ class MainConfigs(bc.MainConfigs):
         method_configs.active_items_per_iteration = active_items_per_iteration
         method_configs.metric = 'euclidean'
         method_configs.num_starting_labels = num_starting_labels
-        method_configs.fixed_sigma_x = fixed_sigma_x
-        method_configs.no_f_x = no_f_x
+        method_configs.fixed_sigma_x = pc.fixed_sigma_x
+        method_configs.no_f_x = pc.no_f_x
+        method_configs.no_spectral_kernel = pc.no_spectral_kernel
 
         for key in other_method_configs.keys():
             setattr(method_configs, key, getattr(pc,key))
@@ -287,6 +292,25 @@ class BatchConfigs(bc.BatchConfigs):
                 m.learner.max_items_for_instance_selection = max_target_items_for_large_data_sets
             self.config_list.append(m)
 
+            p = deepcopy(pc2)
+            p.active_method = ACTIVE_CLUSTER_PURITY
+            p.no_f_x = True
+            p.fixed_sigma_x = True
+            m = MainConfigs(p)
+            if d in large_data_sets:
+                m.learner.max_items_for_instance_selection = max_target_items_for_large_data_sets
+            self.config_list.append(m)
+
+            p = deepcopy(pc2)
+            p.active_method = ACTIVE_CLUSTER_PURITY
+            p.no_f_x = True
+            p.fixed_sigma_x = True
+            p.no_spectral_kernel = True
+            m = MainConfigs(p)
+            if d in large_data_sets:
+                m.learner.max_items_for_instance_selection = max_target_items_for_large_data_sets
+            self.config_list.append(m)
+
 class VisualizationConfigs(bc.VisualizationConfigs):
     PLOT_PAIRWISE = 1
     PLOT_BOUND = 2
@@ -326,10 +350,12 @@ class VisualizationConfigs(bc.VisualizationConfigs):
 
         self.files['ActiveRandom_n=%d_items=%d_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Random'
         self.files['ActiveCluster_n=%d_items=%d_iters=2_scale=1+TargetOnlyWrapper+NW.pkl'] = 'Cluster'
-        self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_fixedSigX+TargetOnlyWrapper+NW.pkl'] = 'Our Method'
-        self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_oracleTargetY_fixedSigX+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y'
-        self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_targetSubsample=300_fixedSigX+TargetOnlyWrapper+NW.pkl'] = 'Our Method, 300 subsample'
-        self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_oracleTargetY_targetSubsample=300_fixedSigX+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y, 300 subsample'
+        self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_noY_fixedSigX+TargetOnlyWrapper+NW.pkl'] = 'Spectral Cluster'
+        self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_targetSubsample=300_noY_fixedSigX+TargetOnlyWrapper+NW.pkl'] = 'Spectral Cluster, 300 subsample'
+        self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Our Method'
+        self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_oracleTargetY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y'
+        self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_targetSubsample=300+TargetOnlyWrapper+NW.pkl'] = 'Our Method, 300 subsample'
+        self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_oracleTargetY_targetSubsample=300+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y, 300 subsample'
 
         new_files = OrderedDict()
         for key, value in self.files.iteritems():

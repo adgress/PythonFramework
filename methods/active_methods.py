@@ -364,6 +364,8 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
             s += '_oracleTargetY'
         if getattr(self, 'max_items_for_instance_selection'):
             s += '_targetSubsample=' + str(self.max_items_for_instance_selection)
+        if getattr(self.configs, 'no_f_x', False):
+            s += '_noY'
         if getattr(self.configs, 'fixed_sigma_x', False):
             s += '_fixedSigX'
         s += '+' + self.base_learner.prefix

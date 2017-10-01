@@ -199,7 +199,7 @@ class ClusterActiveMethod(ActiveMethod):
         return s
 
 
-from instance_selection import SupervisedInstanceSelectionClusterGraph
+from instance_selection import SupervisedInstanceSelectionClusterGraph, SupervisedInstanceSelectionGreedy
 class ClusterPurityActiveMethod(ClusterActiveMethod):
     def __init__(self, configs=MethodConfigs()):
         super(ClusterActiveMethod, self).__init__(configs)
@@ -207,7 +207,12 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
         self.use_target_variance = True
         self.use_density = False
         self.use_instance_selection = True
-        self.instance_selector = SupervisedInstanceSelectionClusterGraph(deepcopy(configs))
+        self.use_greedy_instance_selection = True
+        if self.use_greedy_instance_selection:
+            configs.use_p_x = False
+            self.instance_selector =  SupervisedInstanceSelectionGreedy(configs)
+        else:
+            self.instance_selector = SupervisedInstanceSelectionClusterGraph(deepcopy(configs))
         self.instance_selector.quiet = False
         self.use_warm_start = False
         self.use_oracle_labels = False
@@ -346,8 +351,12 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
     def prefix(self):
         s = 'ActiveClusterPurity'
         use_inst_sel = getattr(self, 'use_instance_selection', False)
+        use_greedy_inst_secl = getattr(self, 'use_greedy_instance_selection', False)
         if use_inst_sel:
-            s += '-instanceSel'
+            if use_greedy_inst_secl:
+                s += '-greedyInstanceSel'
+            else:
+                s += '-instanceSel'
         else:
             if getattr(self, 'use_target_variance', False):
                 s += '-targetVar'
@@ -364,12 +373,13 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
             s += '_oracleTargetY'
         if getattr(self, 'max_items_for_instance_selection'):
             s += '_targetSubsample=' + str(self.max_items_for_instance_selection)
-        if getattr(self.configs, 'no_f_x', False):
-            s += '_noY'
-        if getattr(self.configs, 'no_spectral_kernel', False):
-            s += '_noSpectralX'
-        elif getattr(self.configs, 'fixed_sigma_x', False):
-            s += '_fixedSigX'
+        if use_inst_sel and not use_greedy_inst_secl:
+            if getattr(self.configs, 'no_f_x', False):
+                s += '_noY'
+            if getattr(self.configs, 'no_spectral_kernel', False):
+                s += '_noSpectralX'
+            elif getattr(self.configs, 'fixed_sigma_x', False):
+                s += '_fixedSigX'
         s += '+' + self.base_learner.prefix
         return s
 

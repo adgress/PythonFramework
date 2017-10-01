@@ -38,10 +38,10 @@ all_data_sets = [
     bc.DATA_TAXI
 ]
 
-data_set_to_use = bc.DATA_TAXI
+#data_set_to_use = bc.DATA_TAXI
 #data_set_to_use = bc.DATA_MNIST
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
-#data_set_to_use = bc.DATA_BOSTON_HOUSING
+data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_DROSOPHILIA
 #data_set_to_use = bc.DATA_DS2
@@ -66,11 +66,12 @@ large_data_sets = {
     bc.DATA_TAXI
 }
 
-fixed_sigma_x = False
+fixed_sigma_x = True
 
 # f_x here means f(x)
 no_f_x = False
-no_spectral_kernel = False
+no_spectral_kernel = True
+use_greedy_instance_selection = True
 
 viz_for_paper = True
 
@@ -138,6 +139,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.fixed_sigma_x = fixed_sigma_x
         self.no_spectral_kernel = no_spectral_kernel
         self.no_f_x = no_f_x
+        self.use_greedy_instance_selection = use_greedy_instance_selection
         if use_arguments and arguments is not None:
             apply_arguments(self)
 
@@ -282,8 +284,7 @@ class BatchConfigs(bc.BatchConfigs):
                 self.config_list.append(m)
 
 
-            #Warm start exps
-
+            # Oracle experiment
             p = deepcopy(pc2)
             p.active_method = ACTIVE_CLUSTER_PURITY
             m = MainConfigs(p)
@@ -292,8 +293,10 @@ class BatchConfigs(bc.BatchConfigs):
                 m.learner.max_items_for_instance_selection = max_target_items_for_large_data_sets
             self.config_list.append(m)
 
+            # Spectral clustering without f(x) (i.e. baseline)
             p = deepcopy(pc2)
             p.active_method = ACTIVE_CLUSTER_PURITY
+            p.use_greedy_instance_selection = False
             p.no_f_x = True
             p.fixed_sigma_x = True
             m = MainConfigs(p)
@@ -301,8 +304,10 @@ class BatchConfigs(bc.BatchConfigs):
                 m.learner.max_items_for_instance_selection = max_target_items_for_large_data_sets
             self.config_list.append(m)
 
+            # Spectral clustering, no f(x), no kernel
             p = deepcopy(pc2)
             p.active_method = ACTIVE_CLUSTER_PURITY
+            p.use_greedy_instance_selection = False
             p.no_f_x = True
             p.fixed_sigma_x = True
             p.no_spectral_kernel = True
@@ -350,8 +355,12 @@ class VisualizationConfigs(bc.VisualizationConfigs):
 
         self.files['ActiveRandom_n=%d_items=%d_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Random'
         self.files['ActiveCluster_n=%d_items=%d_iters=2_scale=1+TargetOnlyWrapper+NW.pkl'] = 'Cluster'
-        self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_noY_fixedSigX+TargetOnlyWrapper+NW.pkl'] = 'Spectral Cluster'
-        self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_targetSubsample=300_noY_fixedSigX+TargetOnlyWrapper+NW.pkl'] = 'Spectral Cluster, 300 subsample'
+        #self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_noY_fixedSigX+TargetOnlyWrapper+NW.pkl'] = 'Spectral Cluster'
+        #self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_targetSubsample=300_noY_fixedSigX+TargetOnlyWrapper+NW.pkl'] = 'Spectral Cluster, 300 subsample'
+        self.files[
+            'ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_noY_noSpectralX+TargetOnlyWrapper+NW.pkl'] = 'Spectral Cluster'
+        self.files[
+            'ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_targetSubsample=300_noY_noSpectralX+TargetOnlyWrapper+NW.pkl'] = 'Spectral Cluster, 300 subsample'
         self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Our Method'
         self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_oracleTargetY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y'
         self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_targetSubsample=300+TargetOnlyWrapper+NW.pkl'] = 'Our Method, 300 subsample'

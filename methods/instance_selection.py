@@ -361,6 +361,26 @@ class SupervisedInstanceSelectionGreedy(SupervisedInstanceSelection):
             'sigma_y': self.create_cv_params(-5, 5),
             'C': self.create_cv_params(-3, 3),
         }
+        self.C = 0
+        self.sigma_y = 1
+        self.sigma_p = 1
+        self.no_f_x = getattr(configs, 'no_f_x', False)
+        #self.fixed_sigma_x = getattr(configs, 'fixed_sigma_x', False)
+        #self.no_spectral_kernel = getattr(configs, 'no_spectral_kernel', False)
+        self.use_p_x = getattr(configs, 'use_p_x', True)
+
+        # Just use p(x)
+        if self.no_f_x:
+            del self.cv_params['sigma_y']
+            del self.cv_params['C']
+            self.C = 1
+
+        # Just use f(x)
+        if not self.use_p_x:
+            #self.cv_params['sigma_p'] = np.asarray([1], dtype=np.float)
+            del self.cv_params['sigma_p']
+            if 'C' in self.cv_params:
+                del self.cv_params['C']
 
     def evaluate_selection(self, W_p, W_y, I, y_true, p_true):
         p_pred = W_p[:, I].sum(1)
@@ -373,7 +393,8 @@ class SupervisedInstanceSelectionGreedy(SupervisedInstanceSelection):
         #self.sigma_p = 1
         #self.sigma_y = 1
         #self.C = 1
-        assert opt_data.instances_to_keep is None, 'Not implemented yet!'
+        assert (opt_data.instances_to_keep is None or
+                opt_data.instances_to_keep.sum() == 0), 'Not implemented yet!'
         W_p = density.compute_kernel(opt_data.X, None, self.sigma_p)
         W_y = array_functions.make_rbf(opt_data.X, self.sigma_y)
         n = W_p.shape[0]

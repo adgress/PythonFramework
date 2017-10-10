@@ -67,7 +67,7 @@ large_data_sets = {
     bc.DATA_TAXI
 }
 
-fixed_sigma_x = True
+fixed_sigma_x = False
 
 # f_x here means f(x)
 no_f_x = False
@@ -77,7 +77,7 @@ cluster_select_singleton = False
 
 viz_for_paper = True
 
-run_experiments = True
+run_experiments = False
 
 run_batchs_datasets = not run_experiments or True
 run_batch_methods = True
@@ -297,7 +297,7 @@ class BatchConfigs(bc.BatchConfigs):
             if d in large_data_sets:
                 m.learner.max_items_for_instance_selection = max_target_items_for_large_data_sets
             self.config_list.append(m)
-
+            '''
             # Spectral clustering without f(x) (i.e. baseline)
             p = deepcopy(pc2)
             p.active_method = ACTIVE_CLUSTER_PURITY
@@ -320,6 +320,7 @@ class BatchConfigs(bc.BatchConfigs):
             if d in large_data_sets:
                 m.learner.max_items_for_instance_selection = max_target_items_for_large_data_sets
             self.config_list.append(m)
+            '''
 
 class VisualizationConfigs(bc.VisualizationConfigs):
     PLOT_PAIRWISE = 1
@@ -366,11 +367,12 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             'ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_noY_noSpectralX+TargetOnlyWrapper+NW.pkl'] = 'Spectral Cluster'
         self.files[
             'ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_targetSubsample=300_noY_noSpectralX+TargetOnlyWrapper+NW.pkl'] = 'Spectral Cluster, 300 subsample'
-        '''
-        self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Our Method'
-        self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_oracleTargetY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y'
-        self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_targetSubsample=300+TargetOnlyWrapper+NW.pkl'] = 'Our Method, 300 subsample'
-        self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_oracleTargetY_targetSubsample=300+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y, 300 subsample'
+
+        self.files['ActiveClusterPurity-instanceSel-noSingle_n=%d_items=%d_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Our Method'
+        self.files['ActiveClusterPurity-instanceSel-noSingle_n=%d_items=%d_iters=2_oracleTargetY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y'
+        self.files['ActiveClusterPurity-instanceSel-noSingle_n=%d_items=%d_iters=2_targetSubsample=300+TargetOnlyWrapper+NW.pkl'] = 'Our Method, 300 subsample'
+        self.files['ActiveClusterPurity-instanceSel-noSingle_n=%d_items=%d_iters=2_oracleTargetY_targetSubsample=300+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y, 300 subsample'
+
         '''
         self.files['ActiveClusterPurity-greedyInstanceSel_n=%d_items=%d_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Greedy'
         self.files[
@@ -379,6 +381,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             'ActiveClusterPurity-greedyInstanceSel_n=%d_items=%d_iters=2_targetSubsample=300+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Greedy, 300 subsample'
         self.files[
             'ActiveClusterPurity-greedyInstanceSel_n=%d_items=%d_iters=2_oracleTargetY_targetSubsample=300+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Greedy, Oracle Target Y, 300 subsample'
+        '''
         new_files = OrderedDict()
         for key, value in self.files.iteritems():
             new_files[key % (num_starting_labels, active_items_per_iteration)] = value

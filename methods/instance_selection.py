@@ -507,6 +507,7 @@ class SupervisedInstanceSelectionClusterGraph(SupervisedInstanceSelectionCluster
         self.no_f_x = getattr(configs, 'no_f_x', False)
         self.fixed_sigma_x = getattr(configs, 'fixed_sigma_x', False)
         self.no_spectral_kernel = getattr(configs, 'no_spectral_kernel', False)
+        self.cluster_select_singleton = getattr(configs, 'cluster_select_singleton', True)
         if self.no_f_x:
             del self.cv_params['sigma_y']
         if self.fixed_sigma_x or self.no_spectral_kernel:
@@ -549,6 +550,21 @@ class SupervisedInstanceSelectionClusterGraph(SupervisedInstanceSelectionCluster
 
         return array_functions.make_vec_binary(centroid_inds, W.shape[0])
 
+
+    def sample_from_clusters(self, W, cluster_inds, num_samples):
+        v, counts = np.unique(cluster_inds, return_counts=True)
+        counts = counts.astype(np.float)
+        frequency = counts / counts.sum()
+        is_representative = array_functions.false(cluster_inds.size)
+        for idx, freq in zip(v, frequency):
+            if freq > 1.5 / v.size:
+                is_representative[cluster_inds == idx] = True
+        if not is_representative.any():
+            is_representative[:] = True
+        cluster_samples = np.random.choice(np.nonzero(is_representative)[0], num_samples, replace=False)
+        return array_functions.make_vec_binary(cluster_samples, cluster_inds.size)
+
+
     def optimize(self, opt_data):
         instances_to_keep = getattr(opt_data, 'instances_to_keep', None)
         if self.no_spectral_kernel:
@@ -577,8 +593,10 @@ class SupervisedInstanceSelectionClusterGraph(SupervisedInstanceSelectionCluster
                 self.cluster_spectral(W, num_clusters, self.spectral_cluster)
             print ''
 
-        selected = self.compute_centroids_for_spectral_clustering(W, cluster_inds)
-
+        if self.cluster_select_singleton:
+            selected = self.compute_centroids_for_spectral_clustering(W, cluster_inds, )
+        else:
+            selected = self.sample_from_clusters(W, cluster_inds, num_clusters)
         #If there are instances we have to select
         if instances_to_keep is not None:
             for i in range(num_clusters):

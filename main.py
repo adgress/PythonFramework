@@ -116,7 +116,7 @@ def create_table():
                 sizes = results.sizes
                 #assert size_to_vis in sizes
                 #size_idx = array_functions.find_first_element(sizes, size_to_vis)
-                size_idx = 0
+                size_idx = 1
                 # sizes = sizes[0:4]
                 s = legend_str
                 if s is None:
@@ -128,8 +128,8 @@ def create_table():
             latex_str = '-'
             if mean_val < 1000:
                 #latex_str = '%.1f \\pm %.1f' % (mean_val, var)
-                #latex_str = '%.3f (%.3f)' % (mean_val, var)
-                latex_str = '%.2f(%.2f)' % (mean_val, var)
+                latex_str = '%.3f (%.2f)' % (mean_val, var)
+                #latex_str = '%.2f(%.2f)' % (mean_val, var)
             cell_text[data_set_idx][method_idx] = latex_str
             if method_idx == vis_configs.baseline_idx:
                 baseline_perf.append(mean_val)

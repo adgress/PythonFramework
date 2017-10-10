@@ -207,11 +207,12 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
         self.use_target_variance = True
         self.use_density = False
         self.use_instance_selection = True
-        self.use_greedy_instance_selection = True
-        self.use_p_x = True
+        self.use_greedy_instance_selection = getattr(configs, 'use_greedy_instance_selection', False)
+        self.use_p_x = False
+        self.cluster_select_singleton = getattr(configs, 'cluster_select_singleton', True)
         if self.use_greedy_instance_selection:
             configs.use_p_x = self.use_p_x
-            self.instance_selector =  SupervisedInstanceSelectionGreedy(configs)
+            self.instance_selector =  SupervisedInstanceSelectionGreedy(deepcopy(configs))
         else:
             self.instance_selector = SupervisedInstanceSelectionClusterGraph(deepcopy(configs))
         self.instance_selector.quiet = False
@@ -358,6 +359,8 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
                 s += '-greedyInstanceSel'
             else:
                 s += '-instanceSel'
+                if not getattr(self, 'cluster_select_singleton', True):
+                    s += '-noSingle'
         else:
             if getattr(self, 'use_target_variance', False):
                 s += '-targetVar'

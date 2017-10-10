@@ -38,10 +38,11 @@ all_data_sets = [
     bc.DATA_TAXI
 ]
 
+data_set_to_use = bc.DATA_SYNTHETIC_PIECEWISE
 #data_set_to_use = bc.DATA_TAXI
 #data_set_to_use = bc.DATA_MNIST
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
-data_set_to_use = bc.DATA_BOSTON_HOUSING
+#data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_DROSOPHILIA
 #data_set_to_use = bc.DATA_DS2
@@ -70,8 +71,9 @@ fixed_sigma_x = True
 
 # f_x here means f(x)
 no_f_x = False
-no_spectral_kernel = True
-use_greedy_instance_selection = True
+no_spectral_kernel = False
+use_greedy_instance_selection = False
+cluster_select_singleton = False
 
 viz_for_paper = True
 
@@ -141,6 +143,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.no_f_x = no_f_x
         self.use_greedy_instance_selection = use_greedy_instance_selection
         self.active_items_per_iteration = active_items_per_iteration
+        self.cluster_select_singleton = cluster_select_singleton
         if use_arguments and arguments is not None:
             apply_arguments(self)
 
@@ -223,6 +226,7 @@ class MainConfigs(bc.MainConfigs):
         from methods import wrapper_methods
         from methods import semisupervised
         method_configs = MethodConfigs(pc)
+        method_configs.cluster_select_singleton = cluster_select_singleton
         method_configs.active_iterations = active_iterations
         method_configs.active_items_per_iteration = pc.active_items_per_iteration
         method_configs.metric = 'euclidean'

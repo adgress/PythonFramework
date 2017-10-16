@@ -73,7 +73,7 @@ fixed_sigma_x = False
 no_f_x = False
 no_spectral_kernel = False
 use_greedy_instance_selection = False
-cluster_select_singleton = False
+cluster_select_singleton = True
 
 viz_for_paper = True
 
@@ -84,8 +84,6 @@ run_batch_methods = True
 
 use_test_error_for_model_selection = False
 
-use_relative = True
-use_pairwise_active = True
 
 include_size_in_file_name = False
 

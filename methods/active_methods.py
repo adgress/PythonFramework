@@ -137,6 +137,8 @@ class ActiveMethod(method.Method):
         s += '_n=' + str(getattr(self.configs, 'num_starting_labels', '???'))
         s += '_items=' + str(self.configs.active_items_per_iteration)
         s += '_iters=' + str(self.configs.active_iterations)
+        if not self.configs.use_validation:
+            s += '_noVAL'
         return s
 
     @property

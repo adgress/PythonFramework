@@ -576,7 +576,8 @@ class NadarayaWatsonMethod(Method):
 
     @property
     def prefix(self):
-        return 'NW'
+        s = 'NW'
+        return s
 
 
 class NadarayaWatsonKNNMethod(NadarayaWatsonMethod):

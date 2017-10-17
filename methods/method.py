@@ -604,7 +604,8 @@ class ScikitLearnMethod(Method):
         'DummyRegressor': 'DumReg',
         'LogisticRegression': 'LogReg',
         'KNeighborsClassifier': 'KNN',
-        'RidgeClassifier': 'RidgeClass'
+        'RidgeClassifier': 'RidgeClass',
+        'KernelRidge': 'KRR',
     }
 
     def __init__(self,configs=MethodConfigs(),skl_method=None):
@@ -652,6 +653,21 @@ class ScikitLearnMethod(Method):
         if self.preprocessor is not None and self.preprocessor.prefix() is not None:
             s += '-' + self.preprocessor.prefix()
         return s
+
+class SKLKernelRidge(ScikitLearnMethod):
+    def __init__(self,configs=MethodConfigs()):
+        super(SKLRidgeRegression, self).__init__(configs, linear_model.Ridge(
+            kernel='rbf'
+        ))
+        self.cv_params['alpha'] = 10**np.asarray(range(-8,8),dtype='float64')
+        self.cv_params['gamma'] = 10**np.asarray(range(-5,5),dtype='float64')
+        self.set_params(alpha=0,fit_intercept=True,normalize=True,tol=1e-12)
+        self.set_params(solver='auto')
+
+        useStandardScale = True
+        if useStandardScale:
+            self.set_params(normalize=False)
+            self.transform = StandardScaler()
 
 class SKLRidgeRegression(ScikitLearnMethod):
     def __init__(self,configs=MethodConfigs()):

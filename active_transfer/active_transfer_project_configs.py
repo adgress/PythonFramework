@@ -72,7 +72,7 @@ fixed_sigma_x = False
 # f_x here means f(x)
 no_f_x = False
 no_spectral_kernel = False
-use_greedy_instance_selection = False
+use_greedy_instance_selection = True
 cluster_select_singleton = True
 transfer_hyperparameters = True
 
@@ -235,6 +235,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.no_f_x = pc.no_f_x
         method_configs.no_spectral_kernel = pc.no_spectral_kernel
         method_configs.transfer_hyperparameters = pc.transfer_hyperparameters
+        method_configs.use_greedy_instance_selection = pc.use_greedy_instance_selection
 
         for key in other_method_configs.keys():
             setattr(method_configs, key, getattr(pc,key))
@@ -370,10 +371,10 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files[
             'ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_targetSubsample=300_noY_noSpectralX+TargetOnlyWrapper+NW.pkl'] = 'Spectral Cluster, 300 subsample'
         '''
-        self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_noVAL+TargetOnlyWrapper+NW.pkl'] = 'Our Method'
-        self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_noVAL_oracleTargetY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y'
-        self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_noVAL_targetSubsample=300+TargetOnlyWrapper+NW.pkl'] = 'Our Method, 300 subsample'
-        self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_noVAL_oracleTargetY_targetSubsample=300+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y, 300 subsample'
+        self.files['ActiveClusterPurity-instanceSel-transHyper_n=%d_items=%d_iters=2_noVAL+TargetOnlyWrapper+NW.pkl'] = 'Our Method'
+        self.files['ActiveClusterPurity-instanceSel-transHyper_n=%d_items=%d_iters=2_noVAL_oracleTargetY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y'
+        self.files['ActiveClusterPurity-instanceSel-transHyper_n=%d_items=%d_iters=2_noVAL_targetSubsample=300+TargetOnlyWrapper+NW.pkl'] = 'Our Method, 300 subsample'
+        self.files['ActiveClusterPurity-instanceSel-transHyper_n=%d_items=%d_iters=2_noVAL_oracleTargetY_targetSubsample=300+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y, 300 subsample'
 
         '''
         self.files['ActiveClusterPurity-greedyInstanceSel_n=%d_items=%d_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Greedy'

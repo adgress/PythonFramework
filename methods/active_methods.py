@@ -212,6 +212,7 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
         self.use_greedy_instance_selection = getattr(configs, 'use_greedy_instance_selection', False)
         self.use_p_x = False
         self.cluster_select_singleton = getattr(configs, 'cluster_select_singleton', True)
+        self.transfer_hyperparameters = getattr(configs, 'transfer_hyperparameters', False)
         if self.use_greedy_instance_selection:
             configs.use_p_x = self.use_p_x
             self.instance_selector =  SupervisedInstanceSelectionGreedy(deepcopy(configs))
@@ -345,7 +346,15 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
             to_use = centroid_idx[scores_sorted_inds[:n_items]]
         else:
             to_use = scores_sorted_inds[:n_items]
+        if self.transfer_hyperparameters:
+            target_learner = deepcopy(self.base_learner)
+            target_learner.configs.use_validation = True
+            labeled_target_data.y[~is_selected] = np.nan
 
+            target_learner.train_and_test(labeled_target_data)
+            self.base_learner.base_learner.cv_params = {'unused': [0]}
+            self.base_learner.base_learner.best_params = target_learner.base_learner.best_params
+            self.base_learner.base_learner.set_params(**target_learner.base_learner.best_params)
         d = np.zeros(data.y.shape)
         d[I[to_use]] = 1
         d = d / d.sum()
@@ -363,6 +372,8 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
                 s += '-instanceSel'
                 if not getattr(self, 'cluster_select_singleton', True):
                     s += '-noSingle'
+            if getattr(self, 'transfer_hyperparameters', False):
+                s += '-transHyper'
         else:
             if getattr(self, 'use_target_variance', False):
                 s += '-targetVar'

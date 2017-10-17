@@ -73,7 +73,8 @@ VIZ_PAPER_NYSTROM = 2
 VIZ_PAPER_GUIDANCE = 3
 VIZ_PAPER_SPARSITY = 4
 
-viz_type = VIZ_PAPER_SPARSITY
+viz_type = VIZ_PAPER_GUIDANCE
+viz_table = True
 
 use_1d_data = True
 
@@ -110,6 +111,7 @@ run_batch_datasets = BATCH_DATA_POSITIVE
 all_data_sets = [data_set_to_use]
 if run_batch_datasets > 0:
     all_data_sets = []
+    names_for_table = []
     if run_batch_datasets in {BATCH_DATA_POSITIVE, BATCH_ALL}:
         all_data_sets += [
             bc.DATA_SYNTHETIC_PIECEWISE,
@@ -117,16 +119,29 @@ if run_batch_datasets > 0:
             bc.DATA_CLIMATE_MONTH,
             bc.DATA_ZILLOW
         ]
+        names_for_table += [
+            'Piecewise',
+            'Census',
+            'Temperature',
+            'Taxi+Housing'
+        ]
     if run_batch_datasets in {BATCH_DATA_NEGATIVE, BATCH_ALL}:
         all_data_sets += [
             #bc.DATA_SYNTHETIC_CROSS,
             #bc.DATA_SYNTHETIC_SLANT,
-            bc.DATA_SYNTHETIC_CURVE,
+            #bc.DATA_SYNTHETIC_CURVE,
             bc.DATA_BIKE_SHARING,
             bc.DATA_BOSTON_HOUSING,
-            bc.DATA_CONCRETE,
+            #bc.DATA_CONCRETE,
             bc.DATA_KC_HOUSING
             #bc.DATA_POLLUTION_2,
+        ]
+        names_for_table += [
+            #'Curve',
+            'Bike Sharing',
+            'Boston Housing',
+            #'Concrete',
+            'King County Housing'
         ]
 
 
@@ -563,6 +578,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.copy_fields(pc,pc_fields_to_copy)
         self.max_rows = 1
         self.show_legend_on_all = show_legend_on_all
+        self.vis_table = viz_table
         if viz_type in {VIZ_PAPER_NYSTROM, VIZ_PAPER_GUIDANCE}:
             self.show_legend_on_all = True
         for key, value in kwargs.iteritems():
@@ -597,30 +613,44 @@ class VisualizationConfigs(bc.VisualizationConfigs):
 
         if viz_type == VIZ_PAPER_ERROR:
             #self.files['LocalTransferDeltaSMS.pkl'] = 'Location Shift'
+            if viz_table:
+                self.data_names_for_table = names_for_table
+                self.method_names_for_table = [
+                    'SST', 'SST: No Spatial Tuning', 'Location-Scale', 'Semisupervised', 'Target Only', 'Stacked', 'Offset'
+                ]
+            self.files['GraphTransferNW-use_rbf-radius.pkl'] = 'SST'
+            self.files['GraphTransferNW-use_rbf.pkl'] = 'SST: No spatial tuning'
             self.files['LocalTransferDeltaSMS_scale.pkl'] = 'Location-Scale Shift'
             self.files['SLL-NW.pkl'] = 'Semisupervised'
             self.files['StackTransfer+SKL-RidgeReg-target.pkl'] = 'Target only'
             self.files['StackTransfer+SKL-RidgeReg.pkl'] = 'Stacked'
             self.files['OffsetTransfer-jointCV.pkl'] = 'Offset'
-            self.files['GraphTransferNW-use_rbf-radius.pkl'] = 'Our Method'
-            if run_batch_datasets != BATCH_DATA_NEGATIVE:
-                pass
-                #self.files['GraphTransferNW-use_rbf-oracle_graph.pkl'] = 'Our Method, Oracle Graph'
+
         elif viz_type == VIZ_PAPER_NYSTROM:
-            self.files['GraphTransferNW-use_rbf-nystrom=0.005.pkl'] = 'Our Method: .5% Nystrom'
-            self.files['GraphTransferNW-use_rbf-nystrom=0.01.pkl'] = 'Our Method: 1% Nystrom'
-            self.files['GraphTransferNW-use_rbf-nystrom=0.05.pkl'] = 'Our Method: 5% Nystrom'
+            assert not viz_table
+            #self.files['GraphTransferNW-use_rbf-nystrom=0.005.pkl'] = 'Our Method: .5% Nystrom'
+            #self.files['GraphTransferNW-use_rbf-nystrom=0.01.pkl'] = 'Our Method: 1% Nystrom'
+            #self.files['GraphTransferNW-use_rbf-nystrom=0.05.pkl'] = 'Our Method: 5% Nystrom'
             self.files['GraphTransferNW-use_rbf-nystrom=0.1.pkl'] = 'Our Method: 10% Nystrom'
             self.files['GraphTransferNW-use_rbf-nystrom=0.2.pkl'] = 'Our Method: 20% Nystrom'
-            self.files['GraphTransferNW-use_rbf-nystrom=0.5.pkl'] = 'Our Method: 50% Nystrom'
-            self.files['GraphTransferNW-use_rbf-nystrom=0.9.pkl'] = 'Our Method: 90% Nystrom'
+            #self.files['GraphTransferNW-use_rbf-nystrom=0.5.pkl'] = 'Our Method: 50% Nystrom'
+            #self.files['GraphTransferNW-use_rbf-nystrom=0.9.pkl'] = 'Our Method: 90% Nystrom'
             self.files['GraphTransferNW-use_rbf.pkl'] = 'Our Method'
         elif viz_type == VIZ_PAPER_GUIDANCE:
+            if viz_table:
+                self.data_names_for_table = names_for_table
+                self.method_names_for_table = [
+                    'SST', 'SST: 10\\% Guidance', 'SST: 20\\% Guidance', 'SST: 10\\% Nystrom', 'SST: 20\\% Nystrom',
+                ]
+
             self.files['GraphTransferNW-use_rbf.pkl'] = 'Our Method'
-            self.files['GraphTransferNW-use_rbf-guidance_binary=0.05.pkl'] = 'Our Method: 5% Guidance'
             self.files['GraphTransferNW-use_rbf-guidance_binary=0.1.pkl'] = 'Our Method: 10% Guidance'
             self.files['GraphTransferNW-use_rbf-guidance_binary=0.2.pkl'] = 'Our Method: 20% Guidance'
+            self.files['GraphTransferNW-use_rbf-nystrom=0.1.pkl'] = 'Our Method: 10% Nystrom'
+            self.files['GraphTransferNW-use_rbf-nystrom=0.2.pkl'] = 'Our Method: 20% Nystrom'
+            #self.files['GraphTransferNW-use_rbf-guidance_binary=0.05.pkl'] = 'Our Method: 5% Guidance'
         elif viz_type == VIZ_PAPER_SPARSITY:
+            assert not viz_table
             self.files['GraphTransferNW-use_rbf.pkl'] = 'Our Method: No spatial tuning'
             self.files['GraphTransferNW-use_rbf-radius.pkl'] = 'Our Method'
         else:

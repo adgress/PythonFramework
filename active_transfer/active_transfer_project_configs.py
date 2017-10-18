@@ -74,7 +74,8 @@ no_f_x = False
 no_spectral_kernel = False
 use_greedy_instance_selection = True
 cluster_select_singleton = True
-transfer_hyperparameters = True
+transfer_hyperparameters = False
+use_knn = True
 
 viz_for_paper = True
 
@@ -144,6 +145,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.active_items_per_iteration = active_items_per_iteration
         self.cluster_select_singleton = cluster_select_singleton
         self.transfer_hyperparameters = transfer_hyperparameters
+        self.use_knn = use_knn
         if use_arguments and arguments is not None:
             apply_arguments(self)
 
@@ -236,6 +238,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.no_spectral_kernel = pc.no_spectral_kernel
         method_configs.transfer_hyperparameters = pc.transfer_hyperparameters
         method_configs.use_greedy_instance_selection = pc.use_greedy_instance_selection
+        method_configs.use_knn = pc.use_knn
 
         for key in other_method_configs.keys():
             setattr(method_configs, key, getattr(pc,key))
@@ -251,9 +254,14 @@ class MainConfigs(bc.MainConfigs):
             active = active_methods.ClusterPurityActiveMethod(method_configs)
             active.cluster_scale = cluster_scale
 
-        nw = method.NadarayaWatsonMethod(deepcopy(method_configs))
         wrapper = wrapper_methods.TargetOnlyWrapper(method_configs)
-        wrapper.base_learner = nw
+        if method_configs.use_knn:
+            knn = method.SKLKNNRegression(deepcopy(method_configs))
+            knn.cv_params['n_neighbors'] = np.asarray([1])
+            wrapper.base_learner = knn
+        else:
+            nw = method.NadarayaWatsonMethod(deepcopy(method_configs))
+            wrapper.base_learner = nw
 
         active.base_learner = wrapper
         active.base_learner.quiet = False
@@ -361,8 +369,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         active_items_per_iteration, active_iterations)] = 'Cluster NW'
         '''
 
-        self.files['ActiveRandom_n=%d_items=%d_iters=2_noVAL+TargetOnlyWrapper+NW.pkl'] = 'Random'
-        self.files['ActiveCluster_n=%d_items=%d_iters=2_noVAL_scale=1+TargetOnlyWrapper+NW.pkl'] = 'Cluster'
+        self.files['ActiveRandom_n=%d_items=%d_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Random'
+        self.files['ActiveCluster_n=%d_items=%d_iters=2_scale=1+TargetOnlyWrapper+NW.pkl'] = 'Cluster'
         #self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_noY_fixedSigX+TargetOnlyWrapper+NW.pkl'] = 'Spectral Cluster'
         #self.files['ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_targetSubsample=300_noY_fixedSigX+TargetOnlyWrapper+NW.pkl'] = 'Spectral Cluster, 300 subsample'
         '''
@@ -371,10 +379,10 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files[
             'ActiveClusterPurity-instanceSel_n=%d_items=%d_iters=2_targetSubsample=300_noY_noSpectralX+TargetOnlyWrapper+NW.pkl'] = 'Spectral Cluster, 300 subsample'
         '''
-        self.files['ActiveClusterPurity-instanceSel-transHyper_n=%d_items=%d_iters=2_noVAL+TargetOnlyWrapper+NW.pkl'] = 'Our Method'
-        self.files['ActiveClusterPurity-instanceSel-transHyper_n=%d_items=%d_iters=2_noVAL_oracleTargetY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y'
-        self.files['ActiveClusterPurity-instanceSel-transHyper_n=%d_items=%d_iters=2_noVAL_targetSubsample=300+TargetOnlyWrapper+NW.pkl'] = 'Our Method, 300 subsample'
-        self.files['ActiveClusterPurity-instanceSel-transHyper_n=%d_items=%d_iters=2_noVAL_oracleTargetY_targetSubsample=300+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y, 300 subsample'
+        self.files['ActiveClusterPurity-greedyInstanceSel_n=%d_items=%d_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Our Method'
+        self.files['ActiveClusterPurity-greedyInstanceSel_n=%d_items=%d_iters=2_oracleTargetY+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y'
+        self.files['ActiveClusterPurity-greedyInstanceSel_n=%d_items=%d_iters=2_targetSubsample=300+TargetOnlyWrapper+NW.pkl'] = 'Our Method, 300 subsample'
+        self.files['ActiveClusterPurity-greedyInstanceSel_n=%d_items=%d_iters=2_oracleTargetY_targetSubsample=300+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Oracle Target Y, 300 subsample'
 
         '''
         self.files['ActiveClusterPurity-greedyInstanceSel_n=%d_items=%d_iters=2+TargetOnlyWrapper+NW.pkl'] = 'Our Method, Greedy'

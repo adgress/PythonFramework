@@ -604,6 +604,7 @@ class ScikitLearnMethod(Method):
         'DummyRegressor': 'DumReg',
         'LogisticRegression': 'LogReg',
         'KNeighborsClassifier': 'KNN',
+        'KNeighborsRegressor': 'KNNReg',
         'RidgeClassifier': 'RidgeClass',
         'KernelRidge': 'KRR',
     }
@@ -746,7 +747,7 @@ class SKLKNNRegression(SKLKNN):
         self.cv_params['n_neighbors'] = np.asarray(list(reversed([1,3,5,15,31])))
         #self.set_params(metric=metrics.CosineDistanceMetric())
         self.set_params(algorithm='brute')
-        self.set_params(metric='cosine')
+        #self.set_params(metric='cosine')
 
 class SKLGuessClassifier(ScikitLearnMethod):
     def __init__(self,configs=None):

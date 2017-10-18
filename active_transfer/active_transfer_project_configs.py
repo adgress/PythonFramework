@@ -98,7 +98,7 @@ other_method_configs = {
     'num_cv_splits': 10,
     'use_perfect_feature_selection': False,
     'use_test_error_for_model_selection': False,
-    'use_validation': False,
+    'use_validation': True,
     'use_uncertainty': False,
     'use_oed': False,
     'use_true_y': False,

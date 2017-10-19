@@ -368,6 +368,8 @@ class ClusterPurityActiveMethod(ClusterActiveMethod):
         if use_inst_sel:
             if use_greedy_inst_secl:
                 s += '-greedyInstanceSel'
+                if getattr(self.instance_selector, 'use_l1_loss', False):
+                    s += '-l1Loss'
             else:
                 s += '-instanceSel'
                 if not getattr(self, 'cluster_select_singleton', True):

@@ -361,6 +361,7 @@ class SupervisedInstanceSelectionGreedy(SupervisedInstanceSelection):
             'sigma_y': self.create_cv_params(-5, 5),
             'C': self.create_cv_params(-3, 3),
         }
+        self.use_l1_loss = getattr(configs, 'use_l1_loss', False)
         self.C = 0
         self.sigma_y = 1
         self.sigma_p = 1
@@ -386,7 +387,10 @@ class SupervisedInstanceSelectionGreedy(SupervisedInstanceSelection):
         p_pred = W_p[:, I].sum(1)
         S = array_functions.make_smoothing_matrix(W_y[:, I])
         y_pred = S.dot(y_true[I])
-        error = norm(y_pred - y_true) + self.C * norm(p_pred - p_true)
+        norm_order = 2
+        if self.use_l1_loss:
+            norm_order = 1
+        error = norm(y_pred - y_true, ord=norm_order) + self.C * norm(p_pred - p_true, ord=norm_order)
         return error
 
     def optimize(self, opt_data):
@@ -427,6 +431,8 @@ class SupervisedInstanceSelectionGreedy(SupervisedInstanceSelection):
     def prefix(self):
         s = 'SupervisedInstanceSelectionGreedy'
         s += self.get_shared_suffix()
+        if getattr(self, 'use_l1_loss', False):
+            s += '_l1-loss'
         return s
 
 class SupervisedInstanceSelectionCluster(SupervisedInstanceSelection):

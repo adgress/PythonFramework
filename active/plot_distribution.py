@@ -112,15 +112,17 @@ if __name__ == '__main__':
     pdf_y /= pdf_y.sum()
     vals = X*Y/(X**2 + Y**2)
 
-    '''
+
     f, axarr = plt.subplots(2, 2)
     plot_pairwise_contour(axarr[0,0])
     plot_bound(axarr[1,0])
     plot_similar_contour(axarr[0,1])
     plot_neighbor_contour(axarr[1,1])
+
     '''
     f, axarr = plt.subplots(1, 2)
     plot_hyp_pos(axarr[0])
     plot_hyp_neg(axarr[1])
+    '''
     f.tight_layout()
     plt.show()

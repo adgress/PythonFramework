@@ -122,8 +122,9 @@ if plot_data:
             v /= v.var()
             normalized_vals[i, :] = v
         normalized_site_variance = normalized_vals.var(0)
+        normalized_site_variance[normalized_site_variance > .35] = 1
         #array_functions.plot_heatmap(unique_locs[is_all_finite], site_variance / site_variance.max(), alpha=1, title=None, sizes=None, share_axis=True)
-        normalized_site_variance += .2
+        #normalized_site_variance += .5
         array_functions.plot_heatmap(unique_locs[is_all_finite], normalized_site_variance / normalized_site_variance.max(), alpha=1, title=None, sizes=None,share_axis=True)
         print ''
     elif plot_2d:

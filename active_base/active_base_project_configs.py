@@ -75,7 +75,8 @@ if helper_functions.is_laptop():
     run_batch = True
 
 active_iterations = 6
-active_items_per_iteration = 10
+active_items_per_iteration = 20
+num_labels = 10
 
 show_legend_on_all = True
 
@@ -117,7 +118,6 @@ class ProjectConfigs(bc.ProjectConfigs):
 
     def set_data_set(self, data_set):
         self.data_set = data_set
-        num_labels = 20
         if data_set == bc.DATA_BOSTON_HOUSING:
             self.set_boston_housing()
             self.num_labels = [num_labels]
@@ -314,10 +314,10 @@ class BatchConfigs(bc.BatchConfigs):
             ]
             if use_relative:
                 new_params = [
-                    {'use_oed': True, 'use_uncertainty': False},
+                    #{'use_oed': True, 'use_uncertainty': False},
                     {'use_oed': False, 'use_uncertainty': False},
-                    {'use_oed': False, 'use_uncertainty': True},
-                    {'use_oracle': True}
+                    #{'use_oed': False, 'use_uncertainty': True},
+                    #{'use_oracle': True}
                 ]
         else:
             new_params = [{'unused': None}]
@@ -386,7 +386,12 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #rand_pairs_str = '-numRandPairs=2'
         rand_pairs_str = '-numRandPairs=0'
         fixed_model_exps = False
-        if not fixed_model_exps:
+        compare_random = True
+        if compare_random:
+            self.files['RelActiveRandom-10-6-20+RelReg-cvx-constraints-numRandPairs=0-scipy-logFix-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10.pkl'] = 'Random, 10-6-20'
+            self.files['RelActiveRandom-10-2-20+RelReg-cvx-constraints-numRandPairs=0-scipy-logFix-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10.pkl'] = 'Random, 10-2-20'
+            self.files['RelActiveRandom-10-2-50+RelReg-cvx-constraints-numRandPairs=0-scipy-logFix-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10.pkl'] = 'Random, 10-2-50'
+        elif not fixed_model_exps:
             files = [
                 ('RelActiveRandom%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'Random, pairwise, Relative=0'),
                 ('RelActiveUncer%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'Uncertainty, pairwise, Relative=0'),
@@ -408,12 +413,12 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                 'RelActiveOED-grad-labeled_fixed-model%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl',
                 'OED-grad-labeled, pairwise, Relative=0'),
             ]
-        for file, legend in files:
-            if file not in {
-                'ActiveRandom+SKL-RidgeReg.pkl'
-            }:
-                file = file % (active_opts_stf, num_feats)
-            self.files[file] = legend
+            for file, legend in files:
+                if file not in {
+                    'ActiveRandom+SKL-RidgeReg.pkl'
+                }:
+                    file = file % (active_opts_stf, num_feats)
+                self.files[file] = legend
 
 #viz_params = [dict()]
 viz_params = [

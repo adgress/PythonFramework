@@ -1357,6 +1357,7 @@ class RelativeRegressionMethod(Method):
             using_scipy = False
             eval = lambda w: 0
             grad = lambda w: 0
+            opt_data = None
             if self.use_bound and self.bound_logistic and not self.use_baseline:
                 assert num_guidances == 1
                 x_bound, bounds = LogisticBoundConstraint.generate_bounds_for_scipy_optimize(

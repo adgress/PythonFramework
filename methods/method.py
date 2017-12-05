@@ -1449,8 +1449,8 @@ class RelativeRegressionMethod(Method):
                 opt_data.scale = self.scale
                 eval_pairwise = logistic_difference_optimize.logistic_pairwise.create_eval(opt_data)
                 grad_pairwise = logistic_difference_optimize.logistic_pairwise.create_grad(opt_data)
-                eval = eval_pairwise(w)
-                grad = grad_pairwise(w)
+                eval = eval_pairwise
+                grad = grad_pairwise
                 using_scipy = True
             if self.use_similar and self.similar_use_scipy and not self.use_similar_hinge:
                 assert num_guidances == 1 or (num_guidances == 2 and self.use_similar and self.use_pairwise)

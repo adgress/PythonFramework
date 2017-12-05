@@ -907,6 +907,10 @@ class RelativeRegressionMethod(Method):
         self.logistic_noise = configs.get('logistic_noise', 0)
         self.use_logistic_fix = configs.get('use_logistic_fix', True)
         self.pairwise_use_scipy = configs.get('pairwise_use_scipy', True)
+        self.bias_threshold = configs.get('bias_threshold', 0)
+        self.bias_scale = configs.get('bias_scale', 0)
+        self.mixed_guidance_set_size = configs.get('mixed_guidance_set_size', 0)
+        self.num_chain_instances = configs.get('num_chain_instances', 0)
 
         self.add_random_bound = configs.get('use_bound', False)
         self.use_bound = self.add_random_bound
@@ -991,6 +995,17 @@ class RelativeRegressionMethod(Method):
     def train_and_test(self, data):
         use_dccp = self.use_neighbor and not self.neighbor_convex and not self.neighbor_hinge
         #Solve for best w to initialize problem
+        if self.bias_scale > 0:
+            data = deepcopy(data)
+            n = data.n_train_labeled
+            num_to_bias = max(n - self.bias_threshold, 0)
+            if num_to_bias > 0:
+                I = (data.is_labeled & data.is_train).nonzero()[0]
+                inds_to_bias = np.random.choice(I, num_to_bias, replace=False)
+                y_bias = (data.true_y.max() - data.true_y.min())*self.bias_scale
+                data.y[inds_to_bias] += y_bias
+                #TODO: do we want to bias true_y as well?
+                data.true_y[inds_to_bias] += y_bias
         if self.y_transform is not None:
             data = deepcopy(data)
             data.true_y = self.y_transform.fit_transform(data.true_y)
@@ -1071,7 +1086,7 @@ class RelativeRegressionMethod(Method):
         I = np.asarray(I.nonzero()[0])
         np.random.seed(0)
         random.seed(0)
-        max_items = 2000
+        max_items = np.inf
         if self.add_random_pairwise or self.add_random_similar:
             n = I.size
             all_pairs = [(I[i],I[j]) for i in range(n) for j in range(i+1,n)]
@@ -1106,12 +1121,19 @@ class RelativeRegressionMethod(Method):
         assert num_random_types <= 1, 'Not implemented yet'
         if getattr(data,'pairwise_relationships',None) is None:
             data.pairwise_relationships = set()
+        if ((self.mixed_guidance_set_size > 0 or self.num_chain_instances > 0)
+            and not (self.add_random_pairwise or self.add_random_similar)):
+            assert False, 'Implement reduced set size for other forms of guidance'
         if self.add_random_pairwise or self.add_random_similar:
             assert not self.use_baseline
             data.pairwise_relationships = set()
             #I = data.is_train & ~data.is_labeled
             I = data.is_train
             train_inds = I.nonzero()[0]
+            if 0 < self.mixed_guidance_set_size < train_inds.size:
+                train_inds = np.random.choice(train_inds, self.mixed_guidance_set_size, replace=False)
+            if self.num_chain_instances > 0:
+                train_inds = np.random.choice(train_inds, self.num_chain_instances, replace=False)
             ind_to_train_ind = {j: i for i,j in enumerate(train_inds)}
             test_func = lambda ij: True
             max_diff = data.true_y.max() - data.true_y.min()
@@ -1127,16 +1149,28 @@ class RelativeRegressionMethod(Method):
                 num_pairs = self.num_similar
                 test_func = lambda ij: diff_func(ij) <= .1
             if pairwise_ordering is None:
-                sampled_pairs = array_functions.sample_pairs(I.nonzero()[0], num_pairs, test_func)
+                sampled_pairs = array_functions.sample_pairs(train_inds, num_pairs, test_func)
             else:
                 test_func2 = lambda ij: test_func(ij) and I[ij[0]] and I[ij[1]]
-                sampled_pairs = [tuple(s.tolist()) for s in pairwise_ordering if test_func2(s)]
-                sampled_pairs = set(sampled_pairs[0:num_pairs])
+                potential_pairs = [tuple(s.tolist()) for s in pairwise_ordering if test_func2(s)]
+                # only use pairs within the restricted set
+                if self.mixed_guidance_set_size > 0 or self.num_chain_instances > 0:
+                    train_inds_set = set(train_inds.tolist())
+                    sampled_pairs = set()
+                    for p1, p2 in potential_pairs:
+                        if ((self.mixed_guidance_set_size > 0 and p1 in train_inds_set and p2 in train_inds_set) or
+                            (self.num_chain_instances > 0 and (p1 in train_inds_set or p2 in train_inds_set))):
+                            sampled_pairs.add((p1, p2))
+                        if len(sampled_pairs) >= num_pairs:
+                            break
+                else:
+                    sampled_pairs = set(potential_pairs[0:num_pairs])
             for i,j in sampled_pairs:
                 pair = (i,j)
                 diff = data.true_y[j] - data.true_y[i]
                 if self.logistic_noise > 0:
-                    diff += np.random.logistic(scale=self.logistic_noise)
+                    range = data.true_y.max() - data.true_y.min()
+                    diff += np.random.logistic(scale=self.logistic_noise*range)
                 if diff <= 0:
                     pair = (j,i)
                 #data.pairwise_relationships.add(pair)
@@ -1264,7 +1298,7 @@ class RelativeRegressionMethod(Method):
         y = labeled_train.y
         x_orig = x
         #x = self.transform.fit_transform(x, y)
-        self.transform.fit(data.x)
+        self.transform.fit(x, y)
         x = self.transform.transform(x)
         if self.num_features > 0:
             dim_to_use = min(self.num_features, x.shape[0] - 1)
@@ -1781,6 +1815,15 @@ class RelativeRegressionMethod(Method):
         if getattr(self, 'include_size_in_file_name', False):
             assert len(self.num_labels) == 1
             s += '-num_labels=' + str(self.num_labels)
+        if getattr(self, 'bias_scale', 0) > 0:
+            s += '-biasThresh=' + str(self.bias_threshold)
+            s += '-biasScale=' + str(self.bias_scale)
+        if getattr(self, 'mixed_guidance_set_size', 0) > 0:
+            s += '-setSize=' + str(self.mixed_guidance_set_size)
+        if getattr(self, 'num_chain_instances', 0) > 0:
+            s += '-numChains=' + str(self.num_chain_instances)
+        if getattr(self.configs, 'use_validation'):
+            s += '-VAL'
         return s
 
 

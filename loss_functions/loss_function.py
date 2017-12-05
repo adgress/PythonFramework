@@ -22,8 +22,8 @@ class LossFunction(object):
             features = ['y', 'true_y']
         if instance_subset is None:
             instance_subset = 'is_test'
-        y1 = np.squeeze(getattr(output, features[0]))
-        y2 = np.squeeze(getattr(output, features[1]))
+        y1 = np.squeeze(np.asarray(getattr(output, features[0])))
+        y2 = np.squeeze(np.asarray(getattr(output, features[1])))
         #I = ~output.is_train
         I = getattr(output, instance_subset)
         if normalize_output:

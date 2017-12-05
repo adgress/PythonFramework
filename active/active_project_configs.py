@@ -20,10 +20,10 @@ def create_project_configs():
 pc_fields_to_copy = bc.pc_fields_to_copy + [
     'include_size_in_file_name'
 ]
-#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
-data_set_to_use = bc.DATA_DROSOPHILIA
+#data_set_to_use = bc.DATA_DROSOPHILIA
 
 #data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 
@@ -31,16 +31,38 @@ data_sets_for_exps = [data_set_to_use]
 
 viz_for_paper = True
 
-run_experiments = False
+run_experiments = True
 use_test_error_for_model_selection = False
+use_validation = True
 
-batch_pairwise = True
+# Conference paper experiments
+batch_pairwise = False
 batch_neighbor = False
 batch_similar = False
 batch_bound = False
 batch_ssl = False
-batch_hinge_exps = True
+batch_hinge_exps = False
 batch_size = [50]
+
+# Journal paper experiments
+batch_relative_variance = False
+batch_relative_bias = False
+batch_relative_diversity = False
+batch_relative_chain = True
+batch_relative_honest = False
+batch_relative_combine_guidance = False
+
+PLOT_VARIANCE = 0
+PLOT_BIAS = 1
+PLOT_DIVERSITY = 2
+PLOT_CHAIN = 3
+journal_plot_type = PLOT_CHAIN
+
+bias_scale = 0
+bias_threshold = 0
+mixed_guidance_set_size = 0
+num_chain_instances = 0
+
 include_size_in_file_name = False
 
 small_param_range = False
@@ -48,15 +70,13 @@ tune_scale = False
 ridge_on_fail = False
 
 num_features = -1
-if data_set_to_use == bc.DATA_DROSOPHILIA:
-    num_features = 50
 other_method_configs = {
     'y_scale_min_max': False,
     'y_scale_standard': False,
     'scipy_opt_method': 'L-BFGS-B',
     'num_cv_splits': 10,
     'eps': 1e-10,
-    'use_perfect_feature_selection': True
+    'use_perfect_feature_selection': False
 }
 
 use_mixed_cv = False
@@ -65,12 +85,12 @@ use_mean = False
 use_baseline = False
 
 use_pairwise = False
-num_pairwise = 51
+num_pairwise = 50
+logistic_noise = 0
 #pair_bound = (.25,1)
 pair_bound = ()
 use_hinge = False
 noise_rate = .0
-logistic_noise = 0
 use_logistic_fix = False
 pairwise_use_scipy = True
 
@@ -99,7 +119,7 @@ similar_use_scipy = True
 use_aic = True
 run_batch = True
 if helper_functions.is_laptop():
-    run_batch = False
+    run_batch = True
 
 active_iterations = 2
 active_items_per_iteration = 50
@@ -156,6 +176,11 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.noise_rate = noise_rate
         self.logistic_noise = logistic_noise
         self.pairwise_use_scipy = pairwise_use_scipy
+        self.bias_scale = bias_scale
+        self.bias_threshold = bias_threshold
+        self.mixed_guidance_set_size = mixed_guidance_set_size
+        self.num_chain_instances = num_chain_instances
+
 
         self.use_bound = use_bound
         self.num_bound = num_bound
@@ -176,6 +201,8 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.neighbor_exp = neighbor_exp
 
         self.num_features = num_features
+        if self.data_set == bc.DATA_DROSOPHILIA:
+            self.num_features = 50
 
         self.use_similar = use_similar
         self.num_similar = num_similar
@@ -285,6 +312,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.active_iterations = active_iterations
         method_configs.active_items_per_iteration = active_items_per_iteration
         method_configs.metric = 'euclidean'
+        method_configs.use_validation = use_validation
 
         for key in other_method_configs.keys():
             setattr(method_configs, key, getattr(pc,key))
@@ -302,6 +330,10 @@ class MainConfigs(bc.MainConfigs):
         method_configs.noise_rate = pc.noise_rate
         method_configs.logistic_noise = pc.logistic_noise
         method_configs.pairwise_use_scipy = pc.pairwise_use_scipy
+        method_configs.bias_scale = pc.bias_scale
+        method_configs.bias_threshold = pc.bias_threshold
+        method_configs.mixed_guidance_set_size = pc.mixed_guidance_set_size
+        method_configs.num_chain_instances = pc.num_chain_instances
 
         method_configs.use_bound = pc.use_bound
         method_configs.num_bound = pc.num_bound
@@ -346,7 +378,6 @@ class MainConfigs(bc.MainConfigs):
                 self.learner = mean_reg
             else:
                 self.learner = relative_reg
-            #self.learner = ridge_reg
 
 class MethodConfigs(bc.MethodConfigs):
     def __init__(self, pc):
@@ -447,6 +478,37 @@ class BatchConfigs(bc.BatchConfigs):
                 }
                 self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_hinge_params)]
             '''
+        if batch_relative_variance:
+            pairwise_params = {
+                'use_pairwise': [True],
+                'num_pairwise': batch_size,
+            }
+            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
+            pairwise_params['logistic_noise'] = [.1, .2]
+            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
+        if batch_relative_bias:
+            bias_params = {
+                'bias_scale': [.05, .1, .2],
+                'bias_threshold': [10],
+            }
+            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bias_params)]
+        if batch_relative_diversity:
+            pairwise_params = {
+                'use_pairwise': [True],
+                'num_pairwise': batch_size,
+                'mixed_guidance_set_size': [10, 20, 40, 80, 160]
+            }
+            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
+        if batch_relative_chain:
+            pairwise_params = {
+                'use_pairwise': [True],
+                'num_chain_instances': [1, 5, 10],
+            }
+            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
+        if batch_relative_honest:
+            pass
+        if batch_relative_combine_guidance:
+            pass
 
 class VisualizationConfigs(bc.VisualizationConfigs):
     PLOT_PAIRWISE = 1
@@ -468,16 +530,16 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.show_legend_on_all = show_legend_on_all
         self.x_axis_string = 'Number of labeled instances'
         if pc.data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
-            self.ylims = [0,12]
+            self.ylims = [0,1]
         elif pc.data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
-            self.ylims = [0,1000]
+            self.ylims = [0,1]
         elif pc.data_set == bc.DATA_BOSTON_HOUSING:
-            self.ylims = [0,200]
+            self.ylims = [0,1]
         elif pc.data_set == bc.DATA_CONCRETE:
-            self.ylims = [0,1000]
+            self.ylims = [0,1]
         elif pc.data_set == bc.DATA_DROSOPHILIA:
-            self.ylims = [0,3]
-
+            self.ylims = [0,1]
+        self.ylims = None
         self.files = OrderedDict()
         if run_active_experiments:
             self.files['RelActiveRandom+SKL-RidgeReg.pkl'] = 'Random Pairwise, SKLRidge'
@@ -498,14 +560,63 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                 self.files['RelReg-cvx-constraints-noPairwiseReg-numFeats=' + str(pc.num_features) + '-TEST.pkl'] = 'TEST: Ridge Regression'
                 self.files['RelReg-cvx-constraints-noPairwiseReg-numFeats=' + str(pc.num_features) + '-nCV=10.pkl'] = 'Ridge Regression'
             else:
-                self.files['RelReg-cvx-constraints-noPairwiseReg-numFeats=' + str(pc.num_features) + '-nCV=10.pkl'] = 'Ridge Regression'
+                self.files['RelReg-cvx-constraints-noPairwiseReg-numFeats=' + str(
+                    pc.num_features) + '-nCV=10-VAL.pkl'] = 'Ridge Regression'
+                if journal_plot_type == PLOT_VARIANCE:
+                    self.files[
+                        'RelReg-cvx-constraints-numRandPairs=50-scipy-logNoise=0.1-noRidgeOnFail-solver=SCS-numFeats=50-L-BFGS-B-nCV=10-VAL.pkl'] = '50 pairs, .1 noise'
+                    self.files[
+                        'RelReg-cvx-constraints-numRandPairs=50-scipy-logNoise=0.2-noRidgeOnFail-solver=SCS-numFeats=50-L-BFGS-B-nCV=10-VAL.pkl'] = '50 pairs, .2 noise'
+                if journal_plot_type == PLOT_BIAS:
+                    self.files[
+                        'RelReg-cvx-constraints-noPairwiseReg-numFeats=50-nCV=10-biasThresh=10-biasScale=0.2-VAL.pkl'] = 'Ridge, biasScale=.2'
+                    self.files[
+                        'RelReg-cvx-constraints-noPairwiseReg-numFeats=50-nCV=10-biasThresh=10-biasScale=0.1-VAL.pkl'] = 'Ridge, biasScale=.1'
+                    self.files[
+                        'RelReg-cvx-constraints-noPairwiseReg-numFeats=50-nCV=10-biasThresh=10-biasScale=0.05-VAL.pkl'] = 'Ridge, biasScale=.05'
+                if journal_plot_type == PLOT_DIVERSITY:
+                    self.files['RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-numFeats=50-L-BFGS-B-nCV=10-setSize=10-VAL.pkl'] = '50 pairs, set size 10'
+                    self.files[
+                        'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-numFeats=50-L-BFGS-B-nCV=10-setSize=20-VAL.pkl'] = '50 pairs, set size 20'
+                    self.files[
+                        'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-numFeats=50-L-BFGS-B-nCV=10-setSize=40-VAL.pkl'] = '50 pairs, set size 40'
+                    self.files[
+                        'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-numFeats=50-L-BFGS-B-nCV=10-setSize=80-VAL.pkl'] = '50 pairs, set size 80'
+                if journal_plot_type == PLOT_CHAIN:
+                    pass
         else:
             if use_test:
                 self.files['RelReg-cvx-constraints-noPairwiseReg-TEST.pkl'] = 'TEST: Ridge Regression'
                 self.files['RelReg-cvx-constraints-noPairwiseReg.pkl'] = 'Ridge Regression'
             else:
-                self.files['RelReg-cvx-constraints-noPairwiseReg-nCV=10.pkl'] = 'Ridge Regression'
-        self.files['LapRidge.pkl'] = 'Laplacian Ridge Regression'
+                self.files['RelReg-cvx-constraints-noPairwiseReg-nCV=10-VAL.pkl'] = 'Ridge Regression'
+                if journal_plot_type == PLOT_VARIANCE:
+                    self.files[
+                        'RelReg-cvx-constraints-numRandPairs=50-scipy-logNoise=0.1-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10-VAL.pkl'] = '50 pairs, .1 noise'
+                    self.files[
+                        'RelReg-cvx-constraints-numRandPairs=50-scipy-logNoise=0.2-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10-VAL.pkl'] = '50 pairs, .2 noise'
+                if journal_plot_type == PLOT_BIAS:
+                    self.files[
+                        'RelReg-cvx-constraints-noPairwiseReg-nCV=10-biasThresh=10-biasScale=0.2-VAL.pkl'] = 'Ridge, biasScale=.2'
+                    self.files['RelReg-cvx-constraints-noPairwiseReg-nCV=10-biasThresh=10-biasScale=0.1-VAL.pkl'] = 'Ridge, biasScale=.1'
+                    self.files[
+                        'RelReg-cvx-constraints-noPairwiseReg-nCV=10-biasThresh=10-biasScale=0.05-VAL.pkl'] = 'Ridge, biasScale=.05'
+                if journal_plot_type == PLOT_DIVERSITY:
+                    self.files['RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10-setSize=10-VAL.pkl'] = '50 pairs, set size 10'
+                    self.files[
+                        'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10-setSize=20-VAL.pkl'] = '50 pairs, set size 20'
+                    self.files[
+                        'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10-setSize=40-VAL.pkl'] = '50 pairs, set size 40'
+                    self.files[
+                        'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10-setSize=80-VAL.pkl'] = '50 pairs, set size 80'
+                if journal_plot_type == PLOT_CHAIN:
+                    self.files[
+                        'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10-numChains=1-VAL.pkl'] = '50 pairs, 1 chain'
+                    self.files[
+                        'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10-numChains=5-VAL.pkl'] = '50 pairs, 5 chain'
+                    self.files[
+                        'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10-numChains=10-VAL.pkl'] = '50 pairs, 10 chain'
+        self.files['LapRidge-VAL.pkl'] = 'Laplacian Ridge Regression'
         #self.files['SKL-DumReg.pkl'] = 'Predict Mean'
         sizes = []
         #sizes.append(10)
@@ -536,17 +647,19 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #suffixes['zScore'] = [None, '']
         suffixes['solver'] = ['SCS']
         suffixes['L-BFGS-B'] = [None, '']
+        #suffixes['logNoise'] = [None, '0.01']
         if not use_test:
             suffixes['nCV'] = ['10']
+        suffixes['VAL'] = ['']
 
         #suffixes['numFeats'] = [str(num_feat)]
 
         ordered_keys = [
             'fastDCCP', 'initRidge', 'init_ideal', 'initRidgeTrain','logistic',
-            'pairBound', 'mixedCV', 'logNoise', 'scipy', 'noGrad',
+            'pairBound', 'mixedCV', 'logNoise', 'scipy', 'logNoise', 'noGrad',
             'baseline', 'logFix', 'noRidgeOnFail', 'tuneScale',
             'smallScale', 'eps',
-            'solver', 'minMax', 'zScore', 'numFeats', 'numFeatsPerfect', 'L-BFGS-B', 'nCV'
+            'solver', 'minMax', 'zScore', 'numFeats', 'numFeatsPerfect', 'L-BFGS-B', 'nCV', 'VAL'
         ]
 
         methods = []
@@ -554,8 +667,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             methods.append(('numRandPairs','RelReg, %s pairs', 'Our Method: %s relative'))
             methods.append(('numRandPairsHinge','RelReg, %s pairs hinge', 'Zhu 2007: %s relative'))
             self.title = 'Relative'
-            if pc.data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
-                self.ylims = [0,12]
+            #if pc.data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
+            #    self.ylims = [0,12]
         elif self.plot_type == VisualizationConfigs.PLOT_BOUND:
             methods.append(('numRandLogBounds', '%s log bounds', 'Our Method: %s bound'))
             methods.append(('numRandQuartiles', 'RelReg, %s quartiles', 'Baseline: %s'))
@@ -606,8 +719,18 @@ class VisualizationConfigs(bc.VisualizationConfigs):
 
 
 viz_params = [
+    {'data_set': bc.DATA_SYNTHETIC_LINEAR_REGRESSION},
+    {'data_set': bc.DATA_BOSTON_HOUSING},
+    {'data_set': bc.DATA_CONCRETE},
+    {'data_set': bc.DATA_DROSOPHILIA},
+]
+
+#For plotting all four types of guidance for a single data set
+'''
+viz_params = [
     {'plot_type': VisualizationConfigs.PLOT_PAIRWISE},
     {'plot_type': VisualizationConfigs.PLOT_BOUND},
     {'plot_type': VisualizationConfigs.PLOT_NEIGHBOR},
     {'plot_type': VisualizationConfigs.PLOT_SIMILAR},
 ]
+'''

@@ -228,16 +228,16 @@ class RelativeRegressionOutput(Output):
         self.is_pairwise_correct = pairwise_results
         self.is_train_pairwise = getattr(data, 'is_train_pairwise', None)
 
-    def compute_error_train(self,loss_function):
-        loss = super(RelativeRegressionOutput, self).compute_error_train(loss_function)
+    def compute_error_train(self,loss_function,normalize_output=False):
+        loss = super(RelativeRegressionOutput, self).compute_error_train(loss_function, normalize_output)
         num_train = self.is_train.sum()
         num_pairwise = self.is_train_pairwise.sum()
         avg_loss = loss / num_train
         pairwise_loss = (~self.is_pairwise_correct[self.is_train_pairwise]).sum()*avg_loss / num_pairwise
         return avg_loss + pairwise_loss
 
-    def compute_error(self,loss_function, features=None, instance_subset=None):
-        loss = super(RelativeRegressionOutput, self).compute_error(loss_function,features=None,instance_subset=None)
+    def compute_error(self,loss_function, features=None, instance_subset=None, normalize_output=False):
+        loss = super(RelativeRegressionOutput, self).compute_error(loss_function,features=None,instance_subset=None, normalize_output=normalize_output)
         num_test = (~self.is_train).sum()
         num_pairwise = (~self.is_train_pairwise).sum()
         if num_pairwise == 0:

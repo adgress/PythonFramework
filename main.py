@@ -9,7 +9,7 @@ import importlib
 #import base.project_configs as configs_lib
 
 #import hypothesis_transfer.hypothesis_project_configs as configs_library
-#import active.active_project_configs as configs_library
+import active.active_project_configs as configs_library
 #import new_project.new_project_configs as configs_library
 #import higher_order_transfer.higher_order_transfer_configs as configs_library
 
@@ -19,7 +19,7 @@ import importlib
 
 #import active_base.active_base_project_configs as configs_library
 #import instance_selection.instance_selectin_project_configs as configs_library
-import active_transfer.active_transfer_project_configs as configs_library
+#import active_transfer.active_transfer_project_configs as configs_library
 
 configs_lib = configs_library
 import boto
@@ -214,7 +214,6 @@ def run_visualization():
         marker_idx = -1
         is_file_missing = False
         for file, legend_str in vis_configs.results_files:
-            marker_idx += 1
             if not os.path.isfile(file):
                 is_file_missing = True
                 print file + ' doesn''t exist - skipping'
@@ -224,6 +223,7 @@ def run_visualization():
                        not vis_configs.crash_on_missing_files, \
                     'Just to be safe, crashing because files are missing'
                 continue
+            marker_idx += 1
             results = helper_functions.load_object(file)
             sized_results = get_sized_results(file)
             sizes_to_plot = vis_configs.sizes_to_use

@@ -242,6 +242,7 @@ class PairwiseConstraint(CVXConstraint):
 
     @staticmethod
     def generate_pairs_for_scipy_optimize(constraints, transform = None):
+        constraints = np.asarray(constraints)
         if constraints.size == 0:
             return None, None, [], []
         p = constraints[0].x[0].size
@@ -274,8 +275,8 @@ class HingePairwiseConstraint(PairwiseConstraint):
         return cvx.max_elemwise(d,0), []
 
 class SimilarConstraint(PairwiseConstraint):
-    def __init__(self, x1, x2, max_diff):
-        super(SimilarConstraint, self).__init__(x1,x2)
+    def __init__(self, x1, x2, ind1, ind2, max_diff):
+        super(SimilarConstraint, self).__init__(x1,x2, ind1, ind2)
         self.max_diff = max_diff
 
     def predict(self, f):

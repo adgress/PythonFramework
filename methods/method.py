@@ -1113,82 +1113,95 @@ class RelativeRegressionMethod(Method):
             data.neighbor_ordering = rand_perm[0:n]
             '''
 
-
+    def _add_random_pairwise(self, data, num_to_sample, pairwise_ordering, sample_similar=False):
+        assert not self.use_baseline
+        #data.pairwise_relationships = set()
+        pairwise_relationships = set()
+        I = data.is_train
+        train_inds = I.nonzero()[0]
+        if 0 < self.mixed_guidance_set_size < train_inds.size:
+            train_inds = np.random.choice(train_inds, self.mixed_guidance_set_size, replace=False)
+        if self.num_chain_instances > 0:
+            train_inds = np.random.choice(train_inds, self.num_chain_instances, replace=False)
+        test_func = lambda ij: True
+        max_diff = data.true_y.max() - data.true_y.min()
+        diff_func = lambda ij: abs(data.true_y[ij[0]] - data.true_y[ij[1]]) / max_diff
+        if len(self.pair_bound) > 0:
+            if len(self.pair_bound) == 1:
+                test_func = lambda ij: diff_func(ij) <= self.pair_bound[0]
+            else:
+                test_func = lambda ij: self.pair_bound[0] <= diff_func(ij) <= self.pair_bound[1]
+        #pairwise_ordering = getattr(data, 'pairwise_ordering', None)
+        num_pairs = num_to_sample
+        '''
+        num_pairs = self.num_pairwise
+        if self.add_random_similar:
+            num_pairs = self.num_similar
+            test_func = lambda ij: diff_func(ij) <= .1
+        '''
+        if sample_similar:
+            test_func = lambda ij: diff_func(ij) <= .1
+        if pairwise_ordering is None:
+            sampled_pairs = array_functions.sample_pairs(train_inds, num_pairs, test_func)
+        else:
+            test_func2 = lambda ij: test_func(ij) and I[ij[0]] and I[ij[1]]
+            potential_pairs = [tuple(s.tolist()) for s in pairwise_ordering if test_func2(s)]
+            # only use pairs within the restricted set
+            if self.mixed_guidance_set_size > 0 or self.num_chain_instances > 0:
+                train_inds_set = set(train_inds.tolist())
+                sampled_pairs = set()
+                for p1, p2 in potential_pairs:
+                    if ((self.mixed_guidance_set_size > 0 and p1 in train_inds_set and p2 in train_inds_set) or
+                            (self.num_chain_instances > 0 and (p1 in train_inds_set or p2 in train_inds_set))):
+                        sampled_pairs.add((p1, p2))
+                    if len(sampled_pairs) >= num_pairs:
+                        break
+            else:
+                sampled_pairs = set(potential_pairs[0:num_pairs])
+        for i, j in sampled_pairs:
+            pair = (i, j)
+            diff = data.true_y[j] - data.true_y[i]
+            if self.logistic_noise > 0:
+                range = data.true_y.max() - data.true_y.min()
+                diff += np.random.logistic(scale=self.logistic_noise * range)
+            if diff <= 0:
+                pair = (j, i)
+            x1 = data.x[pair[0], :]
+            x2 = data.x[pair[1], :]
+            if not sample_similar:
+                if self.use_hinge:
+                    constraint = HingePairwiseConstraint(x1, x2)
+                else:
+                    constraint = PairwiseConstraint(x1, x2, pair[0], pair[1])
+            else:
+                if self.use_similar_hinge:
+                    constraint = SimilarConstraintHinge(x1, x2, max_diff)
+                else:
+                    constraint = SimilarConstraint(x1, x2, pair[0], pair[1], max_diff)
+            constraint.true_y = [data.true_y[pair[0]], data.true_y[pair[1]]]
+            #data.pairwise_relationships.add(constraint)
+            pairwise_relationships.add(constraint)
+        return pairwise_relationships
 
     def add_random_guidance(self, data):
         num_random_types = int(self.add_random_pairwise) + int(self.add_random_bound) + \
                            int(self.add_random_neighbor) + int(self.add_random_similar)
-        assert num_random_types <= 1, 'Not implemented yet'
+        assert (num_random_types <= 1 or
+                (num_random_types == 2 and self.add_random_similar and self.add_random_pairwise)), 'Not implemented yet'
         if getattr(data,'pairwise_relationships',None) is None:
             data.pairwise_relationships = set()
         if ((self.mixed_guidance_set_size > 0 or self.num_chain_instances > 0)
             and not (self.add_random_pairwise or self.add_random_similar)):
             assert False, 'Implement reduced set size for other forms of guidance'
         if self.add_random_pairwise or self.add_random_similar:
-            assert not self.use_baseline
             data.pairwise_relationships = set()
-            #I = data.is_train & ~data.is_labeled
-            I = data.is_train
-            train_inds = I.nonzero()[0]
-            if 0 < self.mixed_guidance_set_size < train_inds.size:
-                train_inds = np.random.choice(train_inds, self.mixed_guidance_set_size, replace=False)
-            if self.num_chain_instances > 0:
-                train_inds = np.random.choice(train_inds, self.num_chain_instances, replace=False)
-            ind_to_train_ind = {j: i for i,j in enumerate(train_inds)}
-            test_func = lambda ij: True
-            max_diff = data.true_y.max() - data.true_y.min()
-            diff_func = lambda ij: abs(data.true_y[ij[0]] - data.true_y[ij[1]]) / max_diff
-            if len(self.pair_bound) > 0:
-                if len(self.pair_bound) == 1:
-                    test_func = lambda ij: diff_func(ij) <= self.pair_bound[0]
-                else:
-                    test_func = lambda ij: self.pair_bound[0] <= diff_func(ij) <= self.pair_bound[1]
             pairwise_ordering = getattr(data, 'pairwise_ordering', None)
-            num_pairs = self.num_pairwise
+            if self.add_random_pairwise:
+                relative_constraints = self._add_random_pairwise(data, self.num_pairwise, pairwise_ordering=pairwise_ordering, sample_similar=False)
+                data.pairwise_relationships.update(relative_constraints)
             if self.add_random_similar:
-                num_pairs = self.num_similar
-                test_func = lambda ij: diff_func(ij) <= .1
-            if pairwise_ordering is None:
-                sampled_pairs = array_functions.sample_pairs(train_inds, num_pairs, test_func)
-            else:
-                test_func2 = lambda ij: test_func(ij) and I[ij[0]] and I[ij[1]]
-                potential_pairs = [tuple(s.tolist()) for s in pairwise_ordering if test_func2(s)]
-                # only use pairs within the restricted set
-                if self.mixed_guidance_set_size > 0 or self.num_chain_instances > 0:
-                    train_inds_set = set(train_inds.tolist())
-                    sampled_pairs = set()
-                    for p1, p2 in potential_pairs:
-                        if ((self.mixed_guidance_set_size > 0 and p1 in train_inds_set and p2 in train_inds_set) or
-                            (self.num_chain_instances > 0 and (p1 in train_inds_set or p2 in train_inds_set))):
-                            sampled_pairs.add((p1, p2))
-                        if len(sampled_pairs) >= num_pairs:
-                            break
-                else:
-                    sampled_pairs = set(potential_pairs[0:num_pairs])
-            for i,j in sampled_pairs:
-                pair = (i,j)
-                diff = data.true_y[j] - data.true_y[i]
-                if self.logistic_noise > 0:
-                    range = data.true_y.max() - data.true_y.min()
-                    diff += np.random.logistic(scale=self.logistic_noise*range)
-                if diff <= 0:
-                    pair = (j,i)
-                #data.pairwise_relationships.add(pair)
-                x1 = data.x[pair[0],:]
-                x2 = data.x[pair[1],:]
-                if self.add_random_pairwise:
-                    if self.use_hinge:
-                        constraint = HingePairwiseConstraint(x1,x2)
-                    else:
-                        constraint = PairwiseConstraint(x1,x2,pair[0], pair[1])
-                else:
-                    if self.use_similar_hinge:
-                        constraint = SimilarConstraintHinge(x1,x2,max_diff)
-                    else:
-                        constraint = SimilarConstraint(x1,x2,max_diff)
-                constraint.true_y = [data.true_y[pair[0]], data.true_y[pair[1]]]
-                data.pairwise_relationships.add(constraint)
-                #data.pairwise_relationships.add(pair)
+                similar_constraints = self._add_random_pairwise(data, self.num_similar, pairwise_ordering=pairwise_ordering, sample_similar=True)
+                data.pairwise_relationships.update(similar_constraints)
 
         if self.add_random_bound:
             #assert False, 'Use Ordering'
@@ -1340,7 +1353,12 @@ class RelativeRegressionMethod(Method):
             }
             w0 = np.zeros(x.shape[1]+1)
             constraints = []
+            num_guidances = int(self.use_bound) + int(self.use_neighbor) + int(self.use_pairwise) + int(self.use_similar)
+            using_scipy = False
+            eval = lambda w: 0
+            grad = lambda w: 0
             if self.use_bound and self.bound_logistic and not self.use_baseline:
+                assert num_guidances == 1
                 x_bound, bounds = LogisticBoundConstraint.generate_bounds_for_scipy_optimize(
                     data.pairwise_relationships,
                     self.transform
@@ -1351,9 +1369,13 @@ class RelativeRegressionMethod(Method):
                 opt_data.eps = self.eps
                 opt_data.x_bound = x_bound
                 opt_data.bounds = bounds
+                opt_data.s = self.s
+                opt_data.scale = self.scale
                 eval = logistic_difference_optimize.logistic_bound.create_eval(opt_data)
                 grad = logistic_difference_optimize.logistic_bound.create_grad(opt_data)
-            elif self.use_neighbor and self.neighbor_convex and not self.neighbor_hinge and not self.neighbor_exp:
+                using_scipy = True
+            if self.use_neighbor and self.neighbor_convex and not self.neighbor_hinge and not self.neighbor_exp:
+                assert num_guidances == 1
                 method = 'SLSQP'
                 x_neighbor,x_low,x_high = ConvexNeighborConstraint.generate_neighbors_for_scipy_optimize(
                     data.pairwise_relationships,
@@ -1385,6 +1407,8 @@ class RelativeRegressionMethod(Method):
                 opt_data_feasible.x_neighbor = x_neighbor
                 opt_data_feasible.x_low = x_low
                 opt_data_feasible.x_high = x_high
+                opt_data.s = self.s
+                opt_data.scale = self.scale
                 eval = logistic_difference_optimize.logistic_neighbor.create_eval(opt_data)
                 grad = logistic_difference_optimize.logistic_neighbor.create_grad(opt_data)
                 '''
@@ -1397,9 +1421,12 @@ class RelativeRegressionMethod(Method):
                 w0_feasible = feasible_results.x
                 w0 = w0_feasible
                 '''
-            elif self.use_pairwise and self.pairwise_use_scipy and not self.use_hinge:
+                using_scipy = True
+            if self.use_pairwise and self.pairwise_use_scipy and not self.use_hinge:
+                assert num_guidances == 1 or (num_guidances == 2 and self.use_similar and self.use_pairwise)
+                pairwise_constraints = [v for v in data.pairwise_relationships if type(v) == PairwiseConstraint]
                 x_low,x_high,_,_ = PairwiseConstraint.generate_pairs_for_scipy_optimize(
-                    data.pairwise_relationships,
+                    pairwise_constraints,
                     self.transform
                 )
                 #self.C = 10
@@ -1408,39 +1435,62 @@ class RelativeRegressionMethod(Method):
                 C2 = self.C2
                 #C2 = 0
                 #C = 0
+                # If using multiple forms of guidance, prevent double regularizing w
+                if using_scipy:
+                    C = 0
 
                 opt_data = logistic_difference_optimize.optimize_data(
                     x, y, C, C2
                 )
                 opt_data.x_low = x_low
                 opt_data.x_high = x_high
-                eval = logistic_difference_optimize.logistic_pairwise.create_eval(opt_data)
-                grad = logistic_difference_optimize.logistic_pairwise.create_grad(opt_data)
-            elif self.use_similar and self.similar_use_scipy and not self.use_similar_hinge:
-                x1,x2 = PairwiseConstraint.generate_pairs_for_scipy_optimize(
-                    data.pairwise_relationships,
+                opt_data.s = self.s
+                opt_data.scale = self.scale
+                eval_pairwise = logistic_difference_optimize.logistic_pairwise.create_eval(opt_data)
+                grad_pairwise = logistic_difference_optimize.logistic_pairwise.create_grad(opt_data)
+                eval = lambda w: eval(w) + eval_pairwise(w)
+                grad = lambda w: grad(w) + grad_pairwise(w)
+                using_scipy = True
+            if self.use_similar and self.similar_use_scipy and not self.use_similar_hinge:
+                assert num_guidances == 1 or (num_guidances == 2 and self.use_similar and self.use_pairwise)
+                similar_constraints = [v for v in data.pairwise_relationships if type(v) == SimilarConstraint]
+                x1,x2,_,_ = PairwiseConstraint.generate_pairs_for_scipy_optimize(
+                    similar_constraints,
                     self.transform
                 )
                 C = self.C
                 C2 = self.C2
-                s = self.s
+                # If using multiple forms of guidance, prevent double regularizing w
+                if using_scipy:
+                    C = 0
                 opt_data = logistic_difference_optimize.optimize_data(
                     x, y, C, C2
                 )
-                opt_data.s = s
                 opt_data.x1 = x1
                 opt_data.x2 = x2
                 opt_data.eps = self.eps
-                eval = logistic_difference_optimize.logistic_similar.create_eval(opt_data)
-                grad = logistic_difference_optimize.logistic_similar.create_grad(opt_data)
-            else:
+                opt_data.s = self.s
+                opt_data.scale = self.scale
+                eval_similar = logistic_difference_optimize.logistic_similar.create_eval(opt_data)
+                grad_similar = logistic_difference_optimize.logistic_similar.create_grad(opt_data)
+                if num_guidances == 1:
+                    eval = eval_similar
+                    grad = grad_similar
+                elif num_guidances == 2:
+                    eval = lambda w: eval_pairwise(w) + eval_similar(w)
+                    grad = lambda w: grad_pairwise(w) + grad_similar(w)
+                else:
+                    assert False
+
+                using_scipy = True
+            # Now that we can combine guidance, need to make sure opt_data isn't being resused
+            del opt_data
+            if not using_scipy:
                 self.solve_cvx(x, y, data)
                 return
             if not self.use_grad:
                 grad = None
             options['maxiter'] = 1000
-            opt_data.s = self.s
-            opt_data.scale = self.scale
             #tic()
             with Capturing() as output:
                 results = optimize.minimize(eval,w0,method=method,jac=grad,options=options,constraints=constraints)

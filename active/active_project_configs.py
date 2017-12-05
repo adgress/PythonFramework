@@ -48,9 +48,9 @@ batch_size = [50]
 batch_relative_variance = False
 batch_relative_bias = False
 batch_relative_diversity = False
-batch_relative_chain = True
+batch_relative_chain = False
 batch_relative_honest = False
-batch_relative_combine_guidance = False
+batch_relative_combine_guidance = True
 
 PLOT_VARIANCE = 0
 PLOT_BIAS = 1
@@ -508,7 +508,23 @@ class BatchConfigs(bc.BatchConfigs):
         if batch_relative_honest:
             pass
         if batch_relative_combine_guidance:
-            pass
+            combined_params = {
+                'use_pairwise': [True],
+                'num_pairwise': [25],
+                'use_similar': [True],
+                'num_similar': [25],
+            }
+            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(combined_params)]
+            pairwise_params = {
+                'use_pairwise': [True],
+                'num_pairwise': [25],
+            }
+            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
+            similar_params = {
+                'use_similar': [True],
+                'num_similar': [25],
+            }
+            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_params)]
 
 class VisualizationConfigs(bc.VisualizationConfigs):
     PLOT_PAIRWISE = 1
@@ -583,7 +599,11 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                     self.files[
                         'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-numFeats=50-L-BFGS-B-nCV=10-setSize=80-VAL.pkl'] = '50 pairs, set size 80'
                 if journal_plot_type == PLOT_CHAIN:
-                    pass
+                    self.files['/RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-numFeats=50-L-BFGS-B-nCV=10-numChains=1-VAL.pkl'] = '50 pairs, 1 chain'
+                    self.files[
+                        '/RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-numFeats=50-L-BFGS-B-nCV=10-numChains=5-VAL.pkl'] = '50 pairs, 5 chains'
+                    self.files[
+                        '/RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-numFeats=50-L-BFGS-B-nCV=10-numChains=10-VAL.pkl'] = '50 pairs, 10 chains'
         else:
             if use_test:
                 self.files['RelReg-cvx-constraints-noPairwiseReg-TEST.pkl'] = 'TEST: Ridge Regression'

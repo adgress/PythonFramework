@@ -1465,7 +1465,8 @@ class RelativeRegressionMethod(Method):
                     self.transform
                 )
                 C = self.C
-                C2 = self.C2
+                #C2 = self.C2
+                C2 = self.C_similar
                 # If using multiple forms of guidance, prevent double regularizing w
                 if using_scipy:
                     C = 0

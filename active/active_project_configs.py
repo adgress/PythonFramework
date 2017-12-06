@@ -25,7 +25,7 @@ data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_DROSOPHILIA
 
-data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
+#data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 
 data_sets_for_exps = [data_set_to_use]
 

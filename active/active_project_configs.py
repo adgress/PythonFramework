@@ -20,12 +20,12 @@ def create_project_configs():
 pc_fields_to_copy = bc.pc_fields_to_copy + [
     'include_size_in_file_name'
 ]
-data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_DROSOPHILIA
 
-#data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
+data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 
 data_sets_for_exps = [data_set_to_use]
 
@@ -56,7 +56,8 @@ PLOT_VARIANCE = 0
 PLOT_BIAS = 1
 PLOT_DIVERSITY = 2
 PLOT_CHAIN = 3
-journal_plot_type = PLOT_CHAIN
+PLOT_COMBINE_GUIDANCE = 4
+journal_plot_type = PLOT_COMBINE_GUIDANCE
 
 bias_scale = 0
 bias_threshold = 0
@@ -201,7 +202,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.neighbor_exp = neighbor_exp
 
         self.num_features = num_features
-        if self.data_set == bc.DATA_DROSOPHILIA:
+        if self.data_set in {bc.DATA_DROSOPHILIA, bc.DATA_ADIENCE_ALIGNED_CNN_1}:
             self.num_features = 50
 
         self.use_similar = use_similar
@@ -604,6 +605,15 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                         '/RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-numFeats=50-L-BFGS-B-nCV=10-numChains=5-VAL.pkl'] = '50 pairs, 5 chains'
                     self.files[
                         '/RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-numFeats=50-L-BFGS-B-nCV=10-numChains=10-VAL.pkl'] = '50 pairs, 10 chains'
+                if journal_plot_type == PLOT_COMBINE_GUIDANCE:
+                    self.files['RelReg-cvx-constraints-noPairwiseReg-nCV=10-VAL.pkl'] = 'Ridge'
+                    self.files[
+                        'RelReg-cvx-constraints-numRandPairs=25-scipy-numSimilar=25-scipy-noRidgeOnFail-eps=1e-10-solver=SCS-numFeats=50-L-BFGS-B-nCV=10-VAL.pkl'] = '25 similar, 25 pairs'
+                    self.files[
+                        'RelReg-cvx-constraints-numRandPairs=25-scipy-noRidgeOnFail-solver=SCS-numFeats=50-L-BFGS-B-nCV=10-VAL.pkl'] = '25 pairs'
+                    self.files[
+                        'RelReg-cvx-constraints-numSimilar=25-scipy-noRidgeOnFail-eps=1e-10-solver=SCS-numFeats=50-L-BFGS-B-nCV=10-VAL.pkl'] = '25 similar'
+
         else:
             if use_test:
                 self.files['RelReg-cvx-constraints-noPairwiseReg-TEST.pkl'] = 'TEST: Ridge Regression'
@@ -636,6 +646,14 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                         'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10-numChains=5-VAL.pkl'] = '50 pairs, 5 chain'
                     self.files[
                         'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10-numChains=10-VAL.pkl'] = '50 pairs, 10 chain'
+                if journal_plot_type == PLOT_COMBINE_GUIDANCE:
+                    self.files['RelReg-cvx-constraints-noPairwiseReg-nCV=10-VAL.pkl'] = 'Ridge'
+                    self.files[
+                        'RelReg-cvx-constraints-numRandPairs=25-scipy-numSimilar=25-scipy-noRidgeOnFail-eps=1e-10-solver=SCS-L-BFGS-B-nCV=10-VAL.pkl'] = '25 similar, 25 pairs'
+                    self.files[
+                        'RelReg-cvx-constraints-numRandPairs=25-scipy-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10-VAL.pkl'] = '25 pairs'
+                    self.files[
+                        'RelReg-cvx-constraints-numSimilar=25-scipy-noRidgeOnFail-eps=1e-10-solver=SCS-L-BFGS-B-nCV=10-VAL.pkl'] = '25 similar'
         self.files['LapRidge-VAL.pkl'] = 'Laplacian Ridge Regression'
         #self.files['SKL-DumReg.pkl'] = 'Predict Mean'
         sizes = []

@@ -856,6 +856,7 @@ class RelativeRegressionMethod(Method):
         self.cv_params['C3'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         self.cv_params['C4'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         self.cv_params['s'] = 10**np.asarray(list(reversed(range(-3,3))),dtype='float64')
+        self.cv_params['C_similar'] = 10**np.asarray(list(reversed(range(-8,8))),dtype='float64')
         #self.cv_params['scale'] = 10**np.asarray(list(reversed(range(-2,2))),dtype='float64')
         self.scale = 1
         self.small_param_range = configs.small_param_range
@@ -911,6 +912,7 @@ class RelativeRegressionMethod(Method):
         self.bias_scale = configs.get('bias_scale', 0)
         self.mixed_guidance_set_size = configs.get('mixed_guidance_set_size', 0)
         self.num_chain_instances = configs.get('num_chain_instances', 0)
+        self.joint_cv_combined_guidance = True
 
         self.add_random_bound = configs.get('use_bound', False)
         self.use_bound = self.add_random_bound
@@ -963,6 +965,8 @@ class RelativeRegressionMethod(Method):
         '''
         if not self.use_pairwise:
             self.cv_params['C2'] = np.asarray([0])
+        if not self.use_similar:
+            self.cv_params['C_similar'] = np.asarray([0])
         if not self.use_bound:
             self.cv_params['C3'] = np.asarray([0])
         if not self.use_neighbor:
@@ -985,6 +989,7 @@ class RelativeRegressionMethod(Method):
             self.cv_params['s'] = np.asarray([.05, .1, .2, .3],dtype='float64')
             self.cv_params['C'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
             self.cv_params['C2'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
+            self.cv_params['C_similar'] = 10**np.asarray(list(reversed(range(-5,5))),dtype='float64')
 
         for key, values in self.cv_params.iteritems():
             if key == 's' or key == 'scale' or values.size <= 1:
@@ -1832,6 +1837,8 @@ class RelativeRegressionMethod(Method):
                     s += '-numSimilar=' + str(int(self.num_similar))
                     if getattr(self, 'similar_use_scipy', False):
                         s += '-scipy'
+            if use_similar and use_pairwise and getattr(self, 'joint_cv_combined_guidance', False):
+                s += '-jointCV'
             if getattr(self, 'use_mixed_cv', False):
                 s += '-mixedCV'
             if not getattr(self, 'ridge_on_fail', True) and not using_cvx:

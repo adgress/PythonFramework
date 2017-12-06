@@ -20,7 +20,7 @@ def create_project_configs():
 pc_fields_to_copy = bc.pc_fields_to_copy + [
     'include_size_in_file_name'
 ]
-#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_DROSOPHILIA
@@ -202,7 +202,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.neighbor_exp = neighbor_exp
 
         self.num_features = num_features
-        if self.data_set in {bc.DATA_DROSOPHILIA, bc.DATA_ADIENCE_ALIGNED_CNN_1}:
+        if self.data_set in {bc.DATA_DROSOPHILIA}:
             self.num_features = 50
 
         self.use_similar = use_similar
@@ -761,6 +761,7 @@ viz_params = [
     {'data_set': bc.DATA_BOSTON_HOUSING},
     {'data_set': bc.DATA_CONCRETE},
     {'data_set': bc.DATA_DROSOPHILIA},
+    {'data_set': bc.DATA_ADIENCE_ALIGNED_CNN_1},
 ]
 
 #For plotting all four types of guidance for a single data set

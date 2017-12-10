@@ -253,6 +253,8 @@ class LabeledData(LabeledVector):
         return test_data
 
     def get_transfer_inds(self,labels_or_ids):
+        if labels_or_ids is None:
+            return array_functions.true(self.n)
         if self.is_regression:
             return array_functions.find_set(self.data_set_ids,labels_or_ids)
         else:

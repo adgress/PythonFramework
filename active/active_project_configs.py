@@ -20,12 +20,12 @@ def create_project_configs():
 pc_fields_to_copy = bc.pc_fields_to_copy + [
     'include_size_in_file_name'
 ]
-data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
+#data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
 #data_set_to_use = bc.DATA_DROSOPHILIA
 
-#data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
+data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 
 data_sets_for_exps = [data_set_to_use]
 
@@ -45,19 +45,20 @@ batch_hinge_exps = False
 batch_size = [50]
 
 # Journal paper experiments
-batch_relative_variance = False
-batch_relative_bias = False
-batch_relative_diversity = False
-batch_relative_chain = False
-batch_relative_honest = False
+batch_relative_variance = True
+batch_relative_bias = True
+batch_relative_diversity = True
+batch_relative_chain = True
+batch_relative_honest = True
 batch_relative_combine_guidance = True
 
+PLOT_NOT_JOURNAL = -1
 PLOT_VARIANCE = 0
 PLOT_BIAS = 1
 PLOT_DIVERSITY = 2
 PLOT_CHAIN = 3
 PLOT_COMBINE_GUIDANCE = 4
-journal_plot_type = PLOT_COMBINE_GUIDANCE
+journal_plot_type = PLOT_VARIANCE
 
 bias_scale = 0
 bias_threshold = 0
@@ -202,6 +203,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.neighbor_exp = neighbor_exp
 
         self.num_features = num_features
+        #if self.data_set in {bc.DATA_DROSOPHILIA, bc.DATA__ALIGNED_CNN_1}:
         if self.data_set in {bc.DATA_DROSOPHILIA}:
             self.num_features = 50
 
@@ -572,88 +574,50 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.files = OrderedDict()
         base_file_name = 'RelReg-cvx-constraints-%s=%s'
         use_test = use_test_error_for_model_selection
+        num_feats_str = ''
         if pc.num_features > 0:
-            if use_test:
-                self.files['RelReg-cvx-constraints-noPairwiseReg-numFeats=' + str(pc.num_features) + '-TEST.pkl'] = 'TEST: Ridge Regression'
-                self.files['RelReg-cvx-constraints-noPairwiseReg-numFeats=' + str(pc.num_features) + '-nCV=10.pkl'] = 'Ridge Regression'
-            else:
-                self.files['RelReg-cvx-constraints-noPairwiseReg-numFeats=' + str(
-                    pc.num_features) + '-nCV=10-VAL.pkl'] = 'Ridge Regression'
-                if journal_plot_type == PLOT_VARIANCE:
-                    self.files[
-                        'RelReg-cvx-constraints-numRandPairs=50-scipy-logNoise=0.1-noRidgeOnFail-solver=SCS-numFeats=50-L-BFGS-B-nCV=10-VAL.pkl'] = '50 pairs, .1 noise'
-                    self.files[
-                        'RelReg-cvx-constraints-numRandPairs=50-scipy-logNoise=0.2-noRidgeOnFail-solver=SCS-numFeats=50-L-BFGS-B-nCV=10-VAL.pkl'] = '50 pairs, .2 noise'
-                if journal_plot_type == PLOT_BIAS:
-                    self.files[
-                        'RelReg-cvx-constraints-noPairwiseReg-numFeats=50-nCV=10-biasThresh=10-biasScale=0.2-VAL.pkl'] = 'Ridge, biasScale=.2'
-                    self.files[
-                        'RelReg-cvx-constraints-noPairwiseReg-numFeats=50-nCV=10-biasThresh=10-biasScale=0.1-VAL.pkl'] = 'Ridge, biasScale=.1'
-                    self.files[
-                        'RelReg-cvx-constraints-noPairwiseReg-numFeats=50-nCV=10-biasThresh=10-biasScale=0.05-VAL.pkl'] = 'Ridge, biasScale=.05'
-                if journal_plot_type == PLOT_DIVERSITY:
-                    self.files['RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-numFeats=50-L-BFGS-B-nCV=10-setSize=10-VAL.pkl'] = '50 pairs, set size 10'
-                    self.files[
-                        'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-numFeats=50-L-BFGS-B-nCV=10-setSize=20-VAL.pkl'] = '50 pairs, set size 20'
-                    self.files[
-                        'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-numFeats=50-L-BFGS-B-nCV=10-setSize=40-VAL.pkl'] = '50 pairs, set size 40'
-                    self.files[
-                        'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-numFeats=50-L-BFGS-B-nCV=10-setSize=80-VAL.pkl'] = '50 pairs, set size 80'
-                if journal_plot_type == PLOT_CHAIN:
-                    self.files['/RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-numFeats=50-L-BFGS-B-nCV=10-numChains=1-VAL.pkl'] = '50 pairs, 1 chain'
-                    self.files[
-                        '/RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-numFeats=50-L-BFGS-B-nCV=10-numChains=5-VAL.pkl'] = '50 pairs, 5 chains'
-                    self.files[
-                        '/RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-numFeats=50-L-BFGS-B-nCV=10-numChains=10-VAL.pkl'] = '50 pairs, 10 chains'
-                if journal_plot_type == PLOT_COMBINE_GUIDANCE:
-                    self.files['RelReg-cvx-constraints-noPairwiseReg-nCV=10-VAL.pkl'] = 'Ridge'
-                    self.files[
-                        'RelReg-cvx-constraints-numRandPairs=25-scipy-numSimilar=25-scipy-noRidgeOnFail-eps=1e-10-solver=SCS-numFeats=50-L-BFGS-B-nCV=10-VAL.pkl'] = '25 similar, 25 pairs'
-                    self.files[
-                        'RelReg-cvx-constraints-numRandPairs=25-scipy-noRidgeOnFail-solver=SCS-numFeats=50-L-BFGS-B-nCV=10-VAL.pkl'] = '25 pairs'
-                    self.files[
-                        'RelReg-cvx-constraints-numSimilar=25-scipy-noRidgeOnFail-eps=1e-10-solver=SCS-numFeats=50-L-BFGS-B-nCV=10-VAL.pkl'] = '25 similar'
+            num_feats_str = '-numFeats=%d' % pc.num_features
+        if journal_plot_type == PLOT_VARIANCE:
+            self.files[
+                'RelReg-cvx-constraints-numRandPairs=50-scipy-logNoise=0.2-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '50 Relative, .2 noise scale'
+            self.files[
+                'RelReg-cvx-constraints-numRandPairs=50-scipy-logNoise=0.1-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '50 Relative, .1 noise scale'
+            self.files[
+                'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '50 Relative'
+        if journal_plot_type == PLOT_BIAS:
+            self.files[
+                'RelReg-cvx-constraints-noPairwiseReg%s-nCV=10-biasThresh=10-biasScale=0.2-VAL.pkl'] = 'Ridge, .2 bias scale'
+            self.files['RelReg-cvx-constraints-noPairwiseReg%s-nCV=10-biasThresh=10-biasScale=0.1-VAL.pkl'] = 'Ridge, .1 bias scale'
+            self.files[
+                'RelReg-cvx-constraints-noPairwiseReg%s-nCV=10-biasThresh=10-biasScale=0.05-VAL.pkl'] = 'Ridge, .05 bias scale'
+            self.files['RelReg-cvx-constraints-noPairwiseReg%s-nCV=10-VAL.pkl'] = 'Ridge'
+        if journal_plot_type == PLOT_DIVERSITY:
+            self.files['RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-setSize=10-VAL.pkl'] = '50 Relative, set size 10'
+            self.files[
+                'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-setSize=20-VAL.pkl'] = '50 Relative, set size 20'
+            self.files[
+                'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-setSize=40-VAL.pkl'] = '50 Relative, set size 40'
+            self.files[
+                'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-setSize=80-VAL.pkl'] = '50 Relative, set size 80'
+        if journal_plot_type == PLOT_CHAIN:
+            self.files[
+                'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-numChains=1-VAL.pkl'] = '50 Relative, 1 chain'
+            self.files[
+                'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-numChains=5-VAL.pkl'] = '50 Relative, 5 chain'
+            self.files[
+                'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-numChains=10-VAL.pkl'] = '50 Relative, 10 chain'
+        if journal_plot_type == PLOT_COMBINE_GUIDANCE:
+            self.files['RelReg-cvx-constraints-noPairwiseReg-nCV=10-VAL.pkl'] = 'Ridge'
+            self.files[
+                'RelReg-cvx-constraints-numRandPairs=25-scipy-numSimilar=25-scipy-jointCV-noRidgeOnFail-eps=1e-10-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '25 Similar, 25 Relative'
+            #self.files['RelReg-cvx-constraints-numRandPairs=25-scipy-numSimilar=25-scipy-noRidgeOnFail-eps=1e-10-solver=SCS-L-BFGS-B-nCV=10-VAL.pkl'] = '25 similar, 25 pairs'
+            self.files['RelReg-cvx-constraints-numRandPairs=25-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '25 Relative'
+            self.files['RelReg-cvx-constraints-numSimilar=25-scipy-noRidgeOnFail-eps=1e-10-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '25 Similar'
+        files = self.files
+        self.files = OrderedDict()
+        for key, value in files.iteritems():
+            self.files[key % num_feats_str] = value
 
-        else:
-            if use_test:
-                self.files['RelReg-cvx-constraints-noPairwiseReg-TEST.pkl'] = 'TEST: Ridge Regression'
-                self.files['RelReg-cvx-constraints-noPairwiseReg.pkl'] = 'Ridge Regression'
-            else:
-                self.files['RelReg-cvx-constraints-noPairwiseReg-nCV=10-VAL.pkl'] = 'Ridge Regression'
-                if journal_plot_type == PLOT_VARIANCE:
-                    self.files[
-                        'RelReg-cvx-constraints-numRandPairs=50-scipy-logNoise=0.1-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10-VAL.pkl'] = '50 pairs, .1 noise'
-                    self.files[
-                        'RelReg-cvx-constraints-numRandPairs=50-scipy-logNoise=0.2-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10-VAL.pkl'] = '50 pairs, .2 noise'
-                if journal_plot_type == PLOT_BIAS:
-                    self.files[
-                        'RelReg-cvx-constraints-noPairwiseReg-nCV=10-biasThresh=10-biasScale=0.2-VAL.pkl'] = 'Ridge, biasScale=.2'
-                    self.files['RelReg-cvx-constraints-noPairwiseReg-nCV=10-biasThresh=10-biasScale=0.1-VAL.pkl'] = 'Ridge, biasScale=.1'
-                    self.files[
-                        'RelReg-cvx-constraints-noPairwiseReg-nCV=10-biasThresh=10-biasScale=0.05-VAL.pkl'] = 'Ridge, biasScale=.05'
-                if journal_plot_type == PLOT_DIVERSITY:
-                    self.files['RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10-setSize=10-VAL.pkl'] = '50 pairs, set size 10'
-                    self.files[
-                        'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10-setSize=20-VAL.pkl'] = '50 pairs, set size 20'
-                    self.files[
-                        'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10-setSize=40-VAL.pkl'] = '50 pairs, set size 40'
-                    self.files[
-                        'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10-setSize=80-VAL.pkl'] = '50 pairs, set size 80'
-                if journal_plot_type == PLOT_CHAIN:
-                    self.files[
-                        'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10-numChains=1-VAL.pkl'] = '50 pairs, 1 chain'
-                    self.files[
-                        'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10-numChains=5-VAL.pkl'] = '50 pairs, 5 chain'
-                    self.files[
-                        'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10-numChains=10-VAL.pkl'] = '50 pairs, 10 chain'
-                if journal_plot_type == PLOT_COMBINE_GUIDANCE:
-                    self.files['RelReg-cvx-constraints-noPairwiseReg-nCV=10-VAL.pkl'] = 'Ridge'
-                    self.files[
-                        'RelReg-cvx-constraints-numRandPairs=25-scipy-numSimilar=25-scipy-noRidgeOnFail-eps=1e-10-solver=SCS-L-BFGS-B-nCV=10-VAL.pkl'] = '25 similar, 25 pairs'
-                    self.files[
-                        'RelReg-cvx-constraints-numRandPairs=25-scipy-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10-VAL.pkl'] = '25 pairs'
-                    self.files[
-                        'RelReg-cvx-constraints-numSimilar=25-scipy-noRidgeOnFail-eps=1e-10-solver=SCS-L-BFGS-B-nCV=10-VAL.pkl'] = '25 similar'
         self.files['LapRidge-VAL.pkl'] = 'Laplacian Ridge Regression'
         #self.files['SKL-DumReg.pkl'] = 'Predict Mean'
         sizes = []
@@ -701,29 +665,30 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         ]
 
         methods = []
-        if self.plot_type == VisualizationConfigs.PLOT_PAIRWISE:
-            methods.append(('numRandPairs','RelReg, %s pairs', 'Our Method: %s relative'))
-            methods.append(('numRandPairsHinge','RelReg, %s pairs hinge', 'Zhu 2007: %s relative'))
-            self.title = 'Relative'
-            #if pc.data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
-            #    self.ylims = [0,12]
-        elif self.plot_type == VisualizationConfigs.PLOT_BOUND:
-            methods.append(('numRandLogBounds', '%s log bounds', 'Our Method: %s bound'))
-            methods.append(('numRandQuartiles', 'RelReg, %s quartiles', 'Baseline: %s'))
-            suffixes['eps'] = [None, '1e-08', '1e-10', '1e-16']
-            self.title = 'Bound'
-        elif self.plot_type == VisualizationConfigs.PLOT_NEIGHBOR:
-            #methods.append(('numRandNeighborConvex', 'RelReg, %s rand neighbors convex', 'Our Method: %s neighbors'))
-            methods.append(('numRandPairs','RelReg, %s pairs', 'Our Method: %s relative'))
-            #methods.append(('numRandNeighborConvexHinge', 'RelReg, %s rand neighbors convex hinge', 'Our Method: %s neighbor, hinge'))
-            methods.append(('numRandNeighborExp', 'RelReg, %s rand neighbors convex exp', 'Our Method: %s neighbor'))
-            sizes = [20, 50]
-            self.title = 'Neighbor'
-        elif self.plot_type == VisualizationConfigs.PLOT_SIMILAR:
-            suffixes['eps'] = [None, '1e-08', '1e-10', '1e-16']
-            methods.append(('numSimilar','RelReg, %s similar', 'Our Method: %s similar'))
-            #methods.append(('numSimilarHinge','RelReg, %s pairs hinge', 'Our Method: %s similar, hinge'))
-            self.title = 'Similar'
+        if journal_plot_type == PLOT_NOT_JOURNAL:
+            if self.plot_type == VisualizationConfigs.PLOT_PAIRWISE:
+                methods.append(('numRandPairs','RelReg, %s pairs', 'Our Method: %s relative'))
+                methods.append(('numRandPairsHinge','RelReg, %s pairs hinge', 'Zhu 2007: %s relative'))
+                self.title = 'Relative'
+                #if pc.data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
+                #    self.ylims = [0,12]
+            elif self.plot_type == VisualizationConfigs.PLOT_BOUND:
+                methods.append(('numRandLogBounds', '%s log bounds', 'Our Method: %s bound'))
+                methods.append(('numRandQuartiles', 'RelReg, %s quartiles', 'Baseline: %s'))
+                suffixes['eps'] = [None, '1e-08', '1e-10', '1e-16']
+                self.title = 'Bound'
+            elif self.plot_type == VisualizationConfigs.PLOT_NEIGHBOR:
+                #methods.append(('numRandNeighborConvex', 'RelReg, %s rand neighbors convex', 'Our Method: %s neighbors'))
+                methods.append(('numRandPairs','RelReg, %s pairs', 'Our Method: %s relative'))
+                #methods.append(('numRandNeighborConvexHinge', 'RelReg, %s rand neighbors convex hinge', 'Our Method: %s neighbor, hinge'))
+                methods.append(('numRandNeighborExp', 'RelReg, %s rand neighbors convex exp', 'Our Method: %s neighbor'))
+                sizes = [20, 50]
+                self.title = 'Neighbor'
+            elif self.plot_type == VisualizationConfigs.PLOT_SIMILAR:
+                suffixes['eps'] = [None, '1e-08', '1e-10', '1e-16']
+                methods.append(('numSimilar','RelReg, %s similar', 'Our Method: %s similar'))
+                #methods.append(('numSimilarHinge','RelReg, %s pairs hinge', 'Our Method: %s similar, hinge'))
+                self.title = 'Similar'
 
         all_params = list(grid_search.ParameterGrid(suffixes))
         for file_suffix, legend_name, legend_name_paper in methods:

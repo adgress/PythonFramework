@@ -27,15 +27,15 @@ all_data_sets = [
     bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10,
     bc.DATA_BOSTON_HOUSING,
     bc.DATA_CONCRETE,
-    #bc.DATA_DROSOPHILIA,
-    bc.DATA_DS2
+    bc.DATA_DROSOPHILIA,
+    #bc.DATA_DS2
 ]
 
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
-#data_set_to_use = bc.DATA_DROSOPHILIA
-data_set_to_use = bc.DATA_DS2
+data_set_to_use = bc.DATA_DROSOPHILIA
+#data_set_to_use = bc.DATA_DS2
 
 
 viz_for_paper = True
@@ -64,6 +64,7 @@ other_method_configs = {
     'use_validation': True,
     'use_uncertainty': False,
     'use_oed': False,
+    'use_density': False,
     'use_oracle': False,
     'num_features': None,
     'num_pairwise': 0,
@@ -74,9 +75,9 @@ run_batch = True
 if helper_functions.is_laptop():
     run_batch = True
 
-active_iterations = 6
-active_items_per_iteration = 20
-num_labels = 10
+active_iterations = 2
+active_items_per_iteration = 50
+num_labels = 20
 
 show_legend_on_all = True
 
@@ -236,6 +237,7 @@ class MainConfigs(bc.MainConfigs):
 
         use_oed = method_configs.use_oed
         use_uncertainty = method_configs.use_uncertainty
+        use_density = method_configs.use_density
         method_configs.use_test_error_for_model_selection = pc.use_test_error_for_model_selection
 
         if method_configs.use_oracle:
@@ -245,6 +247,8 @@ class MainConfigs(bc.MainConfigs):
                 active = active_methods.RelativeActiveOEDMethod(method_configs)
             elif use_uncertainty:
                 active = active_methods.RelativeActiveUncertaintyMethod(method_configs)
+            elif use_density:
+                active = active_methods.RelativeActiveDensityMethod(method_configs)
             else:
                 active = active_methods.RelativeActiveMethod(method_configs)
 
@@ -315,8 +319,9 @@ class BatchConfigs(bc.BatchConfigs):
             if use_relative:
                 new_params = [
                     #{'use_oed': True, 'use_uncertainty': False},
-                    {'use_oed': False, 'use_uncertainty': False},
-                    #{'use_oed': False, 'use_uncertainty': True},
+                    {'use_oed': False, 'use_uncertainty': False, 'use_density': False},
+                    {'use_oed': False, 'use_uncertainty': True, 'use_density': False},
+                    {'use_oed': False, 'use_uncertainty': False, 'use_density': True},
                     #{'use_oracle': True}
                 ]
         else:
@@ -381,29 +386,33 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         active_opts_stf = '-10-' + str(active_iterations) + '-' + str(active_items_per_iteration)
         if data_set in {bc.DATA_DS2}:
             active_opts_stf = '-5-' + str(active_iterations) + '-' + str(active_items_per_iteration)
-        active_opts_stf = '-20-' + str(active_iterations) + '-' + str(active_items_per_iteration)
+        active_opts_stf = '-' + str(num_labels) + '-' + str(active_iterations) + '-' + str(active_items_per_iteration)
         #rand_pairs_str = '-numRandPairs=1'
         #rand_pairs_str = '-numRandPairs=2'
         rand_pairs_str = '-numRandPairs=0'
         fixed_model_exps = False
-        compare_random = True
+        compare_random = False
         if compare_random:
             self.files['RelActiveRandom-10-6-20+RelReg-cvx-constraints-numRandPairs=0-scipy-logFix-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10.pkl'] = 'Random, 10-6-20'
             self.files['RelActiveRandom-10-2-20+RelReg-cvx-constraints-numRandPairs=0-scipy-logFix-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10.pkl'] = 'Random, 10-2-20'
             self.files['RelActiveRandom-10-2-50+RelReg-cvx-constraints-numRandPairs=0-scipy-logFix-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10.pkl'] = 'Random, 10-2-50'
         elif not fixed_model_exps:
             files = [
-                ('RelActiveRandom%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'Random, pairwise, Relative=0'),
-                ('RelActiveUncer%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'Uncertainty, pairwise, Relative=0'),
+                ('RelActiveRandom%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl', 'Random, pairwise, Relative=0'),
+                ('RelActiveUncer%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl', 'Uncertainty, pairwise, Relative=0'),
                 #('RelActiveOED%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'OED, pairwise, Relative=0'),
                 #('RelActiveOED-grad%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad, pairwise, Relative=0'),
-                ('RelActiveOED-grad-labeled%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad-labeled, pairwise, Relative=0'),
-                ('RelActiveOracle%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10.pkl','Oracle, pairwise, Relative=0'),
+                ('RelActiveOED-grad-labeled%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl','OED-grad-labeled, pairwise, Relative=0'),
+                ('RelActiveDensity%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl','Density, pairwise, Relative=0'),
+                ('RelActiveOracle%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl','Oracle, pairwise, Relative=0'),
                 #('RelActiveOED-grad-labeled-trueY%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad-labeled-trueY, pairwise, Relative=0'),
                 #('RelActiveOED-labeled%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-labeled, pairwise, Relative=0'),
                 #('RelActiveOED-E%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-E-grad, pairwise, Relative=0'),
                 #('ActiveRandom+SKL-RidgeReg.pkl', 'Random, Pointwise')
             ]
+            for key, value in files:
+                key %= (active_opts_stf, num_feats)
+                self.files[key] = value
         else:
             files = [
                 (

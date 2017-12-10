@@ -537,6 +537,58 @@ class RelativeActiveMethod(ActiveMethod):
         s += '+' + self.base_learner.prefix
         return s
 
+class RelativeActiveDensityMethod(RelativeActiveMethod):
+    def __init__(self,configs=MethodConfigs()):
+        super(RelativeActiveDensityMethod, self).__init__(configs)
+
+    def get_cluster_centroids(self, X):
+        p = X.shape[1]
+        idx = np.zeros(p)
+        for i in range(p):
+            xi = X[:, i]
+            idx[i] = np.argmin(xi)
+        return idx.astype(np.int)
+
+    def create_sampling_distribution(self, base_learner, data, fold_results):
+        k_means = KMeans(n_clusters=self.configs.active_items_per_iteration*2)
+        I = data.is_train.nonzero()[0]
+        X_cluster_space = k_means.fit_transform(data.x[I])
+        #cluster_inds = k_means.fit_predict(data.x[I])
+        centroid_inds = self.get_cluster_centroids(X_cluster_space)
+        permuted_inds = np.random.permutation(centroid_inds)
+        centroid_pairs = np.reshape(permuted_inds, (permuted_inds.size/2, 2))
+        for ind, (idx1, idx2) in enumerate(centroid_pairs):
+            if data.true_y[idx1] <= data.true_y[idx2]:
+                continue
+            centroid_pairs[ind] = centroid_pairs[ind, ::-1]
+        d = np.zeros(centroid_pairs.shape[0])
+        d[:] = 1
+        d = d / d.sum()
+        return d, centroid_pairs
+
+    def create_pairs(self, data, base_learner):
+        #assert False, 'Use PairwiseRe
+        I = data.is_train.nonzero()[0]
+        I = np.random.choice(I, num_instances_for_pairs, False)
+        all_pairs = set()
+        for i in I:
+            for j in I:
+                if data.true_y[i] >= data.true_y[j]:
+                    continue
+                #TODO: Don't add redundant pairs
+                all_pairs.add((i, j))
+        all_pairs = np.asarray(list(all_pairs))
+        return all_pairs
+
+    @property
+    def prefix(self):
+        s = 'RelActiveDensity'
+        if getattr(self, 'fix_model', False):
+            s += '_fixed-model'
+        s += '-' + self.active_options_suffix()
+        s += '+' + self.base_learner.prefix
+        return s
+
 
 class RelativeActiveOracleMethod(RelativeActiveMethod):
     def __init__(self, configs=MethodConfigs()):

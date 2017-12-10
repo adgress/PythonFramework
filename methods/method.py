@@ -1470,6 +1470,8 @@ class RelativeRegressionMethod(Method):
                 # If using multiple forms of guidance, prevent double regularizing w
                 if using_scipy:
                     C = 0
+                    if self.joint_cv_combined_guidance:
+                        C2 = self.C2
                 opt_data = logistic_difference_optimize.optimize_data(
                     x, y, C, C2
                 )

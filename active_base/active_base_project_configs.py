@@ -28,13 +28,15 @@ all_data_sets = [
     bc.DATA_BOSTON_HOUSING,
     bc.DATA_CONCRETE,
     bc.DATA_DROSOPHILIA,
+    bc.DATA_ADIENCE_ALIGNED_CNN_1
     #bc.DATA_DS2
 ]
 
 #data_set_to_use = bc.DATA_SYNTHETIC_LINEAR_REGRESSION_10
 #data_set_to_use = bc.DATA_BOSTON_HOUSING
 #data_set_to_use = bc.DATA_CONCRETE
-data_set_to_use = bc.DATA_DROSOPHILIA
+#data_set_to_use = bc.DATA_DROSOPHILIA
+data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 #data_set_to_use = bc.DATA_DS2
 
 

@@ -66,7 +66,7 @@ PLOT_BIAS = 1
 PLOT_DIVERSITY = 2
 PLOT_CHAIN = 3
 PLOT_COMBINE_GUIDANCE = 4
-journal_plot_type = PLOT_CHAIN
+journal_plot_type = PLOT_COMBINE_GUIDANCE
 
 bias_scale = 0
 bias_threshold = 0

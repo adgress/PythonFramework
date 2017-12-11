@@ -27,6 +27,13 @@ pc_fields_to_copy = bc.pc_fields_to_copy + [
 
 data_set_to_use = bc.DATA_ADIENCE_ALIGNED_CNN_1
 
+ALL_DATA_SETS = [
+    bc.DATA_SYNTHETIC_LINEAR_REGRESSION,
+    bc.DATA_BOSTON_HOUSING,
+    bc.DATA_CONCRETE,
+    bc.DATA_DROSOPHILIA,
+    bc.DATA_ADIENCE_ALIGNED_CNN_1
+]
 data_sets_for_exps = [data_set_to_use]
 
 viz_for_paper = True
@@ -45,12 +52,13 @@ batch_hinge_exps = False
 batch_size = [50]
 
 # Journal paper experiments
-batch_relative_variance = True
-batch_relative_bias = True
-batch_relative_diversity = True
+batch_relative_variance = False
+batch_relative_bias = False
+batch_relative_diversity = False
 batch_relative_chain = True
-batch_relative_honest = True
-batch_relative_combine_guidance = True
+batch_relative_honest = False
+batch_relative_combine_guidance = False
+run_batch_data_sets = True
 
 PLOT_NOT_JOURNAL = -1
 PLOT_VARIANCE = 0
@@ -58,7 +66,7 @@ PLOT_BIAS = 1
 PLOT_DIVERSITY = 2
 PLOT_CHAIN = 3
 PLOT_COMBINE_GUIDANCE = 4
-journal_plot_type = PLOT_VARIANCE
+journal_plot_type = PLOT_CHAIN
 
 bias_scale = 0
 bias_threshold = 0
@@ -396,138 +404,145 @@ class BatchConfigs(bc.BatchConfigs):
             self.config_list = [MainConfigs(pc)]
             return
 
-        c = pc.copy()
-        c.use_pairwise = False
-        c.use_neighbor = False
-        c.use_bound = False
-        c.use_hinge = False
-        c.use_quartile = False
-        c.use_similar = False
-        c.use_similar_hinge = False
-        #c.use_test_error_for_model_selection = False
-        self.config_list = [MainConfigs(c)]
+        all_data_sets = [data_set_to_use]
+        if run_batch_data_sets:
+            all_data_sets = ALL_DATA_SETS
+        self.config_list = []
+        for data_set in all_data_sets:
+            #c = pc.copy()
+            c = ProjectConfigs(data_set)
+            c.use_pairwise = False
+            c.use_neighbor = False
+            c.use_bound = False
+            c.use_hinge = False
+            c.use_quartile = False
+            c.use_similar = False
+            c.use_similar_hinge = False
+            #c.use_test_error_for_model_selection = False
+            self.config_list.append(MainConfigs(c))
 
-        if batch_ssl:
-            ssl_params = {
-                'use_ssl': [True]
-            }
-            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(ssl_params)]
+            if batch_ssl:
+                ssl_params = {
+                    'use_ssl': [True]
+                }
+                self.config_list += [MainConfigs(configs) for configs in c.generate_copies(ssl_params)]
 
-        if batch_pairwise:
-            pairwise_params = {
-                'use_pairwise': [True],
-                'num_pairwise': batch_size,
-            }
-            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
-            if batch_hinge_exps:
-                pairwise_hinge_params = {
+            if batch_pairwise:
+                pairwise_params = {
                     'use_pairwise': [True],
-                    'use_hinge': [True],
                     'num_pairwise': batch_size,
                 }
-                self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_hinge_params)]
+                self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
+                if batch_hinge_exps:
+                    pairwise_hinge_params = {
+                        'use_pairwise': [True],
+                        'use_hinge': [True],
+                        'num_pairwise': batch_size,
+                    }
+                    self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_hinge_params)]
 
-        if batch_bound:
-            bound_params = {
-                'use_bound': [True],
-                'num_bound': batch_size,
-            }
-            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bound_params)]
-
-            bound_baseline_params = {
-                'use_bound': [True],
-                'num_bound': batch_size,
-                'use_baseline': [True],
-                'bound_logistic': [False]
-            }
-
-            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bound_baseline_params)]
-            '''
-            if batch_hinge_exps:
-                bound_hinge_params = {
+            if batch_bound:
+                bound_params = {
                     'use_bound': [True],
                     'num_bound': batch_size,
+                }
+                self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bound_params)]
+
+                bound_baseline_params = {
+                    'use_bound': [True],
+                    'num_bound': batch_size,
+                    'use_baseline': [True],
                     'bound_logistic': [False]
                 }
-                self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bound_hinge_params)]
-            '''
-        if batch_neighbor:
-            neighbor_params = {
-                'use_neighbor': [True],
-                'num_neighbor': batch_size,
-            }
-            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(neighbor_params)]
-            '''
-            if batch_hinge_exps:
-                neighbor_hinge_params = {
+
+                self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bound_baseline_params)]
+                '''
+                if batch_hinge_exps:
+                    bound_hinge_params = {
+                        'use_bound': [True],
+                        'num_bound': batch_size,
+                        'bound_logistic': [False]
+                    }
+                    self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bound_hinge_params)]
+                '''
+            if batch_neighbor:
+                neighbor_params = {
                     'use_neighbor': [True],
-                    'neighbor_hinge': [True],
                     'num_neighbor': batch_size,
                 }
-                self.config_list += [MainConfigs(configs) for configs in c.generate_copies(neighbor_hinge_params)]
-            '''
-        if batch_similar:
-            similar_params = {
-                'use_similar': [True],
-                'num_similar': batch_size,
-            }
-            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_params)]
-            '''
-            if batch_hinge_exps:
-                similar_hinge_params = {
+                self.config_list += [MainConfigs(configs) for configs in c.generate_copies(neighbor_params)]
+                '''
+                if batch_hinge_exps:
+                    neighbor_hinge_params = {
+                        'use_neighbor': [True],
+                        'neighbor_hinge': [True],
+                        'num_neighbor': batch_size,
+                    }
+                    self.config_list += [MainConfigs(configs) for configs in c.generate_copies(neighbor_hinge_params)]
+                '''
+            if batch_similar:
+                similar_params = {
                     'use_similar': [True],
-                    'use_similar_hinge': [True],
                     'num_similar': batch_size,
                 }
-                self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_hinge_params)]
-            '''
-        if batch_relative_variance:
-            pairwise_params = {
-                'use_pairwise': [True],
-                'num_pairwise': batch_size,
-            }
-            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
-            pairwise_params['logistic_noise'] = [.1, .2]
-            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
-        if batch_relative_bias:
-            bias_params = {
-                'bias_scale': [.05, .1, .2],
-                'bias_threshold': [10],
-            }
-            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bias_params)]
-        if batch_relative_diversity:
-            pairwise_params = {
-                'use_pairwise': [True],
-                'num_pairwise': batch_size,
-                'mixed_guidance_set_size': [10, 20, 40, 80, 160]
-            }
-            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
-        if batch_relative_chain:
-            pairwise_params = {
-                'use_pairwise': [True],
-                'num_chain_instances': [1, 5, 10],
-            }
-            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
-        if batch_relative_honest:
-            pass
-        if batch_relative_combine_guidance:
-            combined_params = {
-                'use_pairwise': [True],
-                'num_pairwise': [25],
-                'use_similar': [True],
-                'num_similar': [25],
-            }
-            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(combined_params)]
-            pairwise_params = {
-                'use_pairwise': [True],
-                'num_pairwise': [25],
-            }
-            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
-            similar_params = {
-                'use_similar': [True],
-                'num_similar': [25],
-            }
-            self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_params)]
+                self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_params)]
+                '''
+                if batch_hinge_exps:
+                    similar_hinge_params = {
+                        'use_similar': [True],
+                        'use_similar_hinge': [True],
+                        'num_similar': batch_size,
+                    }
+                    self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_hinge_params)]
+                '''
+            if batch_relative_variance:
+                pairwise_params = {
+                    'use_pairwise': [True],
+                    'num_pairwise': batch_size,
+                }
+                self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
+                pairwise_params['logistic_noise'] = [.1, .2]
+                self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
+            if batch_relative_bias:
+                bias_params = {
+                    'bias_scale': [.05, .1, .2],
+                    'bias_threshold': [10],
+                }
+                self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bias_params)]
+            if batch_relative_diversity:
+                pairwise_params = {
+                    'use_pairwise': [True],
+                    'num_pairwise': batch_size,
+                    'mixed_guidance_set_size': [10, 20, 40, 80, 160]
+                }
+                self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
+            if batch_relative_chain:
+                pairwise_params = {
+                    'use_pairwise': [True],
+                    'num_chain_instances': [0, 1, 5, 10],
+                    'num_pairwise': [25],
+                }
+                self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
+            if batch_relative_honest:
+                pass
+            if batch_relative_combine_guidance:
+                combined_params = {
+                    'use_pairwise': [True],
+                    'num_pairwise': [25],
+                    'use_similar': [True],
+                    'num_similar': [25],
+                }
+                self.config_list += [MainConfigs(configs) for configs in c.generate_copies(combined_params)]
+                pairwise_params = {
+                    'use_pairwise': [True],
+                    'num_pairwise': [25],
+                }
+                self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
+                similar_params = {
+                    'use_similar': [True],
+                    'num_similar': [25],
+                }
+                self.config_list += [MainConfigs(configs) for configs in c.generate_copies(similar_params)]
 
 class VisualizationConfigs(bc.VisualizationConfigs):
     PLOT_PAIRWISE = 1
@@ -546,6 +561,8 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.borders = (.05,.95,.95,.05)
         self.data_set_to_use = pc.data_set
         self.title = bc.data_name_dict.get(self.data_set_to_use, 'Unknown Data Set')
+        if pc.data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
+            self.title = 'Human Age'
         self.show_legend_on_all = show_legend_on_all
         self.x_axis_string = 'Number of labeled instances'
         if pc.data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
@@ -599,6 +616,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                 'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-setSize=40-VAL.pkl'] = '50 Relative, set size 40'
             self.files[
                 'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-setSize=80-VAL.pkl'] = '50 Relative, set size 80'
+            self.files['RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '50 Relative'
         if journal_plot_type == PLOT_CHAIN:
             self.files[
                 'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-numChains=1-VAL.pkl'] = '50 Relative, 1 chain'
@@ -606,13 +624,14 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                 'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-numChains=5-VAL.pkl'] = '50 Relative, 5 chain'
             self.files[
                 'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-numChains=10-VAL.pkl'] = '50 Relative, 10 chain'
-        if journal_plot_type == PLOT_COMBINE_GUIDANCE:
-            self.files['RelReg-cvx-constraints-noPairwiseReg-nCV=10-VAL.pkl'] = 'Ridge'
             self.files[
-                'RelReg-cvx-constraints-numRandPairs=25-scipy-numSimilar=25-scipy-jointCV-noRidgeOnFail-eps=1e-10-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '25 Similar, 25 Relative'
+                'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '50 Relative'
+        if journal_plot_type == PLOT_COMBINE_GUIDANCE:
+            self.files['RelReg-cvx-constraints-noPairwiseReg%s-nCV=10-VAL.pkl'] = 'Ridge'
             #self.files['RelReg-cvx-constraints-numRandPairs=25-scipy-numSimilar=25-scipy-noRidgeOnFail-eps=1e-10-solver=SCS-L-BFGS-B-nCV=10-VAL.pkl'] = '25 similar, 25 pairs'
             self.files['RelReg-cvx-constraints-numRandPairs=25-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '25 Relative'
             self.files['RelReg-cvx-constraints-numSimilar=25-scipy-noRidgeOnFail-eps=1e-10-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '25 Similar'
+            self.files['RelReg-cvx-constraints-numRandPairs=25-scipy-numSimilar=25-scipy-jointCV-noRidgeOnFail-eps=1e-10-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '25 Similar, 25 Relative'
         files = self.files
         self.files = OrderedDict()
         for key, value in files.iteritems():

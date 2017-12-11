@@ -279,7 +279,8 @@ def run_visualization():
         #show_x_label = num_rows == 1 or subplot_idx > (num_rows-1)*num_cols
         #show_x_label = num_rows == 1 or subplot_idx == 8
         #show_x_label = subplot_idx == 9
-        show_x_label = subplot_idx == 8
+        #show_x_label = subplot_idx == 8
+        show_x_label = True
         show_y_label = num_cols == 1 or subplot_idx % num_cols == 1 or vis_configs.always_show_y_label
 
         if show_x_label:

@@ -38,7 +38,7 @@ import constrained_methods
 from constrained_methods import PairwiseConstraint
 from utility import array_functions
 
-num_instances_for_pairs = 20
+num_instances_for_pairs = 100
 
 class ActiveMethod(method.Method):
     def __init__(self,configs=MethodConfigs()):

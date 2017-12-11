@@ -54,7 +54,8 @@ from scipy import optimize
 import warnings
 from methods import preprocessing
 try:
-    from dccp.problem import is_dccp
+    #from dccp.problem import is_dccp
+    is_dccp = lambda x: False
 except:
     is_dccp = lambda x: False
 

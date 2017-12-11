@@ -78,7 +78,7 @@ if helper_functions.is_laptop():
     run_batch = True
 
 active_iterations = 2
-active_items_per_iteration = 50
+active_items_per_iteration = 200
 num_labels = 20
 
 show_legend_on_all = True

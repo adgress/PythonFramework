@@ -77,7 +77,7 @@ run_batch = True
 if helper_functions.is_laptop():
     run_batch = True
 
-active_iterations = 2
+active_iterations = 5
 active_items_per_iteration = 200
 num_labels = 20
 
@@ -324,6 +324,7 @@ class BatchConfigs(bc.BatchConfigs):
                     {'use_oed': False, 'use_uncertainty': False, 'use_density': False},
                     {'use_oed': False, 'use_uncertainty': True, 'use_density': False},
                     {'use_oed': False, 'use_uncertainty': False, 'use_density': True},
+                    {'use_oed': True, 'use_uncertainty': False, 'use_density': False},
                     #{'use_oracle': True}
                 ]
         else:
@@ -355,8 +356,10 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         self.borders = (.05,.95,.95,.05)
         self.data_set_to_use = pc.data_set
         self.title = bc.data_name_dict.get(self.data_set_to_use, 'Unknown Data Set')
+        if pc.data_set == bc.DATA_ADIENCE_ALIGNED_CNN_1:
+            self.title = 'Human Age'
         self.show_legend_on_all = show_legend_on_all
-        self.x_axis_string = 'Number of labeled instances'
+        self.x_axis_string = 'Active Learning Iterations'
         '''
         if pc.data_set == bc.DATA_SYNTHETIC_LINEAR_REGRESSION:
             self.ylims = [0,12]
@@ -400,12 +403,12 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['RelActiveRandom-10-2-50+RelReg-cvx-constraints-numRandPairs=0-scipy-logFix-noRidgeOnFail-solver=SCS-L-BFGS-B-nCV=10.pkl'] = 'Random, 10-2-50'
         elif not fixed_model_exps:
             files = [
-                ('RelActiveRandom%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl', 'Random, pairwise, Relative=0'),
-                ('RelActiveUncer%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl', 'Uncertainty, pairwise, Relative=0'),
+                ('RelActiveRandom%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl', 'Random'),
+                ('RelActiveUncer%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl', 'Uncertainty'),
                 #('RelActiveOED%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl', 'OED, pairwise, Relative=0'),
                 #('RelActiveOED-grad%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad, pairwise, Relative=0'),
                 ('RelActiveOED-grad-labeled%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl','OED-grad-labeled, pairwise, Relative=0'),
-                ('RelActiveDensity%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl','Density, pairwise, Relative=0'),
+                ('RelActiveDensity%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl','Density'),
                 ('RelActiveOracle%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl','Oracle, pairwise, Relative=0'),
                 #('RelActiveOED-grad-labeled-trueY%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-grad-labeled-trueY, pairwise, Relative=0'),
                 #('RelActiveOED-labeled%s+RelReg-cvx-constraints' + rand_pairs_str + '-scipy-logFix-solver=SCS%s-L-BFGS-B-nCV=10.pkl','OED-labeled, pairwise, Relative=0'),

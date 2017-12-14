@@ -78,7 +78,7 @@ if helper_functions.is_laptop():
     run_batch = True
 
 active_iterations = 5
-active_items_per_iteration = 200
+active_items_per_iteration = 20
 num_labels = 20
 
 show_legend_on_all = True
@@ -260,8 +260,8 @@ class MainConfigs(bc.MainConfigs):
             else:
                 active = active_methods.ActiveMethod(method_configs)
 
-        if pc.data_set in {bc.DATA_DROSOPHILIA, bc.DATA_ADIENCE_ALIGNED_CNN_1}:
-            method_configs.num_features = 11
+        #if pc.data_set in {bc.DATA_DROSOPHILIA, bc.DATA_ADIENCE_ALIGNED_CNN_1}:
+        #    method_configs.num_features = 11
         relative_reg = methods.method.RelativeRegressionMethod(method_configs)
         ridge_reg = method.SKLRidgeRegression(method_configs)
         mean_reg = method.SKLMeanRegressor(method_configs)

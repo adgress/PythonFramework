@@ -38,7 +38,7 @@ import constrained_methods
 from constrained_methods import PairwiseConstraint
 from utility import array_functions
 
-num_instances_for_pairs = 100
+num_instances_for_pairs = 30
 
 class ActiveMethod(method.Method):
     def __init__(self,configs=MethodConfigs()):
@@ -773,7 +773,7 @@ class RelativeActiveOEDMethod(RelativeActiveMethod):
         x = self.base_learner.transform.transform(data.x)
         x_labeled = self.base_learner.transform.transform(data.x[data.is_labeled & data.is_train])
         fisher_x = x_labeled.T.dot(x_labeled) / x_labeled.shape[0]
-        fisher_reg = self.base_learner.C*np.eye(p)
+        fisher_reg = self.base_learner.C*np.eye(x_labeled.shape[1])
         deltas = list()
         #fisher_pairwise = np.zeros((p,p))
         for i in I:

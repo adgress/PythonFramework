@@ -55,9 +55,9 @@ batch_size = [50]
 batch_relative_variance = False
 batch_relative_bias = False
 batch_relative_diversity = False
-batch_relative_chain = True
-batch_relative_honest = False
+batch_relative_chain = False
 batch_relative_combine_guidance = False
+batch_relative_flip = True
 run_batch_data_sets = True
 
 PLOT_NOT_JOURNAL = -1
@@ -523,8 +523,13 @@ class BatchConfigs(bc.BatchConfigs):
                     'num_pairwise': [25],
                 }
                 self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
-            if batch_relative_honest:
-                pass
+            if batch_relative_flip:
+                pairwise_params = {
+                    'use_pairwise': [True],
+                    'noise_rate': [.05, .1, .25],
+                    'num_pairwise': [50],
+                }
+                self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
             if batch_relative_combine_guidance:
                 combined_params = {
                     'use_pairwise': [True],

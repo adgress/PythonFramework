@@ -66,7 +66,8 @@ PLOT_BIAS = 1
 PLOT_DIVERSITY = 2
 PLOT_CHAIN = 3
 PLOT_COMBINE_GUIDANCE = 4
-journal_plot_type = PLOT_COMBINE_GUIDANCE
+PLOT_FLIPPED = 5
+journal_plot_type = PLOT_FLIPPED
 
 bias_scale = 0
 bias_threshold = 0
@@ -505,7 +506,7 @@ class BatchConfigs(bc.BatchConfigs):
                 self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
             if batch_relative_bias:
                 bias_params = {
-                    'bias_scale': [.05, .1, .2],
+                    'bias_scale': [.05, .1, .15, .2],
                     'bias_threshold': [10],
                 }
                 self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bias_params)]
@@ -526,7 +527,7 @@ class BatchConfigs(bc.BatchConfigs):
             if batch_relative_flip:
                 pairwise_params = {
                     'use_pairwise': [True],
-                    'noise_rate': [.05, .1, .25],
+                    'noise_rate': [.05, .1, .25, .5],
                     'num_pairwise': [50],
                 }
                 self.config_list += [MainConfigs(configs) for configs in c.generate_copies(pairwise_params)]
@@ -600,35 +601,31 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         if pc.num_features > 0:
             num_feats_str = '-numFeats=%d' % pc.num_features
         if journal_plot_type == PLOT_VARIANCE:
-            self.files[
-                'RelReg-cvx-constraints-numRandPairs=50-scipy-logNoise=0.2-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '50 Relative, .2 noise scale'
-            self.files[
-                'RelReg-cvx-constraints-numRandPairs=50-scipy-logNoise=0.1-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '50 Relative, .1 noise scale'
-            self.files[
-                'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '50 Relative'
+            self.files['RelReg-cvx-constraints-numRandPairs=50-scipy-logNoise=0.2-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '50 Relative, 20% Noise Scale'
+            self.files['RelReg-cvx-constraints-numRandPairs=50-scipy-logNoise=0.1-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '50 Relative, 10% Noise Scale'
+            self.files['RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '50 Relative'
         if journal_plot_type == PLOT_BIAS:
-            self.files[
-                'RelReg-cvx-constraints-noPairwiseReg%s-nCV=10-biasThresh=10-biasScale=0.2-VAL.pkl'] = 'Ridge, .2 bias scale'
-            self.files['RelReg-cvx-constraints-noPairwiseReg%s-nCV=10-biasThresh=10-biasScale=0.1-VAL.pkl'] = 'Ridge, .1 bias scale'
-            self.files[
-                'RelReg-cvx-constraints-noPairwiseReg%s-nCV=10-biasThresh=10-biasScale=0.05-VAL.pkl'] = 'Ridge, .05 bias scale'
+            self.files['RelReg-cvx-constraints-noPairwiseReg%s-nCV=10-biasThresh=10-biasScale=0.2-VAL.pkl'] = 'Ridge, 20% Overestimate'
+            self.files['RelReg-cvx-constraints-noPairwiseReg%s-nCV=10-biasThresh=10-biasScale=0.15-VAL.pkl'] = 'Ridge, 15% Overestimate'
+            self.files['RelReg-cvx-constraints-noPairwiseReg%s-nCV=10-biasThresh=10-biasScale=0.1-VAL.pkl'] = 'Ridge, 10% Overestimate'
+            self.files['RelReg-cvx-constraints-noPairwiseReg%s-nCV=10-biasThresh=10-biasScale=0.05-VAL.pkl'] = 'Ridge, 5% Overestimate'
             self.files['RelReg-cvx-constraints-noPairwiseReg%s-nCV=10-VAL.pkl'] = 'Ridge'
         if journal_plot_type == PLOT_DIVERSITY:
-            self.files['RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-setSize=10-VAL.pkl'] = '50 Relative, set size 10'
+            self.files['RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-setSize=10-VAL.pkl'] = '50 Relative, |S| = 10'
             self.files[
-                'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-setSize=20-VAL.pkl'] = '50 Relative, set size 20'
+                'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-setSize=20-VAL.pkl'] = '50 Relative, |S| = 20'
             self.files[
-                'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-setSize=40-VAL.pkl'] = '50 Relative, set size 40'
+                'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-setSize=40-VAL.pkl'] = '50 Relative, |S| = 40'
             self.files[
-                'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-setSize=80-VAL.pkl'] = '50 Relative, set size 80'
+                'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-setSize=80-VAL.pkl'] = '50 Relative, |S| = 80'
             self.files['RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '50 Relative'
         if journal_plot_type == PLOT_CHAIN:
             self.files[
-                'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-numChains=1-VAL.pkl'] = '50 Relative, 1 chain'
+                'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-numChains=1-VAL.pkl'] = '50 Relative, 1 Root'
             self.files[
-                'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-numChains=5-VAL.pkl'] = '50 Relative, 5 chain'
+                'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-numChains=5-VAL.pkl'] = '50 Relative, 5 Roots'
             self.files[
-                'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-numChains=10-VAL.pkl'] = '50 Relative, 10 chain'
+                'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-numChains=10-VAL.pkl'] = '50 Relative, 10 Roots'
             self.files[
                 'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '50 Relative'
         if journal_plot_type == PLOT_COMBINE_GUIDANCE:
@@ -637,6 +634,15 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['RelReg-cvx-constraints-numRandPairs=25-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '25 Relative'
             self.files['RelReg-cvx-constraints-numSimilar=25-scipy-noRidgeOnFail-eps=1e-10-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '25 Similar'
             self.files['RelReg-cvx-constraints-numRandPairs=25-scipy-numSimilar=25-scipy-jointCV-noRidgeOnFail-eps=1e-10-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '25 Similar, 25 Relative'
+        if journal_plot_type == PLOT_FLIPPED:
+            self.files['RelReg-cvx-constraints-numRandPairs=50-scipy-noise=0.25-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '50 Relative 25% Flipped'
+            self.files[
+                'RelReg-cvx-constraints-numRandPairs=50-scipy-noise=0.1-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '50 Relative 10% Flipped'
+            self.files[
+                'RelReg-cvx-constraints-numRandPairs=50-scipy-noise=0.05-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '50 Relative 5% Flipped'
+            self.files[
+                'RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '50 Relative'
+
         files = self.files
         self.files = OrderedDict()
         for key, value in files.iteritems():

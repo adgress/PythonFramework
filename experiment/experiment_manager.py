@@ -80,11 +80,8 @@ class MethodExperimentManager(ExperimentManager):
         pass
 
 
+    def load_data_and_splits(self, data_file):
 
-
-
-    def run_experiments(self):
-        data_file = self.configs.data_file
         data_and_splits = helper_functions.load_object(data_file)
         data_and_splits.data.repair_data()
         assert self.configs.num_splits <= len(data_and_splits.splits)
@@ -92,6 +89,11 @@ class MethodExperimentManager(ExperimentManager):
         data_and_splits.labels_to_not_sample = self.configs.labels_to_not_sample
         data_and_splits.target_labels = self.configs.target_labels
         data_and_splits.data.repair_data()
+        return data_and_splits
+
+    def run_experiments(self):
+        data_file = self.configs.data_file
+        data_and_splits = self.load_data_and_splits(data_file)
         results_file = self.configs.results_file
         comm = mpi_utility.get_comm()
         if os.path.isfile(results_file):

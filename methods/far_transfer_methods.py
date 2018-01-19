@@ -153,6 +153,7 @@ class GraphTransferNW(GraphTransfer):
         self.source_learner.configs.use_validation = False
         self.nw_learner.configs.use_validation = False
         self.sampled_inds = None
+        self.predict_time = None
 
     def train_and_test(self, data):
         is_source = data.data_set_ids == self.configs.source_labels[0]
@@ -245,7 +246,9 @@ class GraphTransferNW(GraphTransfer):
             if C != 0:
                 lamb = 1/float(C)
                 f = None
+                tic()
                 inv_approx, _ = array_functions.nystrom_woodbury_laplacian(W_source_pred, lamb, self.nystrom_percentage)
+                self.predict_time = toc()
                 #_, f2 = array_functions.nystrom_woodbury_laplacian(W_source_pred, lamb, self.nystrom_percentage, v=Sy)
                 if f is not None:
                     f *= lamb
@@ -262,7 +265,9 @@ class GraphTransferNW(GraphTransfer):
             L = array_functions.make_laplacian_with_W(W_source_pred, normalized=False)
             A = np.eye(I.size) + C*L
             try:
+                tic()
                 f = np.linalg.lstsq(A, S.dot(self.y))[0]
+                self.predict_time = toc()
             except:
                 print 'GraphTransferNW:predict failed, returning mean'
                 f = self.y.mean() * np.ones(data.true_y.shape)

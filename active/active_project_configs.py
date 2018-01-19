@@ -43,13 +43,13 @@ use_test_error_for_model_selection = False
 use_validation = True
 
 # Conference paper experiments
-batch_pairwise = False
+batch_pairwise = True
 batch_neighbor = False
 batch_similar = False
 batch_bound = False
 batch_ssl = False
 batch_hinge_exps = False
-batch_size = [50]
+batch_size = [20, 50]
 
 # Journal paper experiments
 batch_relative_variance = False
@@ -57,7 +57,7 @@ batch_relative_bias = False
 batch_relative_diversity = False
 batch_relative_chain = False
 batch_relative_combine_guidance = False
-batch_relative_flip = True
+batch_relative_flip = False
 run_batch_data_sets = True
 
 PLOT_NOT_JOURNAL = -1
@@ -67,7 +67,7 @@ PLOT_DIVERSITY = 2
 PLOT_CHAIN = 3
 PLOT_COMBINE_GUIDANCE = 4
 PLOT_FLIPPED = 5
-journal_plot_type = PLOT_FLIPPED
+journal_plot_type = PLOT_NOT_JOURNAL
 
 bias_scale = 0
 bias_threshold = 0
@@ -93,6 +93,7 @@ other_method_configs = {
 use_mixed_cv = False
 use_ssl = False
 use_mean = False
+use_huber = False
 use_baseline = False
 
 use_pairwise = False
@@ -175,6 +176,7 @@ class ProjectConfigs(bc.ProjectConfigs):
         self.use_mixed_cv = use_mixed_cv
         self.use_ssl = use_ssl
         self.use_mean = use_mean
+        self.use_huber = use_huber
         self.use_baseline = use_baseline
         self.ridge_on_fail = ridge_on_fail
         self.tune_scale = tune_scale
@@ -334,6 +336,7 @@ class MainConfigs(bc.MainConfigs):
         method_configs.ridge_on_fail = pc.ridge_on_fail
         method_configs.tune_scale = pc.tune_scale
         method_configs.small_param_range = pc.small_param_range
+        method_configs.use_huber = pc.use_huber
 
         method_configs.use_pairwise = pc.use_pairwise
         method_configs.num_pairwise = pc.num_pairwise
@@ -508,6 +511,7 @@ class BatchConfigs(bc.BatchConfigs):
                 bias_params = {
                     'bias_scale': [.05, .1, .15, .2],
                     'bias_threshold': [10],
+                    'use_huber': [True],
                 }
                 self.config_list += [MainConfigs(configs) for configs in c.generate_copies(bias_params)]
             if batch_relative_diversity:
@@ -606,9 +610,13 @@ class VisualizationConfigs(bc.VisualizationConfigs):
             self.files['RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-VAL.pkl'] = '50 Relative'
         if journal_plot_type == PLOT_BIAS:
             self.files['RelReg-cvx-constraints-noPairwiseReg%s-nCV=10-biasThresh=10-biasScale=0.2-VAL.pkl'] = 'Ridge, 20% Overestimate'
-            self.files['RelReg-cvx-constraints-noPairwiseReg%s-nCV=10-biasThresh=10-biasScale=0.15-VAL.pkl'] = 'Ridge, 15% Overestimate'
+            self.files[
+                'RelReg-cvx-constraints-noPairwiseReg-huber%s-nCV=10-biasThresh=10-biasScale=0.2-VAL.pkl'] = 'Huber, 20% Overestimate'
+            #self.files['RelReg-cvx-constraints-noPairwiseReg%s-nCV=10-biasThresh=10-biasScale=0.15-VAL.pkl'] = 'Ridge, 15% Overestimate'
             self.files['RelReg-cvx-constraints-noPairwiseReg%s-nCV=10-biasThresh=10-biasScale=0.1-VAL.pkl'] = 'Ridge, 10% Overestimate'
-            self.files['RelReg-cvx-constraints-noPairwiseReg%s-nCV=10-biasThresh=10-biasScale=0.05-VAL.pkl'] = 'Ridge, 5% Overestimate'
+            self.files[
+                'RelReg-cvx-constraints-noPairwiseReg-huber%s-nCV=10-biasThresh=10-biasScale=0.1-VAL.pkl'] = 'Huber, 10% Overestimate'
+            #self.files['RelReg-cvx-constraints-noPairwiseReg%s-nCV=10-biasThresh=10-biasScale=0.05-VAL.pkl'] = 'Ridge, 5% Overestimate'
             self.files['RelReg-cvx-constraints-noPairwiseReg%s-nCV=10-VAL.pkl'] = 'Ridge'
         if journal_plot_type == PLOT_DIVERSITY:
             self.files['RelReg-cvx-constraints-numRandPairs=50-scipy-noRidgeOnFail-solver=SCS%s-L-BFGS-B-nCV=10-setSize=10-VAL.pkl'] = '50 Relative, |S| = 10'
@@ -652,7 +660,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
         #self.files['SKL-DumReg.pkl'] = 'Predict Mean'
         sizes = []
         #sizes.append(10)
-        #sizes.append(20)
+        sizes.append(20)
         sizes.append(50)
         #sizes.append(100)
         #sizes.append(150)
@@ -719,6 +727,7 @@ class VisualizationConfigs(bc.VisualizationConfigs):
                 methods.append(('numSimilar','RelReg, %s similar', 'Our Method: %s similar'))
                 #methods.append(('numSimilarHinge','RelReg, %s pairs hinge', 'Our Method: %s similar, hinge'))
                 self.title = 'Similar'
+            self.files['RelReg-cvx-constraints-noPairwiseReg-nCV=10-VAL.pkl'] = 'Ridge'
 
         all_params = list(grid_search.ParameterGrid(suffixes))
         for file_suffix, legend_name, legend_name_paper in methods:

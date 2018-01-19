@@ -33,6 +33,7 @@ def toc(tempBool=True):
     tempTimeInterval = next(TicToc)
     if tempBool:
         print( "Elapsed time: %f seconds.\n" %tempTimeInterval )
+        return tempTimeInterval
 
 def toc_str(tempBool = True):
     # Prints the time difference yielded by generator instance TicToc

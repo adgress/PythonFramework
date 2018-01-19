@@ -608,6 +608,7 @@ class ScikitLearnMethod(Method):
         'KNeighborsRegressor': 'KNNReg',
         'RidgeClassifier': 'RidgeClass',
         'KernelRidge': 'KRR',
+        'HuberRegressor': 'Huber',
     }
 
     def __init__(self,configs=MethodConfigs(),skl_method=None):
@@ -655,6 +656,15 @@ class ScikitLearnMethod(Method):
         if self.preprocessor is not None and self.preprocessor.prefix() is not None:
             s += '-' + self.preprocessor.prefix()
         return s
+
+class SKLHuber(ScikitLearnMethod):
+    def __init__(self,configs=MethodConfigs()):
+        super(SKLHuber, self).__init__(configs, linear_model.HuberRegressor())
+        self.cv_params['alpha'] = 10**np.asarray(range(-8,8),dtype='float64')
+        self.cv_params['epsilon'] = np.asarray([2, 4, 8, 16, 32])
+        self.set_params(alpha=0,fit_intercept=True)
+        self.transform = StandardScaler()
+
 
 class SKLKernelRidge(ScikitLearnMethod):
     def __init__(self,configs=MethodConfigs()):
@@ -939,7 +949,7 @@ class RelativeRegressionMethod(Method):
         self.num_similar = configs.get('num_similar', False)
         self.use_similar_hinge = configs.get('use_similar_hinge', False)
         self.similar_use_scipy = configs.get('similar_use_scipy', True)
-
+        self.use_huber = configs.get('use_huber', False)
         self.keep_random_guidance = True
 
         self.use_test_error_for_model_selection = configs.get('use_test_error_for_model_selection', False)
@@ -996,6 +1006,11 @@ class RelativeRegressionMethod(Method):
             if key == 's' or key == 'scale' or values.size <= 1:
                 continue
             self.cv_params[key] = np.append(values, 0)
+
+        if self.use_huber:
+            self.huber_estimator = SKLHuber()
+            self.huber_estimator.transform = None
+            self.cv_params = deepcopy(self.huber_estimator.cv_params)
 
 
     def train_and_test(self, data):
@@ -1327,7 +1342,13 @@ class RelativeRegressionMethod(Method):
             RelativeRegressionMethod.METHOD_RIDGE_SURROGATE
         }
         n, p = x.shape
-        if use_ridge:
+        if self.use_huber:
+            huber_data = data_lib.Data(x, y)
+            self.huber_estimator.set_params(alpha=self.alpha, epsilon=self.epsilon)
+            self.huber_estimator.train(huber_data)
+            self.w = self.huber_estimator.w
+            self.b = self.huber_estimator.b
+        elif use_ridge:
             ridge_reg = SKLRidgeRegression(self.configs)
             ridge_reg.set_params(alpha=self.C)
             ridge_reg.set_params(normalize=False)
@@ -1759,6 +1780,8 @@ class RelativeRegressionMethod(Method):
         if not use_pairwise and not use_bound and not use_neighbor and not use_similar:
             using_cvx = True
             s += '-noPairwiseReg'
+            if getattr(self, 'use_huber'):
+                s += '-huber'
         else:
             if use_pairwise:
                 #if self.num_pairwise > 0 and self.use_pairwise:
@@ -1841,6 +1864,7 @@ class RelativeRegressionMethod(Method):
                     s += '-numSimilar=' + str(int(self.num_similar))
                     if getattr(self, 'similar_use_scipy', False):
                         s += '-scipy'
+
             if use_similar and use_pairwise and getattr(self, 'joint_cv_combined_guidance', False):
                 s += '-jointCV'
             if getattr(self, 'use_mixed_cv', False):

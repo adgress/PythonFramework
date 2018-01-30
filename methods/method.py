@@ -1121,6 +1121,7 @@ class RelativeRegressionMethod(Method):
         elif self.add_random_neighbor:
             triplets = set()
             values = xrange(I.shape[0])
+            max_items = 500
             for i in range(max_items):
                 triplet = tuple(sorted(random.sample(values,3)))
                 triplets.add(triplet)
@@ -1191,7 +1192,7 @@ class RelativeRegressionMethod(Method):
             x2 = data.x[pair[1], :]
             if not sample_similar:
                 if self.use_hinge:
-                    constraint = HingePairwiseConstraint(x1, x2)
+                    constraint = HingePairwiseConstraint(x1, x2, pair[0], pair[1])
                 else:
                     constraint = PairwiseConstraint(x1, x2, pair[0], pair[1])
             else:

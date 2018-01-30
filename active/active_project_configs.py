@@ -48,7 +48,7 @@ batch_neighbor = False
 batch_similar = False
 batch_bound = False
 batch_ssl = False
-batch_hinge_exps = False
+batch_hinge_exps = True
 batch_size = [20, 50]
 
 # Journal paper experiments

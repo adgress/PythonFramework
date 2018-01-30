@@ -265,8 +265,8 @@ class PairwiseConstraint(CVXConstraint):
         return x_low, x_high, inds_low, inds_high
 
 class HingePairwiseConstraint(PairwiseConstraint):
-    def __init__(self, x1, x2):
-        super(HingePairwiseConstraint, self).__init__(x1, x2)
+    def __init__(self, x1, x2, ind1, ind2):
+        super(HingePairwiseConstraint, self).__init__(x1, x2, ind1, ind2)
 
     def to_cvx(self, f, scale=1.0):
         x1 = self.x[0]

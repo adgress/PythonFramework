@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from utility import array_functions
 from statsmodels.nonparametric.smoothers_lowess import lowess
 from statsmodels.nonparametric.kernel_regression import KernelReg
+from scipy.spatial import distance
 
 def f_line(x):
     return x
@@ -65,31 +66,54 @@ def plot_shift(func, x, legend_labels=None):
         plt.legend([line1, line2], legend_labels)
     plt.ylabel('$f(x)$')
 
+
+just_pairwise_figure = True
 fig = plt.figure()
 x = np.linspace(0, 1, 100)
 x = np.expand_dims(x, 1)
-ax1 = plt.subplot(2, 2, 1)
-plot_shift(covariate_shift_data, x, ['Source', 'Target'])
-plt.title('Covariate Shift')
-plt.xticks([], [])
-ax1 = plt.subplot(2, 2, 2)
-plot_shift(domain_adaptation_data, x)
-plt.title('Hypothesis Transfer')
-plt.xticks([], [])
-ax1 = plt.subplot(2, 2, 3)
-plt.title('Location-Scale')
-plot_shift(model_shift_data, x)
-plt.xlabel('$x$')
-ax1 = plt.subplot(2, 2, 4)
-plt.title('Pairwise Similarity Transfer')
-plot_shift(smoothness_shift_data, x)
-plt.xlabel('$x$')
-#plt.axis([0, 1, 0, 1])
-gap = .1
-plt.subplots_adjust(left=gap+.05, bottom=gap, right=1-gap, top=1-gap, wspace=0, hspace=.2)
-array_functions.move_fig(fig, 550, 500)
-plt.tight_layout()
-plt.show(block=True)
+if just_pairwise_figure:
+    x_source, y_source, x_target, y_target = smoothness_shift_data(x)
+    source_mat = distance.squareform(distance.pdist(np.expand_dims(y_source, 1)))
+    target_mat = distance.squareform(distance.pdist(np.expand_dims(y_target, 1)))
+    ax1 = plt.subplot(1, 1, 1)
+    plt.title('Pairwise Similarity Transfer')
+    plot_shift(smoothness_shift_data, x)
+    plt.xlabel('$x$')
+
+    gap = .1
+    plt.subplots_adjust(left=gap + .05, bottom=gap, right=1 - gap, top=1 - gap, wspace=0, hspace=.2)
+    # array_functions.move_fig(fig, 550, 500)
+    plt.tight_layout()
+
+    ax2 = plt.subplot(1, 3, 2)
+    plt.matshow(source_mat)
+    ax3 = plt.subplot(1, 3, 3)
+    plt.matshow(target_mat)
+    plt.show(block=True)
+    pass
+else:
+    ax1 = plt.subplot(2, 2, 1)
+    plot_shift(covariate_shift_data, x, ['Source', 'Target'])
+    plt.title('Covariate Shift')
+    plt.xticks([], [])
+    ax1 = plt.subplot(2, 2, 2)
+    plot_shift(domain_adaptation_data, x)
+    plt.title('Hypothesis Transfer')
+    plt.xticks([], [])
+    ax1 = plt.subplot(2, 2, 3)
+    plt.title('Location-Scale')
+    plot_shift(model_shift_data, x)
+    plt.xlabel('$x$')
+    ax1 = plt.subplot(2, 2, 4)
+    plt.title('Pairwise Similarity Transfer')
+    plot_shift(smoothness_shift_data, x)
+    plt.xlabel('$x$')
+    #plt.axis([0, 1, 0, 1])
+    gap = .1
+    plt.subplots_adjust(left=gap+.05, bottom=gap, right=1-gap, top=1-gap, wspace=0, hspace=.2)
+    # array_functions.move_fig(fig, 550, 500)
+    plt.tight_layout()
+    plt.show(block=True)
 
 
 
